@@ -13,7 +13,7 @@
     background-color: #000;
     border: 1px solid #333;
     border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Play', Arial, sans-serif;
     color: #fff;
     /* Контейнер остается неподвижным */
     cursor: grab;
@@ -240,7 +240,7 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    gap: 40px;
+    gap: 12px; /* Расстояние между раундами по макету */
     min-height: 100%;
     /* Оптимизация для плавного масштабирования */
     will-change: transform;
@@ -257,17 +257,11 @@
 }
 
 /* Убираем старые классы с разным justify-content */
-.bracket-round-column.has-many-matches {
-    /* Стили убраны - теперь структура едина */
-}
+.bracket-round-column.has-many-matches { justify-content: flex-start; }
 
-.bracket-round-column.has-few-matches {
-    /* Стили убраны - теперь структура едина */
-}
+.bracket-round-column.has-few-matches { justify-content: center; }
 
-.bracket-round-column.has-single-match {
-    /* Стили убраны - теперь структура едина */
-}
+.bracket-round-column.has-single-match { justify-content: center; }
 
 /* ===== ЗАГОЛОВКИ РАУНДОВ С УЛУЧШЕННОЙ ВИЗУАЛИЗАЦИЕЙ ===== */
 .bracket-round-header {
@@ -414,7 +408,7 @@
 .bracket-matches-list {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px; /* Отступ между матчами по макету */
     /* Занимает всю оставшуюся высоту колонки */
     flex: 1;
     /* Центрирование по вертикали */
@@ -481,15 +475,16 @@
 /* ===== КАРТОЧКИ МАТЧЕЙ ===== */
 .bracket-match-card {
     background: linear-gradient(145deg, #222, #111);
-    border: 2px solid #333;
-    border-radius: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
     padding: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     position: relative;
     overflow: hidden;
-    min-height: 80px;
+    width: 302px; /* фикс из макета */
+    height: 164px; /* фикс из макета */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -551,8 +546,12 @@
 }
 
 .bracket-match-title {
-    font-size: 14px;
-    font-weight: 600;
+    font-family: 'Play', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 100%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: #fff;
 }
 
@@ -584,10 +583,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 16px;
+    gap: 8px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
     transition: all 0.2s ease;
+    height: 64px;
+    border-bottom: 1px solid #333;
 }
 
 .bracket-participant.tbd {
@@ -604,33 +605,42 @@
 }
 
 .bracket-participant.winner {
-    background: rgba(255, 0, 0, 0.1);
-    border-left: 4px solid #ff0000;
+    background: rgba(255, 0, 0, 0.04);
+    border-right: 8px solid #ff0000;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
+
+/* Точное скругление по макету для верхней/нижней строки */
+.bracket-match-participants > .bracket-participant:first-child.winner { border-top-right-radius: 8px; }
+.bracket-match-participants > .bracket-participant:last-child.winner { border-bottom-right-radius: 8px; }
 
 .bracket-participant.winner .bracket-participant-name {
     color: #fff;
     font-weight: 700;
-    text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+    text-shadow: none;
 }
 
 .bracket-participant.winner .bracket-participant-score {
-    color: #ff0000;
-    font-weight: 900;
-    text-shadow: 0 0 3px rgba(255, 0, 0, 0.8);
+    color: #FF3838;
+    font-weight: 700;
+    text-shadow: none;
 }
 
 .bracket-participant:not(.winner):not(.tbd) .bracket-participant-name {
-    color: #ccc;
+    color: #fff;
 }
 
 .bracket-participant:not(.winner):not(.tbd) .bracket-participant-score {
-    color: #999;
+    color: #757575;
 }
 
 .bracket-participant-name {
-    font-size: 14px;
-    font-weight: 500;
+    font-family: 'Play', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 100%;
+    letter-spacing: 0.08em;
     color: #fff;
     max-width: 150px;
     overflow: hidden;
@@ -639,11 +649,26 @@
 }
 
 .bracket-participant-score {
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
+    font-family: 'Play', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #757575;
     min-width: 30px;
     text-align: right;
+}
+
+/* Сужение шрифта имени, если пересекается со счетом: уменьшение ~20% */
+.bracket-participant {
+    --name-font-size: 12px;
+}
+.bracket-participant-name {
+    font-size: var(--name-font-size);
+}
+.bracket-participant.score-tight .bracket-participant-name {
+    font-size: calc(var(--name-font-size) * 0.8);
 }
 
 .bracket-vs-separator {

@@ -1,8 +1,10 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import BracketRenderer from '../components/BracketRenderer';
+import BracketCompactView from '../components/BracketCompactView';
 import { useTournamentData } from '../hooks/tournament/useTournamentData';
+import './BracketSharePage.css';
 
 function useQuery() {
   const { search } = useLocation();
@@ -13,9 +15,17 @@ function BracketSharePage() {
   const { id } = useParams();
   const query = useQuery();
   const focusMatchId = query.get('match');
+  const viewMode = (query.get('view') || 'classic').toLowerCase();
   const { tournament, matches, loading, error } = useTournamentData(id);
 
-  const pageUrl = `${window.location.origin}/tournaments/${id}/bracket${focusMatchId ? `?match=${focusMatchId}` : ''}`;
+  const buildUrl = (next = {}) => {
+    const params = new URLSearchParams(window.location.search);
+    if (focusMatchId) params.set('match', focusMatchId);
+    params.set('view', next.view || viewMode);
+    const qs = params.toString();
+    return `${window.location.origin}/tournaments/${id}/bracket${qs ? `?${qs}` : ''}`;
+  };
+  const pageUrl = buildUrl();
 
   const handleShare = useCallback(async () => {
     const title = tournament?.name ? `${tournament.name} — Турнирная сетка` : 'Турнирная сетка';
@@ -80,8 +90,17 @@ function BracketSharePage() {
   const title = tournament?.name ? `${tournament.name} — Турнирная сетка` : 'Турнирная сетка';
   const description = tournament?.description ? String(tournament.description).slice(0, 180) : 'Смотри турнирную сетку на 1337community.com';
 
+  // Автопрокрутка к фокусному матчу
+  useEffect(() => {
+    if (!focusMatchId) return;
+    const el = document.querySelector(`[data-match-id="${focusMatchId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
+  }, [focusMatchId, viewMode]);
+
   return (
-    <div style={{ background: '#000', color: '#fff', minHeight: '100vh' }}>
+    <div className="bracket-share-page">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -92,21 +111,60 @@ function BracketSharePage() {
       </Helmet>
 
       {/* Хедер с меню уже рендерится в Layout */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid #111', background: '#000' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <Link to={`/tournaments/${id}`} style={{ color: '#fff', textDecoration: 'none', border: '1px solid #ff0000', padding: '8px 12px', borderRadius: 8, background: '#111' }}>К турниру</Link>
-          <button onClick={handleShare} style={{ color: '#fff', border: '1px solid #ff0000', padding: '8px 12px', borderRadius: 8, background: '#111' }}>Поделиться</button>
-          <span style={{ color: '#999' }}>{pageUrl}</span>
-        </div>
-        {tournament && (
-          <div style={{ marginTop: 12, color: '#ccc' }}>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>{tournament.name}</div>
-            {tournament.start_date && <div>Старт: {new Date(tournament.start_date).toLocaleString()}</div>}
+      <div className="bracket-share-header">
+        {/* 1-2. Верхние две части (липкий глобальный хедер рендерится в Layout), здесь — страничный тулбар + блок инфо на одном фоне */}
+        <div className="bracket-share-hero">
+          <div className="bracket-share-hero-inner">
+            <div className="bracket-share-toolbar">
+          <Link to={`/tournaments/${id}`} className="bracket-share-link">К турниру</Link>
+          <button onClick={handleShare} className="bracket-share-button">Поделиться</button>
+              <div className="bracket-share-segment" role="tablist" aria-label="Переключатель вида">
+                <button
+                  role="tab"
+                  aria-selected={viewMode === 'classic'}
+                  onClick={() => {
+                    const url = buildUrl({ view: 'classic' });
+                    window.history.replaceState(null, '', url);
+                  }}
+                  className={viewMode === 'classic' ? 'active' : ''}
+                >
+                  Классический
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={viewMode === 'compact'}
+                  onClick={() => {
+                    const url = buildUrl({ view: 'compact' });
+                    window.history.replaceState(null, '', url);
+                  }}
+                  className={viewMode === 'compact' ? 'active' : ''}
+                >
+                  Компактный
+                </button>
+              </div>
+              <span className="bracket-share-url">{pageUrl}</span>
+            </div>
+            {tournament && (
+              <div className="bracket-share-info">
+                <div className="bracket-share-title">{tournament.name}</div>
+                {tournament.start_date && <div>Старт: {new Date(tournament.start_date).toLocaleString()}</div>}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* 3. Нижний локальный хедер страницы турнира */}
+        <div className="bracket-local-nav">
+          <div className="bracket-local-nav-inner">
+            <a href={`#/tournaments/${id}`} className="local-nav-link">Обзор</a>
+            <a href={`#/tournaments/${id}/bracket`} className="local-nav-link active">Сетка</a>
+            <a href={`#/tournaments/${id}/matches`} className="local-nav-link">Матчи</a>
+            <a href={`#/tournaments/${id}/participants`} className="local-nav-link">Участники</a>
+          </div>
+        </div>
       </div>
 
-      <div style={{ background: '#000' }}>
+      <div className="bracket-share-content">
         {loading && (
           <div style={{ padding: 24 }}>Загрузка…</div>
         )}
@@ -114,16 +172,20 @@ function BracketSharePage() {
           <div style={{ padding: 24, color: '#ff6b6b' }}>{String(error)}</div>
         )}
         {!loading && !error && Array.isArray(games) && games.length > 0 && (
-          <div style={{ padding: 20 }}>
-            <BracketRenderer 
-              games={games}
-              tournament={tournament}
-              onEditMatch={null}
-              canEditMatches={false}
-              onMatchClick={null}
-              readOnly
-              focusMatchId={focusMatchId}
-            />
+          <div>
+            {viewMode === 'compact' ? (
+              <BracketCompactView games={games} tournament={tournament} focusMatchId={focusMatchId} />
+            ) : (
+              <BracketRenderer 
+                games={games}
+                tournament={tournament}
+                onEditMatch={null}
+                canEditMatches={false}
+                onMatchClick={null}
+                readOnly
+                focusMatchId={focusMatchId}
+              />
+            )}
           </div>
         )}
       </div>

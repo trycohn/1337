@@ -591,14 +591,14 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             </div>
             
             <div className="bracket-match-participants">
-                <div className={`bracket-participant ${participant1.name === 'TBD' ? 'tbd' : ''} ${participant1.isWinner ? 'winner' : ''}`}>
+                <div className={`bracket-participant ${participant1.name === 'TBD' ? 'tbd' : ''} ${participant1.isWinner ? 'winner' : ''} ${participant1.name && participant1.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant1.name}</span>
                     <span className="bracket-participant-score">{participant1.score || '-'}</span>
                 </div>
                 
                 <div className="bracket-vs-separator">vs</div>
                 
-                <div className={`bracket-participant ${participant2.name === 'TBD' ? 'tbd' : ''} ${participant2.isWinner ? 'winner' : ''}`}>
+                <div className={`bracket-participant ${participant2.name === 'TBD' ? 'tbd' : ''} ${participant2.isWinner ? 'winner' : ''} ${participant2.name && participant2.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant2.name}</span>
                     <span className="bracket-participant-score">{participant2.score || '-'}</span>
                 </div>

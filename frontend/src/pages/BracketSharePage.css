@@ -1,0 +1,120 @@
+.bracket-share-page {
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+}
+
+.bracket-share-header { display: contents; }
+
+/* Верхний герой-блок: меню страницы + инфо турнира с общим фоном */
+.bracket-share-hero {
+  position: relative;
+  background: #000 url('/images/figma/hero-bg-585a9d.png') center/cover no-repeat;
+}
+.bracket-share-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.9) 100%);
+  pointer-events: none;
+}
+.bracket-share-hero-inner {
+  position: relative;
+  z-index: 1;
+}
+.bracket-share-toolbar, .bracket-share-info { position: relative; z-index: 2; }
+
+.bracket-share-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 124px;
+}
+
+/* Сегментированный переключатель вида (по макету) */
+.bracket-share-segment {
+  display: inline-flex;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.bracket-share-segment button {
+  background: transparent;
+  color: #fff;
+  padding: 8px 14px;
+  border: 0;
+  border-right: 1px solid #222;
+  cursor: pointer;
+}
+.bracket-share-segment button:last-child { border-right: 0; }
+.bracket-share-segment button.active {
+  background: #141414;
+  border-color: #ff0000;
+  box-shadow: inset 0 0 0 1px #ff0000;
+}
+
+.bracket-share-button,
+.bracket-share-link {
+  color: #fff;
+  background: #111;
+  border: 1px solid #ff0000;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.bracket-share-button:hover,
+.bracket-share-link:hover {
+  background: #141414;
+}
+
+.bracket-share-view-toggle { display: none; }
+
+.bracket-share-url {
+  color: #999;
+}
+
+.bracket-share-info {
+  color: #ccc;
+  padding: 0 124px 24px 124px;
+}
+.bracket-share-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+/* Нижний локальный хедер: меню страницы турнира */
+.bracket-local-nav {
+  position: sticky;
+  top: 0; /* липнет под глобальным хедером, если тот фиксирован */
+  background: #000;
+  border-bottom: 1px solid #111;
+  z-index: 5;
+}
+.bracket-local-nav-inner {
+  padding: 12px 124px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.local-nav-link {
+  color: #aaa;
+  text-decoration: none;
+  padding: 8px 4px;
+  border-bottom: 2px solid transparent;
+}
+.local-nav-link:hover { color: #fff; }
+.local-nav-link.active {
+  color: #fff;
+  border-bottom-color: #ff0000;
+}
+
+.bracket-share-content {
+  padding: 20px 124px;
+}
+
+
