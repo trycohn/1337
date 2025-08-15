@@ -22,7 +22,7 @@ const SafeRichTextDisplay = ({
         ],
         ALLOWED_ATTR: {
             'a': ['href', 'title', 'target', 'rel'],
-            '*': ['class']
+            '*': ['class', 'style'] // Разрешаем style для поддержки line-height
         },
         ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
         FORBID_TAGS: [
@@ -33,7 +33,7 @@ const SafeRichTextDisplay = ({
         FORBID_ATTR: [
             'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 
             'onblur', 'onchange', 'onsubmit', 'onkeydown', 'onkeyup',
-            'onmousedown', 'onmouseup', 'onmousemove', 'style'
+            'onmousedown', 'onmouseup', 'onmousemove'
         ],
         ALLOW_DATA_ATTR: false,
         ALLOW_UNKNOWN_PROTOCOLS: false,
@@ -83,6 +83,26 @@ const SafeRichTextDisplay = ({
                     ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li'],
                     ALLOWED_ATTR: {}
                 });
+            }
+
+            // Дополнительная фильтрация inline-стилей: оставляем только line-height с whitelisted значениями
+            try {
+                const allowedLH = new Set(['0.5', '1', '1.5', '2']);
+                const container = document.createElement('div');
+                container.innerHTML = cleanContent;
+                const all = container.querySelectorAll('[style]');
+                all.forEach(el => {
+                    const style = el.getAttribute('style') || '';
+                    const matched = /line-height\s*:\s*([0-9.]+)/i.exec(style);
+                    if (matched && allowedLH.has(matched[1])) {
+                        el.setAttribute('style', `line-height: ${matched[1]};`);
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                });
+                cleanContent = container.innerHTML;
+            } catch (e) {
+                // игнорируем, оставляем уже очищенный контент
             }
 
             // Обрезка по длине если нужно
