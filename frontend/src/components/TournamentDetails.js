@@ -1008,11 +1008,13 @@ function TournamentDetails() {
 
                         {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА */}
                         {tournament && (
-                            <TournamentProgressBar 
-                                matches={matches}
-                                tournamentStatus={tournament?.status}
-                                tournament={tournament}
-                            />
+                            <div className="bracket-stage-wrapper bracket-full-bleed">
+                                <TournamentProgressBar 
+                                    matches={matches}
+                                    tournamentStatus={tournament?.status}
+                                    tournament={tournament}
+                                />
+                            </div>
                         )}
 
                         {/* Турнирная сетка */}
