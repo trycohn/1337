@@ -39,7 +39,8 @@ function TournamentsList() {
     const [showFilterModal, setShowFilterModal] = useState(false);
     
     const [activeFilter, setActiveFilter] = useState(null);
-    const [viewMode, setViewMode] = useState(window.innerWidth <= 600 ? 'card' : 'table');
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [viewMode, setViewMode] = useState(window.innerWidth <= 768 ? 'card' : 'table');
     const filterRefs = {
         name: useRef(null),
         game: useRef(null),
@@ -59,12 +60,15 @@ function TournamentsList() {
 
     useEffect(() => {
         const handleResize = () => {
-            setViewMode(window.innerWidth <= 600 ? 'card' : 'table');
+            const nowMobile = window.innerWidth <= 768;
+            setIsMobile(nowMobile);
+            if (nowMobile) setViewMode('card');
         };
-        
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const effectiveViewMode = isMobile ? 'card' : viewMode;
 
     useEffect(() => {
         const fetchTournaments = async () => {
@@ -749,10 +753,12 @@ function TournamentsList() {
             {/* === 🆕 УЛУЧШЕННЫЕ КОНТРОЛЫ === */}
             <div className="tournaments-view-controls">
                 <div className="view-mode-buttons">
-                    <button className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
-                        Таблица
-                    </button>
-                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
+                    {!isMobile && (
+                        <button className={`view-mode-btn ${effectiveViewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
+                            Таблица
+                        </button>
+                    )}
+                    <button className={`view-mode-btn ${effectiveViewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
                         Карточки
                     </button>
                 </div>
@@ -789,7 +795,7 @@ function TournamentsList() {
                     </button>
                     
                     {/* Сортировка для режима Карточки */}
-                    {viewMode === 'card' && (
+                    {effectiveViewMode === 'card' && (
                         <div className="sort-controls">
                             <label className="sort-label">
                                 Сортировка:
@@ -851,7 +857,7 @@ function TournamentsList() {
                 </div>
             )}
             
-            {viewMode === 'table' ? renderTableView() : renderCardView()}
+            {effectiveViewMode === 'table' ? renderTableView() : renderCardView()}
             
             {filteredAndSortedTournaments.length === 0 && <p>Турниров пока нет.</p>}
             
