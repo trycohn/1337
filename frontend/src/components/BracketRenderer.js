@@ -321,7 +321,7 @@ const BracketRenderer = ({
                     ref={rendererRef}
                     {...effectiveHandlers}
                 >
-                    <div className="bracket-upper-and-finals-row">
+                    <div className="bracket-upper-and-finals-row bracket-full-bleed">
                         {/* ===== UPPER BRACKET (WINNERS) ===== */}
                         {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
                             <div 
@@ -417,7 +417,7 @@ const BracketRenderer = ({
                 ref={rendererRef}
                 {...effectiveHandlers}
             >
-                <div className="bracket-rounds-container">
+                <div className="bracket-rounds-container bracket-full-bleed">
                     {Object.entries(groupedMatches)
                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
                         .map(([round, roundData]) => {

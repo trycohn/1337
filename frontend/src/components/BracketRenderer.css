@@ -932,6 +932,13 @@
 }
 
 /* ===== ЗАГОЛОВКИ СЕКЦИЙ С ПОДЗАГОЛОВКАМИ ===== */
+.bracket-full-bleed {
+    position: relative;
+    width: max-content;
+    max-width: none;
+    overflow: visible;
+}
+
 .bracket-render-section-header {
     text-align: center;
     margin-bottom: 30px;
