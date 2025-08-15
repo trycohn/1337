@@ -12,6 +12,14 @@ main {
   max-width: 80%;
   width: 80%;
 }
+@media (max-width: 768px) {
+  main {
+    max-width: 100%;
+    width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+}
 /* Специальный режим для страницы шеринга сетки: убираем ограничения */
 .fullwidth-page {
   margin: 0;
@@ -211,8 +219,11 @@ header.header {
 
 @media (max-width: 768px) {
   .tournaments-list {
-    width: 95vw;
-    max-width: 95vw;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
 }
 .tournaments-list h2 {
@@ -995,6 +1006,17 @@ header.header {
   gap: 20px;
   padding: 0;
 }
+@media (max-width: 768px) {
+  .tournaments-cards {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+}
+@media (max-width: 480px) {
+  .tournaments-cards {
+    grid-template-columns: 1fr;
+  }
+}
 .tournament-card {
   background-color: #111111;
   border: 1px solid #333333;
@@ -1002,6 +1024,11 @@ header.header {
   overflow: hidden;
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+@media (max-width: 768px) {
+  .tournament-card {
+    border-radius: 8px;
+  }
 }
 .tournament-card:hover {
   transform: translateY(-4px);
@@ -1017,6 +1044,13 @@ header.header {
   border-bottom: 1px solid #333333;
   letter-spacing: 0.5px;
 }
+@media (max-width: 768px) {
+  .tournament-name {
+    padding: 12px 14px;
+    font-size: 14px;
+    word-break: break-word;
+  }
+}
 .tournament-name a {
   color: #ffffff;
   text-decoration: none;
@@ -1028,6 +1062,11 @@ header.header {
 .tournament-details {
   padding: 20px;
 }
+@media (max-width: 768px) {
+  .tournament-details {
+    padding: 14px;
+  }
+}
 .tournament-info {
   display: flex;
   justify-content: space-between;
@@ -1036,6 +1075,12 @@ header.header {
   font-size: 14px;
   padding: 8px 0;
   border-bottom: 1px solid #222222;
+}
+@media (max-width: 768px) {
+  .tournament-info {
+    font-size: 13px;
+    gap: 10px;
+  }
 }
 .tournament-info:last-child {
   border-bottom: none;
@@ -1048,6 +1093,11 @@ header.header {
   font-size: 11px;
   letter-spacing: 0.5px;
   min-width: 80px;
+}
+@media (max-width: 768px) {
+  .tournament-label {
+    min-width: 60px;
+  }
 }
 .tournament-value {
   color: #ffffff;
@@ -1167,6 +1217,12 @@ header.header {
     display: flex;
     align-items: center;
     gap: 15px;
+}
+@media (max-width: 768px) {
+  .filters-and-sort {
+    flex-wrap: wrap;
+    width: 100%;
+  }
 }
 
 /* Кнопка расширенного фильтра */
