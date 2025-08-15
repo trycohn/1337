@@ -403,18 +403,18 @@
 }
 
 .referral-modal-footer .btn-secondary:hover {
-    background-color: #111111;
+    background-color: #000000;
 }
 
 .referral-modal-footer .btn-primary {
-    background: #ff0000;
+    background: #000000;
     color: #ffffff;
-    border: 1px solid #ff0000;
+    border: 1px solid #ffffff;
 }
 
 .referral-modal-footer .btn-primary:hover:not(:disabled) {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #1d1d1d;
+    color: #ffffff;
 }
 
 .referral-modal-footer .btn-primary:disabled {
