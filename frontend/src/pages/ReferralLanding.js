@@ -186,64 +186,9 @@ const ReferralLanding = () => {
                     </div>
                 )}
 
-                {/* Преимущества регистрации */}
-                <div className="benefits-section">
-                    <h3>🚀 Что вас ждет в 1337 Community:</h3>
-                    <div className="benefits-grid">
-                        <div className="benefit-item">
-                            <div className="benefit-icon">🏆</div>
-                            <div className="benefit-text">
-                                <h4>Турниры</h4>
-                                <p>Участвуйте в турнирах по популярным играм</p>
-                            </div>
-                        </div>
-                        <div className="benefit-item">
-                            <div className="benefit-icon">👥</div>
-                            <div className="benefit-text">
-                                <h4>Команды</h4>
-                                <p>Находите союзников и создавайте команды</p>
-                            </div>
-                        </div>
-                        <div className="benefit-item">
-                            <div className="benefit-icon">📊</div>
-                            <div className="benefit-text">
-                                <h4>Статистика</h4>
-                                <p>Отслеживайте свой прогресс и рейтинг</p>
-                            </div>
-                        </div>
-                        <div className="benefit-item">
-                            <div className="benefit-icon">🏅</div>
-                            <div className="benefit-text">
-                                <h4>Достижения</h4>
-                                <p>Получайте награды за свои успехи</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Убрано: блок преимуществ, чтобы не перегружать лендинг */}
 
-                {/* Информация о ссылке */}
-                <div className="referral-info">
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <span className="info-label">⏰ Действует до:</span>
-                            <span className="info-value">
-                                {new Date(referralInfo.expires_at).toLocaleDateString('ru-RU', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
-                            </span>
-                        </div>
-                        <div className="info-item">
-                            <span className="info-label">🔢 Осталось использований:</span>
-                            <span className="info-value">
-                                {referralInfo.max_uses - referralInfo.uses_count}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                {/* Убрано: блок сроков и использований ссылки для приглашённого пользователя */}
 
                 {/* Кнопки действий */}
                 <div className="action-buttons">
