@@ -662,14 +662,14 @@
 }
 
 .btn-primary {
-  background: #ff0000;
-  color: #000;
-  border: 1px solid #ff0000;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #ff3333;
-  border-color: #ff3333;
+  background: #1d1d1d;
+  border-color: #ffffff;
 }
 
 .btn-primary:disabled,

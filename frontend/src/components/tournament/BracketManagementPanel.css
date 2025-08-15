@@ -115,21 +115,21 @@
 }
 
 .btn-primary {
-    background: #007bff;
+    background: #000000;
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #0056b3;
+    background: #1d1d1d;
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #000000;
     color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #545b62;
+    background: #1d1d1d;
 }
 
 .btn-danger {

@@ -308,20 +308,20 @@
 }
 
 .btn-primary {
-    background: #ff0000;
+    background: #000000;
     color: #ffffff;
-    border: 1px solid #ff0000;
+    border: 1px solid #ffffff;
 }
 
 .btn-primary:hover {
-    background: #ffffff;
-    color: #000000;
+    background: #1d1d1d;
+    color: #ffffff;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
 }
 
 .btn-secondary {
-    background: transparent;
+    background: #000000;
     color: #ffffff;
     border: 1px solid #ffffff;
 }
