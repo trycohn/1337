@@ -64,7 +64,7 @@ const SafeRichTextEditor = ({
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],     // Списки
             ['blockquote'],                                   // Цитаты
             ['link'],                                         // Только ссылки (без изображений)
-            [{ 'lineHeight': ['1.4','1.6','1.8','2.0'] }],    // Настройка межстрочного интервала (кастомный формат)
+            [{ 'lineheight': ['1.4','1.6','1.8','2.0'] }],    // Настройка межстрочного интервала (кастомный формат)
             [{ 'script': 'sub'}, { 'script': 'super' }],     // Подстрочный/надстрочный текст
             ['clean']                                         // Очистка форматирования
         ],
@@ -78,7 +78,7 @@ const SafeRichTextEditor = ({
     const formats = useMemo(() => [
         'bold', 'italic', 'underline', 'strike',
         'header', 'list', 'bullet', 'blockquote',
-        'link', 'script', 'lineHeight'
+        'link', 'script', 'lineheight'
     ], []);
 
     // Безопасный обработчик изменений с санитизацией

@@ -20,17 +20,18 @@ const ReactQuillWrapper = forwardRef(({
     preserveWhitespace,
     theme = 'snow'
 }, ref) => {
-    // Регистрация кастомного атрибута line-height как style атрибутра
+    // Регистрация кастомного атрибута line-height как style-атрибута (формат)
     useEffect(() => {
         try {
             const Parchment = Quill.import('parchment');
-            // Проверяем, не зарегистрирован ли уже
-            if (!Quill.imports['formats/lineHeight']) {
-                const LineHeightStyle = new Parchment.Attributor.Style('lineHeight', 'line-height', {
-                    scope: Parchment.Scope.INLINE,
+            // Проверяем, не зарегистрирован ли уже формат с именем 'lineheight'
+            const already = Quill.imports && (Quill.imports['formats/lineheight'] || Quill.imports['attributors/style/lineheight']);
+            if (!already) {
+                const LineHeightStyle = new Parchment.Attributor.Style('lineheight', 'line-height', {
+                    scope: Parchment.Scope.BLOCK,
                     whitelist: ['1.4', '1.6', '1.8', '2.0']
                 });
-                Quill.register({ 'formats/lineHeight': LineHeightStyle }, true);
+                Quill.register(LineHeightStyle, true);
             }
         } catch (e) {
             console.warn('⚠️ [ReactQuillWrapper] Не удалось зарегистрировать line-height формат:', e);
@@ -104,10 +105,7 @@ const ReactQuillWrapper = forwardRef(({
                 theme={theme}
                 value={value || ''}
                 onChange={handleChange}
-                modules={{
-                    ...modules,
-                    lineHeight: true
-                }}
+                modules={modules}
                 formats={formats}
                 placeholder={placeholder}
                 readOnly={readOnly}
