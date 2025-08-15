@@ -19,6 +19,8 @@ const ReferralLanding = () => {
     const [referralInfo, setReferralInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [acceptLoading, setAcceptLoading] = useState(false);
 
     useEffect(() => {
         if (referralCode) {
@@ -55,6 +57,12 @@ const ReferralLanding = () => {
         }
     };
 
+    // Проверка авторизации (минимальная)
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        setIsAuthenticated(Boolean(token));
+    }, []);
+
     // Переход к регистрации с реферальным кодом
     const handleRegister = () => {
         navigate(`/register?referral=${referralCode}`);
@@ -63,6 +71,37 @@ const ReferralLanding = () => {
     // Переход к входу
     const handleLogin = () => {
         navigate(`/login?referral=${referralCode}`);
+    };
+
+    // Принять приглашение (для авторизованных)
+    const handleAcceptInvite = async () => {
+        if (!referralInfo?.tournament?.id) {
+            setError('Невозможно принять приглашение: турнир не указан');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate(`/login?referral=${referralCode}`);
+            return;
+        }
+
+        try {
+            setAcceptLoading(true);
+            const tournamentId = referralInfo.tournament.id;
+            await api.post(`/api/tournaments/${tournamentId}/participate`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // Успешно — переходим на страницу турнира
+            navigate(`/tournaments/${tournamentId}?from=invite`);
+        } catch (err) {
+            console.error('❌ Ошибка принятия приглашения:', err);
+            const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Ошибка принятия приглашения';
+            setError(msg);
+        } finally {
+            setAcceptLoading(false);
+        }
     };
 
     if (loading) {
@@ -218,6 +257,15 @@ const ReferralLanding = () => {
                     >
                         🔑 У меня уже есть аккаунт
                     </button>
+                    {isAuthenticated && referralInfo?.tournament?.id && (
+                        <button
+                            className="btn-primary accept-btn"
+                            onClick={handleAcceptInvite}
+                            disabled={acceptLoading}
+                        >
+                            {acceptLoading ? '⏳ Принимаем...' : '✅ Принять приглашение на участие'}
+                        </button>
+                    )}
                 </div>
 
                 {/* Дополнительные ссылки */}
