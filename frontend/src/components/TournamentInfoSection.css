@@ -1405,7 +1405,7 @@
 .tournament-description-display .rich-content,
 .tournament-rules-display .rich-content {
     color: #fff;
-    line-height: 1.7;
+    line-height: 1.9; /* увеличенный межстрочный интервал для лучшей читаемости */
 }
 
 /* Специальные стили для отображения в турнирной секции */
@@ -1440,6 +1440,7 @@
 .tournament-rules-display .rich-content ul,
 .tournament-rules-display .rich-content ol {
     margin: 16px 0;
+    line-height: 1.9;
 }
 
 .tournament-description-display .rich-content li,
