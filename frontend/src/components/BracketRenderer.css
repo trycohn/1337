@@ -939,6 +939,10 @@
     overflow: visible;
 }
 
+.bracket-stage-wrapper.bracket-full-bleed {
+    width: 100%;
+}
+
 .bracket-render-section-header {
     text-align: center;
     margin-bottom: 30px;
