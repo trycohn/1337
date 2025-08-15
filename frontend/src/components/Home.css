@@ -1297,7 +1297,7 @@ header.header {
 .sort-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 2px;
 }
 
 .sort-label {
@@ -1405,6 +1405,7 @@ header.header {
     
     .sort-select {
         min-width: 100%;
+        max-width: 340px;
     }
     
     .results-summary {
@@ -1436,7 +1437,7 @@ header.header {
     .sort-select {
         font-size: 13px;
         padding: 6px 10px;
-        max-width: 300px;
+        max-width: 280px;
         width: 100%;
         box-sizing: border-box;
     }
