@@ -43,7 +43,7 @@ const SafeRichTextEditor = ({
         ],
         ALLOWED_ATTR: {
             'a': ['href', 'title'],
-            '*': ['class'] // Только безопасные CSS классы
+            '*': ['class', 'style'] // Разрешаем style для поддержки line-height
         },
         ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
         FORBID_TAGS: ['script', 'object', 'embed', 'iframe', 'form', 'input', 'textarea', 'select', 'button', 'style'],
@@ -64,7 +64,7 @@ const SafeRichTextEditor = ({
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],     // Списки
             ['blockquote'],                                   // Цитаты
             ['link'],                                         // Только ссылки (без изображений)
-            [{ 'lineheight': ['1.4','1.6','1.8','2.0'] }],    // Настройка межстрочного интервала
+            [{ 'lineHeight': ['1.4','1.6','1.8','2.0'] }],    // Настройка межстрочного интервала (кастомный формат)
             [{ 'script': 'sub'}, { 'script': 'super' }],     // Подстрочный/надстрочный текст
             ['clean']                                         // Очистка форматирования
         ],
@@ -78,7 +78,7 @@ const SafeRichTextEditor = ({
     const formats = useMemo(() => [
         'bold', 'italic', 'underline', 'strike',
         'header', 'list', 'bullet', 'blockquote',
-        'link', 'script', 'lineheight'
+        'link', 'script', 'lineHeight'
     ], []);
 
     // Безопасный обработчик изменений с санитизацией

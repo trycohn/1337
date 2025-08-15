@@ -92,12 +92,22 @@
     border: 1px solid #ff0000 !important;
     border-radius: 4px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    max-height: 240px;
+    overflow-y: auto;
 }
 
 .safe-rich-editor .ql-toolbar .ql-picker-item {
     color: #fff !important;
     padding: 8px 12px !important;
 }
+
+/* Явные стили для опций line-height (если ReactQuill генерирует ql-lineheight классы) */
+.safe-rich-editor .ql-picker.ql-lineHeight .ql-picker-item[data-value="1.4"]::before { content: "1.4"; }
+.safe-rich-editor .ql-picker.ql-lineHeight .ql-picker-item[data-value="1.6"]::before { content: "1.6"; }
+.safe-rich-editor .ql-picker.ql-lineHeight .ql-picker-item[data-value="1.8"]::before { content: "1.8"; }
+.safe-rich-editor .ql-picker.ql-lineHeight .ql-picker-item[data-value="2.0"]::before { content: "2.0"; }
+
+.safe-rich-editor .ql-picker.ql-lineHeight .ql-picker-label::before { content: "LH"; }
 
 .safe-rich-editor .ql-toolbar .ql-picker-item:hover {
     background: #ff0000 !important;

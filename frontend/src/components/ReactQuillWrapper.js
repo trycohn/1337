@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, forwardRef } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import Quill from 'quill';
 
 /**
  * Wrapper для React Quill совместимый с React 19
@@ -19,6 +20,22 @@ const ReactQuillWrapper = forwardRef(({
     preserveWhitespace,
     theme = 'snow'
 }, ref) => {
+    // Регистрация кастомного атрибута line-height как style атрибутра
+    useEffect(() => {
+        try {
+            const Parchment = Quill.import('parchment');
+            // Проверяем, не зарегистрирован ли уже
+            if (!Quill.imports['formats/lineHeight']) {
+                const LineHeightStyle = new Parchment.Attributor.Style('lineHeight', 'line-height', {
+                    scope: Parchment.Scope.INLINE,
+                    whitelist: ['1.4', '1.6', '1.8', '2.0']
+                });
+                Quill.register({ 'formats/lineHeight': LineHeightStyle }, true);
+            }
+        } catch (e) {
+            console.warn('⚠️ [ReactQuillWrapper] Не удалось зарегистрировать line-height формат:', e);
+        }
+    }, []);
     const quillRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -87,7 +104,10 @@ const ReactQuillWrapper = forwardRef(({
                 theme={theme}
                 value={value || ''}
                 onChange={handleChange}
-                modules={modules}
+                modules={{
+                    ...modules,
+                    lineHeight: true
+                }}
                 formats={formats}
                 placeholder={placeholder}
                 readOnly={readOnly}
