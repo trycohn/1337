@@ -1158,75 +1158,77 @@ function TournamentDetails() {
                             }}
                         />
 
-                        {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА НА ВКЛАДКЕ СЕТКА */}
-                        {tournament && (
-                            <TournamentProgressBar 
-                                matches={matches}
-                                tournamentStatus={tournament?.status}
-                                tournament={tournament}
-                            />
-                        )}
+                        <div className="bracket-stage-wrapper bracket-full-bleed">
+                            {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА НА ВКЛАДКЕ СЕТКА */}
+                            {tournament && (
+                                <TournamentProgressBar 
+                                    matches={matches}
+                                    tournamentStatus={tournament?.status}
+                                    tournament={tournament}
+                                />
+                            )}
 
-                        {games.length > 0 ? (
-                            <TournamentErrorBoundary>
-                                <Suspense fallback={
-                                    <div className="bracket-loading" data-testid="bracket-loading">
-                                        🔄 Загрузка турнирной сетки...
-                                    </div>
-                                }>
-                                    <LazyBracketRenderer
-                                        games={games}
-                                        tournament={tournament}
-                                        canEditMatches={false}
-                                        selectedMatch={selectedMatch}
-                                        setSelectedMatch={(match) => {
-                                            if (match === null || match === undefined) {
-                                                setSelectedMatch(null);
-                                                return;
-                                            }
-                                            
-                                            const matchId = typeof match === 'object' && match !== null ? match.id : match;
-                                            
-                                            if (matchId) {
-                                                const fullMatch = matches.find(m => m.id === parseInt(matchId));
-                                                if (fullMatch && false) {
-                                                    setSelectedMatch(fullMatch);
-                                                    setMatchResultData({
-                                                        score1: fullMatch.score1 || 0,
-                                                        score2: fullMatch.score2 || 0,
-                                                        maps_data: fullMatch.maps_data || []
-                                                    });
-                                                    openModal('matchResult');
+                            {games.length > 0 ? (
+                                <TournamentErrorBoundary>
+                                    <Suspense fallback={
+                                        <div className="bracket-loading" data-testid="bracket-loading">
+                                            🔄 Загрузка турнирной сетки...
+                                        </div>
+                                    }>
+                                        <LazyBracketRenderer
+                                            games={games}
+                                            tournament={tournament}
+                                            canEditMatches={false}
+                                            selectedMatch={selectedMatch}
+                                            setSelectedMatch={(match) => {
+                                                if (match === null || match === undefined) {
+                                                    setSelectedMatch(null);
+                                                    return;
+                                                }
+                                                
+                                                const matchId = typeof match === 'object' && match !== null ? match.id : match;
+                                                
+                                                if (matchId) {
+                                                    const fullMatch = matches.find(m => m.id === parseInt(matchId));
+                                                    if (fullMatch && false) {
+                                                        setSelectedMatch(fullMatch);
+                                                        setMatchResultData({
+                                                            score1: fullMatch.score1 || 0,
+                                                            score2: fullMatch.score2 || 0,
+                                                            maps_data: fullMatch.maps_data || []
+                                                        });
+                                                        openModal('matchResult');
+                                                    } else {
+                                                        setSelectedMatch(matchId);
+                                                    }
                                                 } else {
-                                                    setSelectedMatch(matchId);
+                                                    setSelectedMatch(null);
                                                 }
-                                            } else {
-                                                setSelectedMatch(null);
-                                            }
-                                        }}
-                                        handleTeamClick={() => {}}
-                                        format={tournament.format}
-                                        onMatchClick={(match) => {
-                                            if (match && match.id) {
-                                                const originalMatch = matches.find(m => m.id === parseInt(match.id));
-                                                if (originalMatch) {
-                                                    // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
-                                                    const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
-                                                    setSelectedMatchForDetails(enrichedMatch);
-                                                    openModal('matchDetails');
+                                            }}
+                                            handleTeamClick={() => {}}
+                                            format={tournament.format}
+                                            onMatchClick={(match) => {
+                                                if (match && match.id) {
+                                                    const originalMatch = matches.find(m => m.id === parseInt(match.id));
+                                                    if (originalMatch) {
+                                                        // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
+                                                        const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
+                                                        setSelectedMatchForDetails(enrichedMatch);
+                                                        openModal('matchDetails');
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                        readOnly
-                                    />
-                                </Suspense>
-                            </TournamentErrorBoundary>
-                        ) : (
-                            <div className="no-bracket">
-                                <p>Турнирная сетка еще не создана</p>
-                                <small>Используйте панель управления выше для создания турнирной сетки</small>
-                            </div>
-                        )}
+                                            }}
+                                            readOnly
+                                        />
+                                    </Suspense>
+                                </TournamentErrorBoundary>
+                            ) : (
+                                <div className="no-bracket">
+                                    <p>Турнирная сетка еще не создана</p>
+                                    <small>Используйте панель управления выше для создания турнирной сетки</small>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
 
