@@ -29,7 +29,7 @@ const ReactQuillWrapper = forwardRef(({
             if (!already) {
                 const LineHeightStyle = new Parchment.Attributor.Style('lineheight', 'line-height', {
                     scope: Parchment.Scope.BLOCK,
-                    whitelist: ['1.4', '1.6', '1.8', '2.0']
+                    whitelist: ['0.5', '1', '1.5', '2']
                 });
                 Quill.register(LineHeightStyle, true);
             }
