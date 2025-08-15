@@ -22,6 +22,7 @@ import SocketTest from './components/SocketTest';
 import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
 import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
 import TeamProfile from './components/tournament/TeamProfile';
+import ReferralLanding from './pages/ReferralLanding';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -61,7 +62,7 @@ function App() {
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
                                 <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
                                 <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
-                                <Route path="/register" element={<Navigate to="/auth?register=true" replace />} />
+                                <Route path="/register" element={<RegisterRedirect />} />
                                 <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}
                                 <Route path="/auth" element={<AuthPage />} /> {/* Добавляем новый маршрут для страницы авторизации */}
                                 <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* Маршрут для восстановления пароля */}
@@ -77,6 +78,7 @@ function App() {
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
                                 <Route path="/lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
+                                <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                             </Route>
                         </Routes>
                     </Router>
@@ -87,3 +89,12 @@ function App() {
 }
 
 export default App;
+
+// Сохраняем query-параметры (включая ?referral=) при редиректе на /auth и добавляем register=true
+function RegisterRedirect() {
+    const location = useLocation();
+    const params = new URLSearchParams(location.search || '');
+    if (!params.has('register')) params.set('register', 'true');
+    const search = params.toString();
+    return <Navigate to={`/auth${search ? `?${search}` : ''}`} replace />;
+}
