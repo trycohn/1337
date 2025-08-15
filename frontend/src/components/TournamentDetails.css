@@ -1626,3 +1626,78 @@ div.score-container input {
     font-size: 0.875rem;
 }
 
+
+/* =========================
+   🧩 Мобильная версия (≤768)
+   По макету Figma: компактные отступы, скролл вкладок, full‑bleed блоки
+   ========================= */
+@media (max-width: 768px) {
+  .tournament-details-tournamentdetails {
+    padding: 12px 12px 24px;
+  }
+
+  .tabs-navigation-tournamentdetails {
+    padding: 8px 8px 0;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .tab-button-tournamentdetails {
+    padding: 6px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .tournament-meta-info-tournamentdetails {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .info-block-tournamentdetails {
+    padding: 12px;
+  }
+
+  /* full-bleed блок прогресс-бара/надсеточный блок */
+  .bracket-stage-wrapper.bracket-full-bleed {
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    background: #000;
+    border-top: 1px solid #111;
+    border-bottom: 1px solid #111;
+  }
+
+  .bracket-section h3 {
+    font-size: 16px;
+    margin: 12px 0;
+  }
+
+  /* Компактные карточки результатов */
+  .results-compact-content {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .team-name-btn {
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  .match-score {
+    font-size: 14px;
+    min-width: 32px;
+  }
+
+  .tournament-controls {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .tournament-controls button {
+    min-width: 140px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
