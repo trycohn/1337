@@ -191,6 +191,8 @@
 .benefits-section {
     padding: 30px;
     background-color: #000000;
+    display: grid;
+    grid-template-columns: auto;
 }
 
 .benefits-section h3 {
