@@ -929,7 +929,11 @@ div.score-container input {
 /* РЈР»СѓС‡С€РµРЅРЅР°СЏ Р°РЅРёРјР°С†РёСЏ РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ РјРµР¶РґСѓ РІРєР»Р°РґРєР°РјРё */
 .tournament-content-tournamentdetails {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+}
+.tab-content-bracket {
+    position: relative;
+    overflow: visible;
 }
 .tab-content-tournamentdetails {
     width: 100%;
