@@ -3,6 +3,23 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import Quill from 'quill';
 
+// Глобальная регистрация формата lineheight до монтирования редактора
+try {
+    if (typeof window !== 'undefined') {
+        const Parchment = Quill.import('parchment');
+        const already = Quill.imports && (Quill.imports['formats/lineheight'] || Quill.imports['attributors/style/lineheight']);
+        if (!already) {
+            const LineHeightStyle = new Parchment.Attributor.Style('lineheight', 'line-height', {
+                scope: Parchment.Scope.BLOCK,
+                whitelist: ['0.5', '1', '1.5', '2']
+            });
+            Quill.register(LineHeightStyle, true);
+        }
+    }
+} catch (e) {
+    // no-op
+}
+
 /**
  * Wrapper для React Quill совместимый с React 19
  * Обходит проблему с findDOMNode
@@ -20,23 +37,7 @@ const ReactQuillWrapper = forwardRef(({
     preserveWhitespace,
     theme = 'snow'
 }, ref) => {
-    // Регистрация кастомного атрибута line-height как style-атрибута (формат)
-    useEffect(() => {
-        try {
-            const Parchment = Quill.import('parchment');
-            // Проверяем, не зарегистрирован ли уже формат с именем 'lineheight'
-            const already = Quill.imports && (Quill.imports['formats/lineheight'] || Quill.imports['attributors/style/lineheight']);
-            if (!already) {
-                const LineHeightStyle = new Parchment.Attributor.Style('lineheight', 'line-height', {
-                    scope: Parchment.Scope.BLOCK,
-                    whitelist: ['0.5', '1', '1.5', '2']
-                });
-                Quill.register(LineHeightStyle, true);
-            }
-        } catch (e) {
-            console.warn('⚠️ [ReactQuillWrapper] Не удалось зарегистрировать line-height формат:', e);
-        }
-    }, []);
+    // (Регистрация формата вынесена на уровень модуля выше)
     const quillRef = useRef(null);
     const containerRef = useRef(null);
 

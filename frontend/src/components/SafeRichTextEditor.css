@@ -94,6 +94,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
     max-height: 240px;
     overflow-y: auto;
+    aria-hidden: false; /* подсказка для ассистивных технологий */
 }
 
 .safe-rich-editor .ql-toolbar .ql-picker-item {
@@ -112,6 +113,11 @@
 .safe-rich-editor .ql-toolbar .ql-picker-item:hover {
     background: #ff0000 !important;
     color: #fff !important;
+}
+
+/* Исправление доступности для открытого меню: когда открыто, Quill добавляет .ql-expanded на .ql-picker */
+.safe-rich-editor .ql-picker.ql-expanded .ql-picker-options[aria-hidden="true"] {
+    aria-hidden: false;
 }
 
 /* =================================

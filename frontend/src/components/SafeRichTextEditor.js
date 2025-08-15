@@ -93,7 +93,12 @@ const SafeRichTextEditor = ({
             }
 
             // Санитизируем контент
-            const sanitizedContent = DOMPurify.sanitize(htmlContent, purifyConfig);
+            // Приводим line-height к whitelisted значениям прямо в HTML перед санитизацией
+            let normalized = htmlContent.replace(/line-height\s*:\s*([0-9.]+)/gi, (m, v) => {
+                const allowed = ['0.5','1','1.5','2'];
+                return allowed.includes(v) ? `line-height:${v}` : '';
+            });
+            const sanitizedContent = DOMPurify.sanitize(normalized, purifyConfig);
             
             // Дополнительная проверка на опасные паттерны
             const dangerousPatterns = [
