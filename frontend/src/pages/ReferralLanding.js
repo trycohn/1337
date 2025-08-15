@@ -126,14 +126,16 @@ const ReferralLanding = () => {
                         <div className="error-icon">❌</div>
                         <h2>Приглашение недоступно</h2>
                         <p className="error-message">{error}</p>
-                        <div className="error-actions">
-                            <Link to="/register" className="btn-primary">
-                                Регистрация
-                            </Link>
-                            <Link to="/login" className="btn-secondary">
-                                Вход
-                            </Link>
-                        </div>
+                        {!isAuthenticated && (
+                            <div className="error-actions">
+                                <Link to="/register" className="btn-primary">
+                                    Регистрация
+                                </Link>
+                                <Link to="/login" className="btn-secondary">
+                                    Вход
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -245,25 +247,29 @@ const ReferralLanding = () => {
 
                 {/* Кнопки действий */}
                 <div className="action-buttons">
-                    <button 
-                        className="btn-primary register-btn"
-                        onClick={handleRegister}
-                    >
-                        🎯 Зарегистрироваться и участвовать
-                    </button>
-                    <button 
-                        className="btn-secondary login-btn"
-                        onClick={handleLogin}
-                    >
-                        🔑 У меня уже есть аккаунт
-                    </button>
+                    {!isAuthenticated && (
+                        <>
+                            <button 
+                                className="btn-primary register-btn"
+                                onClick={handleRegister}
+                            >
+                                🎯 Зарегистрироваться и участвовать
+                            </button>
+                            <button 
+                                className="btn-secondary login-btn"
+                                onClick={handleLogin}
+                            >
+                                🔑 У меня уже есть аккаунт
+                            </button>
+                        </>
+                    )}
                     {isAuthenticated && referralInfo?.tournament?.id && (
                         <button
                             className="btn-primary accept-btn"
                             onClick={handleAcceptInvite}
                             disabled={acceptLoading}
                         >
-                            {acceptLoading ? '⏳ Принимаем...' : '✅ Принять приглашение на участие'}
+                            {acceptLoading ? '⏳ Принимаем...' : '✅ Принять приглашение на участие в турнире'}
                         </button>
                     )}
                 </div>
