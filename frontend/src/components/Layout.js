@@ -309,14 +309,7 @@ function Layout() {
                                             Админ панель
                                         </Link>
                                     )}
-                                    {isMobile && (
-                                        <button onClick={() => { 
-                                            handleLogout(); 
-                                            setIsMenuOpen(false); 
-                                        }}>
-                                            Выйти
-                                        </button>
-                                    )}
+                                    {/* Убрана кнопка "Выйти" из мобильного гамбургера */}
                                 </>
                             )}
                         </nav>
