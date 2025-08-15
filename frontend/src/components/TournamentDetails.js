@@ -1175,7 +1175,7 @@ function TournamentDetails() {
                                     <LazyBracketRenderer
                                         games={games}
                                         tournament={tournament}
-                                        canEditMatches={canEditMatches}
+                                        canEditMatches={false}
                                         selectedMatch={selectedMatch}
                                         setSelectedMatch={(match) => {
                                             if (match === null || match === undefined) {
@@ -1187,7 +1187,7 @@ function TournamentDetails() {
                                             
                                             if (matchId) {
                                                 const fullMatch = matches.find(m => m.id === parseInt(matchId));
-                                                if (fullMatch && canEditMatches) {
+                                                if (fullMatch && false) {
                                                     setSelectedMatch(fullMatch);
                                                     setMatchResultData({
                                                         score1: fullMatch.score1 || 0,
@@ -1215,6 +1215,7 @@ function TournamentDetails() {
                                                 }
                                             }
                                         }}
+                                        readOnly
                                     />
                                 </Suspense>
                             </TournamentErrorBoundary>
