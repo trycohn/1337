@@ -1008,7 +1008,7 @@ header.header {
 }
 @media (max-width: 768px) {
   .tournaments-cards {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
   }
 }
@@ -1182,6 +1182,12 @@ header.header {
     border-radius: 12px;
     backdrop-filter: blur(10px);
 }
+@media (max-width: 768px) {
+  .tournaments-view-controls {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
 
 /* Кнопки переключения вида */
 .view-mode-buttons {
@@ -1302,6 +1308,8 @@ header.header {
     font-size: 14px;
     font-weight: 500;
 }
+.sort-label { position: relative; font-size: 0; }
+.sort-label::before { content: "⇅"; font-size: 16px; color: #ffffff; margin-right: 8px; }
 
 .sort-select {
     padding: 8px 12px;
@@ -1312,7 +1320,10 @@ header.header {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.2s ease;
-    min-width: 200px;
+    width: 100%;
+    max-width: 300px;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .sort-select:hover {
@@ -1420,13 +1431,14 @@ header.header {
         font-size: 13px;
     }
     
-    .sort-label {
-        font-size: 13px;
-    }
+    .sort-label { font-size: 0; }
     
     .sort-select {
         font-size: 13px;
         padding: 6px 10px;
+        max-width: 300px;
+        width: 100%;
+        box-sizing: border-box;
     }
     
     .clear-filters-btn {
