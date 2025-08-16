@@ -1019,7 +1019,7 @@ function TournamentDetails() {
 
                         {/* Турнирная сетка */}
                         {games.length > 0 && (
-                            <div className="bracket-section">
+                            <div className="bracket-section" style={{ overscrollBehavior: 'contain' }}>
                                 <h3>🏆 Турнирная сетка</h3>
                                 <TournamentErrorBoundary>
                                     <Suspense fallback={
@@ -1158,7 +1158,7 @@ function TournamentDetails() {
                             }}
                         />
 
-                        <div className="bracket-stage-wrapper bracket-full-bleed">
+                        <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
                             {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА НА ВКЛАДКЕ СЕТКА */}
                             {tournament && (
                                 <TournamentProgressBar 

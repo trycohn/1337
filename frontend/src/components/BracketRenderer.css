@@ -30,6 +30,9 @@
     -moz-user-drag: none;
     -ms-user-drag: none;
 }
+.bracket-renderer-container {
+    overscroll-behavior: contain;
+}
 .bracket-renderer-container.bracket-readonly {
     /* В режиме отдельной страницы: снимаем любые ограничения контейнера */
     cursor: default;
@@ -92,6 +95,7 @@
     -ms-user-select: none;
     flex-direction: column;
 }
+.bracket-renderer { overscroll-behavior: contain; }
 
 .bracket-double-elimination {
     flex-direction: column;
@@ -949,7 +953,7 @@
 }
 
 @media (max-width: 768px) {
-  .bracket-render-section-header { display: none; }
+  /* названия раундов остаются видимыми; прячем только большие заголовки секций если нужно в других местах */
   .bracket-render-upper-section { margin-bottom: 12px; padding: 16px; }
   .bracket-render-lower-section { margin-top: 8px; padding: 16px; }
   .bracket-round-column { width: 90vw; margin: 0 auto; min-width: auto; }

@@ -259,7 +259,7 @@ const BracketRenderer = ({
         
         return (
             <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`} style={isMobile ? { width: '90vw', margin: '0 auto' } : undefined}>
-                {shouldRenderHeader && !isMobile && (
+                {shouldRenderHeader && (
                     <div 
                         className={headerClass}
                         data-round-type={roundType}
