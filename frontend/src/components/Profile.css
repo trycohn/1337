@@ -3111,3 +3111,46 @@
         max-width: 200px;
     }
 }
+
+/* === Mobile profile stats fixes === */
+@media (max-width: 768px) {
+	/* Общий контейнер без горизонтального скролла */
+	.profile-container { overflow-x: hidden; }
+
+	/* Разделы статистики — полная ширина и компактные отступы */
+	.stats-tab section,
+	.cs2-stats-section,
+	.faceit-stats-section {
+		width: 100%;
+		padding: 12px;
+		box-sizing: border-box;
+	}
+
+	/* Гибкие сетки: больше колонок на узких экранах за счет меньшего min */
+	.stats-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+	.faceit-detailed-stats { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+	.stats-grid-mobile { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+
+	/* Карточки и содержимое — без переполнения */
+	.stats-card,
+	.faceit-detailed-stats p { min-width: 0; max-width: 100%; box-sizing: border-box; }
+	.stats-card *,
+	.faceit-detailed-stats * { word-break: break-word; overflow-wrap: anywhere; }
+
+	/* Ранги — перенос по строкам и равномерное распределение */
+	.rank-container,
+	.rank-container-mobile { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+	.rank-item { min-width: 100px; flex: 1 1 calc(50% - 8px); }
+
+	/* Последние матчи — упрощенная сетка */
+	.matches-list .match-item { grid-template-columns: 1fr auto; gap: 8px; padding: 8px; }
+}
+
+@media (max-width: 480px) {
+	.stats-grid,
+	.stats-grid-mobile { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+	.faceit-detailed-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+	.rank-item { flex: 1 1 calc(50% - 6px); }
+	.stats-card { padding: 8px; }
+	.stats-value { font-size: 1.2rem; }
+}
