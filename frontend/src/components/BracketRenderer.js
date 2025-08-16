@@ -254,6 +254,7 @@ const BracketRenderer = ({
                                 onEditMatch={onEditMatch}
                                 canEditMatches={canEditMatches}
                                 onMatchClick={onMatchClick}
+                                isAdminOrCreator={isAdminOrCreator}
                                 customLabel={match.bracket_type === 'placement' ? '3rd Place' : null}
                                 matchType={match.bracket_type}
                             />
@@ -330,6 +331,7 @@ const BracketRenderer = ({
                                 onEditMatch={onEditMatch}
                                 canEditMatches={canEditMatches}
                                 onMatchClick={onMatchClick}
+                                isAdminOrCreator={isAdminOrCreator}
                                 matchType={match.bracket_type}
                                 customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
                             />
