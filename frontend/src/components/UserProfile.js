@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
+import MobileProfileSheet from './MobileProfileSheet';
+import './MobileProfileSheet.css';
 import { redirectIfCurrentUser, isCurrentUser, decodeTokenPayload, ensureHttps } from '../utils/userHelpers';
 
 function UserProfile() {
@@ -13,6 +15,57 @@ function UserProfile() {
     const [friendStatus, setFriendStatus] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('main');
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [badgeCount, setBadgeCount] = useState(0);
+
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    // Свайп-открытие листа профиля как в чатах
+    useEffect(() => {
+        if (!isMobile) return;
+        let startX = null;
+        let startY = null;
+        const threshold = 45;
+        function onTouchStart(e) {
+            if (e.touches[0].clientX < 20) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = null; startY = null;
+            }
+        }
+        function onTouchEnd(e) {
+            if (startX == null) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = Math.abs(e.changedTouches[0].clientY - startY);
+            if (dx > threshold && dy < 60) setSheetOpen(true);
+            startX = null; startY = null;
+        }
+        document.addEventListener('touchstart', onTouchStart, { passive: true });
+        document.addEventListener('touchend', onTouchEnd, { passive: true });
+        return () => {
+            document.removeEventListener('touchstart', onTouchStart);
+            document.removeEventListener('touchend', onTouchEnd);
+        };
+    }, [isMobile]);
+
+    // Бэйдж на кнопке (например, уведомления)
+    useEffect(() => {
+        if (!user) { setBadgeCount(0); return; }
+        const candidates = [
+            user.notifications_unread,
+            user.unread_notifications,
+            user.unread_count,
+            user.alerts_unread
+        ].filter(v => typeof v === 'number' && v > 0);
+        const sum = candidates.length ? candidates.reduce((a,b)=>a+b,0) : 0;
+        setBadgeCount(sum);
+    }, [user]);
 
     useEffect(() => {
         // Перенаправляем на личный кабинет, если ID совпадает с текущим пользователем
@@ -283,33 +336,43 @@ function UserProfile() {
                             {user.online_status}
                         </div>
                     )}
+                    {/* Блок привязок под ником */}
+                    <div className="profile-links-inline">
+                        <div className="link-item">Email: {user.email || '—'}</div>
+                        <div className="link-item">Steam: {user.steam_url ? '✔' : '—'}</div>
+                        <div className="link-item">Faceit: {user.faceit ? '✔' : '—'}</div>
+                    </div>
                     {renderFriendActionButton()}
                 </div>
             </div>
             
             <div className="profile-content">
-                <div className="profile-navigation">
-                    <button 
-                        className={`nav-tab ${activeTab === 'main' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('main')}
-                    >
-                        Профиль
-                    </button>
-                    <button 
-                        className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('stats')}
-                    >
-                        Статистика
-                    </button>
-                    {user.friends && user.friends.length > 0 && (
-                        <button 
-                            className={`nav-tab ${activeTab === 'friends' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('friends')}
-                        >
-                            Друзья
+                {/* Навигация: десктоп — вкладки, мобайл — всплывающее меню */}
+                {!isMobile ? (
+                    <div className="profile-navigation">
+                        <button className={`nav-tab ${activeTab === 'main' ? 'active' : ''}`} onClick={() => setActiveTab('main')}>Профиль</button>
+                        <button className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>Статистика</button>
+                        {user.friends && user.friends.length > 0 && (
+                            <button className={`nav-tab ${activeTab === 'friends' ? 'active' : ''}`} onClick={() => setActiveTab('friends')}>Друзья</button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="profile-mobile-nav">
+                        <button className="profile-toggle-button" onClick={() => setSheetOpen(true)} aria-label="Открыть меню профиля">
+                            <span className="triangle" />
+                            {badgeCount > 0 && (
+                                <span className="profile-toggle-badge">{Math.min(99, badgeCount)}</span>
+                            )}
                         </button>
-                    )}
-                </div>
+                        <MobileProfileSheet
+                            isOpen={sheetOpen}
+                            onClose={() => setSheetOpen(false)}
+                            activeTab={activeTab}
+                            onSelectTab={setActiveTab}
+                            tabs={[{key:'main',label:'Профиль'},{key:'stats',label:'Статистика'}].concat((user.friends&&user.friends.length>0)?[{key:'friends',label:'Друзья'}]:[])}
+                        />
+                    </div>
+                )}
                 
                 <div className="profile-tab-content">
                     {activeTab === 'main' && (
@@ -347,7 +410,7 @@ function UserProfile() {
                             {user.steam_url && user.premier_rank && (
                                 <section className="cs2-stats-section">
                                     <h3>Статистика CS2</h3>
-                                    <div className="rank-container">
+                                    <div className="rank-container rank-container-mobile">
                                         {renderRankGroups()}
                                     </div>
                                 </section>
@@ -374,7 +437,7 @@ function UserProfile() {
                             <section>
                                 <h3>Статистика турниров</h3>
                                 {user.stats ? (
-                                    <div className="stats-grid">
+                                    <div className="stats-grid stats-grid-mobile">
                                         <div className="stats-card">
                                             <div className="stats-value">{user.stats.solo.wins}</div>
                                             <div className="stats-label">Победы соло</div>

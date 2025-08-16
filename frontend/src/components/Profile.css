@@ -140,6 +140,16 @@
     font-weight: 300;
 }
 
+/* Привязки сервисов под ником */
+.profile-links-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin: 8px 0;
+    color: var(--text-secondary);
+}
+.profile-links-inline .link-item { font-size: 0.9rem; }
+
 .meta-item {
     display: flex;
     align-items: center;
@@ -1244,6 +1254,23 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-md);
+}
+
+/* Мобильные адаптации профиля */
+@media (max-width: 768px) {
+  .profile-container { padding: 16px; }
+  .profile-header { padding: 16px; margin-bottom: 16px; }
+  .user-avatar { width: 72px; height: 72px; }
+  .profile-navigation { display: none; }
+  .profile-mobile-nav { position: sticky; top: 8px; z-index: 5; margin-bottom: 8px; }
+  .profile-toggle-button { position: fixed; top: 50%; left: 8px; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 18px; background: rgba(0,0,0,0.7); border: 1px solid #ff0000; color: #fff; display:flex; align-items:center; justify-content:center; }
+  .profile-toggle-button .triangle { width:0; height:0; border-top:7px solid transparent; border-bottom:7px solid transparent; border-right:12px solid #fff; }
+  .profile-toggle-badge { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:#ff0000; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; border:1px solid #990000; }
+  .rank-container-mobile { gap: 8px; }
+  .stats-grid-mobile { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .stats-card { padding: 10px; }
+  .stats-value { font-size: 1.4rem; }
+  .stats-label { font-size: 0.7rem; }
 }
 
 .stats-card {
