@@ -3105,6 +3105,12 @@
     .profile-error-content {
         padding: var(--spacing-xl);
     }
+
+    .profile-header-content {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+    }
     
     .error-actions {
         flex-direction: column;
