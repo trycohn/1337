@@ -24,6 +24,13 @@
     height: 100%;
     overflow: hidden;
 }
+/* Сдвиг контента вправо при открытом листе на мобайле */
+@media (max-width: 768px) {
+  .messenger-container.sheet-open {
+    transform: translateX(8px);
+    transition: transform 180ms ease;
+  }
+}
 .messenger-error {
     padding: 16px 20px;
     margin: 20px;

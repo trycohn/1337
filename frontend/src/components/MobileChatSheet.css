@@ -1,0 +1,88 @@
+.chat-sheet-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.4);
+	z-index: 1000;
+	display: none;
+}
+.chat-sheet-overlay.open { display: block; }
+
+.chat-sheet-panel {
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 80vw;
+	max-width: 400px;
+	background: #000;
+	border-right: 1px solid #333;
+	transform: translateX(-100%);
+	transition: transform 200ms ease-in-out;
+	box-shadow: 8px 0 24px rgba(0,0,0,0.6);
+}
+.chat-sheet-panel.open { transform: translateX(0); }
+.chat-sheet-panel.dragging { transition: none; }
+
+.chat-sheet-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	border-bottom: 1px solid #222;
+	color: #fff;
+}
+.chat-sheet-close {
+	background: transparent;
+	border: 1px solid #ff0000;
+	color: #fff;
+	padding: 4px 8px;
+	border-radius: 6px;
+}
+.chat-sheet-content { height: calc(100% - 50px); overflow: auto; }
+
+/* Плавающая стрелка для открытия панели */
+.chat-toggle-button {
+	position: fixed;
+	top: 50%;
+	left: 8px;
+	transform: translateY(-50%);
+	width: 36px;
+	height: 36px;
+	border-radius: 18px;
+	background: rgba(0,0,0,0.7);
+	border: 1px solid #ff0000;
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 999;
+}
+.chat-toggle-button .triangle { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 12px solid #fff; }
+
+/* Бэйдж суммарных непрочитанных */
+.chat-toggle-badge {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 4px;
+	border-radius: 9px;
+	background: #ff0000;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid #990000;
+}
+
+@media (min-width: 769px) {
+	.chat-sheet-overlay, .chat-toggle-button { display: none !important; }
+}
+
+

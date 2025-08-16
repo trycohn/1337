@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../axios';
 import './Messenger.css';
 import ChatList from './ChatList';
+import MobileChatSheet from './MobileChatSheet';
+import './MobileChatSheet.css';
 import ChatWindow from './ChatWindow';
 import './AttachmentModal.css';
 import { useSocket } from '../hooks/useSocket';
@@ -15,6 +17,7 @@ function Messenger() {
     const [unreadCounts, setUnreadCounts] = useState({});
     const messagesEndRef = useRef(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [sheetOpen, setSheetOpen] = useState(false);
     
     // Состояние для предпросмотра вложения
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
@@ -229,6 +232,48 @@ function Messenger() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Свайп-открытие от левого края экрана на мобайле
+    const [dragDx, setDragDx] = useState(0);
+    const [isDraggingOpen, setIsDraggingOpen] = useState(false);
+    useEffect(() => {
+        if (!isMobile) return;
+        let startX = null;
+        let startY = null;
+        const threshold = 45; // px
+        function onTouchStart(e) {
+            if (e.touches[0].clientX < 20) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                setIsDraggingOpen(true);
+            } else {
+                startX = null; startY = null;
+                setIsDraggingOpen(false);
+            }
+        }
+        function onTouchMove(e) {
+            if (startX == null) return;
+            const dx = e.touches[0].clientX - startX;
+            if (dx > 0) setDragDx(dx); else setDragDx(0);
+        }
+        function onTouchEnd(e) {
+            if (startX == null) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = Math.abs(e.changedTouches[0].clientY - startY);
+            if (dx > threshold && dy < 60) setSheetOpen(true);
+            setDragDx(0);
+            setIsDraggingOpen(false);
+            startX = null; startY = null;
+        }
+        document.addEventListener('touchstart', onTouchStart, { passive: true });
+        document.addEventListener('touchmove', onTouchMove, { passive: true });
+        document.addEventListener('touchend', onTouchEnd, { passive: true });
+        return () => {
+            document.removeEventListener('touchstart', onTouchStart);
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+        };
+    }, [isMobile]);
 
     // Добавляем класс к main элементу для переопределения стилей
     useEffect(() => {
@@ -609,14 +654,17 @@ function Messenger() {
 
     return (
         <div className="messenger">
-            <div className={`messenger-container ${activeChat && isMobile ? 'chat-active' : ''}`}>
-                <ChatList 
-                    chats={chats} 
-                    activeChat={activeChat} 
-                    onChatSelect={handleChatSelect} 
-                    unreadCounts={unreadCounts}
-                    onCreateChat={createChat}
-                />
+            <div className={`messenger-container ${activeChat && isMobile ? 'chat-active' : ''} ${sheetOpen && isMobile ? 'sheet-open' : ''}`}>
+                {/* Десктоп: список чатов слева; Мобайл: прячем, заменяем выезжающей панелью */}
+                {!isMobile && (
+                    <ChatList 
+                        chats={chats} 
+                        activeChat={activeChat} 
+                        onChatSelect={handleChatSelect} 
+                        unreadCounts={unreadCounts}
+                        onCreateChat={createChat}
+                    />
+                )}
                 
                 <ChatWindow 
                     activeChat={activeChat}
@@ -633,9 +681,38 @@ function Messenger() {
                     onHideChat={hideChat}
                 />
             </div>
+
+            {/* Плавающая кнопка-стрелка для мобайла */}
+            {isMobile && (
+                <button 
+                    className="chat-toggle-button" 
+                    onClick={() => setSheetOpen(true)}
+                    aria-label="Открыть список чатов"
+                >
+                    <span className="triangle" />
+                    {Object.values(unreadCounts).reduce((a,b)=>a+(b||0),0) > 0 && (
+                        <span className="chat-toggle-badge">{Math.min(99, Object.values(unreadCounts).reduce((a,b)=>a+(b||0),0))}</span>
+                    )}
+                </button>
+            )}
+
+            {/* Мобильный выезжающий список чатов с поддержкой свайпа закрытия */}
+            {isMobile && (
+                <MobileChatSheet
+                    isOpen={sheetOpen}
+                    onClose={() => setSheetOpen(false)}
+                    chats={chats}
+                    activeChat={activeChat}
+                    unreadCounts={unreadCounts}
+                    onChatSelect={handleChatSelect}
+                    onCreateChat={createChat}
+                    dragDx={dragDx}
+                    isDraggingOpen={isDraggingOpen}
+                />
+            )}
             
             {error && <div className="messenger-error">{error}</div>}
-
+            
             {showAttachmentModal && (
                 <div className={`attachment-modal ${isClosing ? 'closing' : ''}`}>
                     <div className="attachment-modal-content">
