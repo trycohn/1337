@@ -104,6 +104,15 @@ const BracketRenderer = ({
         [matches]
     );
 
+    // Определяем формат DE раньше, т.к. далее он используется в orderedRounds
+    const isDoubleElimination = useMemo(() => (
+        tournament?.bracket_type === 'double_elimination' ||
+        tournament?.bracket_type === 'doubleElimination' ||
+        tournament?.bracket_type === 'DOUBLE_ELIMINATION' ||
+        ((groupedMatches?.losers && Object.keys(groupedMatches.losers).length > 0) ||
+         (groupedMatches?.grandFinal && groupedMatches.grandFinal.length > 0))
+    ), [tournament?.bracket_type, groupedMatches?.losers, groupedMatches?.grandFinal]);
+
     // Раунды и индексы для свайпа
     const winnerRounds = useMemo(() => Object.keys(groupedMatches.winners || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.winners]);
     const loserRounds = useMemo(() => Object.keys(groupedMatches.losers || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.losers]);
@@ -368,12 +377,6 @@ const BracketRenderer = ({
     );
 
     // Основной рендер с поддержкой разных форматов
-    // РАСШИРЕННАЯ ПРОВЕРКА: учитываем разные варианты написания и наличие данных
-    const isDoubleElimination = tournament?.bracket_type === 'double_elimination' || 
-                               tournament?.bracket_type === 'doubleElimination' ||
-                               tournament?.bracket_type === 'DOUBLE_ELIMINATION' ||
-                               (groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0) ||
-                               (groupedMatches.grandFinal && groupedMatches.grandFinal.length > 0);
     
     if (isDoubleElimination) {
         // Подготовка данных для боковой колонки (Grand Final/Reset и 3-е место)
