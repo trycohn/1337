@@ -633,7 +633,7 @@ const BracketRenderer = ({
 };
 
 // MatchCard компонент с поддержкой bracket_type и кастомных меток
-const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular' }) => {
+const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false }) => {
     const getBracketTypeStyle = () => {
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match || matchType === 'third-place') {
