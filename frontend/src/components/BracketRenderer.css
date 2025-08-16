@@ -95,6 +95,31 @@
     -ms-user-select: none;
     flex-direction: column;
 }
+
+/* Стрелки навигации по раундам (мобайл) */
+.bracket-swipe-arrows {
+    position: sticky;
+    top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+.bracket-swipe-arrow-btn {
+    pointer-events: auto;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #ff0000;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+.bracket-round-indicator {
+    pointer-events: none;
+    color: #fff;
+    font-size: 12px;
+}
 .bracket-renderer { overscroll-behavior: contain; }
 
 .bracket-double-elimination {
@@ -288,6 +313,27 @@
     flex-shrink: 0;
     /* Убираем высоту и justify-content - будет растягиваться */
     /* flex: 1 - не нужно, пусть контент определяет ширину */
+}
+
+/* Плавная анимация смены раунда на мобилках */
+@media (max-width: 768px) {
+  .bracket-mobile-round-slide {
+    width: 100%;
+    animation-duration: 220ms;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
+  .bracket-mobile-round-slide.slide-left { animation-name: bracket-slide-in-left; }
+  .bracket-mobile-round-slide.slide-right { animation-name: bracket-slide-in-right; }
+
+  @keyframes bracket-slide-in-left {
+    from { opacity: 0; transform: translateX(20%); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes bracket-slide-in-right {
+    from { opacity: 0; transform: translateX(-20%); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
 }
 
 /* Убираем старые классы с разным justify-content */
