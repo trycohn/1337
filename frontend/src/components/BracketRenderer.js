@@ -118,21 +118,25 @@ const BracketRenderer = ({
     const loserRounds = useMemo(() => Object.keys(groupedMatches.losers || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.losers]);
     const seRounds    = useMemo(() => Object.keys(groupedMatches || {}).map(Number).sort((a,b)=>a-b), [groupedMatches]);
 
-    // Единый плоский список раундов для мобильного режима
+    // Единые слайды для мобильного режима
+    // DE: пара (W_i над L_i). SE: один раунд на слайд
     const orderedRounds = useMemo(() => {
         const list = [];
         if (!matches || matches.length === 0) return list;
         if (isDoubleElimination) {
-            // Winners
-            winnerRounds.forEach((round) => {
-                const ms = (groupedMatches.winners || {})[round] || [];
-                list.push({ key: `winner-${round}`, type: 'winner', round, data: ms });
-            });
-            // Losers
-            loserRounds.forEach((round) => {
-                const ms = (groupedMatches.losers || {})[round] || [];
-                list.push({ key: `loser-${round}`, type: 'loser', round, data: ms });
-            });
+            const maxLen = Math.max(winnerRounds.length, loserRounds.length);
+            for (let i = 0; i < maxLen; i++) {
+                const wRoundNum = winnerRounds[i];
+                const lRoundNum = loserRounds[i];
+                const wData = wRoundNum != null ? ((groupedMatches.winners || {})[wRoundNum] || []) : null;
+                const lData = lRoundNum != null ? ((groupedMatches.losers || {})[lRoundNum] || []) : null;
+                list.push({
+                    key: `pair-${i}`,
+                    type: 'pair',
+                    winner: wRoundNum != null ? { round: wRoundNum, data: wData } : null,
+                    loser: lRoundNum != null ? { round: lRoundNum, data: lData } : null
+                });
+            }
             // Grand final(s)
             const grandFinalMatches = Array.isArray(groupedMatches.grandFinal) ? groupedMatches.grandFinal : [];
             grandFinalMatches.forEach((m, idx) => {
@@ -143,7 +147,6 @@ const BracketRenderer = ({
                 list.push({ key: 'third_place', type: 'third_place', round: 1, data: thirdPlaceMatches });
             }
         } else {
-            // Single Elimination
             seRounds.forEach((round) => {
                 const rd = (groupedMatches || {})[round];
                 list.push({ key: `se-${round}`, type: 'se', round, data: rd });
@@ -172,6 +175,19 @@ const BracketRenderer = ({
         setAnimationDir(dir === 1 ? 'left' : 'right');
         setCurrentIndex(idx => Math.min(Math.max(0, idx + dir), Math.max(0, orderedRounds.length - 1)));
     }, [isMobile, orderedRounds.length]);
+
+    // Блокировка горизонтального скролла страницы на мобилках при отображении сетки
+    useEffect(() => {
+        if (!isMobile) return;
+        const prevOverflowX = document.body.style.overflowX;
+        const prevTouchAction = document.body.style.touchAction;
+        document.body.style.overflowX = 'hidden';
+        document.body.style.touchAction = 'pan-y';
+        return () => {
+            document.body.style.overflowX = prevOverflowX;
+            document.body.style.touchAction = prevTouchAction;
+        };
+    }, [isMobile]);
 
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
@@ -395,7 +411,7 @@ const BracketRenderer = ({
                             onClick={() => { setAnimationDir('right'); setCurrentIndex(i => Math.max(0, i - 1)); }}
                             disabled={currentIndex === 0}
                         >
-                            ◀
+                            <span className="triangle triangle-left" aria-hidden="true"></span>
                         </button>
                         <div className="bracket-round-indicator">
                             Раунд {Math.min(currentIndex + 1, orderedRounds.length)} / {orderedRounds.length}
@@ -405,7 +421,7 @@ const BracketRenderer = ({
                             onClick={() => { setAnimationDir('left'); setCurrentIndex(i => Math.min(orderedRounds.length - 1, i + 1)); }}
                             disabled={currentIndex >= orderedRounds.length - 1}
                         >
-                            ▶
+                            <span className="triangle triangle-right" aria-hidden="true"></span>
                         </button>
                     </div>
                 )}
@@ -434,12 +450,13 @@ const BracketRenderer = ({
                                     {isMobile ? (
                                         (() => {
                                             const item = orderedRounds[currentIndex];
-                                            if (!item || item.type !== 'winner') return null;
-                                            const context = getRoundContext(parseInt(item.round), item.data, 'winner');
-                                            const roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
+                                            if (!item || item.type !== 'pair' || !item.winner) return null;
+                                            const { round, data } = item.winner;
+                                            const context = getRoundContext(parseInt(round), data, 'winner');
+                                            const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                                             return (
-                                                <div key={item.key} className={`bracket-mobile-round-slide slide-${animationDir}`}>
-                                                    {renderDoubleEliminationRound(item.round, item.data, 'winner', roundName, context)}
+                                                <div key={`${item.key}-w`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                    {renderDoubleEliminationRound(round, data, 'winner', roundName, context)}
                                                 </div>
                                             );
                                         })()
@@ -456,7 +473,7 @@ const BracketRenderer = ({
                             </div>
                         )}
 
-                        {(grandFinalMatches.length > 0 || (thirdPlaceMatches && thirdPlaceMatches.length > 0)) && (
+                        {!isMobile && (grandFinalMatches.length > 0 || (thirdPlaceMatches && thirdPlaceMatches.length > 0)) && (
                             <div className="bracket-side-finals-column">
                                 {/* Заголовок боковой колонки */}
                                 {!isMobile && (
@@ -509,12 +526,14 @@ const BracketRenderer = ({
                                 {isMobile ? (
                                     (() => {
                                         const item = orderedRounds[currentIndex];
-                                        if (!item || item.type !== 'loser') return null;
-                                        const context = getRoundContext(parseInt(item.round), item.data, 'loser');
-                                        const roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
+                                        if (!item || item.type !== 'pair') return null;
+                                        const { round, data } = item.loser || {};
+                                        if (round == null) return null;
+                                        const context = getRoundContext(parseInt(round), data, 'loser');
+                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                                         return (
-                                            <div key={item.key} className={`bracket-mobile-round-slide slide-${animationDir}`}>
-                                                {renderDoubleEliminationRound(item.round, item.data, 'loser', roundName, context)}
+                                            <div key={`${item.key}-l`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                {renderDoubleEliminationRound(round, data, 'loser', roundName, context)}
                                             </div>
                                         );
                                     })()
