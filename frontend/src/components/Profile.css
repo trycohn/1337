@@ -1271,6 +1271,12 @@
   .stats-card { padding: 10px; }
   .stats-value { font-size: 1.4rem; }
   .stats-label { font-size: 0.7rem; }
+  /* Сводный блок статистики под хедером */
+  .profile-stats-mobile { margin: 8px 0 12px; }
+  .profile-stats-mobile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .profile-stats-mobile-card { background: var(--bg-tertiary); border: 1px solid var(--border-color); padding: 10px; text-align: center; }
+  .mobile-stat-label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: .5px; }
+  .mobile-stat-value { color: var(--text-primary); font-size: 1.1rem; font-weight: 500; }
 }
 
 .stats-card {
