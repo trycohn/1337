@@ -1,5 +1,5 @@
 // frontend/src/components/BracketRenderer.js
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
@@ -28,6 +28,16 @@ const BracketRenderer = ({
     const winnersSectionRef = useRef(null);
     const losersSectionRef = useRef(null);
     const grandFinalSectionRef = useRef(null);
+    const touchStartXRef = useRef(null);
+    const SWIPE_THRESHOLD = 50;
+
+    // Мобильный режим
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
     
     // 🆕 СОВРЕМЕННАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ И МАСШТАБИРОВАНИЯ
     const {
@@ -94,6 +104,44 @@ const BracketRenderer = ({
         [matches]
     );
 
+    // Раунды и индексы для свайпа
+    const winnerRounds = useMemo(() => Object.keys(groupedMatches.winners || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.winners]);
+    const loserRounds = useMemo(() => Object.keys(groupedMatches.losers || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.losers]);
+    const seRounds    = useMemo(() => Object.keys(groupedMatches || {}).map(Number).sort((a,b)=>a-b), [groupedMatches]);
+    const [currentWinnerRoundIdx, setCurrentWinnerRoundIdx] = useState(0);
+    const [currentLoserRoundIdx, setCurrentLoserRoundIdx] = useState(0);
+    const [currentSERoundIdx, setCurrentSERoundIdx] = useState(0);
+
+    useEffect(() => {
+        setCurrentWinnerRoundIdx(0);
+        setCurrentLoserRoundIdx(0);
+        setCurrentSERoundIdx(0);
+    }, [isMobile, winnerRounds.length, loserRounds.length, seRounds.length]);
+
+    const handleTouchStart = useCallback((e) => {
+        if (!isMobile) return;
+        touchStartXRef.current = e.touches[0].clientX;
+    }, [isMobile]);
+
+    const handleTouchEndFactory = useCallback((type) => (e) => {
+        if (!isMobile) return;
+        const startX = touchStartXRef.current;
+        if (startX == null) return;
+        const endX = e.changedTouches[0].clientX;
+        const deltaX = endX - startX;
+        if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+        const dir = deltaX < 0 ? 1 : -1; // влево → следующий, вправо → предыдущий
+        if (type === 'winner' && winnerRounds.length) {
+            setCurrentWinnerRoundIdx(idx => Math.min(Math.max(0, idx + dir), winnerRounds.length - 1));
+        }
+        if (type === 'loser' && loserRounds.length) {
+            setCurrentLoserRoundIdx(idx => Math.min(Math.max(0, idx + dir), loserRounds.length - 1));
+        }
+        if (type === 'se' && seRounds.length) {
+            setCurrentSERoundIdx(idx => Math.min(Math.max(0, idx + dir), seRounds.length - 1));
+        }
+    }, [isMobile, winnerRounds.length, loserRounds.length, seRounds.length]);
+
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
@@ -140,7 +188,7 @@ const BracketRenderer = ({
         }
         
         return (
-            <div key={round} className={`bracket-round-column ${columnClass}`}>
+            <div key={round} className={`bracket-round-column ${columnClass}`} style={isMobile ? { width: '90vw', margin: '0 auto' } : undefined}>
                 <div className="bracket-round-header">
                     {roundName}
                 </div>
@@ -210,8 +258,8 @@ const BracketRenderer = ({
         const shouldRenderHeader = bracketType !== 'grand_final';
         
         return (
-            <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`}>
-                {shouldRenderHeader && (
+            <div key={`${bracketType}-${round}`} className={`bracket-round-column ${columnClass}`} style={isMobile ? { width: '90vw', margin: '0 auto' } : undefined}>
+                {shouldRenderHeader && !isMobile && (
                     <div 
                         className={headerClass}
                         data-round-type={roundType}
@@ -327,29 +375,45 @@ const BracketRenderer = ({
                             <div 
                                 className="bracket-render-upper-section"
                                 ref={winnersSectionRef}
+                                onTouchStart={handleTouchStart}
+                                onTouchEnd={handleTouchEndFactory('winner')}
                             >
-                                <div className="bracket-render-section-header">
-                                    <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
-                                    <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
-                                </div>
+                                {!isMobile && (
+                                    <div className="bracket-render-section-header">
+                                        <div className="bracket-render-section-title bracket-render-winners-title">🏆 Winners Bracket</div>
+                                        <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
+                                    </div>
+                                )}
                                 <div className="bracket-rounds-container bracket-render-winners-container">
-                                    {Object.entries(groupedMatches.winners)
-                                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                        .map(([round, matches]) => {
+                                    {isMobile ? (
+                                        (() => {
+                                            const round = winnerRounds[currentWinnerRoundIdx] ?? winnerRounds[0];
+                                            const matches = (groupedMatches.winners || {})[round] || [];
                                             const context = getRoundContext(parseInt(round), matches, 'winner');
                                             const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                                             return renderDoubleEliminationRound(round, matches, 'winner', roundName, context);
-                                        })}
+                                        })()
+                                    ) : (
+                                        Object.entries(groupedMatches.winners)
+                                            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                            .map(([round, matches]) => {
+                                                const context = getRoundContext(parseInt(round), matches, 'winner');
+                                                const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                                return renderDoubleEliminationRound(round, matches, 'winner', roundName, context);
+                                            })
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {(grandFinalMatches.length > 0 || (thirdPlaceMatches && thirdPlaceMatches.length > 0)) && (
                             <div className="bracket-side-finals-column">
-                                {/* Заголовок боковой колонки на одном уровне с Winners */}
-                                <div className="bracket-render-section-header">
-                                    <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
-                                </div>
+                                {/* Заголовок боковой колонки */}
+                                {!isMobile && (
+                                    <div className="bracket-render-section-header">
+                                        <div className="bracket-render-section-title bracket-render-grand-final-title">🏅 Grand Final</div>
+                                    </div>
+                                )}
                                 <div className="bracket-side-finals-content">
                                     {/* GRAND FINAL(S) */}
                                     {grandFinalMatches.length > 0 && (
@@ -382,19 +446,33 @@ const BracketRenderer = ({
                         <div 
                             className="bracket-render-lower-section"
                             ref={losersSectionRef}
+                            onTouchStart={handleTouchStart}
+                            onTouchEnd={handleTouchEndFactory('loser')}
                         >
-                            <div className="bracket-render-section-header">
-                                <div className="bracket-render-section-title bracket-render-losers-title">💀 Losers Bracket</div>
-                                <div className="bracket-render-section-subtitle bracket-render-losers-subtitle">Нижняя сетка на выбывание</div>
-                            </div>
+                            {!isMobile && (
+                                <div className="bracket-render-section-header">
+                                    <div className="bracket-render-section-title bracket-render-losers-title">💀 Losers Bracket</div>
+                                    <div className="bracket-render-section-subtitle bracket-render-losers-subtitle">Нижняя сетка на выбывание</div>
+                                </div>
+                            )}
                             <div className="bracket-rounds-container bracket-render-losers-container">
-                                {Object.entries(groupedMatches.losers)
-                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                    .map(([round, matches]) => {
+                                {isMobile ? (
+                                    (() => {
+                                        const round = loserRounds[currentLoserRoundIdx] ?? loserRounds[0];
+                                        const matches = (groupedMatches.losers || {})[round] || [];
                                         const context = getRoundContext(parseInt(round), matches, 'loser');
                                         const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                                         return renderDoubleEliminationRound(round, matches, 'loser', roundName, context);
-                                    })}
+                                    })()
+                                ) : (
+                                    Object.entries(groupedMatches.losers)
+                                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                        .map(([round, matches]) => {
+                                            const context = getRoundContext(parseInt(round), matches, 'loser');
+                                            const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                            return renderDoubleEliminationRound(round, matches, 'loser', roundName, context);
+                                        })
+                                )}
                             </div>
                         </div>
                     )}
@@ -417,14 +495,28 @@ const BracketRenderer = ({
                 ref={rendererRef}
                 {...effectiveHandlers}
             >
-                <div className="bracket-rounds-container bracket-full-bleed">
-                    {Object.entries(groupedMatches)
-                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                        .map(([round, roundData]) => {
+                <div 
+                    className="bracket-rounds-container bracket-full-bleed"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEndFactory('se')}
+                >
+                    {isMobile ? (
+                        (() => {
+                            const round = seRounds[currentSERoundIdx] ?? seRounds[0];
+                            const roundData = (groupedMatches || {})[round] || [];
                             const context = getRoundContext(parseInt(round), roundData, 'regular');
                             const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                             return renderSingleEliminationRound(round, roundData, roundName);
-                        })}
+                        })()
+                    ) : (
+                        Object.entries(groupedMatches)
+                            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                            .map(([round, roundData]) => {
+                                const context = getRoundContext(parseInt(round), roundData, 'regular');
+                                const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                return renderSingleEliminationRound(round, roundData, roundName);
+                            })
+                    )}
                 </div>
             </div>
         </div>
@@ -551,9 +643,14 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     // Предотвращаем перетаскивание при клике на матч
     const handleMatchClick = (e) => {
         e.stopPropagation();
-        if (onMatchClick) {
-            onMatchClick(match);
+        // На мобильных открываем прямую ссылку на матч, вместо модалок
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile && tournament?.id && match?.id) {
+            const url = `/tournaments/${tournament.id}/match/${match.id}`;
+            window.location.href = url;
+            return;
         }
+        if (onMatchClick) onMatchClick(match);
     };
 
     return (

@@ -834,7 +834,7 @@
 /* Верхняя сетка (Winners Bracket) */
 .bracket-render-upper-section {
     width: max-content; /* под ширину количества колонок */
-    margin-bottom: 40px;
+    margin-bottom: 24px;
     padding: 30px;
     border-radius: 15px;
     background: transparent;
@@ -847,7 +847,7 @@
 /* Нижняя сетка (Losers Bracket) */
 .bracket-render-lower-section {
     width: max-content;
-    margin-bottom: 40px;
+    margin-bottom: 16px;
     padding: 30px;
     border-radius: 15px;
     background: transparent;
@@ -946,6 +946,13 @@
 .bracket-render-section-header {
     text-align: center;
     margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+  .bracket-render-section-header { display: none; }
+  .bracket-render-upper-section { margin-bottom: 12px; padding: 16px; }
+  .bracket-render-lower-section { margin-top: 8px; padding: 16px; }
+  .bracket-round-column { width: 90vw; margin: 0 auto; min-width: auto; }
 }
 
 .bracket-render-section-title {
