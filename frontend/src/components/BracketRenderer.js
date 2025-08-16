@@ -450,15 +450,31 @@ const BracketRenderer = ({
                                     {isMobile ? (
                                         (() => {
                                             const item = orderedRounds[currentIndex];
-                                            if (!item || item.type !== 'pair' || !item.winner) return null;
-                                            const { round, data } = item.winner;
-                                            const context = getRoundContext(parseInt(round), data, 'winner');
-                                            const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                            return (
-                                                <div key={`${item.key}-w`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
-                                                    {renderDoubleEliminationRound(round, data, 'winner', roundName, context)}
-                                                </div>
-                                            );
+                                            if (!item) return null;
+                                            if (item.type === 'pair') {
+                                                if (!item.winner) return null;
+                                                const { round, data } = item.winner;
+                                                const context = getRoundContext(parseInt(round), data, 'winner');
+                                                const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                                return (
+                                                    <div key={`${item.key}-w`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                        {renderDoubleEliminationRound(round, data, 'winner', roundName, context)}
+                                                    </div>
+                                                );
+                                            }
+                                            if (item.type === 'grand_final') {
+                                                const data = Array.isArray(item.data) ? item.data : [];
+                                                const context = getRoundContext(1, data, 'grand_final');
+                                                const hasReset = data.some(m => m.bracket_type === 'grand_final_reset');
+                                                const roundName = hasReset ? 'Grand Final Triumph' : 'Grand Final';
+                                                return (
+                                                    <div key={`${item.key}-gf`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                        {renderDoubleEliminationRound(1, data, 'grand_final', roundName, context)}
+                                                    </div>
+                                                );
+                                            }
+                                            // third_place рендерится в нижней секции
+                                            return null;
                                         })()
                                     ) : (
                                         Object.entries(groupedMatches.winners)
@@ -526,16 +542,29 @@ const BracketRenderer = ({
                                 {isMobile ? (
                                     (() => {
                                         const item = orderedRounds[currentIndex];
-                                        if (!item || item.type !== 'pair') return null;
-                                        const { round, data } = item.loser || {};
-                                        if (round == null) return null;
-                                        const context = getRoundContext(parseInt(round), data, 'loser');
-                                        const roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                        return (
-                                            <div key={`${item.key}-l`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
-                                                {renderDoubleEliminationRound(round, data, 'loser', roundName, context)}
-                                            </div>
-                                        );
+                                        if (!item) return null;
+                                        if (item.type === 'pair') {
+                                            const { round, data } = item.loser || {};
+                                            if (round == null) return null;
+                                            const context = getRoundContext(parseInt(round), data, 'loser');
+                                            const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                            return (
+                                                <div key={`${item.key}-l`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                    {renderDoubleEliminationRound(round, data, 'loser', roundName, context)}
+                                                </div>
+                                            );
+                                        }
+                                        if (item.type === 'third_place') {
+                                            const data = Array.isArray(item.data) ? item.data : [];
+                                            const context = getRoundContext(1, data, 'winner');
+                                            const roundName = 'Матч за 3-е место';
+                                            return (
+                                                <div key={`${item.key}-tp`} className={`bracket-mobile-round-slide slide-${animationDir}`}>
+                                                    {renderDoubleEliminationRound(1, data, 'winner', roundName, context)}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
                                     })()
                                 ) : (
                                     Object.entries(groupedMatches.losers)
