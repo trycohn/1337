@@ -20,7 +20,8 @@ const BracketRenderer = ({
     format, 
     onMatchClick,
     readOnly = false,
-    focusMatchId = null
+    focusMatchId = null,
+    isAdminOrCreator = false
 }) => {
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
@@ -749,8 +750,14 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     // Предотвращаем перетаскивание при клике на матч
     const handleMatchClick = (e) => {
         e.stopPropagation();
-        // На мобильных открываем прямую ссылку на матч, вместо модалок
         const isMobile = window.innerWidth <= 768;
+        // Новая логика: после завершения турнира — всем кроме создателя/админов открываем страницу матча в новой вкладке
+        if (tournament?.status === 'completed' && !isAdminOrCreator && tournament?.id && match?.id) {
+            const url = `/tournaments/${tournament.id}/match/${match.id}`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        // Мобильная логика (по требованию — переход по ссылке вместо модалок)
         if (isMobile && tournament?.id && match?.id) {
             const url = `/tournaments/${tournament.id}/match/${match.id}`;
             window.location.href = url;

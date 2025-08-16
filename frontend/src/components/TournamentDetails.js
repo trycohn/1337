@@ -1059,6 +1059,7 @@ function TournamentDetails() {
                                             }}
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
+                                            isAdminOrCreator={isAdminOrCreator}
                                             onMatchClick={(match) => {
                                                 if (match && match.id) {
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
@@ -1207,6 +1208,7 @@ function TournamentDetails() {
                                             }}
                                             handleTeamClick={() => {}}
                                             format={tournament.format}
+                                            isAdminOrCreator={isAdminOrCreator}
                                             onMatchClick={(match) => {
                                                 if (match && match.id) {
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
