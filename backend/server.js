@@ -141,7 +141,13 @@ function isPublicRoute(path) {
 
 // Маршруты, полностью исключенные из rate limiting
 const excludedFromRateLimiting = [
-  /^\/api\/tournaments($|\/)/  // Все маршруты /api/tournaments, включая подпути
+  /^\/api\/tournaments($|\/)/,            // Все маршруты /api/tournaments, включая подпути
+  /^\/api\/users\/me$/,                  // Профиль текущего пользователя (часто дергается фронтом)
+  /^\/socket\.io(\/|$)/,                // Socket.IO (частые polling/websocket рукопожатия)
+  /^\/uploads(\/|$)/,                    // Раздача загруженных файлов
+  /^\/images\/maps(\/|$)/,              // Раздача карт
+  /^\/static(\/|$)/,                     // CRA статика из build
+  /^\/favicon\.(ico|png)$/               // Фавиконки
 ];
 
 // Функция для проверки, исключен ли маршрут из rate limiting
@@ -149,10 +155,10 @@ function isExcludedFromRateLimiting(path) {
   return excludedFromRateLimiting.some(pattern => pattern.test(path));
 }
 
-// Настройка лимита запросов - более строгий лимит для неавторизованных запросов
+// Настройка лимита запросов - увеличенные значения под массовые подключения из одного IP (клуб/NAT)
 const strictLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 500, // максимум 500 запросов на IP
+    max: 100000, // высокий лимит на IP
     validate: {
         trustProxy: true, // Разрешаем работу с доверенными прокси
         default: true, // Включаем остальные валидации
@@ -162,10 +168,10 @@ const strictLimiter = rateLimiter({
 });
 app.use(strictLimiter);
 
-// Отдельный rate limiter для публичных маршрутов с более высоким лимитом
+// Отдельный rate limiter для публичных маршрутов с повышенным лимитом
 const publicRoutesLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут
-    max: 1000, // максимум 1000 запросов на IP для публичных маршрутов
+    max: 100000, // высокий лимит для публичных маршрутов
     validate: {
         trustProxy: true, // Разрешаем работу с доверенными прокси
         default: true, // Включаем остальные валидации
