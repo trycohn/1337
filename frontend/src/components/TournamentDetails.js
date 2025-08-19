@@ -1019,8 +1019,8 @@ function TournamentDetails() {
 
                         {/* Турнирная сетка */}
                         {games.length > 0 && (
-                            <div className="bracket-section" style={{ overscrollBehavior: 'contain' }}>
-                                <h3>🏆 Турнирная сетка</h3>
+                            <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
+                                <h3 className="bracket-section-title">🏆 Турнирная сетка</h3>
                                 <TournamentErrorBoundary>
                                     <Suspense fallback={
                                         <div className="bracket-loading" data-testid="bracket-loading">
@@ -1030,7 +1030,8 @@ function TournamentDetails() {
                                         <LazyBracketRenderer
                                             games={games}
                                             tournament={tournament}
-                                            canEditMatches={canEditMatches}
+                                            canEditMatches={false}
+                                            readOnly
                                             selectedMatch={selectedMatch}
                                             setSelectedMatch={(match) => {
                                                 if (match === null || match === undefined) {
@@ -1042,7 +1043,7 @@ function TournamentDetails() {
                                                 
                                                 if (matchId) {
                                                     const fullMatch = matches.find(m => m.id === parseInt(matchId));
-                                                    if (fullMatch && canEditMatches) {
+                                                    if (fullMatch && false) {
                                                         setSelectedMatch(fullMatch);
                                                         setMatchResultData({
                                                             score1: fullMatch.score1 || 0,
