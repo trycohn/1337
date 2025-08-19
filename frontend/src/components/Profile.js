@@ -2412,7 +2412,7 @@ function Profile() {
                                                 onChange={(e) => setNewUsername(e.target.value)}
                                                 placeholder="Новый никнейм"
                                             />
-                                            <div style={{ display: 'flex', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-sm)' }}>
+                                            <div className="profile-nickname-buttons">
                                                 <button className="btn btn-sm" onClick={updateUsername}>
                                                     Изменить никнейм
                                                 </button>

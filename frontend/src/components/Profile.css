@@ -3136,6 +3136,7 @@
         width: 100%;
         max-width: 200px;
     }
+
 }
 
 /* === Mobile profile stats fixes === */
@@ -3170,6 +3171,13 @@
 
 	/* Последние матчи — упрощенная сетка */
 	.matches-list .match-item { grid-template-columns: 1fr auto; gap: 8px; padding: 8px; }
+
+    .profile-nickname-buttons {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+        flex-direction: column;
+    }
 }
 
 @media (max-width: 480px) {
