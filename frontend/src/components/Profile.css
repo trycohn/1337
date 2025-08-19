@@ -215,6 +215,7 @@
   .tournament-row-compact a { color: #fff; text-decoration: none; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .game-icon-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid #ff0000; color: #fff; background:#111; border-radius: 4px; font-weight: 700; font-size: 10px; }
   .tournaments-filter-bar .mobile-filter-input { font-size: 12px; padding: 8px; width: 100%; box-sizing: border-box; }
+  .tournaments-filter-bar { display: none; }
 
   /* Прячем старые хедеры и лишний контент в мобильной таблице */
   .tournaments-section > .tournaments-table thead,

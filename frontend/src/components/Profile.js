@@ -3437,15 +3437,17 @@ function Profile() {
                                             </button>
                                         </div>
 
-                                        <div className="tournaments-filter-bar">
-                                            <input
-                                                type="text"
-                                                placeholder="Поиск по названию"
-                                                value={tournamentFilters.name}
-                                                onChange={(e) => setTournamentFilters({...tournamentFilters, name: e.target.value})}
-                                                className="mobile-filter-input"
-                                            />
-                                        </div>
+                                        {!isMobile && (
+                                            <div className="tournaments-filter-bar">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Поиск по названию"
+                                                    value={tournamentFilters.name}
+                                                    onChange={(e) => setTournamentFilters({...tournamentFilters, name: e.target.value})}
+                                                    className="mobile-filter-input"
+                                                />
+                                            </div>
+                                        )}
                                         
                                         {tournamentViewMode === 'table' ? (
                                             <table>
