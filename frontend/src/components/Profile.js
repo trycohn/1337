@@ -113,6 +113,41 @@ function Profile() {
         return () => window.removeEventListener('resize', onResize);
     }, []);
 
+    // 🔎 Иконки игр (мэппинг названия → код иконки/бейджа)
+    function getGameKey(game) {
+        if (!game) return 'game';
+        const g = String(game).toLowerCase();
+        if (g.includes('dota')) return 'dota2';
+        if (g.includes('valorant')) return 'valorant';
+        if (g.includes('quake')) return 'quake';
+        if (g.includes('league of legends') || g.includes('lol')) return 'lol';
+        if (g.includes('танков') || g.includes('world of tanks')) return 'wot';
+        if (g.includes('hearthstone')) return 'hearthstone';
+        if (g.includes('cs 1.6')) return 'cs16';
+        if (g.includes('eafc')) return 'eafc25';
+        if (g.includes('counter strike 2') || g.includes('cs2') || g.includes('counter-strike 2')) return 'cs2';
+        if (g.includes('apex')) return 'apex';
+        if (g.includes('fortnite')) return 'fortnite';
+        if (g.includes('pubg')) return 'pubg';
+        if (g.includes('rocket league')) return 'rocketleague';
+        if (g.includes('overwatch')) return 'overwatch2';
+        if (g.includes('rainbow six') || g.includes('r6')) return 'r6s';
+        return 'game';
+    }
+
+    function renderGameIcon(game) {
+        const key = getGameKey(game);
+        const title = game || '';
+        const initialsMap = {
+            dota2: 'D2', valorant: 'V', quake: 'Q', lol: 'LoL', wot: 'WoT', hearthstone: 'Hs', cs16: 'CS',
+            eafc25: 'EA', cs2: 'CS2', apex: 'A', fortnite: 'F', pubg: 'P', rocketleague: 'RL', overwatch2: 'OW', r6s: 'R6', game: 'G'
+        };
+        const text = initialsMap[key] || 'G';
+        return (
+            <span className={`game-icon-badge game-${key}`} title={title} aria-label={title}>{text}</span>
+        );
+    }
+
     // Поиск пользователей для добавления
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
