@@ -473,6 +473,8 @@
     background-color: #2a475e;
     color: #ffffff;
     border-color: #2a475e;
+    min-width: fit-content;
+    border-radius: 0px;
 }
 
 .btn-danger {
