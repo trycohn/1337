@@ -106,6 +106,13 @@ function Profile() {
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
     const [sheetOpen, setSheetOpen] = useState(false);
 
+    // 🔧 Глобально, безусловно регистрируем обработчик ресайза (исключаем условные вызовы хуков)
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
     // Поиск пользователей для добавления
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -2170,12 +2177,6 @@ function Profile() {
         });
 
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
-
-    useEffect(() => {
-        const onResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, []);
 
     return (
         <div className="profile-container">
