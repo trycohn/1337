@@ -1555,6 +1555,7 @@
     border-radius: 0;
     padding: var(--spacing-lg);
     transition: var(--transition);
+    margin-bottom: 10px;
 }
 
 .organization-card:hover {
@@ -3138,6 +3139,14 @@
     }
     .nickname-section {
         width: 100%;
+    }
+
+    .org-card-header {
+        flex-direction: column;
+    }
+
+    .org-description {
+        text-align: center;
     }
 
 }
