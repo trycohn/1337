@@ -327,8 +327,14 @@ function TournamentsList() {
             
             switch (sort.field) {
                 case 'participant_count':
-                    aValue = a.participant_count || 0;
-                    bValue = b.participant_count || 0;
+                    {
+                        const getDisplayedCount = (t) => {
+                            if (t && t.format === 'mix') return (t.players_count ?? t.participant_count ?? 0);
+                            return t?.participant_count ?? 0;
+                        };
+                        aValue = getDisplayedCount(a);
+                        bValue = getDisplayedCount(b);
+                    }
                     return sort.direction === 'asc' ? aValue - bValue : bValue - aValue;
                     
                 case 'start_date':
