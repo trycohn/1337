@@ -3758,6 +3758,30 @@ function Profile() {
                                                 ))}
                                             </div>
                                         )}
+
+                                        {/* Mobile-only compact table */}
+                                        {isMobile && (
+                                            <div className="tournaments-mobile-only">
+                                                <table className="tournaments-table tournaments-table-compact">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style={{width:'44px'}}></th>
+                                                            <th>Название</th>
+                                                            <th>Дата</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {filteredAndSortedUserTournaments.map((t) => (
+                                                            <tr key={t.id} className="tournament-row-compact">
+                                                                <td>{renderGameIcon(t.game)}</td>
+                                                                <td title={t.name}><a href={`/tournaments/${t.id}`}>{t.name}</a></td>
+                                                                <td>{new Date(t.start_date).toLocaleDateString('ru-RU')}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                         
                                         {filteredAndSortedUserTournaments.length === 0 && (
                                             <div className="empty-state">

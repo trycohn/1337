@@ -215,6 +215,16 @@
   .tournament-row-compact a { color: #fff; text-decoration: none; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .game-icon-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid #ff0000; color: #fff; background:#111; border-radius: 4px; font-weight: 700; font-size: 10px; }
   .tournaments-filter-bar .mobile-filter-input { font-size: 12px; padding: 8px; width: 100%; box-sizing: border-box; }
+
+  /* Прячем старые хедеры и лишний контент в мобильной таблице */
+  .tournaments-section > .tournaments-table thead,
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Участники"],
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Статус"],
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Результат"],
+  .tournaments-cards { display: none; }
+
+  /* Мобильная таблица видна только на мобиле */
+  .tournaments-mobile-only { display: block; margin-top: 8px; }
 }
 
 /* Sidebar Navigation */
