@@ -204,6 +204,12 @@
     align-items: start;
 }
 
+@media (max-width: 768px) {
+  .profile-main-content { display: block; }
+  .profile-sidebar { display: none; }
+  .profile-content-area { width: 100%; box-sizing: border-box; }
+}
+
 /* Sidebar Navigation */
 .profile-sidebar {
     padding: var(--spacing-lg);

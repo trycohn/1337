@@ -27,6 +27,7 @@ import V4StatsDashboard from './V4StatsDashboard';
 import './V4Stats.css';
 
 import AchievementsPanel from './achievements/AchievementsPanel';
+import MobileProfileSheet from './MobileProfileSheet';
 import MyTeams from './MyTeams';
 
 // Регистрируем компоненты Chart.js
@@ -102,6 +103,8 @@ function Profile() {
 
     // Active tab state
     const [activeTab, setActiveTab] = useState('main');
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+    const [sheetOpen, setSheetOpen] = useState(false);
 
     // Поиск пользователей для добавления
     const [searchQuery, setSearchQuery] = useState('');
@@ -2168,6 +2171,12 @@ function Profile() {
 
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
     return (
         <div className="profile-container">
             {error && <div className="error">{error}</div>}
@@ -2271,7 +2280,32 @@ function Profile() {
             
             {/* Main Content */}
             <div className="profile-main-content">
+                {/* Mobile sheet */}
+                {isMobile && (
+                    <>
+                        <button className="profile-toggle-button" onClick={() => setSheetOpen(true)} aria-label="Открыть меню профиля">
+                            <span className="triangle" />
+                        </button>
+                        <MobileProfileSheet
+                            isOpen={sheetOpen}
+                            onClose={() => setSheetOpen(false)}
+                            activeTab={activeTab}
+                            onSelectTab={(key) => switchTab(key)}
+                            tabs={[
+                                { key: 'main', label: 'Основная' },
+                                { key: 'stats', label: 'Статистика' },
+                                { key: 'friends', label: 'Друзья' },
+                                { key: 'teams', label: 'Мои команды' },
+                                { key: 'achievements', label: 'Достижения' },
+                                { key: 'organization', label: 'Организация' },
+                                { key: 'tournaments', label: 'Турниры' },
+                                { key: 'v4analytics', label: 'Аналитика V4' },
+                            ]}
+                        />
+                    </>
+                )}
                 {/* Sidebar Navigation */}
+                {!isMobile && (
                 <div className="profile-sidebar">
                     <nav className="sidebar-nav-profile">
                         <button 
@@ -2351,6 +2385,7 @@ function Profile() {
                         </button>
                     </nav>
                 </div>
+                )}
                 
                 {/* Content Area */}
                 <div className="profile-content-area">
