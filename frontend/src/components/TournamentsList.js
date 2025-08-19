@@ -670,9 +670,14 @@ function TournamentsList() {
                                 <Link to={`/tournaments/${tournament.id}`}>{tournament.name}</Link>
                             </td>
                             <td data-label="Участники">
-                                {tournament.max_participants
-                                    ? `${tournament.participant_count} из ${tournament.max_participants}`
-                                    : tournament.participant_count}
+                                {(() => {
+                                    const displayedCount = tournament.format === 'mix'
+                                        ? (tournament.players_count ?? tournament.participant_count)
+                                        : tournament.participant_count;
+                                    return tournament.max_participants
+                                        ? `${displayedCount} из ${tournament.max_participants}`
+                                        : displayedCount;
+                                })()}
                             </td>
                             <td data-label="Формат" title={tournament.format}>{tournament.format}</td>
                             <td data-label="Дата">{new Date(tournament.start_date).toLocaleDateString('ru-RU')}</td>
@@ -711,9 +716,14 @@ function TournamentsList() {
                         <div className="tournament-info">
                             <span className="tournament-label">Участники:</span>
                             <span className="tournament-value">
-                                {tournament.max_participants
-                                    ? `${tournament.participant_count} из ${tournament.max_participants}`
-                                    : tournament.participant_count}
+                                {(() => {
+                                    const displayedCount = tournament.format === 'mix'
+                                        ? (tournament.players_count ?? tournament.participant_count)
+                                        : tournament.participant_count;
+                                    return tournament.max_participants
+                                        ? `${displayedCount} из ${tournament.max_participants}`
+                                        : displayedCount;
+                                })()}
                             </span>
                         </div>
                         <div className="tournament-info">

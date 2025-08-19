@@ -6,16 +6,19 @@ class TournamentRepository {
      */
     static async getAllWithParticipantCount() {
         const result = await pool.query(`
-            SELECT t.*, 
-                   CASE 
-                     WHEN t.participant_type = 'solo' THEN (
-                       SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
-                     )
-                     WHEN t.participant_type = 'team' THEN (
-                       SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
-                     )
-                     ELSE 0
-                   END AS participant_count
+            SELECT 
+                t.*, 
+                CASE 
+                  WHEN t.participant_type = 'solo' THEN (
+                    SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
+                  )
+                  WHEN t.participant_type = 'team' THEN (
+                    SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
+                  )
+                  ELSE 0
+                END AS participant_count,
+                -- Берём денормализованное поле: для не-MIX может быть 0
+                t.players_count AS players_count
             FROM tournaments t
             ORDER BY t.created_at DESC
         `);
