@@ -3149,6 +3149,10 @@
         text-align: center;
     }
 
+    .organizations-lis {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
 }
 
 /* === Mobile profile stats fixes === */
