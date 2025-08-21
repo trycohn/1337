@@ -143,6 +143,76 @@ router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo
 });
 
 
+// =============================
+//  Предзагруженные аватарки
+// =============================
+const preloadedAvatarsDir = path.join(__dirname, '../uploads/avatars/preloaded');
+fs.mkdirSync(preloadedAvatarsDir, { recursive: true });
+
+// Список предзагруженных аватарок (для админов)
+router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const files = fs.readdirSync(preloadedAvatarsDir)
+            .filter(f => /\.(png|jpe?g|webp)$/i.test(f));
+        const list = files.map((name) => {
+            const stat = fs.statSync(path.join(preloadedAvatarsDir, name));
+            return {
+                filename: name,
+                url: `/uploads/avatars/preloaded/${name}`,
+                size: stat.size,
+                mtime: stat.mtimeMs
+            };
+        }).sort((a, b) => b.mtime - a.mtime);
+        return res.json({ success: true, avatars: list });
+    } catch (e) {
+        console.error('Ошибка получения предзагруженных аватарок:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось получить список' });
+    }
+});
+
+// Загрузка новой предзагруженной аватарки (квадрат, 512x512)
+router.post('/preloaded-avatars', authenticateToken, requireAdmin, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, error: 'Файл не загружен' });
+
+        const filenameBase = (req.body.name || 'avatar')
+            .toString()
+            .toLowerCase()
+            .replace(/[^a-z0-9-_]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '') || 'avatar';
+
+        const filename = `${filenameBase}-${Date.now()}.jpg`;
+        const outPath = path.join(preloadedAvatarsDir, filename);
+
+        await sharp(req.file.buffer)
+            .resize(512, 512, { fit: 'cover', position: 'centre' })
+            .jpeg({ quality: 90 })
+            .toFile(outPath);
+
+        return res.json({ success: true, url: `/uploads/avatars/preloaded/${filename}`, filename });
+    } catch (e) {
+        console.error('Ошибка загрузки предзагруженной аватарки:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось сохранить аватар' });
+    }
+});
+
+// Удаление предзагруженной аватарки
+router.delete('/preloaded-avatars/:filename', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { filename } = req.params;
+        if (!filename || filename.includes('..')) return res.status(400).json({ success: false, error: 'Некорректное имя файла' });
+        const filePath = path.join(preloadedAvatarsDir, filename);
+        if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Файл не найден' });
+        fs.unlinkSync(filePath);
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка удаления аватарки:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось удалить' });
+    }
+});
+
+
 // (объявление перенесено наверх)
 
 // Настройка транспорта nodemailer

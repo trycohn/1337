@@ -99,6 +99,10 @@ function AdminPanel() {
     const [requests, setRequests] = useState([]);
     const [stats, setStats] = useState({});
     const [activeTab, setActiveTab] = useState('requests');
+    // Preloaded avatars state
+    const [preAvatars, setPreAvatars] = useState([]);
+    const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
+    const [preAvatarsMsg, setPreAvatarsMsg] = useState('');
     // Default Map Pool state
     const [defaultMapPool, setDefaultMapPool] = useState([]);
     const [mapPoolLoading, setMapPoolLoading] = useState(false);
@@ -175,6 +179,7 @@ function AdminPanel() {
             fetchRequests();
             fetchStats();
             fetchDefaultMapPool();
+            fetchPreloadedAvatars();
         }
     }, [user, fetchRequests, fetchStats]);
 
@@ -242,6 +247,59 @@ function AdminPanel() {
             setMapPoolError('Не удалось сохранить маппул');
         } finally {
             setMapPoolLoading(false);
+        }
+    };
+
+    const fetchPreloadedAvatars = async () => {
+        try {
+            setPreAvatarsLoading(true);
+            const res = await api.get('/api/admin/preloaded-avatars', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setPreAvatars((res.data && res.data.avatars) || []);
+        } catch (e) {
+            console.error('Ошибка загрузки предзагруженных аватарок:', e);
+        } finally {
+            setPreAvatarsLoading(false);
+        }
+    };
+
+    const uploadPreloadedAvatar = async (file, name) => {
+        if (!file) return;
+        try {
+            setPreAvatarsMsg('');
+            setPreAvatarsLoading(true);
+            const form = new FormData();
+            if (name) form.append('name', name);
+            form.append('image', file);
+            const res = await fetch('/api/admin/preloaded-avatars', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                body: form
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка');
+            setPreAvatarsMsg('Загружено');
+            await fetchPreloadedAvatars();
+        } catch (e) {
+            setPreAvatarsMsg(`Ошибка: ${e.message}`);
+        } finally {
+            setPreAvatarsLoading(false);
+        }
+    };
+
+    const deletePreloadedAvatar = async (filename) => {
+        if (!filename) return;
+        try {
+            setPreAvatarsLoading(true);
+            await api.delete(`/api/admin/preloaded-avatars/${encodeURIComponent(filename)}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            await fetchPreloadedAvatars();
+        } catch (e) {
+            console.error('Ошибка удаления аватарки:', e);
+        } finally {
+            setPreAvatarsLoading(false);
         }
     };
 
@@ -368,6 +426,12 @@ function AdminPanel() {
                     onClick={() => setActiveTab('mapPool')}
                 >
                     Карт-пул (дефолт)
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'avatars' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('avatars')}
+                >
+                    Предзагруженные аватарки
                 </button>
             </div>
 
@@ -520,6 +584,37 @@ function AdminPanel() {
                         <h3>Загрузка изображений</h3>
                         <UploadMapImage />
                         <UploadLogo />
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'avatars' && (
+                <div className="admin-avatars">
+                    <h2>Предзагруженные аватарки</h2>
+                    <div className="avatar-upload-row" style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                        <input type="text" placeholder="имя (необязательно)" className="map-input" id="pre-avatar-name" />
+                        <input type="file" accept="image/*" onChange={(e)=>{
+                            const file = e.target.files && e.target.files[0];
+                            const nameInput = document.getElementById('pre-avatar-name');
+                            const name = nameInput ? nameInput.value : '';
+                            uploadPreloadedAvatar(file, name);
+                            e.target.value='';
+                        }} />
+                        <button className="btn" disabled={preAvatarsLoading}>Загрузить 512x512</button>
+                        {preAvatarsMsg && <span style={{color:'#aaa'}}>{preAvatarsMsg}</span>}
+                    </div>
+
+                    <div className="preloaded-grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))', gap:12, marginTop:16}}>
+                        {preAvatarsLoading && <div className="admin-loading">Загрузка...</div>}
+                        {!preAvatarsLoading && preAvatars.map((a) => (
+                            <div key={a.filename} className="pre-avatar-card" style={{background:'#111', border:'1px solid #333', padding:8, display:'flex', flexDirection:'column', gap:6}}>
+                                <img src={a.url} alt={a.filename} style={{width:'100%', aspectRatio:'1/1', objectFit:'cover', border:'1px solid #222'}} />
+                                <button className="btn-small danger" onClick={()=>deletePreloadedAvatar(a.filename)}>Удалить</button>
+                            </div>
+                        ))}
+                        {!preAvatarsLoading && preAvatars.length === 0 && (
+                            <div className="admin-loading" style={{gridColumn:'1/-1'}}>Нет аватарок</div>
+                        )}
                     </div>
                 </div>
             )}

@@ -1876,6 +1876,38 @@ router.post('/set-faceit-avatar', authenticateToken, async (req, res) => {
     }
 });
 
+// Публичный список предзагруженных аватарок (для формы выбора в профиле)
+router.get('/preloaded-avatars', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const dir = path.join(__dirname, '../uploads/avatars/preloaded');
+        if (!fs.existsSync(dir)) return res.json({ avatars: [] });
+        const files = fs.readdirSync(dir).filter(f => /\.(png|jpe?g|webp)$/i.test(f));
+        const baseUrl = process.env.NODE_ENV === 'production'
+            ? process.env.SERVER_URL || 'https://1337community.com'
+            : `https://${req.get('host')}`;
+        const list = files.map(name => ({ filename: name, url: `${baseUrl}/uploads/avatars/preloaded/${name}` }));
+        res.json({ avatars: list });
+    } catch (e) {
+        console.error('Ошибка получения предзагруженных аватарок:', e);
+        res.status(500).json({ avatars: [] });
+    }
+});
+
+// Установка аватарки из предзагруженных
+router.post('/set-preloaded-avatar', authenticateToken, async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url || typeof url !== 'string') return res.status(400).json({ error: 'Некорректный URL' });
+        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [url, req.user.id]);
+        return res.json({ success: true, avatar_url: url });
+    } catch (e) {
+        console.error('Ошибка установки предзагруженной аватарки:', e);
+        return res.status(500).json({ error: 'Не удалось установить аватар' });
+    }
+});
+
 // Получение публичного профиля пользователя по ID
 router.get('/profile/:userId', async (req, res) => {
     try {

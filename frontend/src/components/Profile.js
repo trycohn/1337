@@ -45,6 +45,59 @@ ChartJS.register(
     Filler
 );
 
+// Подборщик предзагруженных аватарок (подкомпонент)
+function PreloadedAvatarPicker({ onPicked }) {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+
+    useEffect(() => {
+        let mounted = true;
+        (async function fetchList() {
+            try {
+                setLoading(true);
+                const res = await api.get('/api/users/preloaded-avatars');
+                if (!mounted) return;
+                setItems((res.data && res.data.avatars) || []);
+            } catch (e) {
+                if (!mounted) return;
+                setErrorMsg('Не удалось загрузить список аватаров');
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
+
+    return (
+        <div className="preloaded-avatars-container">
+            <div className="preloaded-header">
+                <h4>Быстрый выбор</h4>
+            </div>
+            {loading && <div className="loading-spinner">Загрузка...</div>}
+            {errorMsg && <div className="error">{errorMsg}</div>}
+            {!loading && !errorMsg && (
+                <div className="preloaded-avatars-grid">
+                    {items.map((it) => (
+                        <button
+                            key={it.filename}
+                            className="pre-avatar-item"
+                            onClick={() => onPicked && onPicked(it.url)}
+                            title={it.filename}
+                            aria-label={`Выбрать аватар ${it.filename}`}
+                        >
+                            <img src={it.url} alt={it.filename} />
+                        </button>
+                    ))}
+                    {items.length === 0 && (
+                        <div className="empty-state" style={{padding: '16px'}}>Пока нет предзагруженных аватарок</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function Profile() {
     const { user, loading: authLoading, updateUser } = useAuth(); // Получаем пользователя из AuthContext
     const [stats, setStats] = useState(null);
@@ -3925,44 +3978,60 @@ function Profile() {
                 <div className={`modal-overlay ${isClosingModal ? 'closing' : ''}`} onClick={closeAvatarModal}>
                     <div className="modal-content avatar-modal" onClick={(e) => e.stopPropagation()}>
                         <h3>Изменить аватар</h3>
-                        
-                        <div className="avatar-preview">
-                            <img 
-                                src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
-                                alt="Текущий аватар" 
-                                className="current-avatar"
-                            />
+
+                        <div className="avatar-modal-grid">
+                            <div className="avatar-modal-left">
+                                <div className="avatar-preview mini">
+                                    <img 
+                                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
+                                        alt="Текущий аватар" 
+                                        className="current-avatar"
+                                    />
+                                </div>
+
+                                <div className="avatar-options compact">
+                                    <button 
+                                        onClick={triggerFileInput} 
+                                        disabled={uploadingAvatar}
+                                    >
+                                        {uploadingAvatar ? 'Загрузка...' : 'Загрузить свой аватар'}
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef} 
+                                        onChange={handleAvatarUpload} 
+                                        accept="image/*" 
+                                        style={{ display: 'none' }} 
+                                    />
+                                    {user.steam_id && (
+                                        <button onClick={setAvatarFromSteam}>Аватар из Steam</button>
+                                    )}
+                                    {user.faceit_id && (
+                                        <button onClick={setAvatarFromFaceit}>Аватар из FACEIT</button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="avatar-modal-divider" aria-hidden="true" />
+
+                            <div className="avatar-modal-right">
+                                <PreloadedAvatarPicker onPicked={async (url)=>{
+                                    try {
+                                        const token = localStorage.getItem('token');
+                                        const res = await api.post('/api/users/set-preloaded-avatar', { url }, {
+                                            headers: { Authorization: `Bearer ${token}` }
+                                        });
+                                        if (res.data && res.data.avatar_url) {
+                                            updateUser({ avatar_url: res.data.avatar_url });
+                                            closeAvatarModal();
+                                        }
+                                    } catch (e) {
+                                        setError('Не удалось установить аватар');
+                                    }
+                                }} />
+                            </div>
                         </div>
-                        
-                        <div className="avatar-options">
-                            <button 
-                                onClick={triggerFileInput} 
-                                disabled={uploadingAvatar}
-                            >
-                                {uploadingAvatar ? 'Загрузка...' : 'Загрузить свой аватар'}
-                            </button>
-                            
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleAvatarUpload} 
-                                accept="image/*" 
-                                style={{ display: 'none' }} 
-                            />
-                            
-                            {user.steam_id && (
-                                <button onClick={setAvatarFromSteam}>
-                                    Установить аватар из Steam
-                                </button>
-                            )}
-                            
-                            {user.faceit_id && (
-                                <button onClick={setAvatarFromFaceit}>
-                                    Установить аватар из FACEIT
-                                </button>
-                            )}
-                        </div>
-                        
+
                         <button onClick={closeAvatarModal} className="close-modal-btn">
                             Закрыть
                         </button>
