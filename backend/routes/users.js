@@ -1884,10 +1884,8 @@ router.get('/preloaded-avatars', async (req, res) => {
         const dir = path.join(__dirname, '../uploads/avatars/preloaded');
         if (!fs.existsSync(dir)) return res.json({ avatars: [] });
         const files = fs.readdirSync(dir).filter(f => /\.(png|jpe?g|webp)$/i.test(f));
-        const baseUrl = process.env.NODE_ENV === 'production'
-            ? process.env.SERVER_URL || 'https://1337community.com'
-            : `https://${req.get('host')}`;
-        const list = files.map(name => ({ filename: name, url: `${baseUrl}/uploads/avatars/preloaded/${name}` }));
+        // Возвращаем относительные URL, чтобы избежать проблем со схемой
+        const list = files.map(name => ({ filename: name, url: `/uploads/avatars/preloaded/${name}` }));
         res.json({ avatars: list });
     } catch (e) {
         console.error('Ошибка получения предзагруженных аватарок:', e);
@@ -1900,8 +1898,21 @@ router.post('/set-preloaded-avatar', authenticateToken, async (req, res) => {
     try {
         const { url } = req.body;
         if (!url || typeof url !== 'string') return res.status(400).json({ error: 'Некорректный URL' });
-        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [url, req.user.id]);
-        return res.json({ success: true, avatar_url: url });
+        // Принимаем относительный путь или полный URL. Сохраняем относительный для стабильности.
+        let stored = url;
+        try {
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                const u = new URL(url);
+                stored = u.pathname + (u.search || '');
+            }
+        } catch (_) {
+            // если new URL упал, оставим как есть (если относительный — ок)
+        }
+        if (!stored.startsWith('/uploads/avatars/preloaded/')) {
+            return res.status(400).json({ error: 'Недопустимый путь к аватару' });
+        }
+        await pool.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [stored, req.user.id]);
+        return res.json({ success: true, avatar_url: stored });
     } catch (e) {
         console.error('Ошибка установки предзагруженной аватарки:', e);
         return res.status(500).json({ error: 'Не удалось установить аватар' });

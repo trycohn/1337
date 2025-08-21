@@ -4022,6 +4022,7 @@ function Profile() {
                                             headers: { Authorization: `Bearer ${token}` }
                                         });
                                         if (res.data && res.data.avatar_url) {
+                                            // ensureHttps для относительных ссылок добавит схему/домен при рендере
                                             updateUser({ avatar_url: res.data.avatar_url });
                                             closeAvatarModal();
                                         }
