@@ -98,76 +98,6 @@
 }
 
 /* Стили кнопок */
-.btn-primary,
-.btn-secondary,
-.btn-danger,
-.btn-preview,
-.btn-generate {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 140px;
-    text-align: center;
-}
-
-.btn-primary {
-    background: #000000;
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: #1d1d1d;
-}
-
-.btn-secondary {
-    background: #000000;
-    color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: #1d1d1d;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: #c82333;
-}
-
-.btn-preview {
-    background: #17a2b8;
-    color: white;
-}
-
-.btn-preview:hover:not(:disabled) {
-    background: #138496;
-}
-
-.btn-generate {
-    background: #28a745;
-    color: white;
-}
-
-.btn-generate:hover:not(:disabled) {
-    background: #218838;
-}
-
-/* Отключенные кнопки */
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-danger:disabled,
-.btn-preview:disabled,
-.btn-generate:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
 
 /* Опции распределения */
 .seeding-options {
@@ -392,74 +322,8 @@
     border-top: 1px solid #e9ecef;
 }
 
-/* Базовые стили кнопок */
-.btn-generate,
-.btn-primary,
-.btn-secondary,
-.btn-danger,
-.btn-preview {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.95em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-generate:disabled,
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-danger:disabled,
-.btn-preview:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* Стили кнопок */
-.btn-generate {
-    color: white;
-}
-
-.btn-generate:hover:not(:disabled) {
-    background: #545b62;
-}
-
-.btn-primary {
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    background: #545b62;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: #545b62;
-}
-
-.btn-danger {
-    color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: #c82333;
-}
-
-.btn-preview {
-    color: white;
-}
-
-.btn-preview:hover:not(:disabled) {
-    background: #545b62;
-}
+/* Кнопки используют глобальные стили (.btn, .btn-primary, .btn-secondary)
+   из frontend/src/styles/components.css. Локальные дубли удалены. */
 
 /* Опции распределения */
 .seeding-options {

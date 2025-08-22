@@ -140,6 +140,19 @@
     background-color: #111111;
     margin: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tournament-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ff0000, #ffaa00, #ff0000);
+    animation: shimmer 2s infinite;
 }
 
 .tournament-preview h2 {
@@ -217,7 +230,6 @@
     background-color: #111111;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
-    transition: all 0.3s ease;
 }
 
 .benefit-item:hover {
@@ -290,47 +302,7 @@
     flex-wrap: wrap;
 }
 
-.btn-primary,
-.btn-secondary {
-    padding: 15px 30px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 1em;
-    text-decoration: none;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: none;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: inline-block;
-    min-width: 200px;
-}
-
-.btn-primary {
-    background: #000000;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-}
-
-.btn-primary:hover {
-    background: #1d1d1d;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
-}
-
-.btn-secondary {
-    background: #000000;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-}
-
-.btn-secondary:hover {
-    background: #111111;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
-}
+/* Кнопки используют глобальные .btn-primary/.btn-secondary из styles/components.css */
 
 /* ===== ДОПОЛНИТЕЛЬНЫЕ ССЫЛКИ ===== */
 .additional-links {
@@ -345,7 +317,6 @@
     text-decoration: none;
     margin: 0 20px;
     font-size: 0.9em;
-    transition: color 0.3s ease;
     display: inline-block;
     margin-bottom: 10px;
 }
@@ -430,17 +401,6 @@
         flex-direction: column;
         align-items: center;
     }
-
-    .btn-primary,
-    .btn-secondary {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .additional-links .link {
-        display: block;
-        margin: 10px 0;
-    }
 }
 
 @media (max-width: 480px) {
@@ -466,12 +426,6 @@
 
     .benefit-item {
         padding: 15px;
-    }
-
-    .btn-primary,
-    .btn-secondary {
-        padding: 12px 20px;
-        font-size: 0.9em;
     }
 }
 
@@ -505,23 +459,7 @@
 }
 
 /* ===== ДОПОЛНИТЕЛЬНЫЕ ЭФФЕКТЫ ===== */
-.tournament-preview::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #ff0000, #ffaa00, #ff0000);
-    animation: shimmer 2s infinite;
-}
-
 @keyframes shimmer {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
-}
-
-.tournament-preview {
-    position: relative;
-    overflow: hidden;
 } 

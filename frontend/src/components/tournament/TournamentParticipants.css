@@ -449,47 +449,6 @@
     border-top: 1px solid #333333;
 }
 
-.btn-secondary,
-.btn-primary {
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid;
-}
-
-.btn-secondary {
-    background: transparent;
-    border-color: #333333;
-    color: #888888;
-}
-
-.btn-secondary:hover {
-    background: #1a1a1a;
-    border-color: #555555;
-    color: #ffffff;
-}
-
-.btn-primary {
-    background: #ffffff;
-    border-color: #ffffff;
-    color: #000000;
-}
-
-.btn-primary:hover {
-    background: #f0f0f0;
-    border-color: #f0f0f0;
-}
-
-.btn-primary:disabled {
-    background: #333333;
-    border-color: #333333;
-    color: #666666;
-    cursor: not-allowed;
-}
-
 /* РђРЅРёРјР°С†РёРё */
 @keyframes slideIn {
     from {

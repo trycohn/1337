@@ -639,45 +639,6 @@
   gap: 10px;
 }
 
-.btn-secondary,
-.btn-primary {
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-}
-
-.btn-secondary {
-  background: #333;
-  color: #fff;
-  border: 1px solid #555;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #444;
-  border-color: #666;
-}
-
-.btn-primary {
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #ffffff;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #1d1d1d;
-  border-color: #ffffff;
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* 📱 Мобильная адаптация */
 @media (max-width: 768px) {
   .manual-bracket-editor-overlay {
