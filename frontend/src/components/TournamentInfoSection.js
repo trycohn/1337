@@ -1318,7 +1318,7 @@ const TournamentInfoSection = ({
                     {isAdminOrCreator && !isEditingDescription && (
                         <div className="edit-controls">
                             <button 
-                                className="edit-btn"
+                                className="btn btn-secondary"
                                 onClick={() => setIsEditingDescription(true)}
                                 disabled={isLoading}
                             >
@@ -1385,7 +1385,7 @@ const TournamentInfoSection = ({
                     {isAdminOrCreator && !isEditingRegulations && (
                         <div className="edit-controls">
                             <button 
-                                className="edit-btn"
+                                className="btn btn-secondary"
                                 onClick={() => setIsEditingRegulations(true)}
                                 disabled={isLoading}
                             >
