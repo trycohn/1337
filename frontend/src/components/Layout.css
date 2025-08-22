@@ -36,7 +36,18 @@
   text-shadow: none;
 }
 
-.site-logo:hover h1 {}
+/* SVG логотип в хедере: по высоте хедера */
+.header .site-logo .header-logo {
+  display: block;
+  height: 48px; /* подгон под текущую высоту хедера */
+  width: auto;
+}
+
+@media (max-width: 768px) {
+  .header .site-logo .header-logo { height: 40px; }
+}
+
+/* hover отключён для SVG-логотипа */
 
 .header {
   background: rgba(0, 0, 0, 0.5);
