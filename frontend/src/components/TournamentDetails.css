@@ -783,6 +783,7 @@ div.score-container input {
     padding: 16px 24px 0;
     overflow-x: auto;
     justify-content: center;
+    margin-bottom: 20px;
 }
 
 .tabs-navigation-tournamentdetails .tab-button-tournamentdetails {
