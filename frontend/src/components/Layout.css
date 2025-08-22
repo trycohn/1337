@@ -93,18 +93,22 @@
   color: #fff;
   border: 1px solid #FF3838;
 }
-.btn-primary:hover { background: #E63131; }
+
 
 .btn-secondary {
   background: transparent;
   color: #fff;
   border: 2px solid #FF3838;
 }
-.btn-secondary:hover { background: #111111; }
 
-.create-btn { margin-right: 8px; }
 
-.user-actions { display: flex; align-items: center; gap: 8px; }
+.create-btn { 
+  margin-right: 8px; 
+}
+
+.user-actions { 
+  display: flex; align-items: center; gap: 8px; 
+}
 
 /* Figma font preference */
 .header .nav-link,

@@ -175,19 +175,10 @@
     color: #ffffff;
 }
 
-.cancel-btn:hover:not(:disabled) {
-    background: #111;
-    transform: translateY(-2px);
-}
 
 .create-btn {
     background: #000000;
     color: #ffffff;
-}
-
-.create-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    background: #111;
 }
 
 .create-btn:disabled,
