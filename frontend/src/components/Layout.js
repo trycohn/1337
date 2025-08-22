@@ -295,21 +295,17 @@ function Layout() {
                                 }
                             }}
                         >
-                            <Link to="/" onClick={() => setIsMenuOpen(false)}>Главная</Link>
-                            <Link to="/tournaments" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
+                            <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                            <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                             {user && (
                                 <>
-                                    <Link to="/create" onClick={() => setIsMenuOpen(false)}>
-                                        Создать турнир
-                                    </Link>
-                                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
-                                    <Link to="/messages" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                    <Link to="/messages" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                    <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                                     {user.role === 'admin' && (
-                                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="admin-link">
+                                        <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
                                             Админ панель
                                         </Link>
                                     )}
-                                    {/* Убрана кнопка "Выйти" из мобильного гамбургера */}
                                 </>
                             )}
                         </nav>
@@ -317,6 +313,9 @@ function Layout() {
                     <div className="auth-block">
                         {user ? (
                             <div className="user-info">
+                                <Link to="/create" className="btn btn-primary create-btn">
+                                    Создать турнир
+                                </Link>
                                 <Link to="/profile" className="header-avatar-link">
                                     <img
                                         src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
@@ -341,7 +340,7 @@ function Layout() {
                                         )}
                                     </div>
                                 </Link>
-                                <button onClick={handleLogout}>Выйти</button>
+                                <button className="btn btn-secondary" onClick={handleLogout}>Выйти</button>
                             </div>
                         ) : (
                             <div className="login-button-container">

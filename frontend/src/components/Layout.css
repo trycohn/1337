@@ -30,7 +30,7 @@
 .site-logo h1 {
   font-size: 2rem;
   font-weight: 900;
-  color: #ff0000;
+  color: #FF3838;
   margin: 0;
   letter-spacing: 2px;
   text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
@@ -43,15 +43,18 @@
 }
 
 .header {
-  background: #000000;
+  background: rgba(0, 0, 0, 0.5);
   border-bottom: 1px solid #111111;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 16px 32px;
 }
 
 .nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 32px;
 }
 
 .navigation a {
@@ -60,16 +63,63 @@
   padding: 8px 10px;
 }
 
+/* Figma: Ghost buttons for nav links */
+.nav-link.btn-ghost {
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+}
+.nav-link.btn-ghost:hover {
+  background: #111111;
+  border-radius: 4px;
+}
+
+/* Figma: Primary/Secondary buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary {
+  background: #FF3838;
+  color: #fff;
+  border: 1px solid #FF3838;
+}
+.btn-primary:hover { background: #E63131; }
+
+.btn-secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #FF3838;
+}
+.btn-secondary:hover { background: #111111; }
+
+.create-btn { margin-right: 8px; }
+
+/* Figma font preference */
+.header .nav-link,
+.header .btn {
+  font-family: Play, Arial, sans-serif;
+}
+
 .hamburger {
   display: none;
   background: transparent;
-  border: 1px solid #ff0000;
+  border: 1px solid #FF3838;
   border-radius: 0;
   padding: 6px;
 }
 .hamburger:hover {
   background: #111111;
-  border-color: #a60000;
+  border-color: #E63131;
 }
 
 /* Desktop */

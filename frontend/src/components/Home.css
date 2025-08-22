@@ -83,7 +83,7 @@ header.header {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0px 5px;
+    padding: 8px 16px;
     font-family: inherit;
     font-size: 16px;
     line-height: 1;
@@ -140,16 +140,16 @@ header.header {
   white-space: nowrap; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРЅРѕСЃ РёРјРµРЅРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ */
 }
 .user-info button {
-  padding: 2px 10px;
-  background-color: #ffffff;
-  color: #000000 !important;
-  border: none;
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #ffffff !important;
+  border: 2px solid #ff0000;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
 }
 .user-info button:hover {
-  background-color: #7b7b7b;
+  background-color: #111111;
 }
 .login-form {
   display: flex;
