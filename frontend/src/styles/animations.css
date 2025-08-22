@@ -170,28 +170,7 @@
     box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
   }
 }
-.btn-pulse {
-  font-family: 'Montserrat';
-  font-size: 16px;
-  font-weight: bold;
-  color: #ffffff !important;
-  padding: 5px 25px;
-  border-radius: 0px;
-  border: 1px solid #ff0000;
-  background: #000000;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  animation: button-pulse 1.5s infinite;
-}
-.btn-pulse:hover {
-  color: #d5d5d5 !important;
-  background: #000000;
-  border: 1px solid #a60000;
-}
-.btn-pulse:active {
-  color: #000000 !important;
-  background: #ffffff;
-}
+
 /* Анимация сердцебиения */
 @keyframes heartbeat {
   0% {

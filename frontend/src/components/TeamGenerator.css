@@ -693,54 +693,7 @@
     padding: 16px 24px 24px 24px;
     border-top: 1px solid #e5e7eb;
 }
-.btn-cancel {
-    background: #6b7280;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-.btn-cancel:hover:not(:disabled) {
-    background: #4b5563;
-    transform: translateY(-1px);
-}
-.btn-cancel:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-.btn-confirm-reform {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-.btn-confirm-reform:hover:not(:disabled) {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
-}
-.btn-confirm-reform:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
+
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ РґР»СЏ РјРѕРґР°Р»СЊРЅРѕРіРѕ РѕРєРЅР° */
 /* рџЋЇ РЎРўРР›Р Р”Р›РЇ РРњР•Рќ РЈР§РђРЎРўРќРРљРћР' РљРћРњРђРќР" */
 /* Р‘Р°Р·РѕРІС‹Р№ СЃС‚РёР»СЊ РґР»СЏ РёРјРµРЅ СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
