@@ -165,10 +165,10 @@
 .no-teams {
     grid-column: 1 / -1;
     text-align: center;
-    padding: 60px 20px;
-    background: #f8f9fa;
-    border-radius: 12px;
-    border: 2px dashed #dee2e6;
+    padding: 24px 10px;
+    background: #000000;
+    border-radius: 0px;
+    border: none;
 }
 
 .no-teams p {

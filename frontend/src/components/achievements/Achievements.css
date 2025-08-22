@@ -34,7 +34,7 @@
     flex-direction: column;
 }
 
-.achievements-categories {
+.achievement-categories {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
