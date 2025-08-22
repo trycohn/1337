@@ -428,10 +428,9 @@
 .content-card {
     padding: var(--spacing-xl);
     transition: var(--transition);
-}
-
-.content-card:hover {
-    transform: translateY(-1px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .card-header {
@@ -501,6 +500,7 @@
     border-color: #2a475e;
     min-width: fit-content;
     border-radius: 0px;
+    font-size: 16px;
 }
 
 .btn-danger {
@@ -3208,6 +3208,12 @@
     background-color: var(--bg-tertiary);
     border-color: var(--border-hover);
     color: var(--text-primary);
+}
+
+.profile-nickname-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
 }
 
 /* Адаптивность для мобильных */
