@@ -1,4 +1,4 @@
-﻿/* рџЋЇ Р•Р”РРќР«Р• РЎРўРР›Р РљРќРћРџРћРљ Р”Р›РЇ TOURNAMENT DETAILS */
+﻿/* рџЋЇ Р•Р”РРќР«Р• РЎРўРР›РЇ РљРќРћРџРћРљ Р”Р›РЇ TOURNAMENT DETAILS */
 .tournament-details-tournamentdetails .btn,
 .tournament-details-tournamentdetails button,
 .generate-bracket-button,
@@ -885,80 +885,49 @@ div.score-container input {
     padding: 16px 24px 0;
     overflow-x: auto;
     justify-content: center;
-}
-.info-block-tournamentdetails {
-    padding: 20px;
-    border: 1px solid #333333;
-    transition: all 0.3s ease;
-    background-color: transparent;
-}
-.info-block-tournamentdetails:hover {
-    border-color: #555555;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
-}
-.tournament-meta-info-tournamentdetails {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-    padding: 20px;
-    border: 1px solid #333333;
-    font-size: 16px;
-}
-.meta-item-tournamentdetails {
-    padding: 10px;
-    border-bottom: 1px solid #222222;
-    display: flex;
-    align-items: baseline;
-}
-.meta-item-tournamentdetails strong {
-    color: #888888;
-    font-weight: 300;
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    display: block;
-    margin-bottom: 5px;
-}
-.creator-info-tournamentdetails {
-    display: flex;
-    align-items: flex-start;
-    flex-direction: column;
-}
-/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ СѓРґР°Р»РµРЅР° */
-/* РЈР»СѓС‡С€РµРЅРЅР°СЏ Р°РЅРёРјР°С†РёСЏ РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ РјРµР¶РґСѓ РІРєР»Р°РґРєР°РјРё */
-.tournament-content-tournamentdetails {
-    position: relative;
-    overflow: visible;
-}
-.tab-content-bracket {
-    position: relative;
-    overflow: visible;
-}
-.tab-content-tournamentdetails {
-    width: 100%;
-    position: relative;
-}
-/* Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ СЌС„С„РµРєС‚С‹ РґР»СЏ Р°РєС‚РёРІРЅРѕР№ РІРєР»Р°РґРєРё */
-.tab-button-tournamentdetails.active {
-    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
-    border-image: linear-gradient(45deg, #ffffff, #cccccc) 1;
-}
-/* Р­С„С„РµРєС‚ РїСѓР»СЊСЃР°С†РёРё РґР»СЏ Р°РєС‚РёРІРЅРѕР№ РІРєР»Р°РґРєРё */
-.tab-button-tournamentdetails.active::before {
-    animation: pulse 2s infinite;
+    border-bottom: 1px solid #333333;
 }
 
-@keyframes pulse {
-    0%, 100% { 
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        opacity: 1;
-    }
-    50% { 
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-        opacity: 0.8;
-    }
+.tabs-navigation-tournamentdetails .tab-button-tournamentdetails {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 35px;
+  padding: 8px 16px;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #cccccc;
+  font-family: Play, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  transition: none;
 }
+
+.tabs-navigation-tournamentdetails .tab-button-tournamentdetails:hover {
+  color: #ffffff;
+  background: none;
+  border-bottom-color: transparent;
+}
+
+.tabs-navigation-tournamentdetails .tab-button-tournamentdetails.active {
+  color: #ffffff;
+  background: none !important;
+  border-bottom-color: var(--Leet-Accent, #FF3838) !important;
+  border-image: none;
+}
+
+/* Удаляем старые эффекты для активной вкладки */
+.tab-button-tournamentdetails.active { background: none !important; border-image: none !important; }
+.tab-button-tournamentdetails.active::before { content: none !important; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 1; } }
+
 /* РљРѕРјРїР°РєС‚РЅС‹Р№ СЃРїРёСЃРѕРє СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ */
 .results-compact-list {
     display: flex;
