@@ -82,6 +82,7 @@
   text-decoration: none;
   height: 35px;
   gap: 8px;
+  background: transparent;
 }
 
 .btn-primary {

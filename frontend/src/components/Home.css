@@ -40,6 +40,7 @@ header.header {
   width: 100%;
   padding: 10px 0;
 }
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -49,6 +50,8 @@ header.header {
   position: sticky;
   top: 0;
   z-index: 1000;
+  background: #00000080;
+
 }
 .nav-container {
   display: flex;
@@ -69,11 +72,13 @@ header.header {
 .hamburger:hover svg path {
   fill: #111111;
 }
+
 .navigation {
   display: flex;
   gap: 10px;
   align-items: center; /* Р”РѕР±Р°РІР»СЏРµРј РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РІС‹С€Р°РІРЅРёРІР°РЅРёРµ */
 }
+
 .navigation a,
 .navigation button {
     text-decoration: none;
