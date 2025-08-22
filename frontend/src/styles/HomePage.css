@@ -627,6 +627,10 @@
   animation: bounce 2s infinite;
 }
 
+@media (max-width: 768px) {
+  .scroll-indicator { display: none; }
+}
+
 .mouse {
   width: 30px;
   height: 50px;

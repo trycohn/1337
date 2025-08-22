@@ -166,7 +166,7 @@
     right: 0;
     bottom: 0;
     width: 90vw; /* 90% ширины экрана */
-    background: #000000; /* непрозрачный черный фон */
+    background: #000000 !important; /* непрозрачный черный фон */
     border-left: 1px solid #ff0000;
     transform: translateX(100%);
     opacity: 0;
@@ -179,6 +179,9 @@
     gap: 8px;
     z-index: 1000;
   }
+
+  /* Дополнительная страховка от внешних правил */
+  .header .navigation { background-color: #000000 !important; }
 
   .navigation.open { 
     transform: translateX(0);
