@@ -3485,13 +3485,13 @@ function Profile() {
                                         
                                         <div className="tournaments-view-controls">
                                             <button 
-                                                className={`view-mode-btn ${tournamentViewMode === 'table' ? 'active' : ''}`} 
+                                                className={`btn btn-secondary ${tournamentViewMode === 'table' ? 'active' : ''}`} 
                                                 onClick={() => setTournamentViewMode('table')}
                                             >
                                                 Таблица
                                             </button>
                                             <button 
-                                                className={`view-mode-btn ${tournamentViewMode === 'card' ? 'active' : ''}`} 
+                                                className={`btn btn-secondary ${tournamentViewMode === 'card' ? 'active' : ''}`} 
                                                 onClick={() => setTournamentViewMode('card')}
                                             >
                                                 Карточки

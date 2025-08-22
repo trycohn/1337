@@ -770,11 +770,11 @@ function TournamentsList() {
             <div className="tournaments-view-controls">
                 <div className="view-mode-buttons">
                     {!isMobile && (
-                        <button className={`view-mode-btn ${effectiveViewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
+                        <button className={`btn btn-secondary ${effectiveViewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')}>
                             Таблица
                         </button>
                     )}
-                    <button className={`view-mode-btn ${effectiveViewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
+                    <button className={`btn btn-secondary ${effectiveViewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}>
                         Карточки
                     </button>
                 </div>

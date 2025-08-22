@@ -40,10 +40,10 @@
 .map-pool-item { display: flex; align-items: center; gap: 8px; background:#111; padding:8px; border:1px solid #333; }
 .map-pool-item .order { width: 24px; color:#aaa; }
 .map-input { flex:1; background:#000; color:#fff; border:1px solid #333; padding:6px 8px; }
-.btn-small { background:#111; color:#fff; border:1px solid #ff0000; padding:4px 8px; cursor:pointer; }
+.btn-small { color:#fff; border:1px solid #ff0000; padding:4px 8px; cursor:pointer; }
 .btn-small.danger { border-color:#ff0000; color:#ff0000; }
 .map-pool-actions { margin-top:12px; display:flex; gap:8px; }
-.btn { background:#111; color:#fff; border:1px solid #ff0000; padding:8px 12px; cursor:pointer; }
+.btn { color:#fff; border:1px solid #ff0000; padding:8px 12px; cursor:pointer; }
 .btn.primary { background:#ff0000; color:#000; border-color:#ff0000; }
 .map-pool-hint { margin-top: 10px; color:#aaa; font-size:12px; }
 .admin-navigation .nav-tab {
