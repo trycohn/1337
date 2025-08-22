@@ -31,7 +31,7 @@
 }
 
 .loader-logo {
-  height: 100px; /* как и в общем прелоадере */
+  height: 240px; /* увеличено по запросу */
   width: auto;
   display: inline-block;
   margin-bottom: 24px;
