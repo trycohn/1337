@@ -65,7 +65,6 @@ header.header {
 .hamburger svg {
   width: 24px;
   height: 24px;
-  transition: transform 0.3s ease;
 }
 .hamburger:hover svg path {
   fill: #111111;
@@ -73,8 +72,7 @@ header.header {
 .navigation {
   display: flex;
   gap: 10px;
-  transition: all 0.3s ease;
-  align-items: center; /* Р”РѕР±Р°РІР»СЏРµРј РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РІС‹СЂР°РІРЅРёРІР°РЅРёРµ */
+  align-items: center; /* Р”РѕР±Р°РІР»СЏРµРј РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РІС‹С€Р°РІРЅРёРІР°РЅРёРµ */
 }
 .navigation a,
 .navigation button {
@@ -127,10 +125,6 @@ header.header {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #4a76a8;
-  transition: transform 0.2s;
-}
-.header-avatar:hover {
-  transform: scale(1.1);
 }
 .user-info span {
   margin-right: 10px;

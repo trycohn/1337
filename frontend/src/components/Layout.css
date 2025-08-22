@@ -33,14 +33,10 @@
   color: #FF3838;
   margin: 0;
   letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-  transition: all 0.3s ease;
+  text-shadow: none;
 }
 
-.site-logo:hover h1 {
-  transform: scale(1.05);
-  text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-}
+.site-logo:hover h1 {}
 
 .header {
   background: rgba(0, 0, 0, 0.5);
@@ -166,7 +162,6 @@
     background: #000000;
     border-left: 1px solid #ff0000;
     transform: translateX(100%);
-    transition: transform 0.25s ease-in-out;
     display: flex;
     flex-direction: column;
     padding: 16px;
@@ -174,9 +169,7 @@
     z-index: 1000;
   }
 
-  .navigation.open {
-    transform: translateX(0);
-  }
+  .navigation.open { transform: translateX(0); }
 
   .navigation a {
     padding: 12px 8px;

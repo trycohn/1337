@@ -2,15 +2,14 @@
 @import './variables.css';
 /* Навигация */
 
-nav a, nav button {
+nav a {
   color: #ffffff;
   text-transform: uppercase;
   font-family: var(--font-family);
   background: none;
   border: none;
-  transition: color var(--transition-normal);
 }
-nav a:hover, nav button:hover {
+nav a:hover {
   color: #ffffff;
   text-decoration: none;
 }
@@ -34,7 +33,6 @@ nav a:hover, nav button:hover {
   border: none;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.2s ease;
 }
 
 /* Варианты: Primary / Secondary / Ghost */
@@ -43,17 +41,14 @@ nav a:hover, nav button:hover {
   color: #FFFFFF;
   border: 1px solid var(--Leet-Accent, #FF3838);
 }
-.btn-primary:hover {
-  background: #E63131;
-  border-color: #E63131;
-}
+.btn-primary:hover {}
 
 .btn-secondary {
   background: transparent;
   color: #FFFFFF;
   border: 2px solid var(--Leet-Accent, #FF3838);
 }
-.btn-secondary:hover { background: #111111; }
+.btn-secondary:hover {}
 
 .btn-ghost,
 .nav-link.btn-ghost {
@@ -66,6 +61,49 @@ nav a:hover, nav button:hover {
 }
 .btn-ghost:hover,
 .nav-link.btn-ghost:hover { text-decoration: none; }
+
+/* Глобальный сброс эффектов/анимаций для кнопок */
+button,
+.btn,
+.auth-button,
+.login-button,
+.steam-button,
+.faceit-button,
+.view-mode-btn,
+.clear-all-filters-btn,
+.clear-filters-btn,
+.filter-btn-tournaments,
+.admin-request-actions button,
+.friend-request-actions button,
+.add-participant button,
+.invite-participant button,
+.create-tournament button {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+button:hover,
+.btn:hover,
+.auth-button:hover,
+.login-button:hover,
+.steam-button:hover,
+.faceit-button:hover,
+.view-mode-btn:hover,
+.clear-all-filters-btn:hover,
+.clear-filters-btn:hover,
+.filter-btn-tournaments:hover,
+.admin-request-actions button:hover,
+.friend-request-actions button:hover,
+.add-participant button:hover,
+.invite-participant button:hover,
+.create-tournament button:hover {
+  background: inherit !important;
+  color: inherit !important;
+  border-color: inherit !important;
+  text-decoration: none !important;
+}
 /* Иконки в навигации */
 .nav-icon, nav .icon {
   color: #ffffff;
