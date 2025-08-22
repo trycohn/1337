@@ -1,14 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import api from '../axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope } from '@fortawesome/free-regular-svg-icons';
 import './Home.css';
 import './Layout.css';
 import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { useAuth } from '../context/AuthContext';
-import { ensureHttps } from '../utils/userHelpers';
 import { useSocket } from '../hooks/useSocket';
 import MatchLobbyNotification from './tournament/MatchLobby/MatchLobbyNotification';
 
@@ -312,39 +309,13 @@ function Layout() {
                     </div>
                     <div className="auth-block">
                         {user ? (
-                            <div className="user-info">
-                                <Link to="/create" className="btn btn-primary create-btn">
-                                    Создать турнир
-                                </Link>
-                                <Link to="/profile" className="header-avatar-link">
-                                    <img
-                                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
-                                        alt={user.username || 'User'}
-                                        className="profile-avatar"
-                                    />
-                                </Link>
-                                <Link to="/profile" className="username-link">
-                                    {user.username}
-                                </Link>
-                                <Link to="/messages" className="messages-link" onClick={handleMessagesIconClick}>
-                                    <div className="messages-icon-container">
-                                        <FontAwesomeIcon
-                                            icon={faEnvelope}
-                                            className="messages-icon"
-                                            style={{ color: '#FFFFFF' }}
-                                        />
-                                        {unreadCount > 0 && (
-                                            <span className="unread-badge">
-                                                {unreadCount > 99 ? '99+' : unreadCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                </Link>
+                            <div className="user-actions">
+                                <Link to="/create" className="btn btn-primary create-btn">Создать турнир</Link>
                                 <button className="btn btn-secondary" onClick={handleLogout}>Выйти</button>
                             </div>
                         ) : (
-                            <div className="login-button-container">
-                                <Link to="/auth" className="login-button">Войти</Link>
+                            <div className="user-actions">
+                                <Link to="/auth" className="btn btn-secondary">Войти</Link>
                             </div>
                         )}
                     </div>

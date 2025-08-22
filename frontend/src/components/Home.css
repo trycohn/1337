@@ -94,10 +94,7 @@ header.header {
     box-sizing: border-box;
     white-space: nowrap; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРЅРѕСЃ С‚РµРєСЃС‚Р° */
 }
-.navigation button {
-  background-color: #ffffff;
-  color: #000000;
-}
+.navigation button { background-color: transparent; }
 .navigation a:hover,
 .navigation button:hover {
     color: #ffffff;

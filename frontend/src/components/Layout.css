@@ -70,10 +70,7 @@
   letter-spacing: 0.08em;
   padding: 8px 16px;
 }
-.nav-link.btn-ghost:hover {
-  background: #111111;
-  border-radius: 4px;
-}
+.nav-link.btn-ghost:hover { text-decoration: none; }
 
 /* Figma: Primary/Secondary buttons */
 .btn {
@@ -87,6 +84,9 @@
   letter-spacing: 0.08em;
   cursor: pointer;
   text-decoration: none;
+  width: 188px;
+  height: 35px;
+  gap: 8px;
 }
 .btn-primary {
   background: #FF3838;
@@ -103,6 +103,8 @@
 .btn-secondary:hover { background: #111111; }
 
 .create-btn { margin-right: 8px; }
+
+.user-actions { display: flex; align-items: center; gap: 8px; }
 
 /* Figma font preference */
 .header .nav-link,
