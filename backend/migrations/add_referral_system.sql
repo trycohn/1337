@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS referral_links (
     referral_code VARCHAR(50) NOT NULL UNIQUE,
     expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
     uses_count INTEGER DEFAULT 0,
-    max_uses INTEGER DEFAULT 10,
+    max_uses INTEGER DEFAULT 32,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -81,7 +81,7 @@ router.post('/generate-link', authenticateToken, async (req, res) => {
             INSERT INTO referral_links (
                 user_id, tournament_id, referral_code, 
                 expires_at, max_uses, uses_count
-            ) VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', 10, 0)
+            ) VALUES ($1, $2, $3, NOW() + INTERVAL '7 days', 32, 0)
             RETURNING *
         `, [user_id, tournament_id, referralCode]);
 

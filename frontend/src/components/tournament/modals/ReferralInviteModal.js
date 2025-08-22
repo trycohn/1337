@@ -204,7 +204,7 @@ const ReferralInviteModal = ({
                                     </div>
                                     <div className="referral-info-item">
                                         <span className="referral-info-label">🔢 Использований:</span>
-                                        <span className="referral-info-value">{referralData.uses_count} / {referralData.max_uses}</span>
+                                        <span className="referral-info-value">{referralData.uses_count} / {referralData.max_uses || 32}</span>
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +283,7 @@ const ReferralInviteModal = ({
                                     <li>🏆 Вы получаете бонусы!</li>
                                 </ol>
                                 <p className="note">
-                                    ⏰ Ссылка действует 7 дней, максимум 10 использований
+                                    ⏰ Ссылка действует 7 дней, максимум 32 использования
                                 </p>
                             </div>
                         </>
