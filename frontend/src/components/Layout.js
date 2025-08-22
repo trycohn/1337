@@ -285,11 +285,9 @@ function Layout() {
                         </button>
                         <nav 
                             className={`navigation ${isMenuOpen ? 'open' : ''}`}
+                            aria-hidden={!isMenuOpen}
                             onClick={(e) => {
-                                // Закрываем меню при клике по фону (не по ссылкам)
-                                if (e.target === e.currentTarget) {
-                                    setIsMenuOpen(false);
-                                }
+                                if (e.target === e.currentTarget) setIsMenuOpen(false);
                             }}
                         >
                             <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>

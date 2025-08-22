@@ -197,7 +197,7 @@
     .btn-danger,
     .btn-preview,
     .btn-generate {
-        min-width: 100%;
+        min-width: fit-content;
     }
     
     .option-group {
