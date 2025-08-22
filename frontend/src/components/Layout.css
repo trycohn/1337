@@ -164,10 +164,11 @@
     position: fixed;
     top: 56px;
     right: 0;
+    left: 0;
     bottom: 0;
-    width: 90vw; /* 90% ширины экрана */
-    background: #000000 !important; /* непрозрачный черный фон */
-    border-left: 1px solid #ff0000;
+    width: 100vw; /* на всю ширину экрана */
+    background: rgba(0, 0, 0, 0.1) !important; /* черный фон 10% прозрачности */
+    border-left: none;
     transform: translateX(100%);
     opacity: 0;
     visibility: hidden;
@@ -181,7 +182,7 @@
   }
 
   /* Дополнительная страховка от внешних правил */
-  .header .navigation { background-color: #000000 !important; }
+  .header .navigation { background-color: rgba(0, 0, 0, 0.1) !important; }
 
   .navigation.open { 
     transform: translateX(0);
@@ -194,7 +195,12 @@
     padding: 12px 8px;
     border-bottom: 1px solid #111111;
     width: 100%;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 56px; /* удобная зона тапа */
+    box-sizing: border-box;
   }
 }
 
