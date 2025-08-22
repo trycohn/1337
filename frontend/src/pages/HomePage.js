@@ -174,7 +174,7 @@ function HomePage() {
       {isInitialLoading && (
         <div className="initial-loader">
           <div className="loader-content">
-            <h1 className="loader-logo">1337</h1>
+            <img src="/images/1337%20white%20logo.svg" alt="1337" className="loader-logo" />
             <div className="loader-bar">
               <div className="loader-progress"></div>
             </div>

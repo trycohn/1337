@@ -31,12 +31,10 @@
 }
 
 .loader-logo {
-  font-size: 5rem;
-  font-weight: 900;
-  color: #ff0000;
-  margin-bottom: 40px;
-  animation: pulse 1s infinite;
-  text-shadow: 0 0 30px rgba(255,0,0,0.5);
+  height: 100px; /* как и в общем прелоадере */
+  width: auto;
+  display: inline-block;
+  margin-bottom: 24px;
 }
 
 .loader-bar {
@@ -1089,9 +1087,7 @@
 }
 
 @media (max-width: 768px) {
-  .initial-loader .loader-logo {
-    font-size: 3.5rem;
-  }
+  .initial-loader .loader-logo { height: 48px; }
   
   .loader-bar {
     width: 250px;
@@ -1170,9 +1166,7 @@
 }
 
 @media (max-width: 480px) {
-  .initial-loader .loader-logo {
-    font-size: 3rem;
-  }
+  .initial-loader .loader-logo { height: 42px; }
   
   .loader-text {
     font-size: 0.9rem;
