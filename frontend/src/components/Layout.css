@@ -167,7 +167,7 @@
     left: 0;
     bottom: 0;
     width: 100vw; /* на всю ширину экрана */
-    background: rgba(0, 0, 0, 0.1) !important; /* черный фон 10% прозрачности */
+    background: rgba(0, 0, 0, 0.9) !important; /* черный фон с 10% прозрачностью (90% непрозрачности) */
     border-left: none;
     transform: translateX(100%);
     opacity: 0;
@@ -181,8 +181,18 @@
     z-index: 1000;
   }
 
+  /* Подложка через псевдоэлемент для гарантированного фона поверх любых коллизий */
+  .navigation::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: -1;
+  }
+
   /* Дополнительная страховка от внешних правил */
-  .header .navigation { background-color: rgba(0, 0, 0, 0.1) !important; }
+  .header .navigation { background-color: rgba(0, 0, 0, 0.9) !important; }
+  .header nav.navigation.open { background-color: rgba(0, 0, 0, 0.9) !important; }
 
   .navigation.open { 
     transform: translateX(0);
@@ -192,7 +202,7 @@
   }
 
   .navigation a {
-    padding: 12px 8px;
+    padding: 16px 12px;
     border-bottom: 1px solid #111111;
     width: 100%;
     display: flex;
@@ -201,6 +211,15 @@
     text-align: center;
     min-height: 56px; /* удобная зона тапа */
     box-sizing: border-box;
+  }
+
+  /* Перебиваем глобальные прозрачные стили ссылок в навигации */
+  .navigation a.nav-link,
+  .navigation a.btn-ghost,
+  .header .navigation a.nav-link,
+  .header .navigation a.btn-ghost {
+    background: transparent !important;
+    color: #ffffff !important;
   }
 }
 
