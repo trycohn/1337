@@ -175,8 +175,10 @@ function HomePage() {
         <div className="initial-loader">
           <div className="loader-content">
             <img src="/images/1337%20white%20logo.svg" alt="1337" className="loader-logo" />
-            <div className="loader-bar">
-              <div className="loader-progress"></div>
+            <div className="loader-dots" aria-label="Загрузка">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
             </div>
           </div>
         </div>

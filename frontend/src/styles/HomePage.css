@@ -37,21 +37,27 @@
   margin-bottom: 24px;
 }
 
-.loader-bar {
-  width: 240px;
-  height: 4px;
-  background: #111;
-  margin: 0 auto 20px;
-  overflow: hidden;
-  border-radius: 2px;
+
+/* Dots loader under the logo */
+.loader-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 8px auto 0;
 }
 
-.loader-progress {
-  height: 100%;
-  background: #ff0000;
-  animation: loadProgress 1.5s ease-out forwards;
-  box-shadow: 0 0 10px rgba(255,0,0,0.5);
+.loader-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #FF3838;
+  opacity: 0.4;
+  animation: dotPulse 1.2s infinite ease-in-out;
 }
+
+.loader-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+.loader-dots .dot:nth-child(3) { animation-delay: 0.3s; }
 
 .loader-text {
   font-size: 1.1rem;
@@ -59,9 +65,9 @@
   animation: fadeInOut 2s infinite;
 }
 
-@keyframes loadProgress {
-  0% { width: 0%; }
-  100% { width: 100%; }
+@keyframes dotPulse {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
 }
 
 @keyframes fadeOut {
