@@ -417,40 +417,7 @@
     border-top: 1px solid #ffffff;
 }
 
-.modal-btn,
-.close-action-btn,
-.edit-action-btn,
-.share-btn {
-    padding: 10px 20px;
-    border: 1px solid #ffffff;
-    background: #000000;
-    color: #ffffff;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.modal-btn:hover,
-.close-action-btn:hover,
-.edit-action-btn:hover,
-.share-btn:hover {
-    background: #ffffff;
-    color: #000000;
-}
-
-.modal-btn-primary {
-    background: #ffffff;
-    color: #000000;
-}
-
-.modal-btn-primary:hover {
-    background: #000000;
-    color: #ffffff;
-}
+/* Кнопки: используем глобальные .btn-* */
 
 /* === TOOLTIPS === */
 .match-details-tooltip {

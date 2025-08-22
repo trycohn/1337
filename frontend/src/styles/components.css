@@ -14,7 +14,7 @@ nav a:hover {
   text-decoration: none;
 }
 /* 🎯 ЕДИНЫЕ СТИЛИ КНОПОК (Figma: Play / 700 / 16 / 100% / 8%) */
-.btn, .nav-button, .auth-button, button {
+.btn, .nav-button, .auth-button, button, .primary-btn, .secondary-btn, .modal-btn, .close-action-btn, .edit-action-btn, .share-btn, .referral-copy-btn, .referral-retry-btn, .delete-tournament-cancel-btn__deletetournament, .delete-tournament-confirm-btn__deletetournament, .btn-confirm-participation, .confirm-btn, .cancel-btn, .clear-winner-btn, .add-map-btn, .remove-map-btn, .modal-btn-primary {
   font-family: Play, Arial, sans-serif;
   font-weight: 700;
   font-size: 16px;
@@ -36,19 +36,17 @@ nav a:hover {
 }
 
 /* Варианты: Primary / Secondary / Ghost */
-.btn-primary {
+.btn-primary, .primary-btn, .modal-btn-primary, .delete-tournament-confirm-btn__deletetournament, .referral-copy-btn, .confirm-btn, .btn-confirm-participation {
   background: var(--Leet-Accent, #FF3838);
   color: #FFFFFF;
   border: 1px solid var(--Leet-Accent, #FF3838);
 }
-.btn-primary:hover {}
 
-.btn-secondary {
+.btn-secondary, .secondary-btn, .btn-cancel, .delete-tournament-cancel-btn__deletetournament, .referral-retry-btn, .clear-winner-btn, .add-map-btn, .remove-map-btn, .close-action-btn, .edit-action-btn, .share-btn {
   background: transparent;
   color: #FFFFFF;
   border: 2px solid var(--Leet-Accent, #FF3838);
 }
-.btn-secondary:hover {}
 
 .btn-ghost,
 .nav-link.btn-ghost {
@@ -187,99 +185,29 @@ button:hover,
   border-bottom: 1px solid var(--light-gray);
   margin-bottom: var(--spacing-md);
 }
-.card-title {
-  margin: 0;
-  color: var(--text-color);
-}
-.card-body {
-  margin-bottom: var(--spacing-md);
-}
-.card-footer {
-  border-top: 1px solid var(--light-gray);
-  padding-top: var(--spacing-sm);
-}
+.card-title { margin: 0; color: var(--text-color); }
+.card-body { margin-bottom: var(--spacing-md); }
+.card-footer { border-top: 1px solid var(--light-gray); padding-top: var(--spacing-sm); }
 /* Бэйджи */
-.badge {
-  display: inline-block;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-small);
-  font-weight: 500;
-}
-.badge-primary {
-  background-color: var(--primary-color);
-  color: var(--light-text);
-}
-.badge-secondary {
-  background-color: var(--secondary-color);
-  color: var(--light-text);
-}
-.badge-success {
-  background-color: var(--success-color);
-  color: var(--light-text);
-}
-.badge-danger {
-  background-color: var(--error-color);
-  color: var(--light-text);
-}
-.badge-warning {
-  background-color: var(--warning-color);
-  color: var(--dark-text);
-}
-.badge-info {
-  background-color: var(--info-color);
-  color: var(--light-text);
-}
+.badge { display: inline-block; padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--border-radius-sm); font-size: var(--font-size-small); font-weight: 500; }
+.badge-primary { background-color: var(--primary-color); color: var(--light-text); }
+.badge-secondary { background-color: var(--secondary-color); color: var(--light-text); }
+.badge-success { background-color: var(--success-color); color: var(--light-text); }
+.badge-danger { background-color: var(--error-color); color: var(--light-text); }
+.badge-warning { background-color: var(--warning-color); color: var(--dark-text); }
+.badge-info { background-color: var(--info-color); color: var(--light-text); }
 /* Аватары */
-.avatar {
-  border-radius: 50%;
-  object-fit: cover;
-}
-.avatar-sm {
-  width: 32px;
-  height: 32px;
-}
-.avatar-md {
-  width: 48px;
-  height: 48px;
-}
-.avatar-lg {
-  width: 64px;
-  height: 64px;
-}
+.avatar { border-radius: 50%; object-fit: cover; }
+.avatar-sm { width: 32px; height: 32px; }
+.avatar-md { width: 48px; height: 48px; }
+.avatar-lg { width: 64px; height: 64px; }
 /* Списки */
-.list-group {
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-}
-.list-group-item {
-  padding: var(--spacing-md);
-  background-color: var(--card-background);
-  border-bottom: 1px solid var(--light-gray);
-}
-.list-group-item:last-child {
-  border-bottom: none;
-}
+.list-group { border-radius: var(--border-radius-sm); overflow: hidden; }
+.list-group-item { padding: var(--spacing-md); background-color: var(--card-background); border-bottom: 1px solid var(--light-gray); }
+.list-group-item:last-child { border-bottom: none; }
 /* Уведомления */
-.notification {
-  padding: var(--spacing-sm);
-  background-color: var(--card-background);
-  border-left: 3px solid var(--primary-color);
-  margin-bottom: var(--spacing-sm);
-}
-.notification.unread {
-  background-color: rgba(0, 123, 255, 0.05);
-}
-.notification-title {
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
-}
-.notification-body {
-  color: var(--secondary-text);
-  font-size: var(--font-size-small);
-}
-.notification-time {
-  font-size: var(--font-size-small);
-  color: var(--secondary-text);
-  margin-top: var(--spacing-xs);
-} 
+.notification { padding: var(--spacing-sm); background-color: var(--card-background); border-left: 3px solid var(--primary-color); margin-bottom: var(--spacing-sm); }
+.notification.unread { background-color: rgba(0, 123, 255, 0.05); }
+.notification-title { font-weight: 600; margin-bottom: var(--spacing-xs); }
+.notification-body { color: var(--secondary-text); font-size: var(--font-size-small); }
+.notification-time { font-size: var(--font-size-small); color: var(--secondary-text); margin-top: var(--spacing-xs); } 

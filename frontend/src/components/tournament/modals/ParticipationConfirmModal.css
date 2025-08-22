@@ -174,50 +174,8 @@
     background: none !important;
 }
 
-.btn-cancel,
-.btn-confirm-participation {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 120px;
-    justify-content: center;
-}
-
-.btn-cancel {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-cancel:hover:not(:disabled) {
-    background: #5a6268;
-    /* REMOVED ANIMATION: transform: translateY(-1px); */
-}
-
-.btn-confirm-participation {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-    font-weight: 600;
-}
-
-.btn-confirm-participation:hover:not(:disabled) {
-    background: linear-gradient(135deg, #218838, #17a2b8);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-}
-
-.btn-cancel:disabled,
-.btn-confirm-participation:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    /* REMOVED ANIMATION: transform: none !important; */
-}
+/* Кнопки: используем глобальные стили */
+.btn-cancel, .btn-confirm-participation { min-width: 120px; justify-content: center; }
 
 .loading-spinner {
     width: 16px;

@@ -454,43 +454,8 @@
     flex-shrink: 0;
 }
 
-.primary-btn, .secondary-btn {
-    padding: 12px 24px;
-    border: 1px solid #ffffff;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.primary-btn {
-    background: #ffffff;
-    color: #000000;
-}
-
-.primary-btn:hover {
-    background: #000000;
-    color: #ffffff;
-}
-
-.primary-btn:disabled {
-    background: #333333;
-    color: #cccccc;
-    border-color: #333333;
-    cursor: not-allowed;
-}
-
-.secondary-btn {
-    background: #000000;
-    color: #ffffff;
-}
-
-.secondary-btn:hover {
-    background: #ffffff;
-    color: #000000;
-}
+/* Удалены локальные определения цветов для .primary-btn/.secondary-btn.
+   Используются глобальные .btn-primary/.btn-secondary из styles/components.css */
 
 .loading-indicator {
     color: #ffffff;
@@ -581,11 +546,7 @@
         flex-direction: column;
         gap: 10px;
     }
-
-    .primary-btn, .secondary-btn {
-        width: 100%;
-        justify-content: center;
-    }
+    .primary-btn, .secondary-btn { width: 100%; justify-content: center; }
 }
 
 @media (max-width: 480px) {
