@@ -507,6 +507,43 @@ const testEmailConnection = async () => {
 module.exports = {
     sendWelcomeEmail,
     sendPasswordResetEmail,
+    // 🆕 Отправка кода подтверждения email
+    sendEmailVerificationCode: async (userEmail, username, verificationCode) => {
+        try {
+            const mailOptions = {
+                from: {
+                    name: '1337 Community Security',
+                    address: process.env.SMTP_USER || 'security@1337community.com'
+                },
+                to: userEmail,
+                subject: 'Подтверждение электронной почты — 1337 Community',
+                html: `
+                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background:#000; color:#fff; max-width:600px; margin:0 auto; border:2px solid #ff0000; border-radius:12px;">
+                        <div style="padding:24px 24px 0 24px; text-align:center;">
+                            <h1 style="margin:0 0 8px 0; font-size:24px;">Подтверждение email</h1>
+                            <p style="margin:0; color:#bbb">1337 Community</p>
+                        </div>
+                        <div style="padding:24px;">
+                            <p style="margin:0 0 12px 0;">Привет, ${username}!</p>
+                            <p style="margin:0 0 16px 0; color:#ccc;">Введите этот код для подтверждения почты. Код действует 30 минут.</p>
+                            <div style="background:#111; border:2px solid #ff0000; border-radius:10px; padding:16px; text-align:center; letter-spacing:6px; font-size:28px; font-weight:700;">${verificationCode}</div>
+                        </div>
+                        <div style="padding:16px 24px 24px 24px; color:#888; font-size:12px; text-align:center;">
+                            Если вы не запрашивали подтверждение — игнорируйте письмо.
+                        </div>
+                    </div>
+                `.trim(),
+                text: `Ваш код подтверждения: ${verificationCode}. Срок действия — 30 минут.`
+            };
+
+            const result = await transporter.sendMail(mailOptions);
+            console.log('✅ Код подтверждения email отправлен:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('❌ Ошибка отправки кода подтверждения email:', error);
+            return { success: false, error: error.message };
+        }
+    },
     testEmailConnection,
     transporter
 }; 

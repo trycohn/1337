@@ -1361,33 +1361,15 @@ router.post('/verify-email', authenticateToken, async (req, res) => {
             [verificationCode, req.user.id]
         );
         
-        // Отправляем код по электронной почте
-        const mailOptions = {
-            from: process.env.SMTP_FROM,
-            to: email,
-            subject: 'Подтверждение электронной почты - 1337 Community',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">Подтверждение электронной почты</h2>
-                    <p>Здравствуйте, ${req.user.username}!</p>
-                    <p>Для подтверждения вашей электронной почты, пожалуйста, введите следующий код:</p>
-                    <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; letter-spacing: 5px; margin: 20px 0;">
-                        <strong>${verificationCode}</strong>
-                    </div>
-                    <p>Код действителен в течение 30 минут.</p>
-                    <p>Если вы не запрашивали подтверждение почты, пожалуйста, проигнорируйте это сообщение.</p>
-                    <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-                                <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
-                                <p style="margin: 0; color: #999999; font-size: 11px;">
-                                    ${new Date().toLocaleString('ru-RU')}
-                                </p>
-                            </div>
-                </div>
-            `
-        };
-        
-        await transporter.sendMail(mailOptions);
-        
+        // Отправляем код по электронной почте (централизованный сервис)
+        const { sendEmailVerificationCode } = require('../services/emailService');
+        const sendResult = await sendEmailVerificationCode(email, req.user.username, verificationCode);
+
+        if (!sendResult.success) {
+            console.error('❌ Ошибка отправки письма с кодом:', sendResult.error);
+            return res.status(502).json({ error: 'Сервис почты недоступен. Попробуйте позже.' });
+        }
+
         res.json({ message: 'Код подтверждения отправлен на вашу почту' });
     } catch (err) {
         console.error('Ошибка отправки кода верификации:', err);
@@ -1430,32 +1412,29 @@ router.post('/confirm-email', authenticateToken, async (req, res) => {
             [req.user.id]
         );
         
-        // Отправляем письмо об успешном подтверждении
+        // Отправляем письмо об успешном подтверждении (от единого отправителя)
+        const { transporter: mailer } = require('../services/emailService');
         const successMailOptions = {
-            from: process.env.SMTP_FROM,
+            from: {
+                name: '1337 Community',
+                address: process.env.SMTP_USER || 'noreply@1337community.com'
+            },
             to: email,
-            subject: 'Email успешно подтвержден - 1337 Community',
+            subject: 'Email успешно подтвержден — 1337 Community',
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">Ваш email успешно подтвержден!</h2>
-                    <p>Здравствуйте, ${username}!</p>
-                    <p>Поздравляем! Ваш email был успешно подтвержден.</p>
-                    <p>Теперь вам доступны все функции нашего сайта, включая создание и администрирование турниров.</p>
-                    <div style="background-color: #f0f8ff; padding: 15px; margin: 20px 0; border-left: 4px solid #4682b4;">
-                        <p style="margin: 0;">Добро пожаловать в полноценное сообщество 1337 Community!</p>
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; max-width: 600px; margin: 0 auto; background:#000; color:#fff; border:2px solid #ff0000; border-radius:12px;">
+                    <div style="padding:24px; text-align:center;">
+                        <h2 style="margin:0 0 8px 0;">Ваш email подтвержден</h2>
+                        <p style="margin:0; color:#bbb">Добро пожаловать, ${username}!</p>
                     </div>
-                    <!-- Footer -->
-                            <div style="background-color: #f8f8f8; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-                                <p style="margin: 0 0 5px 0; color: #666666; font-size: 12px;">1337 Community • Автоматическое уведомление</p>
-                                <p style="margin: 0; color: #999999; font-size: 11px;">
-                                    ${new Date().toLocaleString('ru-RU')}
-                                </p>
-                            </div>
+                    <div style="padding:0 24px 24px 24px; color:#ccc;">
+                        Теперь доступны все функции платформы, включая создание и администрирование турниров.
+                    </div>
                 </div>
-            `
+            `.trim()
         };
-        
-        await transporter.sendMail(successMailOptions);
+
+        await mailer.sendMail(successMailOptions);
         
         res.json({ message: 'Email успешно подтвержден' });
     } catch (err) {
