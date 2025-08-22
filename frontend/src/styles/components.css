@@ -1,9 +1,7 @@
 /* Импорт переменных */
 @import './variables.css';
 /* Навигация */
-nav {
-  background-color: #000;
-}
+
 nav a, nav button {
   color: #ffffff;
   text-transform: uppercase;
@@ -16,30 +14,58 @@ nav a:hover, nav button:hover {
   color: #ffffff;
   text-decoration: none;
 }
-/* 🎯 ЕДИНЫЙ СТИЛЬ КНОПОК */
+/* 🎯 ЕДИНЫЕ СТИЛИ КНОПОК (Figma: Play / 700 / 16 / 100% / 8%) */
 .btn, .nav-button, .auth-button, button {
-  font-family: 'Montserrat';
+  font-family: Play, Arial, sans-serif;
+  font-weight: 700;
   font-size: 16px;
-  font-weight: bold;
-  color: #ffffff !important;
-  padding: 5px 25px;
-  border-radius: 0px;
-  border: 1px solid #ff0000;
-  background: #000000;
+  line-height: 100%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 35px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  gap: 8px;
+  background: transparent;
+  border: none;
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
-.btn:hover, .nav-button:hover, .auth-button:hover, button:hover {
-  color: #d5d5d5 !important;
-  background: #000000;
-  border: 1px solid #a60000;
+
+/* Варианты: Primary / Secondary / Ghost */
+.btn-primary {
+  background: var(--Leet-Accent, #FF3838);
+  color: #FFFFFF;
+  border: 1px solid var(--Leet-Accent, #FF3838);
 }
-.btn:active, .nav-button:active, .auth-button:active, button:active {
-  color: #000000 !important;
-  background: #ffffff;
+.btn-primary:hover {
+  background: #E63131;
+  border-color: #E63131;
 }
+
+.btn-secondary {
+  background: transparent;
+  color: #FFFFFF;
+  border: 2px solid var(--Leet-Accent, #FF3838);
+}
+.btn-secondary:hover { background: #111111; }
+
+.btn-ghost,
+.nav-link.btn-ghost {
+  background: none;
+  color: #FFFFFF;
+  border: none;
+  height: 35px;
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+.btn-ghost:hover,
+.nav-link.btn-ghost:hover { text-decoration: none; }
 /* Иконки в навигации */
 .nav-icon, nav .icon {
   color: #ffffff;
