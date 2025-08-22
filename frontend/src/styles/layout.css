@@ -77,22 +77,8 @@ main {
 }
 
 /* Мобильное меню */
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 var(--spacing-sm);
-}
-.hamburger svg {
-  width: 24px;
-  height: 24px;
-  transition: transform var(--transition-normal);
-  fill: #ffffff;
-}
-.hamburger:hover svg {
-  fill: #d5d5d5;
-}
+/* Стили гамбургера вынесены в компонентный файл frontend/src/components/Layout.css,
+   чтобы избежать конфликтов и дублирования. */
 /* Блок авторизации */
 .auth-block {
   display: flex;
