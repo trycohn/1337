@@ -15,7 +15,7 @@
   background-color: var(--card-background);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-md);
-  overflow: hidden;
+  overflow: visible; /* Разрешаем тултипу выходить за границы контейнера */
   border: 1px solid var(--light-gray);
 }
 .auth-tabs {
@@ -47,7 +47,7 @@
 }
 .auth-form-container {
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Разрешаем тултипу выходить за пределы формы */
   padding: var(--spacing-lg);
   background-color: var(--card-background);
   min-height: 650px; /* Увеличено для размещения PasswordStrengthIndicator */
@@ -653,7 +653,7 @@
   top: 0;
   right: -20px;
   transform: translateX(100%);
-  z-index: 1000;
+  z-index: 12000; /* Поверх модалок и прочих слоев */
   max-width: 280px;
   min-width: 200px;
   animation: tooltipSlideIn 0.3s ease-out;
@@ -664,14 +664,14 @@
   --tooltip-bg: #dc3545;
   --tooltip-border: #b02a37;
   --tooltip-shadow: rgba(220, 53, 69, 0.3);
-  z-index: 1000;
+  z-index: 12000;
 }
 
 .auth-tooltip.success {
   --tooltip-bg: #28a745;
   --tooltip-border: #1e7e34;
   --tooltip-shadow: rgba(40, 167, 69, 0.3);
-  z-index: 1000;
+  z-index: 12000;
 }
 
 .tooltip-content {
@@ -762,7 +762,7 @@
     top: -60px;
     left: 0;
     max-width: 100%;
-    z-index: 1000;
+    z-index: 12000;
   }
   
   .tooltip-arrow {

@@ -882,19 +882,6 @@
     position: relative;
 }
 
-/* Разделитель перед Grand Final */
-.bracket-grand-final-section::before {
-    content: '';
-    position: absolute;
-    top: -40px;
-    left: 5%;
-    right: 5%;
-    height: 1px;
-    background: #111;
-    border-radius: 0;
-    box-shadow: none;
-}
-
 /* ===== СЕКЦИИ DOUBLE ELIMINATION С ЧЕТКИМ РАЗДЕЛЕНИЕМ ===== */
 
 /* Верхняя сетка (Winners Bracket) */

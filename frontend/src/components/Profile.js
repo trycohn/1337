@@ -124,6 +124,7 @@ function Profile() {
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isClosingModal, setIsClosingModal] = useState(false);
     const [verificationError, setVerificationError] = useState('');
+    const [verificationSuccess, setVerificationSuccess] = useState('');
     
     // Email adding states
     const [showAddEmailModal, setShowAddEmailModal] = useState(false);
@@ -1194,6 +1195,7 @@ function Profile() {
             setIsClosingModal(false);
             setVerificationCode('');
             setVerificationError(''); // Сбрасываем ошибку при закрытии
+            setVerificationSuccess('');
         }, 300); // Время должно совпадать с длительностью анимации в CSS (0.3s)
     };
 
@@ -1256,8 +1258,14 @@ function Profile() {
             
             // Обновляем статус верификации пользователя
             // setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null); // Убран - используем AuthContext
-            closeEmailVerificationModal();
             setError('');
+            setVerificationError('');
+            setVerificationSuccess('Верификация прошла успешно. Обновляем профиль...');
+            // Показываем сообщение 3 секунды, затем перезагружаем профиль
+            setTimeout(() => {
+                closeEmailVerificationModal();
+                if (typeof window !== 'undefined') window.location.reload();
+            }, 3000);
         } catch (err) {
             // Устанавливаем ошибку в модальном окне вместо общей ошибки
             setVerificationError(err.response?.data?.message || 'Неверный код подтверждения');
