@@ -465,7 +465,7 @@ const TournamentAdminPanel = ({
                         <h4>⚔️ Управление матчами</h4>
                         <div className="matches-actions">
                             <button 
-                                className="action-btn-v2 edit-btn"
+                                className="btn btn-secondary"
                                 onClick={() => onEditMatchResult()}
                                 disabled={isLoading}
                             >

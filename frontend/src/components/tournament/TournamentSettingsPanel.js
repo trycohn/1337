@@ -247,7 +247,7 @@ const TournamentSettingsPanel = ({
                                 <span className="setting-value">{tournament.game}</span>
                                 {canEdit && (
                                     <button 
-                                        className="edit-btn"
+                                        className="btn btn-secondary"
                                         onClick={() => handleEdit('game')}
                                         title="Изменить дисциплину"
                                     >
@@ -304,7 +304,7 @@ const TournamentSettingsPanel = ({
                                 </span>
                                 {canEdit && (
                                     <button 
-                                        className="edit-btn"
+                                        className="btn btn-secondary"
                                         onClick={() => handleEdit('format')}
                                         title="Изменить формат"
                                     >
@@ -361,7 +361,7 @@ const TournamentSettingsPanel = ({
                                 </span>
                                 {canEditBracketType && (
                                     <button 
-                                        className="edit-btn"
+                                        className="btn btn-secondary"
                                         onClick={() => handleEdit('bracket_type')}
                                         title="Изменить тип сетки (только создатель)"
                                     >
@@ -419,7 +419,7 @@ const TournamentSettingsPanel = ({
                                     </span>
                                     {canEdit && (
                                         <button 
-                                            className="edit-btn"
+                                            className="btn btn-secondary"
                                             onClick={() => handleEdit('mix_rating_type')}
                                             title="Изменить тип рейтинга"
                                         >
@@ -478,7 +478,7 @@ const TournamentSettingsPanel = ({
                                     </span>
                                     {canEdit && (
                                         <button 
-                                            className="edit-btn"
+                                            className="btn btn-secondary"
                                             onClick={() => handleEdit('team_size')}
                                             title="Изменить размер команды (только создатель)"
                                         >
@@ -534,7 +534,7 @@ const TournamentSettingsPanel = ({
                                 </span>
                                 {canEdit && (
                                     <button 
-                                        className="edit-btn"
+                                        className="btn btn-secondary"
                                         onClick={() => handleEdit('start_date')}
                                         title="Изменить дату старта"
                                     >
@@ -589,7 +589,7 @@ const TournamentSettingsPanel = ({
                                     </span>
                                     {canEdit && (
                                         <button 
-                                            className="edit-btn"
+                                            className="btn btn-secondary"
                                             onClick={() => handleEdit('lobby_enabled')}
                                             title="Изменить настройки лобби"
                                         >
