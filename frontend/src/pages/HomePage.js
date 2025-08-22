@@ -178,7 +178,6 @@ function HomePage() {
             <div className="loader-bar">
               <div className="loader-progress"></div>
             </div>
-            <p className="loader-text">Загружаем киберспортивную арену...</p>
           </div>
         </div>
       )}

@@ -30,15 +30,15 @@
   text-align: center;
 }
 
-.loader-logo {
-  height: 240px; /* увеличено по запросу */
+.initial-loader .loader-logo {
+  height: 320px; /* увеличено по запросу */
   width: auto;
   display: inline-block;
   margin-bottom: 24px;
 }
 
 .loader-bar {
-  width: 300px;
+  width: 240px;
   height: 4px;
   background: #111;
   margin: 0 auto 20px;
@@ -1089,9 +1089,7 @@
 @media (max-width: 768px) {
   .initial-loader .loader-logo { height: 48px; }
   
-  .loader-bar {
-    width: 250px;
-  }
+  .loader-bar { width: 240px; }
   
   .section-title {
     font-size: 2rem;
