@@ -301,6 +301,11 @@ function Layout() {
                                             Админ панель
                                         </Link>
                                     )}
+                                    {isMobile && (
+                                        <Link to="/create" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
+                                            Создать турнир
+                                        </Link>
+                                    )}
                                 </>
                             )}
                         </nav>

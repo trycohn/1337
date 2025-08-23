@@ -221,6 +221,9 @@
     background: transparent !important;
     color: #ffffff !important;
   }
+
+  /* Скрыть кнопку создания в шапке на мобильных — переносим в меню */
+  .auth-block .create-btn { display: none; }
 }
 
  
