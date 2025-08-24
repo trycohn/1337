@@ -757,14 +757,14 @@ function AdminPanel() {
                         
                         <div className="modal-actions">
                             <button 
-                                className="confirm-btn"
+                                className="btn btn-secondary"
                                 onClick={handleApprove}
                                 disabled={actionLoading}
                             >
                                 {actionLoading ? 'Обработка...' : 'Одобрить'}
                             </button>
                             <button 
-                                className="cancel-btn"
+                                className="btn btn-secondary"
                                 onClick={() => setShowApproveModal(false)}
                             >
                                 Отмена
@@ -794,14 +794,14 @@ function AdminPanel() {
                         
                         <div className="modal-actions">
                             <button 
-                                className="confirm-btn reject-confirm"
+                                className="btn btn-secondary"
                                 onClick={handleReject}
                                 disabled={actionLoading || !actionData.admin_comment.trim()}
                             >
                                 {actionLoading ? 'Обработка...' : 'Отклонить'}
                             </button>
                             <button 
-                                className="cancel-btn"
+                                className="btn btn-secondary"
                                 onClick={() => setShowRejectModal(false)}
                             >
                                 Отмена

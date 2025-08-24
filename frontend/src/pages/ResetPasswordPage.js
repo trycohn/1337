@@ -140,7 +140,7 @@ function ResetPasswordPage() {
             
             <button 
               type="submit" 
-              className="auth-button" 
+              className="btn btn-secondary" 
               disabled={loading}
             >
               {loading ? 'Изменение...' : 'Изменить пароль'}

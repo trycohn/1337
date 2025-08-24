@@ -52,7 +52,7 @@ function ForgotPasswordPage() {
             
             <button 
               type="submit" 
-              className="auth-button" 
+              className="btn btn-secondary" 
               disabled={loading}
             >
               {loading ? 'Отправка...' : 'Отправить ссылку'}

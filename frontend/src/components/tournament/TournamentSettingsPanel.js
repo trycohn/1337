@@ -234,7 +234,7 @@ const TournamentSettingsPanel = ({
                                         {fieldLoading.game ? '⏳' : '✅'}
                                     </button>
                                     <button 
-                                        className="cancel-btn"
+                                        className="btn btn-secondary"
                                         onClick={handleCancel}
                                         disabled={fieldLoading.game}
                                     >
@@ -289,7 +289,7 @@ const TournamentSettingsPanel = ({
                                         {fieldLoading.format ? '⏳' : '✅'}
                                     </button>
                                     <button 
-                                        className="cancel-btn"
+                                        className="btn btn-secondary"
                                         onClick={handleCancel}
                                         disabled={fieldLoading.format}
                                     >
@@ -346,7 +346,7 @@ const TournamentSettingsPanel = ({
                                         {fieldLoading.bracket_type ? '⏳' : '✅'}
                                     </button>
                                     <button 
-                                        className="cancel-btn"
+                                        className="btn btn-secondary"
                                         onClick={handleCancel}
                                         disabled={fieldLoading.bracket_type}
                                     >
@@ -404,7 +404,7 @@ const TournamentSettingsPanel = ({
                                             {fieldLoading.mix_rating_type ? '⏳' : '✅'}
                                         </button>
                                         <button 
-                                            className="cancel-btn"
+                                            className="btn btn-secondary"
                                             onClick={handleCancel}
                                             disabled={fieldLoading.mix_rating_type}
                                         >
@@ -463,7 +463,7 @@ const TournamentSettingsPanel = ({
                                             {fieldLoading.team_size ? '⏳' : '✅'}
                                         </button>
                                         <button 
-                                            className="cancel-btn"
+                                            className="btn btn-secondary"
                                             onClick={handleCancel}
                                             disabled={fieldLoading.team_size}
                                         >
@@ -516,7 +516,7 @@ const TournamentSettingsPanel = ({
                                         {fieldLoading.start_date ? '⏳' : '✅'}
                                     </button>
                                     <button 
-                                        className="cancel-btn"
+                                        className="btn btn-secondary"
                                         onClick={handleCancel}
                                         disabled={fieldLoading.start_date}
                                     >
@@ -574,7 +574,7 @@ const TournamentSettingsPanel = ({
                                             {fieldLoading.lobby_enabled ? '⏳' : '✅'}
                                         </button>
                                         <button 
-                                            className="cancel-btn"
+                                            className="btn btn-secondary"
                                             onClick={handleCancel}
                                             disabled={fieldLoading.lobby_enabled}
                                         >
@@ -646,14 +646,14 @@ const TournamentSettingsPanel = ({
                         
                         <div className="modal-actions">
                             <button 
-                                className="confirm-btn danger" 
+                                className="btn btn-secondary" 
                                 onClick={handleConfirmTeamSizeChange}
                                 disabled={fieldLoading.team_size}
                             >
                                 {fieldLoading.team_size ? '⏳ Изменяю...' : '✅ Да, изменить размер команды'}
                             </button>
                             <button 
-                                className="cancel-btn" 
+                                className="btn btn-secondary" 
                                 onClick={handleCancelTeamSizeChange}
                                 disabled={fieldLoading.team_size}
                             >

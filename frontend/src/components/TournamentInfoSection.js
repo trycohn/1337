@@ -1336,7 +1336,7 @@ const TournamentInfoSection = ({
                                 💾 Сохранить
                             </button>
                             <button 
-                                className="cancel-btn"
+                                className="btn btn-secondary"
                                 onClick={handleCancelDescription}
                                 disabled={isLoading}
                             >
@@ -1403,7 +1403,7 @@ const TournamentInfoSection = ({
                                 💾 Сохранить
                             </button>
                             <button 
-                                className="cancel-btn"
+                                className="btn btn-secondary"
                                 onClick={handleCancelRegulations}
                                 disabled={isLoading}
                             >

@@ -474,13 +474,13 @@ const MixTeamManager = ({
                         
                         <div className="modal-actions">
                             <button 
-                                className="confirm-btn danger" 
+                                className="btn btn-secondary" 
                                 onClick={confirmTeamSizeChange}
                             >
                                 ✅ Да, изменить размер команды
                             </button>
                             <button 
-                                className="cancel-btn" 
+                                className="btn btn-secondary" 
                                 onClick={cancelTeamSizeChange}
                             >
                                 ❌ Отмена

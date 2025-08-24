@@ -97,7 +97,7 @@ const ParticipationConfirmModal = ({
                         Отмена
                     </button>
                     <button 
-                        className="btn-confirm-participation" 
+                        className="btn btn-secondary" 
                         onClick={onConfirm}
                         disabled={isLoading}
                     >

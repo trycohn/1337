@@ -157,7 +157,7 @@ const ReferralInviteModal = ({
                     {error && (
                         <div className="referral-error">
                             <p>❌ {error}</p>
-                            <button onClick={generateReferralLink} className="referral-retry-btn">
+                            <button onClick={generateReferralLink} className="btn btn-secondary">
                                 🔄 Повторить
                             </button>
                         </div>
@@ -184,7 +184,7 @@ const ReferralInviteModal = ({
                                     />
                                     <button 
                                         onClick={copyToClipboard}
-                                        className={`referral-copy-btn ${copySuccess ? 'success' : ''}`}
+                                        className={`btn btn-secondary ${copySuccess ? 'success' : ''}`}
                                         title="Копировать ссылку"
                                     >
                                         {copySuccess ? '✅' : '📋'}

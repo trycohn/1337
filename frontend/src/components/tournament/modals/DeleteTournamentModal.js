@@ -142,7 +142,7 @@ const DeleteTournamentModal = ({
                 
                 <div className="delete-tournament-modal-footer__deletetournament">
                     <button 
-                        className="delete-tournament-cancel-btn__deletetournament"
+                        className="btn btn-secondary"
                         onClick={handleClose}
                         disabled={isLoading}
                     >
