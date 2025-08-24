@@ -58,7 +58,6 @@
     background-color: #3498db;
     color: white;
 }
-.form-teams-button, 
 .generate-bracket-button {
     padding: 0px 5px;
     border: none;
@@ -69,13 +68,8 @@
     font-weight: 500;
     transition: all 0.3s ease;
 }
-.form-teams-button:hover,
 .generate-bracket-button:hover {
     background-color: #2980b9;
-}
-.form-teams-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
 }
 .generate-bracket-button {
     background-color: #ffffff;

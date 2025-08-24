@@ -163,7 +163,7 @@ const MixTournament = () => {
 
                 {!isTeamsFormed && (
                     <button 
-                        className="form-teams-button"
+                        className="btn btn-primary"
                         onClick={formTeams}
                         disabled={players.length < tournament.team_size * 2}
                     >
@@ -219,7 +219,7 @@ const MixTournament = () => {
             {!isBracketGenerated && isTeamsFormed && (
                 <div className="actions">
                     <button 
-                        className="form-teams-button"
+                        className="btn btn-primary"
                         onClick={formTeams}
                     >
                         Перемешать команды

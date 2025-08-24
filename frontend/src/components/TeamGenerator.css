@@ -142,31 +142,7 @@
   justify-content: flex-start;
   margin-top: 15px;
 }
-.form-teams-button,
-.reformate-teams-button {
-  background-color: #ffffff;
-  color: rgb(0, 0, 0);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-  border: 1px solid #374151;
-  font-size: 14px;
-}
-.form-teams-button:hover {
-  background-color: #7d7d7d;
-}
-.reformate-teams-button:hover {
-  background-color: #7d7d7d;
-}
-.form-teams-button:disabled,
-.reformate-teams-button:disabled {
-  background-color: #374151;
-  color: #6b7280;
-  cursor: not-allowed;
-}
+/* удалены устаревшие классы .form-teams-button и .reformate-teams-button — используйте .btn .btn-primary/.btn-secondary */
 .loading-participants {
   color: #9ca3af;
   text-align: center;

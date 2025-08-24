@@ -898,7 +898,7 @@ const TeamGenerator = ({
                             {tournament?.format === 'mix' && mixedTeams.length === 0 && (
                                 <button 
                                     onClick={handleFormTeams} 
-                                    className="form-teams-button"
+                                    className="btn btn-primary"
                                     disabled={loading || displayParticipants.length < parseInt(teamSize)}
                                 >
                                     {loading ? '⏳ Создание команд...' : '⚡ Сформировать команды'}
@@ -909,7 +909,7 @@ const TeamGenerator = ({
                             {canReformTeams() && (
                                 <button 
                                     onClick={() => setShowReformModal(true)} 
-                                    className="reform-teams-button"
+                                    className="btn btn-secondary"
                                     disabled={reformLoading || displayParticipants.length < parseInt(teamSize)}
                                 >
                                     🔄 Переформировать команды
