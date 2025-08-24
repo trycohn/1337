@@ -263,7 +263,7 @@ const TeamSelectionModal = ({ onClose, onTeamSelected, tournamentId, user }) => 
 
                                         <div className="action-buttons">
                                             <button 
-                                                className="select-team-btn"
+                                                className="btn btn-secondary"
                                                 onClick={handleSelectExistingTeam}
                                                 disabled={!selectedTeam}
                                             >
@@ -366,7 +366,7 @@ const TeamSelectionModal = ({ onClose, onTeamSelected, tournamentId, user }) => 
 
                                 <div className="action-buttons">
                                     <button 
-                                        className="create-team-btn"
+                                        className="btn btn-secondary"
                                         onClick={handleCreateTempTeam}
                                         disabled={!tempTeamName.trim() || loading}
                                     >

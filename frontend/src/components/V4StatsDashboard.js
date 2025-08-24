@@ -221,19 +221,19 @@ const V4StatsDashboard = ({
                     📊 Графики
                 </button>
                 <button 
-                    className={`v4-nav-btn ${v4ActiveView === 'achievements' ? 'active' : ''}`}
+                    className="btn btn-secondary"
                     onClick={() => setV4ActiveView('achievements')}
                 >
                     🏆 Достижения
                 </button>
                 <button 
-                    className={`v4-nav-btn ${v4ActiveView === 'ai' ? 'active' : ''}`}
+                    className="btn btn-secondary"
                     onClick={() => setV4ActiveView('ai')}
                 >
                     🤖 AI Анализ
                 </button>
                 <button 
-                    className="v4-nav-btn v4-enhanced-recalc"
+                    className="btn btn-secondary v4-enhanced-recalc"
                     onClick={requestEnhancedRecalculation}
                     disabled={isRecalculating}
                 >

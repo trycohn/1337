@@ -171,7 +171,7 @@ const MyTeams = ({ user }) => {
             {/* Заголовок и кнопка создания */}
             <div className="teams-header">
                 <h2>Мои команды</h2>
-                <button className="create-team-btn" onClick={openCreateModal}>
+                <button className="btn btn-secondary" onClick={openCreateModal}>
                     + Создать команду
                 </button>
             </div>
@@ -181,7 +181,7 @@ const MyTeams = ({ user }) => {
                 {teams.length === 0 ? (
                     <div className="no-teams">
                         <p>У вас пока нет команд</p>
-                        <button className="create-team-btn" onClick={openCreateModal}>
+                        <button className="btn btn-secondary" onClick={openCreateModal}>
                             Создать первую команду
                         </button>
                     </div>

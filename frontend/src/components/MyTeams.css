@@ -139,21 +139,7 @@
     font-size: 28px;
 }
 
-.create-team-btn {
-    background-color: #000000;
-    color: white;
-    border: 1px solid #ff0000;
-    padding: 12px 24px;
-    border-radius: 0px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    transition: all 0.3s;
-}
-
-.create-team-btn:hover {
-    transform: translateY(-2px);
-}
+/* .create-team-btn — локальные стили удалены, используем .btn */
 
 /* РЎРµС‚РєР° РєРѕРјР°РЅРґ */
 .teams-grid {

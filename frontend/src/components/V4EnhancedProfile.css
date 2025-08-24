@@ -209,40 +209,7 @@
     background: var(--v4-bg-secondary);
     border-bottom: 1px solid var(--v4-border);
 }
-.v4-nav-btn {
-    background: transparent;
-    color: var(--v4-text-secondary);
-    border: 1px solid var(--v4-border);
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--v4-transition);
-    position: relative;
-    overflow: hidden;
-}
-.v4-nav-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, var(--v4-primary), var(--v4-accent));
-    transition: var(--v4-transition);
-    z-index: -1;
-}
-.v4-nav-btn:hover::before,
-.v4-nav-btn.active::before {
-    left: 0;
-}
-.v4-nav-btn:hover,
-.v4-nav-btn.active {
-    color: white;
-    border-color: transparent;
-    transform: translateY(-2px);
-    box-shadow: var(--v4-shadow);
-}
+/* .v4-nav-btn — локальные стили удалены, используем .btn табы оформляются глобально */
 /* Content */
 .v4-content {
     padding: var(--v4-spacing-lg);
