@@ -148,7 +148,7 @@ const SafeRichTextDisplay = ({
             {/* Кнопка "Читать далее" если контент обрезан */}
             {showReadMore && maxLength && content.length > maxLength && (
                 <button 
-                    className="read-more-btn"
+                    className="btn btn-secondary"
                     onClick={onReadMoreClick}
                     type="button"
                 >

@@ -358,13 +358,13 @@ const TournamentParticipants = ({
                     <h4>⚙️ Управление участниками</h4>
                     <div className="admin-actions">
                         <button 
-                            className="invite-participant-btn"
+                            className="btn btn-secondary"
                             onClick={() => setParticipantSearchModal(true)}
                         >
                             👤 Пригласить пользователя
                         </button>
                         <button 
-                            className="add-unregistered-btn"
+                            className="btn btn-secondary"
                             onClick={() => setNewParticipantModal(true)}
                         >
                             ➕ Добавить незарегистрированного

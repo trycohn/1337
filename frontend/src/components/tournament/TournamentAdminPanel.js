@@ -318,7 +318,7 @@ const TournamentAdminPanel = ({
                         <h4>👑 Администраторы турнира</h4>
                         <div className="section-controls">
                             <button 
-                                className="add-btn-compact invite-admin-btn"
+                                className="add-btn-compact btn btn-secondary"
                                 onClick={onShowAdminSearchModal}
                                 disabled={isLoading}
                                 title="Пригласить администратора"

@@ -450,7 +450,7 @@ const MatchDetailsPage = () => {
                         {getMatchStatusText(match.status)}
                     </span>
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
-                    <button className="share-btn" onClick={() => setIsShareModalOpen(true)}>
+                    <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
                         🔗 Поделиться
                     </button>
                 </div>

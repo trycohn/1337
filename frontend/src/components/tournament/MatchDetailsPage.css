@@ -123,22 +123,7 @@
     font-size: 14px;
 }
 
-.share-btn {
-    background: transparent;
-    color: #999;
-    border: 1px solid #333;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.share-btn:hover {
-    color: #fff;
-    border-color: #ff0000;
-    background: #111;
-}
+/* .share-btn — локальные стили удалены, используется глобальная .btn */
 
 /* ========== ГЛАВНЫЙ ЗАГОЛОВОК ========== */
 .match-main-header {

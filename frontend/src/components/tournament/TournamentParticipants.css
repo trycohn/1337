@@ -326,27 +326,10 @@
 }
 
 .invite-participant-btn,
-.add-unregistered-btn {
-    background: #111111;
-    border: 1px solid #333333;
-    color: #ffffff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+.add-unregistered-btn { /* заменено глобальными .btn — локальные стили удалены */ }
 
 .invite-participant-btn:hover,
-.add-unregistered-btn:hover {
-    background: #1a1a1a;
-    border-color: #555555;
-    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
-}
+.add-unregistered-btn:hover { }
 
 /* Модальные окна */
 .modal-overlay {

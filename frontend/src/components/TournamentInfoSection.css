@@ -1443,10 +1443,7 @@
 }
 
 /* Кнопка "Читать далее" для правил */
-.tournament-rules-display .read-more-btn {
-    margin-top: 16px;
-    font-size: 13px;
-}
+/* .tournament-rules-display .read-more-btn — стили удалены, используется глобальная .btn */
 
 /* Адаптивность для rich text в турнирной секции */
 @media (max-width: 768px) {
