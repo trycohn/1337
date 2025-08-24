@@ -531,6 +531,7 @@
 
 .nickname-section .form-input {
     width: 240px;
+    padding: 3px 8px;
 }
 
 /* Additional Responsive Adjustments */
