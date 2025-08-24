@@ -91,46 +91,7 @@
     gap: 12px;
 }
 
-.share-social-btn {
-    background: #111;
-    border: 2px solid #333;
-    color: #fff;
-    padding: 16px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    position: relative;
-    font-family: inherit;
-}
-
-.share-social-btn:hover {
-    border-color: #ff0000;
-    background: #1a1a1a;
-    transform: translateY(-2px);
-}
-
-.share-social-btn.share-telegram:hover {
-    border-color: #0088cc;
-}
-
-.share-social-btn.share-vk:hover {
-    border-color: #4680c2;
-}
-
-.share-social-btn.share-discord:hover {
-    border-color: #5865f2;
-}
-
 .share-social-icon { font-size: 22px; margin-bottom: 4px; }
-
-.share-social-btn span {
-    font-weight: 500;
-    font-size: 0.9em;
-}
 
 .share-copied-indicator {
     position: absolute;

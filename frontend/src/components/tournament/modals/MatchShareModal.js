@@ -178,7 +178,7 @@ const MatchShareModal = ({
                         
                         <div className="share-social-grid">
                             <button 
-                                className="share-social-btn share-telegram"
+                                className="btn btn-secondary share-telegram"
                                 onClick={shareToTelegram}
                                 title="Поделиться в Telegram"
                             >
@@ -187,7 +187,7 @@ const MatchShareModal = ({
                             </button>
                             
                             <button 
-                                className="share-social-btn share-vk"
+                                className="btn btn-secondary share-vk"
                                 onClick={shareToVK}
                                 title="Поделиться ВКонтакте"
                             >
@@ -196,7 +196,7 @@ const MatchShareModal = ({
                             </button>
                             
                             <button 
-                                className="share-social-btn share-discord"
+                                className="btn btn-secondary share-discord"
                                 onClick={shareToDiscord}
                                 title="Скопировать для Discord"
                             >
