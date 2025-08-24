@@ -753,15 +753,14 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const handleMatchClick = (e) => {
         e.stopPropagation();
         const isMobile = window.innerWidth <= 768;
-        // Новая логика: после завершения турнира — всем кроме создателя/админов открываем страницу матча в новой вкладке
-        if (tournament?.status === 'completed' && !isAdminOrCreator && tournament?.id && match?.id) {
-            const url = `/tournaments/${tournament.id}/match/${match.id}`;
-            window.open(url, '_blank', 'noopener,noreferrer');
+        const url = tournament?.id && match?.id ? `/tournaments/${tournament.id}/match/${match.id}` : null;
+        // Для завершенных турниров всегда открываем страницу матча вместо модалки
+        if (tournament?.status === 'completed' && url) {
+            window.location.href = url;
             return;
         }
-        // Мобильная логика (по требованию — переход по ссылке вместо модалок)
-        if (isMobile && tournament?.id && match?.id) {
-            const url = `/tournaments/${tournament.id}/match/${match.id}`;
+        // Мобильная логика — переход по ссылке вместо модалок
+        if (isMobile && url) {
             window.location.href = url;
             return;
         }

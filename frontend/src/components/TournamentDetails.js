@@ -1063,9 +1063,13 @@ function TournamentDetails() {
                                             isAdminOrCreator={isAdminOrCreator}
                                             onMatchClick={(match) => {
                                                 if (match && match.id) {
+                                                    // Для завершенных турниров — всегда открываем страницу матча вместо модалки
+                                                    if (tournament?.status === 'completed') {
+                                                        window.location.href = `/tournaments/${tournament.id}/match/${match.id}`;
+                                                        return;
+                                                    }
                                                     const originalMatch = matches.find(m => m.id === parseInt(match.id));
                                                     if (originalMatch) {
-                                                        // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
                                                         const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
                                                         setSelectedMatchForDetails(enrichedMatch);
                                                         openModal('matchDetails');

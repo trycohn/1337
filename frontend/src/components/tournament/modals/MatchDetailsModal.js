@@ -295,14 +295,14 @@ const MatchDetailsModal = ({
                     {isMatchCompleted && (
                         <div className="modal-system-flex-center modal-system-mb-20">
                             <button 
-                                className={`modal-system-btn ${activeTab === 'overview' ? 'modal-system-btn-primary' : ''}`}
+                                className="btn btn-secondary"
                                 onClick={() => setActiveTab('overview')}
                             >
                                 📋 Обзор
                             </button>
                             {isCS2 && mapStats && (
                                 <button 
-                                    className={`modal-system-btn ${activeTab === 'maps' ? 'modal-system-btn-primary' : ''}`}
+                                    className="btn btn-secondary"
                                     onClick={() => setActiveTab('maps')}
                                 >
                                     🗺️ Карты ({mapStats.mapsCount})
@@ -473,13 +473,13 @@ const MatchDetailsModal = ({
 
                 {/* === ПОДВАЛ МОДАЛЬНОГО ОКНА === */}
                 <div className="modal-system-footer modal-system-space-between">
-                    <button className="modal-system-btn" onClick={handleClose}>
+                    <button className="btn btn-secondary" onClick={handleClose}>
                         Закрыть
                     </button>
                     
                     <div className="modal-system-flex">
                         <button 
-                            className="modal-system-btn"
+                            className="btn btn-secondary"
                             onClick={() => setIsShareModalOpen(true)}
                             title="Поделиться результатом матча"
                         >
@@ -488,7 +488,7 @@ const MatchDetailsModal = ({
                         
                         {canEdit && !selectedMatch.editBlocked && (
                             <button 
-                                className={`modal-system-btn ${canEditByTournamentStatus ? 'modal-system-btn-primary' : 'modal-system-btn-disabled'}`}
+                                className="btn btn-secondary"
                                 onClick={canEditByTournamentStatus ? handleEdit : undefined}
                                 disabled={!canEditByTournamentStatus}
                                 title={tournamentStatusMessage || "Редактировать результат матча"}
