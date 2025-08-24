@@ -529,7 +529,7 @@
     line-height: 1.6;
 }
 
-.nickname-section {
+.nickname-section .form-input {
     width: 240px;
 }
 
