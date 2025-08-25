@@ -432,6 +432,12 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     return '🎮';
   };
 
+  const gameImage = (game) => {
+    const g = String(game || '').toLowerCase();
+    if (g.includes('counter') || g.includes('cs')) return '/images/counter%20strike%202.jpg';
+    return '/images/1337%20black%20logo.svg';
+  };
+
   return (
     <section className="steam-carousel">
       <div className="steam-carousel-inner">
@@ -449,28 +455,35 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                 <div className="steam-slide-grid">
                   {page.map((t) => (
                     <div key={t.id} className="steam-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
-                      <div className="steam-card-header">
-                        <span className="steam-game-icon" aria-hidden>
-                          {gameIcon(t.game)}
-                        </span>
-                        <h3 className="steam-title" title={t.name}>{t.name}</h3>
-                      </div>
-                      <div className="steam-card-hover">
-                        <div className="steam-meta-row">
-                          <span className="steam-meta-label">Дата</span>
-                          <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
+                      <div className="steam-card-inner">
+                        {/* FRONT */}
+                        <div className="steam-card-front">
+                          <div className="steam-art-wrap">
+                            <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                          </div>
+                          <div className="steam-card-header">
+                            <span className="steam-game-icon" aria-hidden>{gameIcon(t.game)}</span>
+                            <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                          </div>
                         </div>
-                        <div className="steam-meta-row">
-                          <span className="steam-meta-label">Статус</span>
-                          <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
-                        </div>
-                        <div className="steam-meta-row">
-                          <span className="steam-meta-label">Тип</span>
-                          <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
-                        </div>
-                        <div className="steam-meta-row">
-                          <span className="steam-meta-label">Участники</span>
-                          <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                        {/* BACK */}
+                        <div className="steam-card-back">
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Дата</span>
+                            <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Статус</span>
+                            <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Тип</span>
+                            <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Участники</span>
+                            <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
