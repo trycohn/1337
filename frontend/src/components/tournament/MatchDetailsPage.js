@@ -93,7 +93,9 @@ const MatchDetailsPage = () => {
             'overpass': '/images/maps/overpass.jpg',
             'vertigo': '/images/maps/vertigo.jpg',
             'ancient': '/images/maps/ancient.jpg',
-            'anubis': '/images/maps/anubis.jpg'
+            'anubis': '/images/maps/anubis.jpg',
+            'train': '/images/maps/train.jpg',
+            'de_train': '/images/maps/train.jpg'
         };
         return mapImages[mapName?.toLowerCase()] || '/images/maps/default.jpg';
     };
