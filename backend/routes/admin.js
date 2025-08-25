@@ -18,15 +18,79 @@ function requireAdmin(req, res, next) {
 //  Глобальный дефолтный маппул
 // =============================
 
+// Обеспечиваем наличие таблицы default_map_pool и базового наполнения
+async function ensureDefaultMapPool() {
+    // Создаем таблицу, если её нет
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS default_map_pool (
+            id SERIAL PRIMARY KEY,
+            map_name VARCHAR(50) NOT NULL,
+            game VARCHAR(255) NOT NULL DEFAULT 'Counter-Strike 2',
+            display_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    // Обеспечиваем наличие колонки game (на случай старой схемы)
+    await pool.query(`ALTER TABLE default_map_pool ADD COLUMN IF NOT EXISTS game VARCHAR(255) NOT NULL DEFAULT 'Counter-Strike 2'`);
+    // Удаляем старый уникальный индекс по map_name, если был, и создаем составной уникальный ключ
+    await pool.query(`
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_indexes WHERE indexname = 'default_map_pool_map_name_key'
+            ) THEN
+                -- ничего не делаем, это системный уник по столбцу (созданный как constraint), ниже пересоздадим составной
+            END IF;
+        END$$;
+    `);
+    await pool.query(`
+        DO $$
+        BEGIN
+            -- пробуем создать составной уникальный constraint, если его нет
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints 
+                WHERE table_name = 'default_map_pool' AND constraint_type = 'UNIQUE' AND constraint_name = 'default_map_pool_game_map_name_unique'
+            ) THEN
+                BEGIN
+                    ALTER TABLE default_map_pool ADD CONSTRAINT default_map_pool_game_map_name_unique UNIQUE (game, map_name);
+                EXCEPTION WHEN duplicate_table THEN
+                    -- игнорируем
+                END;
+            END IF;
+        END$$;
+    `);
+    // Индекс для сортировки
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_default_map_pool_game_order ON default_map_pool(game, display_order)`);
+    // Если пусто — наполняем значениями по умолчанию для CS2
+    const countRes = await pool.query(`SELECT COUNT(*)::int AS c FROM default_map_pool WHERE game = $1`, ['Counter-Strike 2']);
+    if (countRes.rows[0].c === 0) {
+        const defaults = ['ancient', 'dust2', 'inferno', 'mirage', 'nuke', 'overpass', 'train'];
+        let order = 1;
+        for (const key of defaults) {
+            await pool.query(
+                `INSERT INTO default_map_pool (game, map_name, display_order)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (game, map_name) DO UPDATE SET display_order = EXCLUDED.display_order`,
+                ['Counter-Strike 2', key, order]
+            );
+            order += 1;
+        }
+    }
+}
+
 // Получить текущий дефолтный маппул (для админов)
 router.get('/default-map-pool', authenticateToken, requireAdmin, async (req, res) => {
     try {
+        await ensureDefaultMapPool();
+        const game = (req.query.game && String(req.query.game).trim()) || 'Counter-Strike 2';
         const result = await pool.query(
             `SELECT map_name, display_order
              FROM default_map_pool
-             ORDER BY display_order ASC, id ASC`
+             WHERE game = $1
+             ORDER BY display_order ASC, id ASC`,
+            [game]
         );
-        res.json({ success: true, maps: result.rows });
+        res.json({ success: true, game, maps: result.rows });
     } catch (err) {
         console.error('Ошибка получения дефолтного маппула:', err);
         res.status(500).json({ success: false, error: 'Не удалось получить дефолтный маппул' });
@@ -37,28 +101,30 @@ router.get('/default-map-pool', authenticateToken, requireAdmin, async (req, res
 router.put('/default-map-pool', authenticateToken, requireAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
-        const { maps } = req.body; // ожидаем массив строк в нужном порядке
+        await ensureDefaultMapPool();
+        const { maps, game: bodyGame } = req.body; // ожидаем массив строк и игру
+        const game = (bodyGame && String(bodyGame).trim()) || 'Counter-Strike 2';
         if (!Array.isArray(maps) || maps.length === 0) {
             return res.status(400).json({ success: false, error: 'Требуется непустой массив карт' });
         }
 
         await client.query('BEGIN');
-        await client.query('DELETE FROM default_map_pool');
+        await client.query('DELETE FROM default_map_pool WHERE game = $1', [game]);
 
         let order = 1;
         for (const raw of maps) {
             const key = String(raw).toLowerCase().replace(/^de[_-]?/, '');
             await client.query(
-                `INSERT INTO default_map_pool (map_name, display_order)
-                 VALUES ($1, $2)
-                 ON CONFLICT (map_name) DO UPDATE SET display_order = EXCLUDED.display_order`,
-                [key, order]
+                `INSERT INTO default_map_pool (game, map_name, display_order)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (game, map_name) DO UPDATE SET display_order = EXCLUDED.display_order`,
+                [game, key, order]
             );
             order += 1;
         }
 
         await client.query('COMMIT');
-        res.json({ success: true, message: 'Дефолтный маппул обновлён' });
+        res.json({ success: true, message: 'Дефолтный маппул обновлён', game });
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Ошибка обновления дефолтного маппула:', err);
