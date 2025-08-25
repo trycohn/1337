@@ -480,10 +480,14 @@ const MatchDetailsModal = ({
                     <div className="modal-system-flex">
                         <button 
                             className="btn btn-secondary"
-                            onClick={() => setIsShareModalOpen(true)}
-                            title="Поделиться результатом матча"
+                            onClick={() => {
+                                if (selectedMatch?.tournament_id && selectedMatch?.id) {
+                                    window.location.href = `/tournaments/${selectedMatch.tournament_id}/match/${selectedMatch.id}`;
+                                }
+                            }}
+                            title="Открыть страницу матча"
                         >
-                            🔗 Поделиться
+                            🔎 Открыть страницу матча
                         </button>
                         
                         {canEdit && !selectedMatch.editBlocked && (
@@ -500,13 +504,7 @@ const MatchDetailsModal = ({
                 </div>
             </div>
             
-            {/* Модальное окно шейринга */}
-            <MatchShareModal
-                isOpen={isShareModalOpen}
-                onClose={() => setIsShareModalOpen(false)}
-                selectedMatch={selectedMatch}
-                tournament={tournament}
-            />
+            {/* Убрали модальное окно шейринга */}
         </div>
     );
 };

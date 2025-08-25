@@ -677,6 +677,7 @@ const MatchResultModal = ({
     const mapsData = matchResultData.maps_data || [];
     const hasValidationErrors = Object.keys(validationErrors).length > 0;
     const mapStats = getMapStatistics();
+    const isInProgressWithMaps = tournament?.status === 'in_progress' && Array.isArray(selectedMatch?.maps_data) && selectedMatch.maps_data.length > 0;
 
     // 🔧 УЛУЧШЕННАЯ ОТЛАДКА ДЛЯ ДИАГНОСТИКИ ПРОБЛЕМ С КАРТАМИ
     console.log('🗺️ Диагностика карт в MatchResultModal v5.0:', {
@@ -689,6 +690,200 @@ const MatchResultModal = ({
         showModal: isOpen,
         shouldShowMapsSection: isCS2 && availableMaps.length > 0
     });
+
+    // Рендер секции карт
+    const renderMapsSection = () => {
+        // Упрощенный режим: только ввод счёта по уже выбранным картам
+        if (isInProgressWithMaps) {
+            const mapsData = matchResultData.maps_data || selectedMatch.maps_data || [];
+            return (
+                <section className="modal-section maps-section">
+                    <h3>Карты и счёт</h3>
+                    <div className="maps-score-grid">
+                        {mapsData.map((m, idx) => (
+                            <div key={idx} className="map-score-row">
+                                <div className="map-name">{m.map_name}</div>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="score-input"
+                                    value={m.score1 ?? ''}
+                                    onChange={(e) => {
+                                        const v = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                                        setMatchResultData(prev => {
+                                            const next = { ...(prev || {}), maps_data: [...(prev?.maps_data || mapsData)] };
+                                            next.maps_data[idx] = { ...(next.maps_data[idx] || m), score1: v };
+                                            return next;
+                                        });
+                                    }}
+                                    placeholder={selectedMatch.team1_name || 'Команда 1'}
+                                />
+                                <span className="score-sep">:</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="score-input"
+                                    value={m.score2 ?? ''}
+                                    onChange={(e) => {
+                                        const v = e.target.value === '' ? null : parseInt(e.target.value, 10);
+                                        setMatchResultData(prev => {
+                                            const next = { ...(prev || {}), maps_data: [...(prev?.maps_data || mapsData)] };
+                                            next.maps_data[idx] = { ...(next.maps_data[idx] || m), score2: v };
+                                            return next;
+                                        });
+                                    }}
+                                    placeholder={selectedMatch.team2_name || 'Команда 2'}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        }
+
+        // Обычный полный редактор карт (существующая логика ниже)
+        return (
+            <div className="modal-system-section">
+                <h3 className="modal-system-section-title">
+                    🗺️ Результаты по картам ({mapsData.length}/7)
+                </h3>
+                <p className="modal-system-section-content modal-system-mb-20">
+                    🎯 Укажите результаты на каждой карте для детальной статистики
+                </p>
+                
+                <div className="modal-system-flex-column">
+                    {mapsData.map((mapData, index) => (
+                        <div key={index} className="modal-system-info">
+                            <div className="modal-system-flex-between modal-system-mb-10">
+                                <select
+                                    className="modal-system-select"
+                                    value={mapData.map || ''}
+                                    onChange={(e) => handleMapNameChange(index, e.target.value)}
+                                    disabled={isLoading}
+                                    style={{ flex: 1, marginRight: '10px' }}
+                                >
+                                    <option value="">Выберите карту</option>
+                                    {availableMaps.map((mapName) => (
+                                        <option key={mapName} value={mapName}>{mapName}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    className="modal-system-btn modal-system-btn-danger modal-system-btn-small"
+                                    onClick={() => removeMap(index)}
+                                    disabled={isLoading}
+                                    title="Удалить карту"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                            
+                            <div className="modal-system-grid-3">
+                                <div className="modal-system-form-group">
+                                    <label className="modal-system-label">
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
+                                        {selectedMatch.team1_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
+                                        value={mapData.score1 || 0}
+                                        onChange={(e) => handleMapScoreChange(index, 1, e.target.value)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                                <div className="modal-system-text-center modal-system-flex-center">
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>:</div>
+                                </div>
+                                <div className="modal-system-form-group">
+                                    <label className="modal-system-label">
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
+                                        {selectedMatch.team2_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
+                                        value={mapData.score2 || 0}
+                                        onChange={(e) => handleMapScoreChange(index, 2, e.target.value)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                            </div>
+                            {validationErrors[`map_${index}_scores`] && (
+                                <div className="modal-system-info modal-system-info-error modal-system-mt-10">
+                                    {validationErrors[`map_${index}_scores`]}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    
+                    <button 
+                        type="button"
+                        className="modal-system-btn"
+                        onClick={addMap}
+                        disabled={isLoading || mapsData.length >= 7}
+                    >
+                        ➕ Добавить карту ({mapsData.length}/7)
+                    </button>
+                </div>
+
+                {/* Расширенная статистика по картам */}
+                {mapStats && (
+                    <div className="modal-system-section modal-system-mt-20">
+                        <h4 className="modal-system-bold modal-system-mb-10">📊 Расширенная статистика</h4>
+                        <div className="modal-system-grid-3">
+                            <div className="modal-system-info">
+                                <h5 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h5>
+                                <div className="modal-system-flex-column">
+                                    <span>
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                        {selectedMatch.team1_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1Wins}
+                                    </span>
+                                    <span>
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                        {selectedMatch.team2_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2Wins}
+                                    </span>
+                                    {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
+                                </div>
+                            </div>
+                            
+                            <div className="modal-system-info">
+                                <h5 className="modal-system-bold modal-system-mb-10">🎯 Общий счет по очкам</h5>
+                                <div className="modal-system-flex-column">
+                                    <span>
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                        {selectedMatch.team1_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1TotalScore}
+                                    </span>
+                                    <span>
+                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
+                                        {selectedMatch.team2_name || 
+                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2TotalScore}
+                                    </span>
+                                    <span>Разность: ±{mapStats.scoreDifference}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="modal-system-info">
+                                <h5 className="modal-system-bold modal-system-mb-10">📈 Эффективность</h5>
+                                <div className="modal-system-flex-column">
+                                    <span>Карт сыграно: {mapStats.mapsCount}</span>
+                                    <span>Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
+                                                                     mapStats.mapsCount <= 3 ? 'BO3' : 
+                                                                     mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}</span>
+                                    <span>Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="modal-system-overlay" onClick={handleClose}>
@@ -930,145 +1125,7 @@ const MatchResultModal = ({
 
                         {/* 🔧 ИСПРАВЛЕННАЯ СЕКЦИЯ КАРТ */}
                         {isCS2 && availableMaps.length > 0 && (
-                            <div className="modal-system-section">
-                                <h3 className="modal-system-section-title">
-                                    🗺️ Результаты по картам ({mapsData.length}/7)
-                                </h3>
-                                <p className="modal-system-section-content modal-system-mb-20">
-                                    🎯 Укажите результаты на каждой карте для детальной статистики
-                                </p>
-                                
-                                <div className="modal-system-flex-column">
-                                    {mapsData.map((mapData, index) => (
-                                        <div key={index} className="modal-system-info">
-                                            <div className="modal-system-flex-between modal-system-mb-10">
-                                                <select
-                                                    className="modal-system-select"
-                                                    value={mapData.map || ''}
-                                                    onChange={(e) => handleMapNameChange(index, e.target.value)}
-                                                    disabled={isLoading}
-                                                    style={{ flex: 1, marginRight: '10px' }}
-                                                >
-                                                    <option value="">Выберите карту</option>
-                                                    {availableMaps.map((mapName) => (
-                                                        <option key={mapName} value={mapName}>{mapName}</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    type="button"
-                                                    className="modal-system-btn modal-system-btn-danger modal-system-btn-small"
-                                                    onClick={() => removeMap(index)}
-                                                    disabled={isLoading}
-                                                    title="Удалить карту"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                            
-                                            <div className="modal-system-grid-3">
-                                                <div className="modal-system-form-group">
-                                                    <label className="modal-system-label">
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
-                                                        {selectedMatch.team1_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
-                                                        value={mapData.score1 || 0}
-                                                        onChange={(e) => handleMapScoreChange(index, 1, e.target.value)}
-                                                        disabled={isLoading}
-                                                    />
-                                                </div>
-                                                <div className="modal-system-text-center modal-system-flex-center">
-                                                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>:</div>
-                                                </div>
-                                                <div className="modal-system-form-group">
-                                                    <label className="modal-system-label">
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в секции карт */}
-                                                        {selectedMatch.team2_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        className={`modal-system-input ${validationErrors[`map_${index}_scores`] ? 'modal-system-input-error' : ''}`}
-                                                        value={mapData.score2 || 0}
-                                                        onChange={(e) => handleMapScoreChange(index, 2, e.target.value)}
-                                                        disabled={isLoading}
-                                                    />
-                                                </div>
-                                            </div>
-                                            {validationErrors[`map_${index}_scores`] && (
-                                                <div className="modal-system-info modal-system-info-error modal-system-mt-10">
-                                                    {validationErrors[`map_${index}_scores`]}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    
-                                    <button 
-                                        type="button"
-                                        className="modal-system-btn"
-                                        onClick={addMap}
-                                        disabled={isLoading || mapsData.length >= 7}
-                                    >
-                                        ➕ Добавить карту ({mapsData.length}/7)
-                                    </button>
-                                </div>
-
-                                {/* Расширенная статистика по картам */}
-                                {mapStats && (
-                                    <div className="modal-system-section modal-system-mt-20">
-                                        <h4 className="modal-system-bold modal-system-mb-10">📊 Расширенная статистика</h4>
-                                        <div className="modal-system-grid-3">
-                                            <div className="modal-system-info">
-                                                <h5 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h5>
-                                                <div className="modal-system-flex-column">
-                                                    <span>
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
-                                                        {selectedMatch.team1_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1Wins}
-                                                    </span>
-                                                    <span>
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
-                                                        {selectedMatch.team2_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2Wins}
-                                                    </span>
-                                                    {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="modal-system-info">
-                                                <h5 className="modal-system-bold modal-system-mb-10">🎯 Общий счет по очкам</h5>
-                                                <div className="modal-system-flex-column">
-                                                    <span>
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
-                                                        {selectedMatch.team1_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1TotalScore}
-                                                    </span>
-                                                    <span>
-                                                        {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
-                                                        {selectedMatch.team2_name || 
-                                                         (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2TotalScore}
-                                                    </span>
-                                                    <span>Разность: ±{mapStats.scoreDifference}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="modal-system-info">
-                                                <h5 className="modal-system-bold modal-system-mb-10">📈 Эффективность</h5>
-                                                <div className="modal-system-flex-column">
-                                                    <span>Карт сыграно: {mapStats.mapsCount}</span>
-                                                    <span>Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
-                                                                     mapStats.mapsCount <= 3 ? 'BO3' : 
-                                                                     mapStats.mapsCount <= 5 ? 'BO5' : 'BO7'}</span>
-                                                    <span>Средний счет: {Math.round((mapStats.team1TotalScore + mapStats.team2TotalScore) / mapStats.mapsCount / 2)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            renderMapsSection()
                         )}
 
                         {/* Сообщение если карты не поддерживаются */}
