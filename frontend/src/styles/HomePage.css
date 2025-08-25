@@ -115,7 +115,6 @@
   background: #111;
   border: 1px solid #222;
   border-radius: 8px;
-  padding: 30px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -556,7 +555,6 @@
 }
 .tournament-card .steam-card-back {
   background: #1d1d1d;
-  padding: 20px 24px;
   transform: rotateY(180deg);
 }
 
@@ -1423,10 +1421,6 @@
     gap: 20px;
   }
   
-  .tournament-card {
-    padding: 20px;
-  }
-  
   .tournament-name {
     font-size: 1.3rem;
   }
@@ -1479,10 +1473,6 @@
 
   .community-benefits li {
     font-size: 1rem;
-  }
-  
-  .tournament-card {
-    padding: 15px;
   }
   
   .tournament-name {
