@@ -238,13 +238,41 @@ router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, re
 
 // Загрузка новой предзагруженной аватарки (квадрат, 512x512)
 router.post('/preloaded-avatars', authenticateToken, requireAdmin, (req, res, next) => {
+    try {
+        console.log('[UPLOAD DEBUG] /api/admin/preloaded-avatars START', {
+            path: req.originalUrl,
+            method: req.method,
+            contentType: req.headers['content-type'],
+            contentLength: req.headers['content-length'],
+            userId: req.user && req.user.id,
+            userRole: req.user && req.user.role
+        });
+    } catch (_) {}
     upload.single('image')(req, res, function (err) {
         if (err) {
+            try {
+                console.error('[UPLOAD DEBUG] Multer error', {
+                    code: err.code,
+                    message: err.message,
+                    stack: err.stack,
+                    contentLength: req.headers && req.headers['content-length'],
+                    contentType: req.headers && req.headers['content-type']
+                });
+            } catch (_) {}
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(413).json({ success: false, error: 'Файл слишком большой' });
             }
             return res.status(400).json({ success: false, error: err.message || 'Ошибка загрузки файла' });
         }
+        try {
+            console.log('[UPLOAD DEBUG] Multer OK', {
+                hasFile: !!req.file,
+                originalname: req.file && req.file.originalname,
+                mimetype: req.file && req.file.mimetype,
+                reportedSize: req.file && req.file.size,
+                bufferLen: req.file && req.file.buffer && req.file.buffer.length
+            });
+        } catch (_) {}
         next();
     });
 }, async (req, res) => {
@@ -266,6 +294,12 @@ router.post('/preloaded-avatars', authenticateToken, requireAdmin, (req, res, ne
             .jpeg({ quality: 90 })
             .toFile(outPath);
 
+        try {
+            console.log('[UPLOAD DEBUG] Saved preloaded avatar', {
+                filename,
+                publicUrl: `/uploads/avatars/preloaded/${filename}`
+            });
+        } catch (_) {}
         return res.json({ success: true, url: `/uploads/avatars/preloaded/${filename}`, filename });
     } catch (e) {
         console.error('Ошибка загрузки предзагруженной аватарки:', e);
