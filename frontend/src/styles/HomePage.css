@@ -474,7 +474,7 @@
   overflow: hidden;
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  perspective: 1000px;
+  /* перспективу включим только там, где нужен flip (турниры) */
 }
 
 .steam-card::after {
@@ -486,11 +486,36 @@
   pointer-events: none;
 }
 
-/* Убрали flip для блока чемпионов; оставляем фронт */
+/* Базовый фронт (общий) */
 .steam-card-front {
   display: flex;
   flex-direction: column;
 }
+
+/* ТУРНИРЫ: включаем flip-эффект */
+.tournament-card { perspective: 1000px; }
+.tournament-card-inner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+.tournament-card:hover .tournament-card-inner { transform: rotateY(180deg); }
+.tournament-card .steam-card-front,
+.tournament-card .steam-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.tournament-card .steam-card-back {
+  background: #1d1d1d;
+  padding: 20px 24px;
+  transform: rotateY(180deg);
+}
+
+/* ЧЕМПИОНЫ: без переворота */
+.winner-card { perspective: none; }
 
 .steam-card-header {
   display: flex;
