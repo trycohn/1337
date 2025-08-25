@@ -66,9 +66,23 @@ async function verifyEmailRequired(req, res, next) {
 
 // Новый middleware для проверки, что пользователь является создателем или администратором турнира
 async function verifyAdminOrCreator(req, res, next) {
-    const tournamentId = req.params.id;
+    // Поддерживаем разные имена параметров: /:id/..., /:tournamentId/..., а также случаи с lobbyId
+    let tournamentId = req.params.id || req.params.tournamentId;
     const userId = req.user.id;
     try {
+        // Если пришёл lobbyId (например: /lobby/:lobbyId/set-first-picker), получаем tournament_id из лобби
+        if (!tournamentId && req.params.lobbyId) {
+            const lobbyRes = await pool.query(
+                'SELECT tournament_id FROM match_lobbies WHERE id = $1',
+                [req.params.lobbyId]
+            );
+            tournamentId = lobbyRes.rows[0]?.tournament_id;
+        }
+
+        if (!tournamentId) {
+            return res.status(400).json({ error: 'Не указан идентификатор турнира' });
+        }
+
         const result = await pool.query(
             'SELECT created_by FROM tournaments WHERE id = $1',
             [tournamentId]
@@ -77,16 +91,14 @@ async function verifyAdminOrCreator(req, res, next) {
             return res.status(404).json({ error: 'Турнир не найден' });
         }
         const { created_by } = result.rows[0];
-        if (created_by === userId) {
-            return next();
-        }
+        if (created_by === userId) return next();
+
         const adminCheck = await pool.query(
             'SELECT 1 FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
             [tournamentId, userId]
         );
-        if (adminCheck.rows.length > 0) {
-            return next();
-        }
+        if (adminCheck.rows.length > 0) return next();
+
         return res.status(403).json({ error: 'Доступ запрещён: только создатель или администратор турнира' });
     } catch (err) {
         console.error('Ошибка проверки прав админа или создателя:', err);
