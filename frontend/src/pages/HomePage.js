@@ -63,10 +63,11 @@ function HomePage() {
   useEffect(() => {
     const fetchRecentTournaments = async () => {
       try {
-        // Берём турниры всех статусов, сортировка по дате создания (новые первыми)
-        const response = await api.get('/api/tournaments?limit=12&sort=-created_at');
+        // Берём турниры всех статусов, затем сортируем по дате старта
+        const response = await api.get('/api/tournaments?limit=40');
         const data = Array.isArray(response.data) ? response.data : (response.data?.tournaments || []);
-        setRecentTournaments(data);
+        const sorted = [...data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+        setRecentTournaments(sorted);
       } catch (error) {
         console.error('Ошибка загрузки турниров:', error);
       }
@@ -191,56 +192,7 @@ function HomePage() {
         {/* Steam-like Carousel Section (замена hero) */}
         <TournamentSteamCarousel recentTournaments={recentTournaments} onOpen={(id) => navigate(`/tournaments/${id}`)} />
 
-        {/* Recent Tournaments Section */}
-        {recentTournaments.length > 0 && (
-          <section className="recent-tournaments-section">
-            <div className="container">
-              <div className="section-header">
-                <h2 className="section-title">Активные турниры</h2>
-                <div className="title-underline"></div>
-              </div>
-
-              <div className="tournaments-grid">
-                {recentTournaments.slice(0, 6).map(tournament => (
-                  <div key={tournament.id} className="tournament-card" onClick={() => navigate(`/tournaments/${tournament.id}`)}>
-                    <div className="tournament-card-header">
-                      <span className="tournament-game">{tournament.game}</span>
-                      <span className={`tournament-status ${tournament.status}`}>
-                        {tournament.status === 'active' ? 'Идёт' : tournament.status === 'registration' ? 'Регистрация' : 'Завершён'}
-                      </span>
-                    </div>
-                    <h3 className="tournament-name">{tournament.name}</h3>
-                    <div className="tournament-info">
-                      <div className="info-item">
-                        <span className="info-label">Формат:</span>
-                        <span className="info-value">{tournament.format}</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Участники:</span>
-                        <span className="info-value">{tournament.current_participants || 0}/{tournament.max_participants}</span>
-                      </div>
-                      {tournament.prize_pool && (
-                        <div className="info-item">
-                          <span className="info-label">Призовой фонд:</span>
-                          <span className="info-value prize">${tournament.prize_pool}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="tournament-card-footer">
-                      <span className="view-tournament">Подробнее →</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="section-footer">
-                <Link to="/tournaments" className="view-all-link">
-                  Смотреть все турниры →
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Recent Tournaments Section удалён: оставляем только карусель */}
 
         {/* Winners Slider Section */}
         {winners.length > 0 && (
@@ -461,14 +413,15 @@ export default HomePage;
 function TournamentSteamCarousel({ recentTournaments, onOpen }) {
   const items = useMemo(() => (Array.isArray(recentTournaments) ? recentTournaments : []), [recentTournaments]);
   const [index, setIndex] = React.useState(0);
-  const next = () => setIndex((i) => (i + 1) % Math.max(items.length || 1, 1));
-  const prev = () => setIndex((i) => (i - 1 + Math.max(items.length || 1, 1)) % Math.max(items.length || 1, 1));
+  const pagesCount = Math.max(Math.ceil((items.length || 1) / 4), 1);
+  const next = () => setIndex((i) => (i + 1) % pagesCount);
+  const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
 
   React.useEffect(() => {
     if (!items.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [items.length]);
+  }, [items.length, pagesCount]);
 
   const gameIcon = (game) => {
     const g = String(game || '').toLowerCase();
@@ -484,43 +437,53 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
       <div className="steam-carousel-inner">
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
         <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
-          {(items.length ? items : [
-            { id: 0, name: 'Нет активных турниров', game: '—', status: '—', format: '—', participant_type: '—', start_date: new Date().toISOString() }
-          ]).map((t) => (
-            <div key={t.id} className="steam-slide">
-              <div className="steam-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
-                <div className="steam-card-header">
-                  <span className="steam-game-icon" aria-hidden>
-                    {gameIcon(t.game)}
-                  </span>
-                  <h3 className="steam-title" title={t.name}>{t.name}</h3>
-                </div>
-                <div className="steam-card-hover">
-                  <div className="steam-meta-row">
-                    <span className="steam-meta-label">Дата</span>
-                    <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
-                  </div>
-                  <div className="steam-meta-row">
-                    <span className="steam-meta-label">Статус</span>
-                    <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
-                  </div>
-                  <div className="steam-meta-row">
-                    <span className="steam-meta-label">Тип</span>
-                    <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
-                  </div>
-                  <div className="steam-meta-row">
-                    <span className="steam-meta-label">Участники</span>
-                    <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
-                  </div>
+          {(() => {
+            const source = (items.length ? items : [
+              { id: 0, name: 'Нет турниров', game: '—', status: '—', format: '—', participant_type: '—', start_date: new Date().toISOString() }
+            ]);
+            const pages = [];
+            for (let i = 0; i < source.length; i += 4) pages.push(source.slice(i, i + 4));
+            if (pages.length === 0) pages.push(source);
+            return pages.map((page, pi) => (
+              <div key={pi} className="steam-slide">
+                <div className="steam-slide-grid">
+                  {page.map((t) => (
+                    <div key={t.id} className="steam-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
+                      <div className="steam-card-header">
+                        <span className="steam-game-icon" aria-hidden>
+                          {gameIcon(t.game)}
+                        </span>
+                        <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                      </div>
+                      <div className="steam-card-hover">
+                        <div className="steam-meta-row">
+                          <span className="steam-meta-label">Дата</span>
+                          <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
+                        </div>
+                        <div className="steam-meta-row">
+                          <span className="steam-meta-label">Статус</span>
+                          <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
+                        </div>
+                        <div className="steam-meta-row">
+                          <span className="steam-meta-label">Тип</span>
+                          <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
+                        </div>
+                        <div className="steam-meta-row">
+                          <span className="steam-meta-label">Участники</span>
+                          <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
         <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
       </div>
       <div className="steam-dots">
-        {(items.length ? items : [1]).map((_, i) => (
+        {Array.from({ length: pagesCount }).map((_, i) => (
           <button key={i} className={`steam-dot ${i === index ? 'active' : ''}`} onClick={() => setIndex(i)} />
         ))}
       </div>
