@@ -4,13 +4,15 @@ import './MapSelectionBoard.css';
 
 // Карты CS2
 const MAP_INFO = {
-    'de_mirage': { displayName: 'Mirage', thumbnail: '/images/maps/de_mirage.jpg' },
-    'de_inferno': { displayName: 'Inferno', thumbnail: '/images/maps/de_inferno.jpg' },
-    'de_dust2': { displayName: 'Dust II', thumbnail: '/images/maps/de_dust2.jpg' },
-    'de_nuke': { displayName: 'Nuke', thumbnail: '/images/maps/de_nuke.jpg' },
-    'de_ancient': { displayName: 'Ancient', thumbnail: '/images/maps/de_ancient.jpg' },
-    'de_vertigo': { displayName: 'Vertigo', thumbnail: '/images/maps/de_vertigo.jpg' },
-    'de_anubis': { displayName: 'Anubis', thumbnail: '/images/maps/de_anubis.jpg' }
+    'de_mirage':   { displayName: 'Mirage',   thumbnail: '/images/maps/mirage.jpg' },
+    'de_inferno':  { displayName: 'Inferno',  thumbnail: '/images/maps/inferno.jpg' },
+    'de_dust2':    { displayName: 'Dust II',  thumbnail: '/images/maps/dust2.jpg' },
+    'de_nuke':     { displayName: 'Nuke',     thumbnail: '/images/maps/nuke.jpg' },
+    'de_ancient':  { displayName: 'Ancient',  thumbnail: '/images/maps/ancient.jpg' },
+    'de_vertigo':  { displayName: 'Vertigo',  thumbnail: '/images/maps/vertigo.jpg' },
+    'de_anubis':   { displayName: 'Anubis',   thumbnail: '/images/maps/anubis.jpg' },
+    'de_overpass': { displayName: 'Overpass', thumbnail: '/images/maps/overpass.jpg' },
+    'de_train':    { displayName: 'Train',    thumbnail: '/images/maps/train.jpg' }
 };
 
 function MapSelectionBoard({ 
@@ -111,7 +113,7 @@ function MapSelectionBoard({
                     const mapName = mapData.map_name;
                     const mapInfo = MAP_INFO[mapName] || { 
                         displayName: mapName, 
-                        thumbnail: '/images/maps/default.jpg' 
+                        thumbnail: '/images/maps/mirage.jpg' 
                     };
                     const selection = getMapSelection(mapName);
                     const mapStyle = getMapStyle(mapName);
@@ -127,7 +129,7 @@ function MapSelectionBoard({
                                     src={mapInfo.thumbnail} 
                                     alt={mapInfo.displayName}
                                     onError={(e) => {
-                                        e.target.src = '/images/maps/default.jpg';
+                                        e.target.src = '/images/maps/mirage.jpg';
                                     }}
                                 />
                                 {selection && (

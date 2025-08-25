@@ -49,6 +49,23 @@ class MatchLobbyController {
         }
     }
     
+    // 🔎 Получение активного лобби по матчу
+    static async getActiveLobbyByMatch(req, res) {
+        try {
+            const { tournamentId, matchId } = req.params;
+            const userId = req.user.id;
+
+            const lobby = await MatchLobbyService.getActiveLobbyByMatch(matchId, tournamentId, userId);
+            if (!lobby) {
+                return res.json({ success: true, lobby: null });
+            }
+            return res.json({ success: true, lobby });
+        } catch (error) {
+            console.error('❌ Ошибка получения активного лобби по матчу:', error);
+            res.status(500).json({ error: error.message || 'Ошибка при получении активного лобби' });
+        }
+    }
+
     // 🏁 Создание лобби для матча
     static async createMatchLobby(req, res) {
         try {

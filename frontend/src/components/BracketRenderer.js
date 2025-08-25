@@ -639,6 +639,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const canShowActions = isAdminOrCreator && tournament?.status === 'in_progress';
     let api;
     try { api = require('../axios').default; } catch (_) {}
+    const [activeLobbyId, setActiveLobbyId] = useState(null);
     const getBracketTypeStyle = () => {
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match || matchType === 'third-place') {
@@ -754,6 +755,27 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     const matchStatus = getMatchStatus();
     
+    // Пытаемся найти активное лобби для этого матча (для приглашенных пользователей)
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchActiveLobby() {
+            if (!api || !tournament?.id || !match?.id) return;
+            try {
+                const token = localStorage.getItem('token');
+                const res = await api.get(`/api/tournaments/${tournament.id}/matches/${match.id}/active-lobby`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!cancelled && res?.data?.success) {
+                    setActiveLobbyId(res.data.lobby?.id || null);
+                }
+            } catch (_) {
+                if (!cancelled) setActiveLobbyId(null);
+            }
+        }
+        fetchActiveLobby();
+        return () => { cancelled = true; };
+    }, [api, tournament?.id, match?.id]);
+
     // Предотвращаем перетаскивание при клике на матч
     const handleMatchClick = (e) => {
         e.stopPropagation();
@@ -878,6 +900,23 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                     >
                         Открыть матч
                     </button>
+                    {activeLobbyId && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
+                            style={{
+                                background: '#111',
+                                color: '#fff',
+                                border: '1px solid #ff0000',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: 'pointer'
+                            }}
+                            title="Перейти в лобби"
+                        >
+                            Перейти в лобби
+                        </button>
+                    )}
                     <button
                         type="button"
                         disabled={isCreatingLobby}

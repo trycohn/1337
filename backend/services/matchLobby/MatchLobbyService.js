@@ -25,6 +25,20 @@ class MatchLobbyService {
         return result.rows[0];
     }
     
+    // 🔎 Получить активное лобби по матчу, доступное пользователю (по приглашению)
+    static async getActiveLobbyByMatch(matchId, tournamentId, userId) {
+        const result = await pool.query(
+            `SELECT l.*
+             FROM match_lobbies l
+             JOIN lobby_invitations i ON i.lobby_id = l.id AND i.user_id = $3
+             WHERE l.match_id = $1 AND l.tournament_id = $2
+               AND l.status IN ('waiting','ready','picking')
+             ORDER BY l.created_at DESC NULLS LAST
+             LIMIT 1`,
+            [matchId, tournamentId, userId]
+        );
+        return result.rows[0] || null;
+    }
     // 🗺️ Управление картами турнира
     static async setTournamentMaps(tournamentId, maps) {
         const client = await pool.connect();
