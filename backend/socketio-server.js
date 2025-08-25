@@ -236,17 +236,23 @@ function createSocketServer(httpServer) {
     socket.on('join_lobby', async (data) => {
       try {
         console.log(`🎮 [Socket.IO] Запрос на подключение к лобби от ${socket.user.username}:`, data);
-        const { lobbyId } = data;
-        
+        const { lobbyId } = data || {};
         if (!lobbyId) {
           socket.emit('error', { message: 'Необходимо указать lobbyId' });
           return;
         }
-        
-        // Используем контроллер лобби для обработки
-        const MatchLobbyController = require('./controllers/matchLobby/MatchLobbyController');
-        await MatchLobbyController.handleSocketConnection(io, socket);
-        
+
+        const MatchLobbyService = require('./services/matchLobby/MatchLobbyService');
+        // Проверим доступ и сразу присоединим к комнате + отправим состояние
+        const lobby = await MatchLobbyService.getLobbyInfo(lobbyId, socket.userId);
+        if (!lobby.user_invited) {
+          socket.emit('error', { message: 'У вас нет доступа к этому лобби' });
+          return;
+        }
+        const roomName = `lobby_${lobbyId}`;
+        socket.join(roomName);
+        console.log(`🎮 [Socket.IO] ${socket.user.username} присоединился к лобби ${roomName}`);
+        socket.emit('lobby_state', lobby);
       } catch (error) {
         console.error('❌ [Socket.IO] Ошибка подключения к лобби:', error);
         socket.emit('error', { message: error.message || 'Ошибка подключения к лобби' });

@@ -510,11 +510,22 @@ class MatchLobbyService {
             
             await client.query('COMMIT');
             
-            return {
+            const response = {
                 success: true,
                 completed: nextTurn.completed,
                 nextTurn: nextTurn.teamId
             };
+
+            // Live-обновление через WS для всех участников лобби
+            try {
+                const app = global.app;
+                const io = app?.get('io');
+                if (io) {
+                    await this.broadcastLobbyUpdate(io, lobbyId);
+                }
+            } catch (_) {}
+
+            return response;
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
