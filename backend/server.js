@@ -412,6 +412,28 @@ const serverInstance = server.listen(PORT, async () => {
             console.error('⚠️ Предупреждение: Не удалось инициализировать системного пользователя:', systemUserError.message);
         }
         
+        // 🆕 Устанавливаем дефолтные аватары всем пользователям без аватара
+        try {
+            // Готовим папку и файл SVG (раздаётся через /uploads)
+            const avatarsDir = path.join(__dirname, 'uploads/avatars/preloaded');
+            fs.mkdirSync(avatarsDir, { recursive: true });
+            const svgPath = path.join(avatarsDir, 'circle-user.svg');
+            if (!fs.existsSync(svgPath)) {
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="#9ca3af" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 96c48.6 0 88 39.4 88 88s-39.4 88-88 88-88-39.4-88-88 39.4-88 88-88zm0 352c-59.6 0-112.7-26.3-149-67.5 18.5-37.3 55.7-62.5 99-62.5h100c43.3 0 80.5 25.2 99 62.5C368.7 429.7 315.6 456 256 456z"/></svg>';
+                fs.writeFileSync(svgPath, svg, 'utf8');
+            }
+            // Значение по умолчанию в БД для новых пользователей
+            await pool.query("ALTER TABLE users ALTER COLUMN avatar_url SET DEFAULT '/uploads/avatars/preloaded/circle-user.svg'");
+            // Массово обновляем только пустые/некорректные значения
+            await pool.query(
+                "UPDATE users SET avatar_url = '/uploads/avatars/preloaded/circle-user.svg' " +
+                "WHERE avatar_url IS NULL OR trim(avatar_url) = '' OR lower(avatar_url) IN ('null','undefined')"
+            );
+            console.log('✅ Дефолтные аватары назначены для пользователей без аватара');
+        } catch (defaultAvatarErr) {
+            console.error('⚠️ Не удалось назначить дефолтные аватары:', defaultAvatarErr.message);
+        }
+        
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);
     }
