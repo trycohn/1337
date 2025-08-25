@@ -143,7 +143,7 @@ fs.mkdirSync(mapsImagesDir, { recursive: true });
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB — запас для 512x512 JPEG
     fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) return cb(new Error('Недопустимый тип файла'));
@@ -237,7 +237,17 @@ router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, re
 });
 
 // Загрузка новой предзагруженной аватарки (квадрат, 512x512)
-router.post('/preloaded-avatars', authenticateToken, requireAdmin, upload.single('image'), async (req, res) => {
+router.post('/preloaded-avatars', authenticateToken, requireAdmin, (req, res, next) => {
+    upload.single('image')(req, res, function (err) {
+        if (err) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(413).json({ success: false, error: 'Файл слишком большой' });
+            }
+            return res.status(400).json({ success: false, error: err.message || 'Ошибка загрузки файла' });
+        }
+        next();
+    });
+}, async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, error: 'Файл не загружен' });
 

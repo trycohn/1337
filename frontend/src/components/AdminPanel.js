@@ -272,17 +272,15 @@ function AdminPanel() {
             const form = new FormData();
             if (name) form.append('name', name);
             form.append('image', file);
-            const res = await fetch('/api/admin/preloaded-avatars', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                body: form
+            const res = await api.post('/api/admin/preloaded-avatars', form, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка');
+            if (!res.data?.success) throw new Error(res.data?.error || 'Ошибка');
             setPreAvatarsMsg('Загружено');
             await fetchPreloadedAvatars();
         } catch (e) {
-            setPreAvatarsMsg(`Ошибка: ${e.message}`);
+            const msg = e?.response?.data?.error || e?.message || 'Ошибка загрузки';
+            setPreAvatarsMsg(`Ошибка: ${msg}`);
         } finally {
             setPreAvatarsLoading(false);
         }
