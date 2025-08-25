@@ -25,6 +25,16 @@ function HomePage() {
   const [currentWinnerIndex, setCurrentWinnerIndex] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const aboutPhotos = useMemo(() => ([
+    '/images/home%20photos%20tournament/1337%20league%201.jpg',
+    '/images/home%20photos%20tournament/raznoe%202.jpg',
+    '/images/home%20photos%20tournament/raznoe.jpg',
+    '/images/home%20photos%20tournament/shuffle%20showdown%201.jpg',
+    '/images/home%20photos%20tournament/shuffle%20showdown%202.jpg',
+    '/images/home%20photos%20tournament/shuffle%20showdown%203.jpg',
+    '/images/home%20photos%20tournament/shuffle%20showdown%204.jpg'
+  ]), []);
+  const [aboutPhotoIndex, setAboutPhotoIndex] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -166,6 +176,15 @@ function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Автокарусель фото в about-section
+  useEffect(() => {
+    if (!aboutPhotos.length) return;
+    const timer = setInterval(() => {
+      setAboutPhotoIndex((i) => (i + 1) % aboutPhotos.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [aboutPhotos.length]);
+
   return (
     <>
       <SEO 
@@ -189,6 +208,39 @@ function HomePage() {
       )}
 
       <div className={`homepage ${isInitialLoading ? 'loading' : ''}`}>
+        {/* About Section */}
+        <section className="about-section">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">О платформе 1337</h2>
+              <div className="title-underline"></div>
+            </div>
+            
+            <div className="about-content about-grid">
+              <div className="about-text">
+                <p className="lead-text">
+                  1337 Community — это современная экосистема для киберспортсменов всех уровней. 
+                  От новичков до профессионалов, мы создаём равные возможности для всех.
+                </p>
+                <p>
+                  Наша платформа объединяет передовые технологии организации турниров, 
+                  систему рейтингов и активное сообщество игроков. Здесь каждый может 
+                  найти соперников своего уровня и начать путь к вершине киберспорта.
+                </p>
+              </div>
+              <div className="about-photos">
+                <img
+                  className="about-photo"
+                  src={aboutPhotos[aboutPhotoIndex] || '/images/1337%20black%20logo.svg'}
+                  alt="1337 tournament"
+                  onError={(e) => { e.currentTarget.src = '/images/1337%20black%20logo.svg'; }}
+                />
+                <div className="about-photo-overlay"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Steam-like Carousel Section (замена hero) */}
         <section className="tournaments-carousel-section">
           <div className="container">
@@ -215,29 +267,7 @@ function HomePage() {
           </section>
         )}
 
-        {/* About Section (перенесено вверх по требованию) */}
-        <section className="about-section" style={{order: -1}}>
-          <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">О платформе 1337</h2>
-              <div className="title-underline"></div>
-            </div>
-            
-            <div className="about-content">
-              <div className="about-text">
-                <p className="lead-text">
-                  1337 Community — это современная экосистема для киберспортсменов всех уровней. 
-                  От новичков до профессионалов, мы создаём равные возможности для всех.
-                </p>
-                <p>
-                  Наша платформа объединяет передовые технологии организации турниров, 
-                  систему рейтингов и активное сообщество игроков. Здесь каждый может 
-                  найти соперников своего уровня и начать путь к вершине киберспорта.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        
 
         
 
