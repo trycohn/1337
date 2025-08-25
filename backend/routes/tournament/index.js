@@ -432,6 +432,9 @@ router.put('/:id/lobby-settings', authenticateToken, verifyAdminOrCreator, Match
 // 🏁 Создание лобби для матча
 router.post('/:tournamentId/matches/:matchId/create-lobby', authenticateToken, verifyAdminOrCreator, MatchLobbyController.createMatchLobby);
 
+// 🔄 Пересоздание лобби для матча
+router.post('/:tournamentId/matches/:matchId/recreate-lobby', authenticateToken, verifyAdminOrCreator, MatchLobbyController.recreateMatchLobby);
+
 // 🔎 Получить активное лобби матча (если есть)
 router.get('/:tournamentId/matches/:matchId/active-lobby', authenticateToken, MatchLobbyController.getActiveLobbyByMatch);
 

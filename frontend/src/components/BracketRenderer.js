@@ -800,11 +800,21 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         try {
             setIsCreatingLobby(true);
             const token = localStorage.getItem('token');
-            await api.post(
+            const res = await api.post(
                 `/api/tournaments/${tournament.id}/matches/${match.id}/create-lobby`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+            if (res?.data?.alreadyExists && isAdminOrCreator) {
+                const confirmRecreate = window.confirm('Лобби этого матча ранее уже было создано, хотите пересоздать?');
+                if (confirmRecreate) {
+                    await api.post(
+                        `/api/tournaments/${tournament.id}/matches/${match.id}/recreate-lobby`,
+                        {},
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
+            }
         } catch (err) {
             console.error('❌ Создание лобби не удалось:', err);
         } finally {
