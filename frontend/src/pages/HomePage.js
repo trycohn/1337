@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import SEO from '../components/SEO';
 import '../styles/HomePage.css';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 function HomePage() {
   const navigate = useNavigate();
