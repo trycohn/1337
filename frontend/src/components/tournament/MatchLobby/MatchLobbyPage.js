@@ -182,10 +182,9 @@ function MatchLobbyPage() {
 
     // 🔄 Определение моей команды
     const getMyTeamId = useCallback(() => {
-        // Здесь нужно определить ID команды текущего пользователя
-        // Это зависит от структуры данных вашего приложения
-        return null; // TODO: Implement
-    }, []);
+        if (lobby && lobby.user_team_id) return lobby.user_team_id;
+        return null;
+    }, [lobby]);
 
     if (loading) {
         return (
@@ -275,7 +274,7 @@ function MatchLobbyPage() {
                 myTeamId={getMyTeamId()}
                 onReadyToggle={handleReadyToggle}
                 ready={ready}
-                canToggle={lobby.status === 'waiting'}
+                canToggle={lobby.status === 'waiting' && !!getMyTeamId()}
             />
 
             {/* Доска выбора карт */}

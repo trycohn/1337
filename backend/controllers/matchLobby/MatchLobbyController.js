@@ -187,10 +187,15 @@ class MatchLobbyController {
             
             // Проверяем права администратора
             const lobbyInfo = await MatchLobbyService.getLobbyInfo(lobbyId, userId);
-            const isAdmin = await req.checkTournamentAccess(
-                lobbyInfo.tournament_id, 
-                userId
-            );
+
+            // 🛡️ Разрешение ролей: если пользователь приглашён в лобби как участник, он действует как капитан (без админ-действий)
+            if (lobbyInfo.user_invited) {
+                return res.status(403).json({ 
+                    error: 'Вы являетесь участником лобби и не можете выполнять админ-действия в лобби' 
+                });
+            }
+
+            const isAdmin = await req.checkTournamentAccess(lobbyInfo.tournament_id, userId);
             
             if (!isAdmin) {
                 return res.status(403).json({ 
