@@ -33,7 +33,7 @@ function MatchLobbyPage() {
 
         const newSocket = io(API_URL, {
             auth: { token },
-            transports: ['websocket', 'polling']
+            transports: ['polling', 'websocket']
         });
 
         newSocket.on('connect', () => {
@@ -82,41 +82,36 @@ function MatchLobbyPage() {
     }, [user, lobbyId, navigate]);
 
     // 🎯 Загрузка информации о лобби
-    useEffect(() => {
+    const fetchLobbyInfo = useCallback(async () => {
         if (!user || !lobbyId) return;
-
-        const fetchLobbyInfo = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Ошибка загрузки лобби');
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
+            });
 
-                const data = await response.json();
-                if (data.success) {
-                    setLobby(data.lobby);
-                    if (data.lobby.match_format) {
-                        setSelectedFormat(data.lobby.match_format);
-                    }
-                } else {
-                    throw new Error(data.error || 'Ошибка загрузки');
-                }
-            } catch (error) {
-                console.error('❌ Ошибка загрузки лобби:', error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки лобби');
             }
-        };
 
-        fetchLobbyInfo();
+            const data = await response.json();
+            if (data.success) {
+                setLobby(data.lobby);
+                if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
+            } else {
+                throw new Error(data.error || 'Ошибка загрузки');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки лобби:', error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
     }, [user, lobbyId]);
+
+    useEffect(() => { fetchLobbyInfo(); }, [fetchLobbyInfo]);
 
     // ✅ Установка готовности
     const handleReadyToggle = useCallback(async () => {
@@ -138,11 +133,13 @@ function MatchLobbyPage() {
             const data = await response.json();
             if (data.success) {
                 setReady(!ready);
+                // Принудительно обновим состояние лобби, т.к. WS может быть недоступен
+                await fetchLobbyInfo();
             }
         } catch (error) {
             console.error('❌ Ошибка установки готовности:', error);
         }
-    }, [lobbyId, ready]);
+    }, [lobbyId, ready, fetchLobbyInfo]);
 
     // 🎲 Выбор формата матча
     const handleFormatSelect = useCallback((format) => {
