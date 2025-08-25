@@ -485,16 +485,30 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
 
 function WinnersSteamCarousel({ winners }) {
   const items = useMemo(() => (Array.isArray(winners) ? winners : []), [winners]);
+  const shuffled = useMemo(() => {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }, [items]);
   const [index, setIndex] = React.useState(0);
-  const pagesCount = Math.max(Math.ceil((items.length || 1) / 4), 1);
+  const pagesCount = Math.max(Math.ceil((shuffled.length || 1) / 4), 1);
   const next = () => setIndex((i) => (i + 1) % pagesCount);
   const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
 
   React.useEffect(() => {
-    if (!items.length) return;
+    if (!shuffled.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [items.length, pagesCount]);
+  }, [shuffled.length, pagesCount]);
+
+  const getGameImage = (w) => {
+    const g = String(w.game || w.tournament_game || '').toLowerCase();
+    if (g.includes('counter') || g.includes('cs')) return '/images/games/counter%20strike%202.jpg';
+    return '/images/1337%20black%20logo.svg';
+  };
 
   return (
     <section className="steam-carousel">
@@ -502,7 +516,7 @@ function WinnersSteamCarousel({ winners }) {
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
         <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
           {(() => {
-            const source = (items.length ? items : [
+            const source = (shuffled.length ? shuffled : [
               { tournament_name: '—', winner_name: '—', prize: '—', date: new Date().toISOString() }
             ]);
             const pages = [];
@@ -513,34 +527,14 @@ function WinnersSteamCarousel({ winners }) {
                 <div className="steam-slide-grid">
                   {page.map((w, idx) => (
                     <div key={`${w.tournament_name}-${idx}`} className="steam-card">
-                      <div className="steam-card-inner">
-                        <div className="steam-card-front">
-                          <div className="steam-card-header">
-                            <h3 className="steam-title" title={w.tournament_name}>{w.tournament_name}</h3>
-                          </div>
-                          <div className="steam-art-wrap">
-                            <div className="winner-front-art" style={{width:'100%',height:'100px',display:'flex',alignItems:'center',justifyContent:'center',background:'#111'}}>
-                              <div className="winner-trophy" style={{fontSize:'48px'}}>🏆</div>
-                            </div>
-                          </div>
-                          <div className="steam-status-strip">
-                            <span className="steam-status-pill completed">Победитель</span>
-                          </div>
+                      <div className="steam-card-front" style={{height:'100%'}}>
+                        <div className="steam-card-header">
+                          <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>
                         </div>
-                        <div className="steam-card-back">
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Чемпион</span>
-                            <span className="steam-meta-value">{w.winner_name}</span>
-                          </div>
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Приз</span>
-                            <span className="steam-meta-value">{w.prize}</span>
-                          </div>
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Дата</span>
-                            <span className="steam-meta-value">{new Date(w.date).toLocaleDateString('ru-RU')}</span>
-                          </div>
+                        <div className="steam-art-wrap">
+                          <img className="steam-game-art" src={getGameImage(w)} alt="game" onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
                         </div>
+                        <div className="winner-tournament-bottom" title={w.tournament_name}>{w.tournament_name}</div>
                       </div>
                     </div>
                   ))}
