@@ -190,13 +190,29 @@ function HomePage() {
 
       <div className={`homepage ${isInitialLoading ? 'loading' : ''}`}>
         {/* Steam-like Carousel Section (замена hero) */}
-        <TournamentSteamCarousel recentTournaments={recentTournaments} onOpen={(id) => navigate(`/tournaments/${id}`)} />
+        <section className="tournaments-carousel-section">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">Последние турниры</h2>
+              <div className="title-underline"></div>
+            </div>
+          </div>
+          <TournamentSteamCarousel recentTournaments={recentTournaments} onOpen={(id) => navigate(`/tournaments/${id}`)} />
+        </section>
 
         {/* Recent Tournaments Section удалён: оставляем только карусель */}
 
         {/* Winners Steam-like Carousel */}
         {winners.length > 0 && (
-          <WinnersSteamCarousel winners={winners} />
+          <section className="winners-carousel-section">
+            <div className="container">
+              <div className="section-header">
+                <h2 className="section-title">Чемпионы 1337</h2>
+                <div className="title-underline"></div>
+              </div>
+            </div>
+            <WinnersSteamCarousel winners={winners} />
+          </section>
         )}
 
         {/* About Section */}
@@ -308,68 +324,7 @@ function HomePage() {
           </div>
         </section>
 
-        {/* Community Section */}
-        <section className="community-section">
-          <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">Присоединяйся к элите</h2>
-              <div className="title-underline"></div>
-            </div>
-
-            <div className="community-content">
-              <div className="community-text">
-                <h3>Стань частью истории</h3>
-                <p>
-                  Каждый чемпион начинал с первого матча. Твоя история побед начинается здесь и сейчас. 
-                  Докажи, что ты достоин носить звание лучшего.
-                </p>
-                <ul className="community-benefits">
-                  <li>🎯 Участвуй в турнирах любого уровня</li>
-                  <li>📈 Отслеживай свой прогресс и статистику</li>
-                  <li>🤝 Находи команду и новых друзей</li>
-                  <li>🏅 Зарабатывай репутацию в сообществе</li>
-                  <li>💪 Тренируйся с лучшими игроками</li>
-                </ul>
-              </div>
-
-              <div className="testimonials">
-                <div className="testimonial">
-                  <p>"1337 дал мне шанс показать себя. Теперь я играю на про-сцене!"</p>
-                  <div className="testimonial-author">— s1mple, про-игрок</div>
-                </div>
-                <div className="testimonial">
-                  <p>"Лучшая платформа для старта карьеры в киберспорте"</p>
-                  <div className="testimonial-author">— NaVi Manager</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="cta-section">
-          <div className="container">
-            <div className="cta-content">
-              <h2 className="cta-title">Готов побеждать?</h2>
-              <p className="cta-subtitle">Начни свой путь к вершине киберспорта прямо сейчас</p>
-              <div className="cta-buttons">
-                <button 
-                  className="cta-button large primary"
-                  onClick={() => navigate('/register')}
-                >
-                  Создать аккаунт
-                </button>
-                <Link to="/tournaments" className="cta-link">
-                  или посмотри активные турниры →
-                </Link>
-              </div>
-            </div>
-            
-            <div className="cta-visual">
-              <div className="trophy-icon">🏆</div>
-            </div>
-          </div>
-        </section>
+        {/* community-section и cta-section удалены по требованию */}
       </div>
     </>
   );
