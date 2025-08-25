@@ -917,16 +917,20 @@ const TeamGenerator = ({
                                 </button>
                             )}
 
-                            {/* Единое сообщение о минимуме участников — ниже блока кнопок */}
-                            {displayParticipants.length < parseInt(teamSize) && (
+                        </div>
+
+                        {/* Единое сообщение о минимуме участников — отдельный блок под кнопками */}
+                        {displayParticipants.length < parseInt(teamSize) && (
+                            <div className="mix-info-row">
                                 <p className="min-participants-notice">
                                     ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
                                 </p>
-                            )}
-                        
-                            {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
-                            {mixedTeams.length > 0 && !canReformTeams() && (
-                                <div className="reform-blocked-notice">
+                            </div>
+                        )}
+
+                        {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
+                        {mixedTeams.length > 0 && !canReformTeams() && (
+                            <div className="reform-blocked-notice">
                                     {tournament.status !== 'active' && (
                                         <p>⚠️ Переформирование доступно только для активных турниров</p>
                                     )}
@@ -936,9 +940,8 @@ const TeamGenerator = ({
                                     {displayParticipants.length < parseInt(teamSize) && (
                                         <p>⚠️ Недостаточно участников для переформирования (нужно минимум {teamSize})</p>
                                     )}
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
