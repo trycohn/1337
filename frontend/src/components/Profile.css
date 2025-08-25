@@ -829,10 +829,15 @@
 }
 
 .pre-avatar-item {
+    all: unset;
     display: block;
+    box-sizing: border-box;
     width: 100%;
     aspect-ratio: 1 / 1;
-    padding: 0;
+    height: auto !important;
+    min-height: 0;
+    padding: 0 !important;
+    margin: 0;
     line-height: 0;
     font-size: 0;
     border: 1px solid var(--border-color);
