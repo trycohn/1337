@@ -284,6 +284,10 @@ function MatchLobbyPage() {
                     format={selectedFormat}
                     status={lobby.status}
                     onMapAction={handleMapAction}
+                    teamNames={{
+                        [lobby.team1_id]: lobby.team1_name,
+                        [lobby.team2_id]: lobby.team2_name
+                    }}
                 />
             )}
 

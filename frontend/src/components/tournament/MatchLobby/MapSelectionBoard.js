@@ -22,7 +22,8 @@ function MapSelectionBoard({
     myTeamId, 
     format, 
     status, 
-    onMapAction 
+    onMapAction,
+    teamNames = {} 
 }) {
     // 🎯 Определение последовательности действий
     const actionSequence = useMemo(() => {
@@ -184,13 +185,15 @@ function MapSelectionBoard({
                             const mapInfo = MAP_INFO[selection.map_name] || { 
                                 displayName: selection.map_name 
                             };
+                            const actorName = teamNames?.[selection.team_id] || 'Команда';
+                            const actionText = selection.action_type;
                             return (
                                 <div key={index} className="lobby-history-item">
                                     <span className="lobby-history-index">{index + 1}.</span>
                                     <span className={`lobby-history-action ${selection.action_type}`}>
                                         {selection.action_type === 'pick' ? '✅' : '❌'}
                                     </span>
-                                    <span className="lobby-history-map">{mapInfo.displayName}</span>
+                                    <span className="lobby-history-map">{`${actorName} ${actionText} ${mapInfo.displayName}`}</span>
                                 </div>
                             );
                         })}
