@@ -680,7 +680,5 @@
         text-align: center;
     }
     
-    .share-btn {
-        width: 100%;
-    }
+    /* .share-btn — ширина управляется глобально/контейнером */
 }

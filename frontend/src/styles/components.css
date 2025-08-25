@@ -14,7 +14,7 @@ nav a:hover {
   text-decoration: none;
 }
 /* 🎯 ЕДИНЫЕ СТИЛИ КНОПОК (Figma: Play / 700 / 16 / 100% / 8%) */
-.btn, .nav-button, .auth-button, button, .primary-btn, .secondary-btn, .modal-btn, .close-action-btn, .edit-action-btn, .share-btn, .referral-copy-btn, .referral-retry-btn, .delete-tournament-cancel-btn__deletetournament, .delete-tournament-confirm-btn__deletetournament, .btn-confirm-participation, .confirm-btn, .cancel-btn, .clear-winner-btn, .add-map-btn, .remove-map-btn, .modal-btn-primary {
+.btn, button {
   font-family: Play, Arial, sans-serif;
   font-weight: 700;
   font-size: 16px;
@@ -36,13 +36,13 @@ nav a:hover {
 }
 
 /* Варианты: Primary / Secondary / Ghost */
-.btn-primary, .primary-btn, .modal-btn-primary, .delete-tournament-confirm-btn__deletetournament, .referral-copy-btn, .confirm-btn, .btn-confirm-participation {
+.btn-primary {
   background: var(--Leet-Accent, #FF3838);
   color: #FFFFFF;
   border: 1px solid var(--Leet-Accent, #FF3838);
 }
 
-.btn-secondary, .secondary-btn, .btn-cancel, .delete-tournament-cancel-btn__deletetournament, .referral-retry-btn, .clear-winner-btn, .add-map-btn, .remove-map-btn, .close-action-btn, .edit-action-btn, .share-btn {
+.btn-secondary {
   background: transparent;
   color: #FFFFFF;
   border: 2px solid var(--Leet-Accent, #FF3838);
@@ -62,20 +62,7 @@ nav a:hover {
 
 /* Глобальный сброс эффектов/анимаций для кнопок */
 button,
-.btn,
-.auth-button,
-.login-button,
-.steam-button,
-.faceit-button,
-.view-mode-btn,
-.clear-all-filters-btn,
-.clear-filters-btn,
-.filter-btn-tournaments,
-.admin-request-actions button,
-.friend-request-actions button,
-.add-participant button,
-.invite-participant button,
-.create-tournament button {
+.btn {
   transition: none !important;
   animation: none !important;
   transform: none !important;
@@ -83,20 +70,7 @@ button,
 }
 
 button:hover,
-.btn:hover,
-.auth-button:hover,
-.login-button:hover,
-.steam-button:hover,
-.faceit-button:hover,
-.view-mode-btn:hover,
-.clear-all-filters-btn:hover,
-.clear-filters-btn:hover,
-.filter-btn-tournaments:hover,
-.admin-request-actions button:hover,
-.friend-request-actions button:hover,
-.add-participant button:hover,
-.invite-participant button:hover,
-.create-tournament button:hover {
+.btn:hover {
   background: inherit !important;
   color: inherit !important;
   border-color: inherit !important;

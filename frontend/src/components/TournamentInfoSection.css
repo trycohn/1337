@@ -381,31 +381,7 @@
     cursor: not-allowed;
 }
 
-.cancel-btn {
-    background: transparent;
-    color: #ef4444;
-    border: 1px solid #ef4444;
-    padding: 6px 12px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 500;
-}
-
-.cancel-btn:hover:not(:disabled) {
-    background: #ef4444;
-    color: #ffffff;
-    transform: translateY(-1px);
-}
-
-.cancel-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+/* .cancel-btn — локальные стили удалены, используем .btn */
 
 
 .description-editor,

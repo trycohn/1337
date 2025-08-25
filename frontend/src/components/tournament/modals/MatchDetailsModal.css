@@ -473,13 +473,7 @@
         gap: 10px;
     }
     
-    .modal-btn,
-    .close-action-btn,
-    .edit-action-btn,
-    .share-btn {
-        width: 100%;
-        justify-content: center;
-    }
+    /* локальные классы кнопок заменены глобальными .btn */
     
     .quick-stats {
         grid-template-columns: 1fr;

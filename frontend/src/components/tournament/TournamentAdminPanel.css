@@ -145,16 +145,7 @@
     background-color: transparent;
     white-space: nowrap;
 }
-.secondary-btn-v2 {
-    color: #888888;
-    border-color: #888888;
-}
-.secondary-btn-v2:hover:not(:disabled) {
-    background-color: #888888;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(136, 136, 136, 0.3);
-}
+/* .secondary-btn-v2 — локальные стили удалены; используем .btn */
 /* ===== РљРћРќРўР•РќРў РџРђРќР•Р›Р ===== */
 .admin-panel-content-v2 {
     padding: 20px;
