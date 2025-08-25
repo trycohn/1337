@@ -52,14 +52,14 @@ const ParticipationConfirmModal = ({
                         <div className="tournament-info">
                             <h4>{tournament?.name}</h4>
                             <div className="tournament-details">
-                                <p><strong>Игра:</strong> {tournament?.game}</p>
-                                <p><strong>Формат:</strong> {tournament?.format}</p>
-                                <p><strong>Тип участников:</strong> {tournament?.participant_type}</p>
+                                <p><strong>Игра: </strong> {tournament?.game}</p>
+                                <p><strong>Формат: </strong> {tournament?.format}</p>
+                                <p><strong>Тип участников: </strong> {tournament?.participant_type}</p>
                                 {tournament?.max_participants && (
-                                    <p><strong>Максимум участников:</strong> {tournament.max_participants}</p>
+                                    <p><strong>Максимум участников: </strong> {tournament.max_participants}</p>
                                 )}
                                 {tournament?.scheduled_start && (
-                                    <p><strong>Начало:</strong> {new Date(tournament.scheduled_start).toLocaleString('ru-RU')}</p>
+                                    <p><strong>Начало: </strong> {new Date(tournament.scheduled_start).toLocaleString('ru-RU')}</p>
                                 )}
                             </div>
                         </div>
