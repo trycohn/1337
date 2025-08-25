@@ -352,8 +352,8 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
           <div className="steam-slide">
             <div className="steam-slide-grid">
               {visible.map((t) => (
-                <div key={t.id} className="steam-card tournament-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
-                  <div className="steam-card-inner tournament-card-inner">
+                <div key={t.id} className="steam-card-carousel tournament-card-carousel" onClick={() => t.id && onOpen && onOpen(t.id)}>
+                  <div className="steam-card-inner-carousel tournament-card-inner-carousel">
                     {/* FRONT */}
                     <div className="steam-card-front">
                       <div className="steam-card-header">
@@ -449,7 +449,7 @@ function WinnersSteamCarousel({ winners }) {
           <div className="steam-slide">
             <div className="steam-slide-grid">
               {visible.map((w, idx) => (
-                <div key={`${w.tournament_name}-${idx}`} className="steam-card winner-card">
+                <div key={`${w.tournament_name}-${idx}`} className="steam-card-carousel winner-card-carousel">
                   <div className="steam-card-front" style={{height:'100%'}}>
                     <div className="steam-card-header">
                       <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>

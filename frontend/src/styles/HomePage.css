@@ -522,7 +522,28 @@
   /* перспективу включим только там, где нужен flip (турниры) */
 }
 
+/* Вариант для карусели (изоляция стилей) */
+.steam-card-carousel {
+  position: relative;
+  background: #1d1d1d;
+  border: 1px solid #222;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
 .steam-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 60% at 20% 20%, rgba(255,0,0,0.08), transparent 60%),
+              radial-gradient(50% 50% at 80% 80%, rgba(255,0,0,0.06), transparent 60%);
+  pointer-events: none;
+}
+
+.steam-card-carousel::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -558,8 +579,32 @@
   transform: rotateY(180deg);
 }
 
+/* Вариант flip для карусели турниров */
+.tournament-card-carousel { perspective: 1000px; }
+.tournament-card-inner-carousel {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+.tournament-card-carousel:hover .tournament-card-inner-carousel { transform: rotateY(180deg); }
+.tournament-card-carousel .steam-card-front,
+.tournament-card-carousel .steam-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.tournament-card-carousel .steam-card-back {
+  background: #1d1d1d;
+  transform: rotateY(180deg);
+}
+
 /* ЧЕМПИОНЫ: без переворота */
 .winner-card { perspective: none; }
+
+/* Вариант без flip для карусели победителей */
+.winner-card-carousel { perspective: none; }
 
 .steam-card-header {
   display: flex;
