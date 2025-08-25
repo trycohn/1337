@@ -194,41 +194,9 @@ function HomePage() {
 
         {/* Recent Tournaments Section удалён: оставляем только карусель */}
 
-        {/* Winners Slider Section */}
+        {/* Winners Steam-like Carousel */}
         {winners.length > 0 && (
-          <section className="winners-section">
-            <div className="container">
-              <div className="section-header">
-                <h2 className="section-title">Последние чемпионы</h2>
-                <div className="title-underline"></div>
-              </div>
-
-              <div className="winners-slider">
-                <div className="winners-track" style={{ transform: `translateX(-${currentWinnerIndex * 100}%)` }}>
-                  {winners.map((winner, index) => (
-                    <div key={index} className="winner-slide">
-                      <div className="winner-content">
-                        <div className="winner-trophy">🏆</div>
-                        <h3 className="winner-tournament">{winner.tournament_name}</h3>
-                        <div className="winner-name">{winner.winner_name}</div>
-                        <div className="winner-prize">{winner.prize}</div>
-                        <div className="winner-date">{new Date(winner.date).toLocaleDateString('ru-RU')}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="slider-dots">
-                  {winners.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`slider-dot ${index === currentWinnerIndex ? 'active' : ''}`}
-                      onClick={() => setCurrentWinnerIndex(index)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
+          <WinnersSteamCarousel winners={winners} />
         )}
 
         {/* About Section */}
@@ -438,6 +406,13 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     return '/images/1337%20black%20logo.svg';
   };
 
+  const statusText = (s) => {
+    if (s === 'active') return 'Идёт';
+    if (s === 'registration') return 'Регистрация';
+    if (s === 'completed') return 'Завершён';
+    return s || '—';
+  };
+
   return (
     <section className="steam-carousel">
       <div className="steam-carousel-inner">
@@ -464,6 +439,11 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                           <div className="steam-art-wrap">
                             <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
                           </div>
+                          <div className="steam-status-strip">
+                            <span className={`steam-status-pill ${t.status || 'unknown'}`}>
+                              {statusText(t.status)}
+                            </span>
+                          </div>
                         </div>
                         {/* BACK */}
                         <div className="steam-card-back">
@@ -482,6 +462,83 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                           <div className="steam-meta-row">
                             <span className="steam-meta-label">Участники</span>
                             <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+        <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
+      </div>
+      <div className="steam-dots">
+        {Array.from({ length: pagesCount }).map((_, i) => (
+          <button key={i} className={`steam-dot ${i === index ? 'active' : ''}`} onClick={() => setIndex(i)} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WinnersSteamCarousel({ winners }) {
+  const items = useMemo(() => (Array.isArray(winners) ? winners : []), [winners]);
+  const [index, setIndex] = React.useState(0);
+  const pagesCount = Math.max(Math.ceil((items.length || 1) / 4), 1);
+  const next = () => setIndex((i) => (i + 1) % pagesCount);
+  const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
+
+  React.useEffect(() => {
+    if (!items.length) return;
+    const t = setInterval(next, 5000);
+    return () => clearInterval(t);
+  }, [items.length, pagesCount]);
+
+  return (
+    <section className="steam-carousel">
+      <div className="steam-carousel-inner">
+        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
+        <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+          {(() => {
+            const source = (items.length ? items : [
+              { tournament_name: '—', winner_name: '—', prize: '—', date: new Date().toISOString() }
+            ]);
+            const pages = [];
+            for (let i = 0; i < source.length; i += 4) pages.push(source.slice(i, i + 4));
+            if (pages.length === 0) pages.push(source);
+            return pages.map((page, pi) => (
+              <div key={pi} className="steam-slide">
+                <div className="steam-slide-grid">
+                  {page.map((w, idx) => (
+                    <div key={`${w.tournament_name}-${idx}`} className="steam-card">
+                      <div className="steam-card-inner">
+                        <div className="steam-card-front">
+                          <div className="steam-card-header">
+                            <h3 className="steam-title" title={w.tournament_name}>{w.tournament_name}</h3>
+                          </div>
+                          <div className="steam-art-wrap">
+                            <div className="winner-front-art" style={{width:'100%',height:'100px',display:'flex',alignItems:'center',justifyContent:'center',background:'#111'}}>
+                              <div className="winner-trophy" style={{fontSize:'48px'}}>🏆</div>
+                            </div>
+                          </div>
+                          <div className="steam-status-strip">
+                            <span className="steam-status-pill completed">Победитель</span>
+                          </div>
+                        </div>
+                        <div className="steam-card-back">
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Чемпион</span>
+                            <span className="steam-meta-value">{w.winner_name}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Приз</span>
+                            <span className="steam-meta-value">{w.prize}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Дата</span>
+                            <span className="steam-meta-value">{new Date(w.date).toLocaleDateString('ru-RU')}</span>
                           </div>
                         </div>
                       </div>
