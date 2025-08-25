@@ -896,20 +896,13 @@ const TeamGenerator = ({
                         <div className="mix-buttons-row">
                             {/* 🔧 ИСПРАВЛЕНИЕ: Для микс турниров показываем кнопку формирования если нет команд, независимо от participant_type */}
                             {tournament?.format === 'mix' && mixedTeams.length === 0 && (
-                                <>
-                                    <button 
-                                        onClick={handleFormTeams} 
-                                        className="btn btn-primary"
-                                        disabled={loading || displayParticipants.length < parseInt(teamSize)}
-                                    >
-                                        {loading ? '⏳ Создание команд...' : 'Сформировать команды'}
-                                    </button>
-                                    {displayParticipants.length < parseInt(teamSize) && (
-                                        <p className="min-participants-notice">
-                                            ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
-                                        </p>
-                                    )}
-                                </>
+                                <button 
+                                    onClick={handleFormTeams} 
+                                    className="btn btn-primary"
+                                    disabled={loading || displayParticipants.length < parseInt(teamSize)}
+                                >
+                                    {loading ? '⏳ Создание команд...' : 'Сформировать команды'}
+                                </button>
                             )}
 
                             {/* 🆕 УЛУЧШЕННАЯ КНОПКА ПЕРЕФОРМИРОВАНИЯ */}
@@ -924,10 +917,12 @@ const TeamGenerator = ({
                                 </button>
                             )}
 
-                            {/* Сообщение о минимуме участников также после кнопки переформирования */}
-                            <p className="min-participants-notice">
-                                ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
-                            </p>
+                            {/* Единое сообщение о минимуме участников — ниже блока кнопок */}
+                            {displayParticipants.length < parseInt(teamSize) && (
+                                <p className="min-participants-notice">
+                                    ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
+                                </p>
+                            )}
                         
                             {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
                             {mixedTeams.length > 0 && !canReformTeams() && (
