@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUser } from '../../context/UserContext';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
 import { getParticipantInfo } from '../../utils/participantHelpers';
@@ -20,6 +21,11 @@ const MatchDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const { user } = useUser ? useUser() : { user: null };
+    const [editingMapIndex, setEditingMapIndex] = useState(null);
+    const [score1Input, setScore1Input] = useState('');
+    const [score2Input, setScore2Input] = useState('');
+    const [isSavingMap, setIsSavingMap] = useState(false);
 
     useEffect(() => {
         fetchMatchDetails();
@@ -99,6 +105,11 @@ const MatchDetailsPage = () => {
         };
         return mapImages[mapName?.toLowerCase()] || '/images/maps/mirage.jpg';
     };
+    const isAdminOrCreator = !!(user && tournament && (
+        tournament.created_by === user.id ||
+        (Array.isArray(tournament.admins) && tournament.admins.some(a => a.user_id === user.id))
+    ));
+
     const renderPickedMapsWithSides = () => {
         const mapsData = match?.maps_data || [];
         const selections = match?.selections || [];
@@ -118,6 +129,80 @@ const MatchDetailsPage = () => {
                     <img src={getMapImage(m.map_name)} alt={m.map_name} />
                     <div className="map-title">Карта {idx + 1}: {m.map_name}</div>
                     <div className="map-meta">Сторону выбирает: {sideChooserName}</div>
+                    {isAdminOrCreator && (
+                        editingMapIndex === idx ? (
+                            <div className="map-inline-editor" style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="score-input"
+                                    style={{ width: 64 }}
+                                    value={score1Input}
+                                    onChange={(e) => setScore1Input(e.target.value)}
+                                    placeholder={teamNameById[match.team1_id]}
+                                />
+                                <span>:</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    className="score-input"
+                                    style={{ width: 64 }}
+                                    value={score2Input}
+                                    onChange={(e) => setScore2Input(e.target.value)}
+                                    placeholder={teamNameById[match.team2_id]}
+                                />
+                                <button
+                                    className="btn btn-primary"
+                                    disabled={isSavingMap}
+                                    onClick={async () => {
+                                        try {
+                                            setIsSavingMap(true);
+                                            const token = localStorage.getItem('token');
+                                            const s1 = score1Input === '' ? null : parseInt(score1Input, 10);
+                                            const s2 = score2Input === '' ? null : parseInt(score2Input, 10);
+                                            const body = {
+                                                maps_data: mapsData.map((mm, i) => i === idx ? { ...mm, score1: s1, score2: s2 } : mm)
+                                            };
+                                            const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                body: JSON.stringify(body)
+                                            });
+                                            if (!resp.ok) throw new Error('Не удалось сохранить счёт карты');
+                                            await fetchMatchDetails();
+                                            setEditingMapIndex(null);
+                                        } catch (e) {
+                                            alert(e.message);
+                                        } finally {
+                                            setIsSavingMap(false);
+                                        }
+                                    }}
+                                >
+                                    {isSavingMap ? 'Сохранение…' : 'Сохранить'}
+                                </button>
+                                <button
+                                    className="btn btn-secondary"
+                                    disabled={isSavingMap}
+                                    onClick={() => setEditingMapIndex(null)}
+                                >
+                                    Отменить
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="map-edit-hint" style={{ marginTop: 8 }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setEditingMapIndex(idx);
+                                        setScore1Input(m.score1 ?? '');
+                                        setScore2Input(m.score2 ?? '');
+                                    }}
+                                >
+                                    Ввести счёт
+                                </button>
+                            </div>
+                        )
+                    )}
                 </div>
             );
         });
