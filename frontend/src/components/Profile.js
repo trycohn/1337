@@ -1491,32 +1491,32 @@ function Profile() {
             return;
         }
         
+        // Сначала сохраняем email на сервере
         try {
             const token = localStorage.getItem('token');
             await api.post('/api/users/update-email', { email: newEmail }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
-            // Обновляем данные пользователя с новым email
-            setUser(prevUser => prevUser ? { ...prevUser, email: newEmail, is_verified: false } : null); // Убран - используем AuthContext
-            
-            // Закрываем модальное окно добавления email
-            closeAddEmailModal();
-            
-            // Открываем модальное окно подтверждения email
-            setShowEmailVerificationModal(true);
         } catch (err) {
             setAddEmailError(err.response?.data?.error || err.response?.data?.message || 'Ошибка сохранения email');
             return;
         }
         
-        // Отправляем код верификации отдельно, не ломая успешное сохранение email
+        // Затем обновляем локальные данные и открываем модал верификации
+        try {
+            updateUser({ email: newEmail, is_verified: false });
+            closeAddEmailModal();
+            setShowEmailVerificationModal(true);
+        } catch (uiErr) {
+            console.error('Ошибка локального обновления после сохранения email:', uiErr);
+        }
+        
+        // И наконец, отправляем код верификации (ошибки тут не считаем ошибкой сохранения)
         try {
             await sendVerificationCode();
             localStorage.setItem('verification_code_sent', 'true');
-        } catch (err) {
-            // Не считаем это ошибкой сохранения email, просто логируем
-            console.error('Не удалось отправить код верификации:', err);
+        } catch (sendErr) {
+            console.error('Не удалось отправить код верификации:', sendErr);
         }
     };
 
