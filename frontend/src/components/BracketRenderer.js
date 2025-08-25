@@ -636,7 +636,7 @@ const BracketRenderer = ({
 const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isCreatingLobby, setIsCreatingLobby] = useState(false);
-    const canShowActions = isAdminOrCreator && (tournament?.status === 'Идет' || tournament?.status === 'active');
+    const canShowActions = isAdminOrCreator && tournament?.status === 'in_progress';
     let api;
     try { api = require('../axios').default; } catch (_) {}
     const getBracketTypeStyle = () => {
