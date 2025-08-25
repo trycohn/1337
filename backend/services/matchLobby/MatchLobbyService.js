@@ -248,6 +248,11 @@ class MatchLobbyService {
                     m.team1_id, m.team2_id,
                     t1.name as team1_name, t2.name as team2_name,
                     t.name as tournament_name, t.game,
+                    (
+                        SELECT i.team_id FROM lobby_invitations i
+                        WHERE i.lobby_id = l.id AND i.user_id = $2
+                        LIMIT 1
+                    ) as user_team_id,
                     CASE 
                         WHEN EXISTS (
                             SELECT 1 FROM lobby_invitations 
