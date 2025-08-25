@@ -57,11 +57,14 @@ function MatchLobbyPage() {
             setLobby(prev => ({ ...prev, ...data }));
         });
 
-        newSocket.on('lobby_completed', () => {
-            console.log('✅ Выбор карт завершен');
-            setTimeout(() => {
-                navigate(`/tournaments/${lobby?.tournament_id}`);
-            }, 3000);
+        newSocket.on('lobby_completed', (payload) => {
+            console.log('✅ Выбор карт завершен', payload);
+            const tid = payload?.tournamentId || lobby?.tournament_id;
+            if (tid) {
+                setTimeout(() => {
+                    navigate(`/tournaments/${tid}`);
+                }, 2000);
+            }
         });
 
         newSocket.on('error', (error) => {
