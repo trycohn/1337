@@ -435,6 +435,9 @@ router.post('/:tournamentId/matches/:matchId/create-lobby', authenticateToken, v
 // 🔎 Получить активное лобби матча (если есть)
 router.get('/:tournamentId/matches/:matchId/active-lobby', authenticateToken, MatchLobbyController.getActiveLobbyByMatch);
 
+// 🔎 Получить список активных лобби для текущего пользователя
+router.get('/lobbies/active', authenticateToken, MatchLobbyController.getActiveLobbiesForUser);
+
 // 🎯 Получение информации о лобби
 router.get('/lobby/:lobbyId', authenticateToken, MatchLobbyController.getLobbyInfo);
 

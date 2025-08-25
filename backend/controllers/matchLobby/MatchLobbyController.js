@@ -66,6 +66,18 @@ class MatchLobbyController {
         }
     }
 
+    // 🔎 Получение активных лобби для текущего пользователя
+    static async getActiveLobbiesForUser(req, res) {
+        try {
+            const userId = req.user.id;
+            const lobbies = await MatchLobbyService.getActiveLobbiesForUser(userId);
+            res.json({ success: true, lobbies });
+        } catch (error) {
+            console.error('❌ Ошибка получения активных лобби пользователя:', error);
+            res.status(500).json({ error: error.message || 'Ошибка при получении активных лобби' });
+        }
+    }
+
     // 🏁 Создание лобби для матча
     static async createMatchLobby(req, res) {
         try {

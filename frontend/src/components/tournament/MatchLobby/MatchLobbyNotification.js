@@ -1,5 +1,6 @@
 // 🔔 MatchLobbyNotification - Компонент уведомления о приглашении в лобби
 import React, { useState, useEffect } from 'react';
+import axios from '../../../axios';
 import { useNavigate } from 'react-router-dom';
 import './MatchLobbyNotification.css';
 
@@ -24,6 +25,28 @@ function MatchLobbyNotification({ socket, user }) {
             socket.off('match_lobby_invite', handleLobbyInvite);
         };
     }, [socket, user]);
+
+    // 🆕 Автопоказ панели при наличии активных лобби пользователя
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchActiveLobbies() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get('/api/tournaments/lobbies/active', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!cancelled && res?.data?.success && Array.isArray(res.data.lobbies) && res.data.lobbies.length > 0) {
+                    const invites = res.data.lobbies.map(l => ({ lobbyId: l.id }));
+                    setLobbyInvites(invites);
+                    setShowNotification(true);
+                }
+            } catch (e) {
+                // молча игнорируем
+            }
+        }
+        fetchActiveLobbies();
+        return () => { cancelled = true; };
+    }, [user]);
 
     // Обработка клика по уведомлению
     const handleNotificationClick = () => {

@@ -39,6 +39,20 @@ class MatchLobbyService {
         );
         return result.rows[0] || null;
     }
+
+    // 🔎 Список активных лобби для пользователя (по приглашениям)
+    static async getActiveLobbiesForUser(userId) {
+        const result = await pool.query(
+            `SELECT l.*
+             FROM match_lobbies l
+             JOIN lobby_invitations i ON i.lobby_id = l.id AND i.user_id = $1
+             WHERE l.status IN ('waiting','ready','picking')
+             ORDER BY l.updated_at DESC NULLS LAST, l.created_at DESC NULLS LAST
+             LIMIT 5`,
+            [userId]
+        );
+        return result.rows;
+    }
     // 🗺️ Управление картами турнира
     static async setTournamentMaps(tournamentId, maps) {
         const client = await pool.connect();
