@@ -75,10 +75,19 @@ const TournamentParticipants = ({
                 console.log('🔍 [TournamentParticipants] Поиск успешный, найдено пользователей:', result.data?.length || 0);
                 
                 // Фильтруем уже добавленных участников
-                const existingParticipantIds = getParticipantsList().map(p => p.user_id || p.id);
-                const filteredResults = (result.data || []).filter(user => 
-                    !existingParticipantIds.includes(user.id)
+                const participantUserIds = new Set(
+                    (getParticipantsList() || [])
+                        .map(p => Number(p.user_id))
+                        .filter(Boolean)
                 );
+                const teamMemberUserIds = new Set(
+                    (tournament?.teams || [])
+                        .flatMap(team => (team.members || []))
+                        .map(m => Number(m.user_id))
+                        .filter(Boolean)
+                );
+                const existingUserIds = new Set([...participantUserIds, ...teamMemberUserIds]);
+                const filteredResults = (result.data || []).filter(u => !existingUserIds.has(Number(u.id)));
                 
                 console.log('🔍 [TournamentParticipants] После фильтрации:', filteredResults.length);
                 setParticipantSearchResults(filteredResults);
@@ -96,7 +105,7 @@ const TournamentParticipants = ({
         } finally {
             setIsSearchingParticipants(false);
         }
-    }, [tournamentManagement, getParticipantsList]);
+    }, [tournamentManagement, getParticipantsList, tournament]);
 
     // Приглашение зарегистрированного пользователя
     const inviteParticipant = useCallback(async (userId, userName) => {

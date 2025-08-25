@@ -231,8 +231,8 @@ router.post('/register', async (req, res) => {
                         
                         // Добавляем пользователя в турнир
                         await client.query(`
-                            INSERT INTO tournament_participants (tournament_id, user_id, registered_at)
-                            VALUES ($1, $2, NOW())
+                            INSERT INTO tournament_participants (tournament_id, user_id)
+                            VALUES ($1, $2)
                             ON CONFLICT (tournament_id, user_id) DO NOTHING
                         `, [tournamentId, newUser.id]);
                         

@@ -63,49 +63,24 @@ const TournamentInfoSection = ({
 
     // 🆕 Проверка, является ли пользователь участником
     const isUserParticipant = () => {
-        if (!user || !tournament?.participants) {
-            console.log('🔍 isUserParticipant: нет пользователя или участников', {
-                hasUser: !!user,
-                hasParticipants: !!tournament?.participants,
-                participantsLength: tournament?.participants?.length
-            });
+        if (!user || !tournament) {
             return false;
         }
-        
-        // 🔧 УЛУЧШЕННАЯ ПРОВЕРКА: проверяем разные поля участников
-        const isParticipating = tournament.participants.some(participant => {
-            const isMatch = participant.user_id === user.id || 
-                           participant.id === user.id ||
-                           participant.participant_id === user.id; // Дополнительная проверка
-            
-            if (isMatch) {
-                console.log('✅ Найден участник:', {
-                    participantData: participant,
-                    userId: user.id,
-                    matchField: participant.user_id === user.id ? 'user_id' : 
-                               participant.id === user.id ? 'id' : 'participant_id'
-                });
-            }
-            
-            return isMatch;
-        });
-        
-        console.log('🔍 isUserParticipant результат:', {
-            isParticipating,
-            userId: user.id,
-            username: user.username,
-            tournamentId: tournament.id,
-            participantsCount: tournament.participants.length,
-            participants: tournament.participants.map(p => ({
-                id: p.id,
-                user_id: p.user_id,
-                participant_id: p.participant_id,
-                name: p.name,
-                username: p.username
-            }))
-        });
-        
-        return isParticipating;
+
+        // 1) Прямая проверка по списку участников (только по user_id)
+        const hasDirectParticipation = Array.isArray(tournament.participants)
+            ? tournament.participants.some(p => Number(p.user_id) === Number(user.id))
+            : false;
+        if (hasDirectParticipation) return true;
+
+        // 2) Для командных и mix турниров — проверяем членство в командах по user_id
+        const hasTeamMembership = Array.isArray(tournament.teams)
+            ? tournament.teams.some(team => Array.isArray(team.members)
+                && team.members.some(m => Number(m.user_id) === Number(user.id)))
+            : false;
+        if (hasTeamMembership) return true;
+
+        return false;
     };
 
     // 🆕 Проверка возможности участия
