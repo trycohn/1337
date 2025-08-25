@@ -825,16 +825,23 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 14px;
+    align-items: stretch;
 }
 
 .pre-avatar-item {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     padding: 0;
+    line-height: 0;
+    font-size: 0;
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     cursor: pointer;
     transition: var(--transition);
     border-radius: 8px;
     overflow: hidden;
+    outline: none;
 }
 
 .pre-avatar-item:hover {
@@ -845,8 +852,12 @@
 .pre-avatar-item img {
     display: block;
     width: 100%;
-    height: 140px;
+    height: 100%;
     object-fit: cover;
+}
+
+.pre-avatar-item:focus-visible {
+    border-color: var(--btn-order-color);
 }
 
 @media (max-width: 768px) {
