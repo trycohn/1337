@@ -93,7 +93,7 @@ class MatchLobbyService {
                 `SELECT m.*, 
                         t1.name as team1_name, t2.name as team2_name,
                         t1.id as team1_id, t2.id as team2_id
-                 FROM tournament_matches m
+                 FROM matches m
                  LEFT JOIN tournament_teams t1 ON m.team1_id = t1.id
                  LEFT JOIN tournament_teams t2 ON m.team2_id = t2.id
                  WHERE m.id = $1`,
@@ -109,17 +109,21 @@ class MatchLobbyService {
             // Создаем приглашения для капитанов команд или соло участников
             const invitations = [];
             
-            // Для командного турнира - приглашаем капитанов
+            // Для командного турнира - приглашаем капитанов, при отсутствии капитана в команде приглашаем всех её участников
             if (match.team1_id && match.team2_id) {
-                // Получаем капитанов команд
+                const teamIds = [match.team1_id, match.team2_id];
                 const captainsResult = await client.query(
                     `SELECT tm.user_id, tm.team_id, u.username
                      FROM tournament_team_members tm
                      JOIN users u ON tm.user_id = u.id
                      WHERE tm.team_id IN ($1, $2) AND tm.is_captain = true`,
-                    [match.team1_id, match.team2_id]
+                    [teamIds[0], teamIds[1]]
                 );
-                
+
+                const invitedUserIds = new Set();
+                const captainTeams = new Set(captainsResult.rows.map(r => r.team_id));
+
+                // Приглашаем капитанов (если есть)
                 for (const captain of captainsResult.rows) {
                     const invResult = await client.query(
                         `INSERT INTO lobby_invitations (lobby_id, user_id, team_id)
@@ -127,8 +131,7 @@ class MatchLobbyService {
                         [lobby.id, captain.user_id, captain.team_id]
                     );
                     invitations.push(invResult.rows[0]);
-                    
-                    // Отправляем уведомление
+                    invitedUserIds.add(captain.user_id);
                     await sendNotification(captain.user_id, {
                         id: Date.now(),
                         user_id: captain.user_id,
@@ -137,6 +140,35 @@ class MatchLobbyService {
                         metadata: JSON.stringify({ lobbyId: lobby.id, matchId, tournamentId }),
                         created_at: new Date()
                     });
+                }
+
+                // Фолбек: для команды без капитана приглашаем всех участников команды
+                const teamsWithoutCaptain = teamIds.filter(tid => !captainTeams.has(tid));
+                if (teamsWithoutCaptain.length > 0) {
+                    const membersResult = await client.query(
+                        `SELECT tm.user_id, tm.team_id
+                         FROM tournament_team_members tm
+                         WHERE tm.team_id = ANY($1::int[])`,
+                        [teamsWithoutCaptain]
+                    );
+                    for (const member of membersResult.rows) {
+                        if (invitedUserIds.has(member.user_id)) continue;
+                        const invRes = await client.query(
+                            `INSERT INTO lobby_invitations (lobby_id, user_id, team_id)
+                             VALUES ($1, $2, $3) RETURNING *`,
+                            [lobby.id, member.user_id, member.team_id]
+                        );
+                        invitations.push(invRes.rows[0]);
+                        invitedUserIds.add(member.user_id);
+                        await sendNotification(member.user_id, {
+                            id: Date.now(),
+                            user_id: member.user_id,
+                            type: 'match_lobby_invite',
+                            message: `Вы приглашены в лобби матча турнира. Нажмите для входа.`,
+                            metadata: JSON.stringify({ lobbyId: lobby.id, matchId, tournamentId }),
+                            created_at: new Date()
+                        });
+                    }
                 }
             }
             
@@ -192,7 +224,7 @@ class MatchLobbyService {
                         WHERE tm.tournament_id = l.tournament_id
                     ) as available_maps
              FROM match_lobbies l
-             JOIN tournament_matches m ON l.match_id = m.id
+             JOIN matches m ON l.match_id = m.id
              JOIN tournaments t ON l.tournament_id = t.id
              LEFT JOIN tournament_teams t1 ON m.team1_id = t1.id
              LEFT JOIN tournament_teams t2 ON m.team2_id = t2.id
@@ -233,7 +265,7 @@ class MatchLobbyService {
             const matchResult = await client.query(
                 `SELECT m.team1_id, m.team2_id
                  FROM match_lobbies l
-                 JOIN tournament_matches m ON l.match_id = m.id
+                 JOIN matches m ON l.match_id = m.id
                  WHERE l.id = $1`,
                 [lobbyId]
             );
@@ -395,7 +427,7 @@ class MatchLobbyService {
         const teamsResult = await client.query(
             `SELECT m.team1_id, m.team2_id, l.first_picker_team_id
              FROM match_lobbies l
-             JOIN tournament_matches m ON l.match_id = m.id
+             JOIN matches m ON l.match_id = m.id
              WHERE l.id = $1`,
             [lobbyId]
         );
@@ -452,7 +484,7 @@ class MatchLobbyService {
         
         // Обновляем матч
         const matchResult = await client.query(
-            `UPDATE tournament_matches 
+            `UPDATE matches 
              SET maps_data = $1
              WHERE id = (SELECT match_id FROM match_lobbies WHERE id = $2)
              RETURNING *`,
