@@ -25,7 +25,7 @@ const { serialize } = require('cookie');
 const { createSocketServer } = require('./socketio-server');
 const nodemailer = require('nodemailer');
 const rateLimiter = require('express-rate-limit');
-const { authenticateToken } = require('./middleware/auth');
+const { authenticateToken, attachTournamentAccessChecker } = require('./middleware/auth');
 const { updateActivity } = require('./middleware/activity');
 const { broadcastTournamentUpdate } = require('./notifications');
 const multer = require('multer');
@@ -72,6 +72,8 @@ app.use(morgan('dev')); // Логгирование запросов
 app.use(express.json()); // Парсинг JSON
 app.use(express.urlencoded({ extended: true })); // Парсинг URL-encoded
 app.use(cookieParser());
+// Делаем доступным req.checkTournamentAccess для всех маршрутов
+app.use(attachTournamentAccessChecker);
 
 // Middleware для логирования запросов
 app.use((req, res, next) => {

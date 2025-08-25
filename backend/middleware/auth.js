@@ -41,6 +41,30 @@ function restrictTo(roles) {
     };
 }
 
+// Глобальный middleware: добавляет в req функцию проверки прав доступа к турниру
+function attachTournamentAccessChecker(req, res, next) {
+    req.checkTournamentAccess = async (tournamentId, userId) => {
+        try {
+            if (!tournamentId || !userId) return false;
+            const ownerRes = await pool.query(
+                'SELECT created_by FROM tournaments WHERE id = $1',
+                [tournamentId]
+            );
+            if (ownerRes.rows.length === 0) return false;
+            if (ownerRes.rows[0].created_by === userId) return true;
+            const adminRes = await pool.query(
+                'SELECT 1 FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [tournamentId, userId]
+            );
+            return adminRes.rows.length > 0;
+        } catch (e) {
+            console.error('Ошибка checkTournamentAccess:', e);
+            return false;
+        }
+    };
+    next();
+}
+
 // Новый middleware для проверки верификации email
 async function verifyEmailRequired(req, res, next) {
     try {
@@ -106,4 +130,4 @@ async function verifyAdminOrCreator(req, res, next) {
     }
 }
 
-module.exports = { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator };
+module.exports = { authenticateToken, restrictTo, verifyEmailRequired, verifyAdminOrCreator, attachTournamentAccessChecker };
