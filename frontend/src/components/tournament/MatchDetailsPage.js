@@ -21,7 +21,7 @@ const MatchDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-    const { user } = useUser ? useUser() : { user: null };
+    const { user } = useUser();
     const [editingMapIndex, setEditingMapIndex] = useState(null);
     const [score1Input, setScore1Input] = useState('');
     const [score2Input, setScore2Input] = useState('');
