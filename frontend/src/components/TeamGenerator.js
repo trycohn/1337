@@ -871,13 +871,7 @@ const TeamGenerator = ({
                             
                             {/* 🆕 ИНФОРМАЦИЯ О ЛОГИКЕ СОЗДАНИЯ КОМАНД */}
                             <div className="setting-note" style={{ 
-                                marginTop: '15px', 
-                                padding: '12px', 
-                                background: 'rgba(0, 123, 255, 0.1)', 
-                                border: '1px solid rgba(0, 123, 255, 0.3)', 
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                lineHeight: '1.4'
+                                marginTop: '15px' 
                             }}>
                                 <strong>ℹ️ Как формируются команды:</strong>
                                 <ul style={{ marginTop: '8px', marginBottom: '0', paddingLeft: '20px' }}>

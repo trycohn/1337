@@ -139,7 +139,7 @@
 }
 .mix-buttons-row {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   margin-top: 15px;
 }
 /* удалены устаревшие классы .form-teams-button и .reformate-teams-button — используйте .btn .btn-primary/.btn-secondary */
@@ -347,14 +347,13 @@
 }
 /* рџЋЇ РЈР'Р•Р"РћР›Р•РќРР• Рћ РњРРќРРњРЈРњР• РЈР§РђРЎРўРќРРљРћР' */
 .min-participants-notice {
-  background-color: #fbbf24;
   color: #92400e;
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 0.875rem;
   margin-top: 8px;
   text-align: center;
-  border: 1px solid #f59e0b;
+
 }
 /* рџЋЇ РЈР›РЈР§РЁР•РќРќР«Р• РЎРўРР›Р Р"Р РЈРџРџ РЈР§РђРЎРўРќРРљРћР' */
 /* РћСЃРЅРѕРІРЅРѕР№ Р·Р°РіРѕР»РѕРІРѕРє Р±Р»РѕРєР° РєРѕРјР°РЅРґ */
