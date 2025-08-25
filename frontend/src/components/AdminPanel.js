@@ -103,6 +103,9 @@ function AdminPanel() {
     const [preAvatars, setPreAvatars] = useState([]);
     const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
     const [preAvatarsMsg, setPreAvatarsMsg] = useState('');
+    const [defaultAvatarUrl, setDefaultAvatarUrl] = useState(null);
+    const [showDefaultConfirm, setShowDefaultConfirm] = useState(false);
+    const [candidateDefault, setCandidateDefault] = useState(null);
     // Default Map Pool state
     const [defaultMapPool, setDefaultMapPool] = useState([]);
     const [mapPoolLoading, setMapPoolLoading] = useState(false);
@@ -257,6 +260,15 @@ function AdminPanel() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             setPreAvatars((res.data && res.data.avatars) || []);
+            // загрузим текущий дефолт
+            try {
+                const d = await api.get('/api/admin/preloaded-avatars/default', {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+                setDefaultAvatarUrl(d.data?.default_url || null);
+            } catch (e) {
+                // ignore
+            }
         } catch (e) {
             console.error('Ошибка загрузки предзагруженных аватарок:', e);
         } finally {
@@ -296,6 +308,28 @@ function AdminPanel() {
             await fetchPreloadedAvatars();
         } catch (e) {
             console.error('Ошибка удаления аватарки:', e);
+        } finally {
+            setPreAvatarsLoading(false);
+        }
+    };
+
+    const confirmSetDefault = (avatar) => {
+        setCandidateDefault(avatar);
+        setShowDefaultConfirm(true);
+    };
+
+    const applySetDefault = async () => {
+        if (!candidateDefault) return;
+        try {
+            setPreAvatarsLoading(true);
+            await api.put('/api/admin/preloaded-avatars/default', { filename: candidateDefault.filename }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setShowDefaultConfirm(false);
+            setCandidateDefault(null);
+            await fetchPreloadedAvatars();
+        } catch (e) {
+            alert(`Не удалось установить дефолтный аватар: ${e?.response?.data?.error || e.message}`);
         } finally {
             setPreAvatarsLoading(false);
         }
@@ -606,13 +640,38 @@ function AdminPanel() {
                         {preAvatarsLoading && <div className="admin-loading">Загрузка...</div>}
                         {!preAvatarsLoading && preAvatars.map((a) => (
                             <div key={a.filename} className="pre-avatar-card" style={{background:'#111', border:'1px solid #333', padding:8, display:'flex', flexDirection:'column', gap:6}}>
-                                <img src={a.url} alt={a.filename} style={{width:'100%', aspectRatio:'1/1', objectFit:'cover', border:'1px solid #222'}} />
-                                <button className="btn-small danger" onClick={()=>deletePreloadedAvatar(a.filename)}>Удалить</button>
+                                <div style={{position:'relative'}}>
+                                    <img src={a.url} alt={a.filename} style={{width:'100%', aspectRatio:'1/1', objectFit:'cover', border:'1px solid #222'}} />
+                                    {defaultAvatarUrl === a.url && (
+                                        <span style={{position:'absolute', top:6, left:6, background:'#222', border:'1px solid #444', padding:'2px 6px', fontSize:12}}>Дефолт</span>
+                                    )}
+                                </div>
+                                <div style={{display:'flex', gap:6}}>
+                                    <button className="btn-small" disabled={defaultAvatarUrl === a.url} onClick={()=>confirmSetDefault(a)}>Сделать дефолтом</button>
+                                    <button className="btn-small danger" onClick={()=>deletePreloadedAvatar(a.filename)}>Удалить</button>
+                                </div>
                             </div>
                         ))}
                         {!preAvatarsLoading && preAvatars.length === 0 && (
                             <div className="admin-loading" style={{gridColumn:'1/-1'}}>Нет аватарок</div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {showDefaultConfirm && candidateDefault && (
+                <div className="modal-overlay" onClick={()=>setShowDefaultConfirm(false)}>
+                    <div className="modal-content action-modal" onClick={(e)=>e.stopPropagation()}>
+                        <h3>Сделать аватар дефолтным</h3>
+                        <p>Этот аватар будет у всех пользователей без собственного аватара. Продолжить?</p>
+                        <div style={{display:'flex', gap:12, alignItems:'center', margin:'8px 0'}}>
+                            <img src={candidateDefault.url} alt={candidateDefault.filename} style={{width:80, height:80, objectFit:'cover', border:'1px solid #333'}} />
+                            <span style={{color:'#aaa'}}>{candidateDefault.filename}</span>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={applySetDefault} disabled={preAvatarsLoading}>Подтвердить</button>
+                            <button className="btn btn-secondary" onClick={()=>setShowDefaultConfirm(false)}>Отмена</button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -215,6 +215,35 @@ router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo
 const preloadedAvatarsDir = path.join(__dirname, '../uploads/avatars/preloaded');
 fs.mkdirSync(preloadedAvatarsDir, { recursive: true });
 
+// =============================
+//  Site settings (key-value)
+// =============================
+async function ensureSiteSettings() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS site_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+}
+
+async function getSetting(key) {
+    await ensureSiteSettings();
+    const r = await pool.query('SELECT value FROM site_settings WHERE key = $1', [key]);
+    return r.rows[0]?.value || null;
+}
+
+async function setSetting(key, value) {
+    await ensureSiteSettings();
+    await pool.query(
+        `INSERT INTO site_settings(key, value, updated_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+        [key, value]
+    );
+}
+
 // Список предзагруженных аватарок (для админов)
 router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, res) => {
     try {
@@ -233,6 +262,94 @@ router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, re
     } catch (e) {
         console.error('Ошибка получения предзагруженных аватарок:', e);
         return res.status(500).json({ success: false, error: 'Не удалось получить список' });
+    }
+});
+
+// Текущий дефолтный аватар (для админов)
+router.get('/preloaded-avatars/default', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const defaultUrl = await getSetting('default_avatar_url');
+        return res.json({ success: true, default_url: defaultUrl });
+    } catch (e) {
+        console.error('Ошибка получения дефолтного аватара:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось получить дефолтный аватар' });
+    }
+});
+
+// Установка дефолтного аватара (только 1). Обновляет default для новых пользователей и тех, у кого он не задан
+router.put('/preloaded-avatars/default', authenticateToken, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { filename, url } = req.body || {};
+        let targetUrl = null;
+        let fileToCheck = null;
+
+        if (filename && typeof filename === 'string') {
+            fileToCheck = filename;
+            targetUrl = `/uploads/avatars/preloaded/${filename}`;
+        } else if (url && typeof url === 'string') {
+            try {
+                let pathPart = url;
+                if (url.startsWith('http://') || url.startsWith('https://')) {
+                    const u = new URL(url);
+                    pathPart = u.pathname;
+                }
+                if (!pathPart.startsWith('/uploads/avatars/preloaded/')) {
+                    return res.status(400).json({ success: false, error: 'Недопустимый путь к аватару' });
+                }
+                targetUrl = pathPart;
+                fileToCheck = path.basename(pathPart);
+            } catch (_) {
+                return res.status(400).json({ success: false, error: 'Некорректный URL' });
+            }
+        } else {
+            return res.status(400).json({ success: false, error: 'Укажите filename или url' });
+        }
+
+        // Проверяем, что файл существует в каталоге предзагруженных
+        const absPath = path.join(preloadedAvatarsDir, fileToCheck);
+        if (!fs.existsSync(absPath)) {
+            return res.status(404).json({ success: false, error: 'Файл не найден среди предзагруженных' });
+        }
+
+        // Получим предыдущий дефолт
+        const previousDefault = await getSetting('default_avatar_url');
+
+        await client.query('BEGIN');
+        await setSetting('default_avatar_url', targetUrl);
+        // Для новых пользователей
+        await client.query('ALTER TABLE users ALTER COLUMN avatar_url SET DEFAULT $1', [targetUrl]);
+
+        // Обновляем только тех, у кого явно не задано, пусто или был старый дефолт
+        if (previousDefault) {
+            await client.query(
+                `UPDATE users
+                 SET avatar_url = $1
+                 WHERE avatar_url IS NULL
+                    OR trim(avatar_url) = ''
+                    OR lower(avatar_url) IN ('null','undefined')
+                    OR avatar_url = $2`,
+                [targetUrl, previousDefault]
+            );
+        } else {
+            await client.query(
+                `UPDATE users
+                 SET avatar_url = $1
+                 WHERE avatar_url IS NULL
+                    OR trim(avatar_url) = ''
+                    OR lower(avatar_url) IN ('null','undefined')`,
+                [targetUrl]
+            );
+        }
+
+        await client.query('COMMIT');
+        return res.json({ success: true, default_url: targetUrl });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка установки дефолтного аватара:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось установить дефолтный аватар' });
+    } finally {
+        client.release();
     }
 });
 
