@@ -434,7 +434,7 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
 
   const gameImage = (game) => {
     const g = String(game || '').toLowerCase();
-    if (g.includes('counter') || g.includes('cs')) return '/images/counter%20strike%202.jpg';
+    if (g.includes('counter') || g.includes('cs')) return '/images/games/counter%20strike%202.jpg';
     return '/images/1337%20black%20logo.svg';
   };
 
@@ -458,12 +458,11 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                       <div className="steam-card-inner">
                         {/* FRONT */}
                         <div className="steam-card-front">
+                          <div className="steam-card-header">
+                            <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                          </div>
                           <div className="steam-art-wrap">
                             <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
-                          </div>
-                          <div className="steam-card-header">
-                            <span className="steam-game-icon" aria-hidden>{gameIcon(t.game)}</span>
-                            <h3 className="steam-title" title={t.name}>{t.name}</h3>
                           </div>
                         </div>
                         {/* BACK */}
