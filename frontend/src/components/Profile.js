@@ -1505,13 +1505,18 @@ function Profile() {
             
             // Открываем модальное окно подтверждения email
             setShowEmailVerificationModal(true);
-            
-            // Отправляем код верификации
+        } catch (err) {
+            setAddEmailError(err.response?.data?.error || err.response?.data?.message || 'Ошибка сохранения email');
+            return;
+        }
+        
+        // Отправляем код верификации отдельно, не ломая успешное сохранение email
+        try {
             await sendVerificationCode();
             localStorage.setItem('verification_code_sent', 'true');
-            
         } catch (err) {
-            setAddEmailError(err.response?.data?.error || 'Ошибка сохранения email');
+            // Не считаем это ошибкой сохранения email, просто логируем
+            console.error('Не удалось отправить код верификации:', err);
         }
     };
 
