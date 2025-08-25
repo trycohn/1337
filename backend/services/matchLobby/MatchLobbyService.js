@@ -40,6 +40,43 @@ class MatchLobbyService {
         return result.rows[0] || null;
     }
 
+    // 🔎 Найти любое лобби по матчу (независимо от статуса)
+    static async findLobbyByMatch(matchId, tournamentId) {
+        const result = await pool.query(
+            `SELECT * FROM match_lobbies 
+             WHERE match_id = $1 AND tournament_id = $2 
+             ORDER BY created_at DESC NULLS LAST
+             LIMIT 1`,
+            [matchId, tournamentId]
+        );
+        return result.rows[0] || null;
+    }
+
+    // 🔄 Полное пересоздание лобби: удаляет старое лобби и связанные данные, затем создаёт новое
+    static async recreateLobby(matchId, tournamentId) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const existing = await client.query(
+                `SELECT id FROM match_lobbies WHERE match_id = $1 AND tournament_id = $2 ORDER BY created_at DESC NULLS LAST LIMIT 1`,
+                [matchId, tournamentId]
+            );
+            if (existing.rows[0]) {
+                const lobbyId = existing.rows[0].id;
+                await client.query('DELETE FROM map_selections WHERE lobby_id = $1', [lobbyId]);
+                await client.query('DELETE FROM lobby_invitations WHERE lobby_id = $1', [lobbyId]);
+                await client.query('DELETE FROM match_lobbies WHERE id = $1', [lobbyId]);
+            }
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+        // Создаём новое лобби обычным путём
+        return this.createMatchLobby(matchId, tournamentId);
+    }
     // 🔎 Список активных лобби для пользователя (по приглашениям)
     static async getActiveLobbiesForUser(userId) {
         const result = await pool.query(
@@ -98,7 +135,6 @@ class MatchLobbyService {
             const existingLobbyRes = await client.query(
                 `SELECT * FROM match_lobbies 
                  WHERE match_id = $1 AND tournament_id = $2 
-                   AND status IN ('waiting','ready','picking')
                  ORDER BY created_at DESC NULLS LAST
                  LIMIT 1`,
                 [matchId, tournamentId]
@@ -554,26 +590,16 @@ class MatchLobbyService {
             'bo3': ['ban', 'ban', 'pick', 'pick', 'ban', 'ban', 'pick'],
             'bo5': ['pick', 'pick', 'ban', 'ban', 'pick', 'pick', 'pick']
         };
-        
+
         const sequence = sequences[matchFormat];
-        
-        if (currentAction >= sequence.length) {
+
+        if (!sequence || currentAction >= sequence.length) {
             return { completed: true };
         }
-        
-        // Определяем, чей следующий ход
-        // В bo1: чередуются
-        // В bo3: 1-2-2-1-1-2-2
-        // В bo5: 1-2-2-1-1-2-2
-        const turnPatterns = {
-            'bo1': [1, 2, 1, 2, 1, 2, 1],
-            'bo3': [1, 2, 2, 1, 1, 2, 2],
-            'bo5': [1, 2, 2, 1, 1, 2, 2]
-        };
-        
-        const pattern = turnPatterns[matchFormat];
-        const nextTurnIndex = pattern[currentAction];
-        const nextTeamId = nextTurnIndex === 1 ? first_picker_team_id : secondPickerTeamId;
+
+        // Чёткая очередность ходов: 1,2,1,2, ... (first_picker ходит на чётных шагах с нуля)
+        const isFirstPickerTurn = currentAction % 2 === 0;
+        const nextTeamId = isFirstPickerTurn ? first_picker_team_id : secondPickerTeamId;
         
         return { 
             completed: false, 

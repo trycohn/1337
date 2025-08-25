@@ -92,10 +92,18 @@ class MatchLobbyController {
                 });
             }
             
-            const result = await MatchLobbyService.createMatchLobby(
-                matchId, 
-                tournamentId
-            );
+            // Если уже есть лобби — возвращаем предупреждение для UI
+            const existing = await MatchLobbyService.findLobbyByMatch(matchId, tournamentId);
+            if (existing) {
+                return res.status(200).json({
+                    success: true,
+                    alreadyExists: true,
+                    lobby: existing,
+                    message: 'Лобби этого матча уже было создано ранее'
+                });
+            }
+
+            const result = await MatchLobbyService.createMatchLobby(matchId, tournamentId);
             
             // Отправляем уведомления через WebSocket
             const io = req.app.get('io');
@@ -121,6 +129,44 @@ class MatchLobbyController {
             res.status(500).json({ 
                 error: error.message || 'Ошибка при создании лобби' 
             });
+        }
+    }
+
+    // 🔄 Пересоздать лобби принудительно
+    static async recreateMatchLobby(req, res) {
+        try {
+            const { tournamentId, matchId } = req.params;
+            const userId = req.user.id;
+
+            const isAdmin = await req.checkTournamentAccess(tournamentId, userId);
+            if (!isAdmin) {
+                return res.status(403).json({ 
+                    error: 'У вас нет прав для пересоздания лобби матча' 
+                });
+            }
+
+            const result = await MatchLobbyService.recreateLobby(matchId, tournamentId);
+
+            const io = req.app.get('io');
+            if (io) {
+                result.invitations.forEach(invitation => {
+                    io.to(`user_${invitation.user_id}`).emit('match_lobby_invite', {
+                        lobbyId: result.lobby.id,
+                        matchId,
+                        tournamentId
+                    });
+                });
+            }
+
+            res.json({
+                success: true,
+                lobby: result.lobby,
+                invitations: result.invitations,
+                message: 'Лобби пересоздано, приглашения отправлены'
+            });
+        } catch (error) {
+            console.error('❌ Ошибка пересоздания лобби:', error);
+            res.status(500).json({ error: error.message || 'Ошибка при пересоздании лобби' });
         }
     }
     
@@ -256,10 +302,21 @@ class MatchLobbyController {
                 await MatchLobbyService.broadcastLobbyUpdate(io, lobbyId);
                 
                 if (result.completed) {
-                    io.to(`lobby_${lobbyId}`).emit('lobby_completed', {
-                        lobbyId,
-                        message: 'Выбор карт завершен'
-                    });
+                    // Дополнительно отдаём tournamentId и matchId, чтобы фронтенд мог корректно перейти
+                    try {
+                        const lobbyInfo = await MatchLobbyService.getLobbyInfo(lobbyId, req.user.id);
+                        io.to(`lobby_${lobbyId}`).emit('lobby_completed', {
+                            lobbyId,
+                            tournamentId: lobbyInfo.tournament_id,
+                            matchId: lobbyInfo.match_id,
+                            message: 'Выбор карт завершен'
+                        });
+                    } catch (_) {
+                        io.to(`lobby_${lobbyId}`).emit('lobby_completed', {
+                            lobbyId,
+                            message: 'Выбор карт завершен'
+                        });
+                    }
                 }
             }
             

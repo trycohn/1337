@@ -117,7 +117,21 @@ router.get('/:id/match/:matchId', async (req, res) => {
                 m.*,
                 t.name as tournament_name,
                 t.game,
-                t.type as tournament_type
+                t.type as tournament_type,
+                (
+                    SELECT json_agg(
+                        json_build_object(
+                            'map_name', ms.map_name,
+                            'action_type', ms.action_type,
+                            'team_id', ms.team_id,
+                            'action_order', ms.action_order
+                        ) ORDER BY ms.action_order
+                    )
+                    FROM map_selections ms
+                    WHERE ms.lobby_id = (
+                        SELECT id FROM match_lobbies WHERE match_id = m.id ORDER BY created_at DESC NULLS LAST LIMIT 1
+                    )
+                ) as selections
             FROM matches m
             JOIN tournaments t ON m.tournament_id = t.id
             WHERE m.id = $1 AND m.tournament_id = $2
@@ -431,6 +445,9 @@ router.put('/:id/lobby-settings', authenticateToken, verifyAdminOrCreator, Match
 
 // 🏁 Создание лобби для матча
 router.post('/:tournamentId/matches/:matchId/create-lobby', authenticateToken, verifyAdminOrCreator, MatchLobbyController.createMatchLobby);
+
+// 🔄 Пересоздание лобби для матча
+router.post('/:tournamentId/matches/:matchId/recreate-lobby', authenticateToken, verifyAdminOrCreator, MatchLobbyController.recreateMatchLobby);
 
 // 🔎 Получить активное лобби матча (если есть)
 router.get('/:tournamentId/matches/:matchId/active-lobby', authenticateToken, MatchLobbyController.getActiveLobbyByMatch);
