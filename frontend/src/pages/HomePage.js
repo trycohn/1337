@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import SEO from '../components/SEO';
 import '../styles/HomePage.css';
+import { useMemo } from 'react';
 
 function HomePage() {
   const navigate = useNavigate();
@@ -62,8 +63,11 @@ function HomePage() {
   useEffect(() => {
     const fetchRecentTournaments = async () => {
       try {
-        const response = await api.get('/api/tournaments?limit=6&status=active,completed&sort=-created_at');
-        setRecentTournaments(response.data.tournaments || []);
+        // Берём турниры всех статусов, затем сортируем по дате старта
+        const response = await api.get('/api/tournaments?limit=40');
+        const data = Array.isArray(response.data) ? response.data : (response.data?.tournaments || []);
+        const sorted = [...data].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+        setRecentTournaments(sorted);
       } catch (error) {
         console.error('Ошибка загрузки турниров:', error);
       }
@@ -185,121 +189,10 @@ function HomePage() {
       )}
 
       <div className={`homepage ${isInitialLoading ? 'loading' : ''}`}>
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-background">
-            <div className="geometric-pattern" style={{ transform: `translateY(${scrollY * 0.5}px)` }}></div>
-            <div className="grid-overlay"></div>
-          </div>
-          
-          <div className="hero-content">
-            <div className="hero-text">
-              <h1 className="hero-title">
-                <span className="title-line">ДОМИНИРУЙ</span>
-                <span className="title-line accent">В ТУРНИРАХ</span>
-                <span className="title-line">ПОБЕЖДАЙ</span>
-              </h1>
-              <p className="hero-subtitle">
-                Профессиональная платформа для организации и проведения киберспортивных турниров
-              </p>
-              <div className="hero-buttons">
-                <button 
-                  className="cta-button primary"
-                  onClick={() => navigate('/register')}
-                >
-                  Начать играть
-                </button>
-                <button 
-                  className="cta-button secondary"
-                  onClick={() => navigate('/tournaments')}
-                >
-                  Смотреть турниры
-                </button>
-              </div>
-            </div>
-            
-            <div className="hero-visual">
-              <div className="tournament-bracket-preview">
-                <svg viewBox="0 0 400 300" className="bracket-svg">
-                  {/* Анимированная турнирная сетка */}
-                  <g className="bracket-lines">
-                    <path d="M50,50 L150,50 L150,100 L250,100" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                    <path d="M50,150 L150,150 L150,100" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                    <path d="M50,200 L150,200 L150,250 L250,250" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                    <path d="M50,250 L150,250" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                    <path d="M250,100 L250,175 L350,175" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                    <path d="M250,250 L250,175" stroke="#ff0000" strokeWidth="2" fill="none" className="bracket-path" />
-                  </g>
-                  <g className="bracket-nodes">
-                    <circle cx="50" cy="50" r="5" fill="#ff0000" className="bracket-node" />
-                    <circle cx="50" cy="150" r="5" fill="#ff0000" className="bracket-node" />
-                    <circle cx="50" cy="200" r="5" fill="#ff0000" className="bracket-node" />
-                    <circle cx="50" cy="250" r="5" fill="#ff0000" className="bracket-node" />
-                    <circle cx="350" cy="175" r="8" fill="#ff0000" className="bracket-node champion" />
-                  </g>
-                </svg>
-              </div>
-            </div>
-          </div>
+        {/* Steam-like Carousel Section (замена hero) */}
+        <TournamentSteamCarousel recentTournaments={recentTournaments} onOpen={(id) => navigate(`/tournaments/${id}`)} />
 
-          <div className="scroll-indicator">
-            <div className="mouse">
-              <div className="wheel"></div>
-            </div>
-            <span>Scroll</span>
-          </div>
-        </section>
-
-        {/* Recent Tournaments Section */}
-        {recentTournaments.length > 0 && (
-          <section className="recent-tournaments-section">
-            <div className="container">
-              <div className="section-header">
-                <h2 className="section-title">Активные турниры</h2>
-                <div className="title-underline"></div>
-              </div>
-
-              <div className="tournaments-grid">
-                {recentTournaments.slice(0, 6).map(tournament => (
-                  <div key={tournament.id} className="tournament-card" onClick={() => navigate(`/tournaments/${tournament.id}`)}>
-                    <div className="tournament-card-header">
-                      <span className="tournament-game">{tournament.game}</span>
-                      <span className={`tournament-status ${tournament.status}`}>
-                        {tournament.status === 'active' ? 'Идёт' : tournament.status === 'registration' ? 'Регистрация' : 'Завершён'}
-                      </span>
-                    </div>
-                    <h3 className="tournament-name">{tournament.name}</h3>
-                    <div className="tournament-info">
-                      <div className="info-item">
-                        <span className="info-label">Формат:</span>
-                        <span className="info-value">{tournament.format}</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">Участники:</span>
-                        <span className="info-value">{tournament.current_participants || 0}/{tournament.max_participants}</span>
-                      </div>
-                      {tournament.prize_pool && (
-                        <div className="info-item">
-                          <span className="info-label">Призовой фонд:</span>
-                          <span className="info-value prize">${tournament.prize_pool}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="tournament-card-footer">
-                      <span className="view-tournament">Подробнее →</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="section-footer">
-                <Link to="/tournaments" className="view-all-link">
-                  Смотреть все турниры →
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Recent Tournaments Section удалён: оставляем только карусель */}
 
         {/* Winners Slider Section */}
         {winners.length > 0 && (
@@ -515,3 +408,97 @@ function HomePage() {
 }
 
 export default HomePage; 
+
+// 🆕 Карусель турниров в стиле Steam
+function TournamentSteamCarousel({ recentTournaments, onOpen }) {
+  const items = useMemo(() => (Array.isArray(recentTournaments) ? recentTournaments : []), [recentTournaments]);
+  const [index, setIndex] = React.useState(0);
+  const pagesCount = Math.max(Math.ceil((items.length || 1) / 4), 1);
+  const next = () => setIndex((i) => (i + 1) % pagesCount);
+  const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
+
+  React.useEffect(() => {
+    if (!items.length) return;
+    const t = setInterval(next, 5000);
+    return () => clearInterval(t);
+  }, [items.length, pagesCount]);
+
+  const gameIcon = (game) => {
+    const g = String(game || '').toLowerCase();
+    if (g.includes('counter') || g.includes('cs')) return '🎯';
+    if (g.includes('dota')) return '🛡️';
+    if (g.includes('valorant')) return '🎯';
+    if (g.includes('league')) return '🧿';
+    return '🎮';
+  };
+
+  const gameImage = (game) => {
+    const g = String(game || '').toLowerCase();
+    if (g.includes('counter') || g.includes('cs')) return '/images/games/counter%20strike%202.jpg';
+    return '/images/1337%20black%20logo.svg';
+  };
+
+  return (
+    <section className="steam-carousel">
+      <div className="steam-carousel-inner">
+        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
+        <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+          {(() => {
+            const source = (items.length ? items : [
+              { id: 0, name: 'Нет турниров', game: '—', status: '—', format: '—', participant_type: '—', start_date: new Date().toISOString() }
+            ]);
+            const pages = [];
+            for (let i = 0; i < source.length; i += 4) pages.push(source.slice(i, i + 4));
+            if (pages.length === 0) pages.push(source);
+            return pages.map((page, pi) => (
+              <div key={pi} className="steam-slide">
+                <div className="steam-slide-grid">
+                  {page.map((t) => (
+                    <div key={t.id} className="steam-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
+                      <div className="steam-card-inner">
+                        {/* FRONT */}
+                        <div className="steam-card-front">
+                          <div className="steam-card-header">
+                            <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                          </div>
+                          <div className="steam-art-wrap">
+                            <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                          </div>
+                        </div>
+                        {/* BACK */}
+                        <div className="steam-card-back">
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Дата</span>
+                            <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Статус</span>
+                            <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Тип</span>
+                            <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
+                          </div>
+                          <div className="steam-meta-row">
+                            <span className="steam-meta-label">Участники</span>
+                            <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+        <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
+      </div>
+      <div className="steam-dots">
+        {Array.from({ length: pagesCount }).map((_, i) => (
+          <button key={i} className={`steam-dot ${i === index ? 'active' : ''}`} onClick={() => setIndex(i)} />
+        ))}
+      </div>
+    </section>
+  );
+}
