@@ -63,8 +63,10 @@ function HomePage() {
   useEffect(() => {
     const fetchRecentTournaments = async () => {
       try {
-        const response = await api.get('/api/tournaments?limit=6&status=active,completed&sort=-created_at');
-        setRecentTournaments(response.data.tournaments || []);
+        // Берём турниры всех статусов, сортировка по дате создания (новые первыми)
+        const response = await api.get('/api/tournaments?limit=12&sort=-created_at');
+        const data = Array.isArray(response.data) ? response.data : (response.data?.tournaments || []);
+        setRecentTournaments(data);
       } catch (error) {
         console.error('Ошибка загрузки турниров:', error);
       }
