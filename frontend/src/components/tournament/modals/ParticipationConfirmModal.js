@@ -51,7 +51,7 @@ const ParticipationConfirmModal = ({
                     <div className="participation-info">
                         <div className="tournament-info">
                             <h4>{tournament?.name}</h4>
-                            <div className="tournament-details">
+                            <div className="tournament-details-join">
                                 <p><strong>Игра: </strong> {tournament?.game}</p>
                                 <p><strong>Формат: </strong> {tournament?.format}</p>
                                 <p><strong>Тип участников: </strong> {tournament?.participant_type}</p>
