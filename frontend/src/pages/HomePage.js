@@ -215,8 +215,8 @@ function HomePage() {
           </section>
         )}
 
-        {/* About Section */}
-        <section className="about-section">
+        {/* About Section (перенесено вверх по требованию) */}
+        <section className="about-section" style={{order: -1}}>
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">О платформе 1337</h2>
@@ -235,70 +235,11 @@ function HomePage() {
                   найти соперников своего уровня и начать путь к вершине киберспорта.
                 </p>
               </div>
-              
-              <div className="about-features">
-                <div className="feature-card">
-                  <div className="feature-icon">⚡</div>
-                  <h3>Быстрый старт</h3>
-                  <p>Регистрация за 30 секунд и сразу в бой</p>
-                </div>
-                <div className="feature-card">
-                  <div className="feature-icon">🏆</div>
-                  <h3>Честная игра</h3>
-                  <p>Прозрачная система судейства и рейтингов</p>
-                </div>
-                <div className="feature-card">
-                  <div className="feature-icon">💰</div>
-                  <h3>Реальные призы</h3>
-                  <p>Денежные призы и ценные награды</p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="features-section">
-          <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">Возможности платформы</h2>
-              <div className="title-underline"></div>
-            </div>
-
-            <div className="features-grid">
-              <div className="feature-item">
-                <div className="feature-number">01</div>
-                <h3>Форматы турниров</h3>
-                <p>Single и Double Elimination, швейцарская система, микс-турниры для любых предпочтений</p>
-              </div>
-              <div className="feature-item">
-                <div className="feature-number">02</div>
-                <h3>Умная генерация сеток</h3>
-                <p>Автоматическое распределение участников по силе игры для максимально честных матчей</p>
-              </div>
-              <div className="feature-item">
-                <div className="feature-number">03</div>
-                <h3>Live трансляции</h3>
-                <p>Интеграция с Twitch и YouTube для стриминга матчей в реальном времени</p>
-              </div>
-              <div className="feature-item">
-                <div className="feature-number">04</div>
-                <h3>Система достижений</h3>
-                <p>Зарабатывай уникальные награды и покажи всем свой прогресс</p>
-              </div>
-              <div className="feature-item">
-                <div className="feature-number">05</div>
-                <h3>Командные турниры</h3>
-                <p>Создавай команду с друзьями или найди новых тиммейтов</p>
-              </div>
-              <div className="feature-item">
-                <div className="feature-number">06</div>
-                <h3>API для организаторов</h3>
-                <p>Полный контроль над турнирами через удобную панель администратора</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        
 
         {/* Stats Section */}
         <section className="stats-section" id="stats-section">
@@ -369,7 +310,7 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
   };
 
   return (
-    <section className="steam-carousel">
+    <section className="steam-carousel steam-carousel--tournaments">
       <div className="steam-carousel-inner">
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
         <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
@@ -384,8 +325,8 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
               <div key={pi} className="steam-slide">
                 <div className="steam-slide-grid">
                   {page.map((t) => (
-                    <div key={t.id} className="steam-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
-                      <div className="steam-card-inner">
+                    <div key={t.id} className="steam-card tournament-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
+                      <div className="steam-card-inner tournament-card-inner">
                         {/* FRONT */}
                         <div className="steam-card-front">
                           <div className="steam-card-header">
@@ -466,7 +407,7 @@ function WinnersSteamCarousel({ winners }) {
   };
 
   return (
-    <section className="steam-carousel">
+    <section className="steam-carousel steam-carousel--winners">
       <div className="steam-carousel-inner">
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
         <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
@@ -481,7 +422,7 @@ function WinnersSteamCarousel({ winners }) {
               <div key={pi} className="steam-slide">
                 <div className="steam-slide-grid">
                   {page.map((w, idx) => (
-                    <div key={`${w.tournament_name}-${idx}`} className="steam-card">
+                    <div key={`${w.tournament_name}-${idx}`} className="steam-card winner-card">
                       <div className="steam-card-front" style={{height:'100%'}}>
                         <div className="steam-card-header">
                           <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>
