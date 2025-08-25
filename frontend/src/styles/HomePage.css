@@ -423,6 +423,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  max-height: 360px;
 }
 
 .about-photo {
@@ -430,13 +431,13 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: brightness(85%);
+  filter: none;
 }
 
 .about-photo-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.20);
   pointer-events: none;
 }
 
