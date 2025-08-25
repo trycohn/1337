@@ -634,6 +634,11 @@ const BracketRenderer = ({
 
 // MatchCard компонент с поддержкой bracket_type и кастомных меток
 const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const [isCreatingLobby, setIsCreatingLobby] = useState(false);
+    const canShowActions = isAdminOrCreator && tournament?.status === 'active';
+    let api;
+    try { api = require('../axios').default; } catch (_) {}
     const getBracketTypeStyle = () => {
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match || matchType === 'third-place') {
@@ -767,11 +772,31 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         if (onMatchClick) onMatchClick(match);
     };
 
+    const handleCreateLobby = async (e) => {
+        e.stopPropagation();
+        if (!api || !tournament?.id || !match?.id) return;
+        try {
+            setIsCreatingLobby(true);
+            const token = localStorage.getItem('token');
+            await api.post(
+                `/api/tournaments/${tournament.id}/matches/${match.id}/create-lobby`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.error('❌ Создание лобби не удалось:', err);
+        } finally {
+            setIsCreatingLobby(false);
+        }
+    };
+
     return (
         <div 
             className={`bracket-match-card ${getBracketTypeStyle()}`}
             onClick={handleMatchClick}
-            style={{ cursor: onMatchClick ? 'pointer' : 'default' }}
+            style={{ cursor: onMatchClick ? 'pointer' : 'default', position: 'relative' }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             <div className="bracket-match-info">
                 <span className="bracket-match-title">{getMatchTitle()}</span>
@@ -818,6 +843,56 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                         }}
                     >
                         ✏️
+                    </button>
+                </div>
+            )}
+
+            {canShowActions && isHovered && (
+                <div
+                    className="bracket-match-actions"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        display: 'flex',
+                        gap: 6,
+                        background: 'rgba(0,0,0,0.85)',
+                        border: '1px solid #ff0000',
+                        borderRadius: 6,
+                        padding: '6px 8px',
+                        zIndex: 3
+                    }}
+                >
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onMatchClick && onMatchClick(match); }}
+                        style={{
+                            background: '#111',
+                            color: '#fff',
+                            border: '1px solid #333',
+                            borderRadius: 4,
+                            padding: '4px 8px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Открыть матч
+                    </button>
+                    <button
+                        type="button"
+                        disabled={isCreatingLobby}
+                        onClick={handleCreateLobby}
+                        style={{
+                            background: isCreatingLobby ? '#222' : '#ff0000',
+                            color: '#fff',
+                            border: '1px solid #ff0000',
+                            borderRadius: 4,
+                            padding: '4px 8px',
+                            cursor: isCreatingLobby ? 'default' : 'pointer'
+                        }}
+                        title="Создать лобби"
+                    >
+                        {isCreatingLobby ? 'Создание…' : 'Создать лобби'}
                     </button>
                 </div>
             )}
