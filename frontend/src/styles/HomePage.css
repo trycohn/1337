@@ -559,6 +559,10 @@
   transform: rotateY(180deg);
 }
 
+.tournament-card .steam-card {
+  border: none;
+}
+
 /* ЧЕМПИОНЫ: без переворота */
 .winner-card { perspective: none; }
 
