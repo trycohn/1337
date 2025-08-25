@@ -559,10 +559,30 @@
 
 .steam-game-art {
   width: 100%;
-  height: 240px;
+  height: 100px;
   object-fit: cover;
   display: block;
 }
+
+.steam-status-strip {
+  padding: 10px 16px 14px;
+}
+
+.steam-status-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  border: 1px solid #333;
+  background: #151515;
+}
+
+.steam-status-pill.active { color: #00ff88; border-color: rgba(0,255,136,0.4); background: rgba(0,255,136,0.08); }
+.steam-status-pill.registration { color: #ffcc00; border-color: rgba(255,204,0,0.4); background: rgba(255,204,0,0.08); }
+.steam-status-pill.completed { color: #ff4444; border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.08); }
 
 .steam-card-hover {
   position: absolute;

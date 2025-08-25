@@ -438,6 +438,13 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     return '/images/1337%20black%20logo.svg';
   };
 
+  const statusText = (s) => {
+    if (s === 'active') return 'Идёт';
+    if (s === 'registration') return 'Регистрация';
+    if (s === 'completed') return 'Завершён';
+    return s || '—';
+  };
+
   return (
     <section className="steam-carousel">
       <div className="steam-carousel-inner">
@@ -463,6 +470,11 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                           </div>
                           <div className="steam-art-wrap">
                             <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                          </div>
+                          <div className="steam-status-strip">
+                            <span className={`steam-status-pill ${t.status || 'unknown'}`}>
+                              {statusText(t.status)}
+                            </span>
                           </div>
                         </div>
                         {/* BACK */}
