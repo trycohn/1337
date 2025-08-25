@@ -114,6 +114,7 @@
 .tournament-card {
   background: #111;
   border: 1px solid #222;
+  border-radius: 8px;
   padding: 30px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -557,10 +558,6 @@
   background: #1d1d1d;
   padding: 20px 24px;
   transform: rotateY(180deg);
-}
-
-.tournament-card .steam-card {
-  border: none;
 }
 
 /* ЧЕМПИОНЫ: без переворота */
