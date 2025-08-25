@@ -206,19 +206,23 @@ function MapSelectionBoard({
                 <div className="lobby-selected-maps">
                     <h4>🎮 Карты для матча:</h4>
                     <div className="lobby-picked-maps-list">
-                        {selections
-                            .filter(s => s.action_type === 'pick')
-                            .map((selection, index) => {
-                                const mapInfo = MAP_INFO[selection.map_name] || { 
-                                    displayName: selection.map_name 
-                                };
+                        {(() => {
+                            const picked = selections.filter(s => s.action_type === 'pick');
+                            return picked.map((selection, index) => {
+                                const mapInfo = MAP_INFO[selection.map_name] || { displayName: selection.map_name };
+                                const opponentTeamId = selection.team_id && teamNames
+                                    ? (Object.keys(teamNames).map(Number).find(id => id !== selection.team_id) || null)
+                                    : null;
+                                const opponentName = opponentTeamId ? teamNames[opponentTeamId] : 'Соперник';
                                 return (
                                     <div key={index} className="lobby-picked-map">
                                         <span className="lobby-map-number">Карта {index + 1}:</span>
                                         <span className="lobby-map-name">{mapInfo.displayName}</span>
+                                        <span className="lobby-map-side-chooser"> — Сторону выбирает: {opponentName}</span>
                                     </div>
                                 );
-                            })}
+                            });
+                        })()}
                     </div>
                 </div>
             )}

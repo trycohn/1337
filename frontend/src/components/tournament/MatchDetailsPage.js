@@ -97,7 +97,57 @@ const MatchDetailsPage = () => {
             'train': '/images/maps/train.jpg',
             'de_train': '/images/maps/train.jpg'
         };
-        return mapImages[mapName?.toLowerCase()] || '/images/maps/default.jpg';
+        return mapImages[mapName?.toLowerCase()] || '/images/maps/mirage.jpg';
+    };
+    const renderPickedMapsWithSides = () => {
+        const mapsData = match?.maps_data || [];
+        const selections = match?.selections || [];
+        if (!Array.isArray(mapsData) || mapsData.length === 0) return null;
+        const teamNameById = {
+            [match.team1_id]: match.team1_name || 'Команда 1',
+            [match.team2_id]: match.team2_name || 'Команда 2'
+        };
+        // Для каждой выбранной карты ищем, кто делал pick
+        const items = mapsData.map((m, idx) => {
+            const pick = selections.find(s => s.action_type === 'pick' && s.map_name === m.map_name);
+            const pickerTeamId = pick?.team_id;
+            const sideChooserTeamId = pickerTeamId ? (pickerTeamId === match.team1_id ? match.team2_id : match.team1_id) : null;
+            const sideChooserName = sideChooserTeamId ? teamNameById[sideChooserTeamId] : 'Определяется';
+            return (
+                <div key={`${m.map_name}-${idx}`} className="match-map-card">
+                    <img src={getMapImage(m.map_name)} alt={m.map_name} />
+                    <div className="map-title">Карта {idx + 1}: {m.map_name}</div>
+                    <div className="map-meta">Сторону выбирает: {sideChooserName}</div>
+                </div>
+            );
+        });
+        return (
+            <section className="match-picked-maps">
+                <h3>Выбранные карты</h3>
+                <div className="match-maps-grid">{items}</div>
+            </section>
+        );
+    };
+
+    const renderSelectionsHistory = () => {
+        const selections = match?.selections || [];
+        if (!Array.isArray(selections) || selections.length === 0) return null;
+        const teamNameById = {
+            [match.team1_id]: match.team1_name || 'Команда 1',
+            [match.team2_id]: match.team2_name || 'Команда 2'
+        };
+        return (
+            <section className="match-veto-history">
+                <h3>История пиков/банов</h3>
+                <ol>
+                    {selections.map((s, i) => (
+                        <li key={i} className={`veto-item ${s.action_type}`}>
+                            {teamNameById[s.team_id] || 'Команда'} {s.action_type} {s.map_name}
+                        </li>
+                    ))}
+                </ol>
+            </section>
+        );
     };
 
     const getMatchStatusClass = (status) => {
