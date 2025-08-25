@@ -600,6 +600,10 @@
   transform: rotateY(180deg);
 }
 
+.steam-card-back {
+  padding: 10px;
+}
+
 /* ЧЕМПИОНЫ: без переворота */
 .winner-card { perspective: none; }
 
