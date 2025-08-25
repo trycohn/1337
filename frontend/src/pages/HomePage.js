@@ -302,15 +302,14 @@ export default HomePage;
 function TournamentSteamCarousel({ recentTournaments, onOpen }) {
   const items = useMemo(() => (Array.isArray(recentTournaments) ? recentTournaments : []), [recentTournaments]);
   const [index, setIndex] = React.useState(0);
-  const pagesCount = Math.max(Math.ceil((items.length || 1) / 4), 1);
-  const next = () => setIndex((i) => (i + 1) % pagesCount);
-  const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
+  const next = () => setIndex((i) => (i + 1) % Math.max(items.length, 1));
+  const prev = () => setIndex((i) => (i - 1 + Math.max(items.length, 1)) % Math.max(items.length, 1));
 
   React.useEffect(() => {
     if (!items.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [items.length, pagesCount]);
+  }, [items.length]);
 
   const gameIcon = (game) => {
     const g = String(game || '').toLowerCase();
@@ -334,69 +333,70 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     return s || '—';
   };
 
+  const visible = useMemo(() => {
+    if (!items.length) {
+      return [
+        { id: 0, name: 'Нет турниров', game: '—', status: '—', format: '—', participant_type: '—', start_date: new Date().toISOString() }
+      ];
+    }
+    const win = [];
+    for (let k = 0; k < 4; k++) win.push(items[(index + k) % items.length]);
+    return win;
+  }, [items, index]);
+
   return (
     <section className="steam-carousel steam-carousel--tournaments">
       <div className="steam-carousel-inner">
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
-        <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
-          {(() => {
-            const source = (items.length ? items : [
-              { id: 0, name: 'Нет турниров', game: '—', status: '—', format: '—', participant_type: '—', start_date: new Date().toISOString() }
-            ]);
-            const pages = [];
-            for (let i = 0; i < source.length; i += 4) pages.push(source.slice(i, i + 4));
-            if (pages.length === 0) pages.push(source);
-            return pages.map((page, pi) => (
-              <div key={pi} className="steam-slide">
-                <div className="steam-slide-grid">
-                  {page.map((t) => (
-                    <div key={t.id} className="steam-card tournament-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
-                      <div className="steam-card-inner tournament-card-inner">
-                        {/* FRONT */}
-                        <div className="steam-card-front">
-                          <div className="steam-card-header">
-                            <h3 className="steam-title" title={t.name}>{t.name}</h3>
-                          </div>
-                          <div className="steam-art-wrap">
-                            <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
-                          </div>
-                          <div className="steam-status-strip">
-                            <span className={`steam-status-pill ${t.status || 'unknown'}`}>
-                              {statusText(t.status)}
-                            </span>
-                          </div>
-                        </div>
-                        {/* BACK */}
-                        <div className="steam-card-back">
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Дата</span>
-                            <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
-                          </div>
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Статус</span>
-                            <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
-                          </div>
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Тип</span>
-                            <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
-                          </div>
-                          <div className="steam-meta-row">
-                            <span className="steam-meta-label">Участники</span>
-                            <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
-                          </div>
-                        </div>
+        <div className="steam-track">
+          <div className="steam-slide">
+            <div className="steam-slide-grid">
+              {visible.map((t) => (
+                <div key={t.id} className="steam-card tournament-card" onClick={() => t.id && onOpen && onOpen(t.id)}>
+                  <div className="steam-card-inner tournament-card-inner">
+                    {/* FRONT */}
+                    <div className="steam-card-front">
+                      <div className="steam-card-header">
+                        <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                      </div>
+                      <div className="steam-art-wrap">
+                        <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                      </div>
+                      <div className="steam-status-strip">
+                        <span className={`steam-status-pill ${t.status || 'unknown'}`}>
+                          {statusText(t.status)}
+                        </span>
                       </div>
                     </div>
-                  ))}
+                    {/* BACK */}
+                    <div className="steam-card-back">
+                      <div className="steam-meta-row">
+                        <span className="steam-meta-label">Дата</span>
+                        <span className="steam-meta-value">{new Date(t.start_date).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <div className="steam-meta-row">
+                        <span className="steam-meta-label">Статус</span>
+                        <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
+                      </div>
+                      <div className="steam-meta-row">
+                        <span className="steam-meta-label">Тип</span>
+                        <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
+                      </div>
+                      <div className="steam-meta-row">
+                        <span className="steam-meta-label">Участники</span>
+                        <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ));
-          })()}
+              ))}
+            </div>
+          </div>
         </div>
         <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
       </div>
       <div className="steam-dots">
-        {Array.from({ length: pagesCount }).map((_, i) => (
+        {Array.from({ length: Math.max(items.length, 1) }).map((_, i) => (
           <button key={i} className={`steam-dot ${i === index ? 'active' : ''}`} onClick={() => setIndex(i)} />
         ))}
       </div>
@@ -415,15 +415,14 @@ function WinnersSteamCarousel({ winners }) {
     return copy;
   }, [items]);
   const [index, setIndex] = React.useState(0);
-  const pagesCount = Math.max(Math.ceil((shuffled.length || 1) / 4), 1);
-  const next = () => setIndex((i) => (i + 1) % pagesCount);
-  const prev = () => setIndex((i) => (i - 1 + pagesCount) % pagesCount);
+  const next = () => setIndex((i) => (i + 1) % Math.max(shuffled.length, 1));
+  const prev = () => setIndex((i) => (i - 1 + Math.max(shuffled.length, 1)) % Math.max(shuffled.length, 1));
 
   React.useEffect(() => {
     if (!shuffled.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [shuffled.length, pagesCount]);
+  }, [shuffled.length]);
 
   const getGameImage = (w) => {
     const g = String(w.game || w.tournament_game || '').toLowerCase();
@@ -431,43 +430,44 @@ function WinnersSteamCarousel({ winners }) {
     return '/images/1337%20black%20logo.svg';
   };
 
+  const visible = useMemo(() => {
+    if (!shuffled.length) {
+      return [
+        { tournament_name: '—', winner_name: '—', prize: '—', date: new Date().toISOString() }
+      ];
+    }
+    const win = [];
+    for (let k = 0; k < 4; k++) win.push(shuffled[(index + k) % shuffled.length]);
+    return win;
+  }, [shuffled, index]);
+
   return (
     <section className="steam-carousel steam-carousel--winners">
       <div className="steam-carousel-inner">
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
-        <div className="steam-track" style={{ transform: `translateX(-${index * 100}%)` }}>
-          {(() => {
-            const source = (shuffled.length ? shuffled : [
-              { tournament_name: '—', winner_name: '—', prize: '—', date: new Date().toISOString() }
-            ]);
-            const pages = [];
-            for (let i = 0; i < source.length; i += 4) pages.push(source.slice(i, i + 4));
-            if (pages.length === 0) pages.push(source);
-            return pages.map((page, pi) => (
-              <div key={pi} className="steam-slide">
-                <div className="steam-slide-grid">
-                  {page.map((w, idx) => (
-                    <div key={`${w.tournament_name}-${idx}`} className="steam-card winner-card">
-                      <div className="steam-card-front" style={{height:'100%'}}>
-                        <div className="steam-card-header">
-                          <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>
-                        </div>
-                        <div className="steam-art-wrap">
-                          <img className="steam-game-art" src={getGameImage(w)} alt="game" onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
-                        </div>
-                        <div className="winner-tournament-bottom" title={w.tournament_name}>{w.tournament_name}</div>
-                      </div>
+        <div className="steam-track">
+          <div className="steam-slide">
+            <div className="steam-slide-grid">
+              {visible.map((w, idx) => (
+                <div key={`${w.tournament_name}-${idx}`} className="steam-card winner-card">
+                  <div className="steam-card-front" style={{height:'100%'}}>
+                    <div className="steam-card-header">
+                      <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>
                     </div>
-                  ))}
+                    <div className="steam-art-wrap">
+                      <img className="steam-game-art" src={getGameImage(w)} alt="game" onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                    </div>
+                    <div className="winner-tournament-bottom" title={w.tournament_name}>{w.tournament_name}</div>
+                  </div>
                 </div>
-              </div>
-            ));
-          })()}
+              ))}
+            </div>
+          </div>
         </div>
         <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
       </div>
       <div className="steam-dots">
-        {Array.from({ length: pagesCount }).map((_, i) => (
+        {Array.from({ length: Math.max(shuffled.length, 1) }).map((_, i) => (
           <button key={i} className={`steam-dot ${i === index ? 'active' : ''}`} onClick={() => setIndex(i)} />
         ))}
       </div>
