@@ -2401,8 +2401,7 @@ function Profile() {
                                 { key: 'achievements', label: 'Достижения' },
                                 { key: 'organization', label: 'Организация' },
                                 { key: 'tournaments', label: 'Турниры' },
-                                { key: 'v4analytics', label: 'Аналитика V4' },
-                            ]}
+                            ].concat((user && user.role === 'admin') ? [{ key: 'v4analytics', label: 'Аналитика V4' }] : [])}
                         />
                     </>
                 )}
@@ -2476,15 +2475,17 @@ function Profile() {
                                 <span>Турниры</span>
                             </div>
                         </button>
-                        <button 
-                            className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
-                            onClick={() => switchTab('v4analytics')}
-                        >
-                            <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">🔥</span>
-                                <span>Аналитика V4 ULTIMATE</span>
-                            </div>
-                        </button>
+                        {user && user.role === 'admin' && (
+                            <button 
+                                className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
+                                onClick={() => switchTab('v4analytics')}
+                            >
+                                <div className="nav-tab-content-profile">
+                                    <span className="nav-tab-icon-profile">🔥</span>
+                                    <span>Аналитика V4 ULTIMATE</span>
+                                </div>
+                            </button>
+                        )}
                     </nav>
                 </div>
                 )}
@@ -2962,20 +2963,22 @@ function Profile() {
                                     </div>
                                 </div>
 
-                                {/* ✨ V4 ULTIMATE: Революционный дашборд статистики */}
-                                <V4StatsDashboard
-                                    v4Data={v4Data}
-                                    stats={stats}
-                                    requestEnhancedRecalculation={requestEnhancedRecalculation}
-                                    isRecalculating={isRecalculating}
-                                    recalculationStatus={recalculationStatus}
-                                    recalculationError={recalculationError}
-                                />
+                                {/* ✨ V4 ULTIMATE: скрыто для не-админов */}
+                                {user && user.role === 'admin' && (
+                                    <V4StatsDashboard
+                                        v4Data={v4Data}
+                                        stats={stats}
+                                        requestEnhancedRecalculation={requestEnhancedRecalculation}
+                                        isRecalculating={isRecalculating}
+                                        recalculationStatus={recalculationStatus}
+                                        recalculationError={recalculationError}
+                                    />
+                                )}
                             </>
                         )}
                         
                         {/* ✨ V4 ULTIMATE ANALYTICS TAB */}
-                        {activeTab === 'v4analytics' && (
+                        {user && user.role === 'admin' && activeTab === 'v4analytics' && (
                             <>
                                 <div className="content-header">
                                     <h2 className="content-title">🔥 Аналитика V4 ULTIMATE</h2>
