@@ -1058,6 +1058,14 @@ header.header {
 .tournament-details {
   padding: 20px;
 }
+.tournament-details-join {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 18px;
+  gap: 10px;
+}
+
 @media (max-width: 768px) {
   .tournament-details {
     padding: 14px;
