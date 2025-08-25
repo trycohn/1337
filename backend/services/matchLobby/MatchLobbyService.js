@@ -554,26 +554,16 @@ class MatchLobbyService {
             'bo3': ['ban', 'ban', 'pick', 'pick', 'ban', 'ban', 'pick'],
             'bo5': ['pick', 'pick', 'ban', 'ban', 'pick', 'pick', 'pick']
         };
-        
+
         const sequence = sequences[matchFormat];
-        
-        if (currentAction >= sequence.length) {
+
+        if (!sequence || currentAction >= sequence.length) {
             return { completed: true };
         }
-        
-        // Определяем, чей следующий ход
-        // В bo1: чередуются
-        // В bo3: 1-2-2-1-1-2-2
-        // В bo5: 1-2-2-1-1-2-2
-        const turnPatterns = {
-            'bo1': [1, 2, 1, 2, 1, 2, 1],
-            'bo3': [1, 2, 2, 1, 1, 2, 2],
-            'bo5': [1, 2, 2, 1, 1, 2, 2]
-        };
-        
-        const pattern = turnPatterns[matchFormat];
-        const nextTurnIndex = pattern[currentAction];
-        const nextTeamId = nextTurnIndex === 1 ? first_picker_team_id : secondPickerTeamId;
+
+        // Чёткая очередность ходов: 1,2,1,2, ... (first_picker ходит на чётных шагах с нуля)
+        const isFirstPickerTurn = currentAction % 2 === 0;
+        const nextTeamId = isFirstPickerTurn ? first_picker_team_id : secondPickerTeamId;
         
         return { 
             completed: false, 
