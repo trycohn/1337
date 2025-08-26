@@ -146,8 +146,11 @@ const MatchDetailsPage = () => {
     }, [currentUserId, tournament, tournamentId]);
 
     const renderPickedMapsWithSides = () => {
-        const mapsData = match?.maps_data || [];
+        const rawMapsData = match?.maps_data;
         const selections = match?.selections || [];
+        const mapsData = (Array.isArray(rawMapsData) && rawMapsData.length > 0)
+            ? rawMapsData
+            : getPickedMapsFromSelections().map(n => ({ map_name: n, score1: null, score2: null }));
         if (!Array.isArray(mapsData) || mapsData.length === 0) return null;
         const teamNameById = {
             [match.team1_id]: match.team1_name || 'Команда 1',
@@ -155,7 +158,7 @@ const MatchDetailsPage = () => {
         };
         // Для каждой выбранной карты ищем, кто делал pick
         const items = mapsData.map((m, idx) => {
-            const pick = selections.find(s => s.action_type === 'pick' && s.map_name === m.map_name);
+            const pick = selections.find(s => (s.action_type || s.type) === 'pick' && normalizeMapName(s.map_name || s.map || s.name) === normalizeMapName(m.map_name));
             const pickerTeamId = pick?.team_id;
             const sideChooserTeamId = pickerTeamId ? (pickerTeamId === match.team1_id ? match.team2_id : match.team1_id) : null;
             const sideChooserName = sideChooserTeamId ? teamNameById[sideChooserTeamId] : 'Определяется';
@@ -332,6 +335,13 @@ const MatchDetailsPage = () => {
         return name.replace(/\s|\-/g, '');
     }
 
+    function getPickedMapsFromSelections() {
+        const selections = match?.selections || [];
+        return selections
+            .filter(s => (s.action_type || s.type) === 'pick')
+            .map(s => normalizeMapName(s.map_name || s.map || s.name));
+    }
+
     const renderMapPool = () => {
         // 1) Согласованный маппул турнира (приоритетный список для сетки)
         const agreedPool = Array.isArray(match.available_maps)
@@ -363,6 +373,7 @@ const MatchDetailsPage = () => {
         // 3) Итоговый список карт для отображения: берем согласованный, иначе дефолтный пул CS2
         const fallbackPool = ['dust2', 'mirage', 'inferno', 'nuke', 'overpass', 'vertigo', 'ancient'];
         const displayPool = (agreedPool.length > 0 ? agreedPool : fallbackPool);
+        const pickedBySelections = new Set(getPickedMapsFromSelections());
         
         return (
             <div className="match-map-pool">
@@ -372,17 +383,21 @@ const MatchDetailsPage = () => {
                         const mapKey = normalizeMapName(rawName);
                         const mapData = playedMapsData.get(mapKey);
                         const isPlayed = playedMapsData.has(mapKey);
+                        const isSelected = isPlayed || pickedBySelections.has(mapKey);
                         
                         return (
                             <div
                                 key={mapKey}
-                                className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}
+                                className={`map-card ${isSelected ? 'map-played' : 'map-not-played'}`}
                                 onClick={() => {
-                                    if (!isAdminOrCreator || !isPlayed) return;
-                                    const idx = (match.maps_data || []).findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
+                                    if (!isAdminOrCreator || !isSelected) return;
+                                    const mapsDataArr = Array.isArray(match.maps_data) && match.maps_data.length > 0
+                                        ? match.maps_data
+                                        : getPickedMapsFromSelections().map(n => ({ map_name: n, score1: null, score2: null }));
+                                    const idx = mapsDataArr.findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
                                     if (idx >= 0) {
                                         setEditingMapIndex(idx);
-                                        const m = match.maps_data[idx];
+                                        const m = mapsDataArr[idx];
                                         setScore1Input(m.score1 ?? m.team1_score ?? '');
                                         setScore2Input(m.score2 ?? m.team2_score ?? '');
                                         // Прокрутка к редактору в блоке выбранных карт, если есть
@@ -390,11 +405,11 @@ const MatchDetailsPage = () => {
                                         if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                     }
                                 }}
-                                style={{ cursor: isAdminOrCreator && isPlayed ? 'pointer' : 'default' }}
+                                style={{ cursor: isAdminOrCreator && isSelected ? 'pointer' : 'default' }}
                             >
                                 <div className="map-image-wrapper">
                                     <img src={getMapImage(mapKey)} alt={mapKey} className="map-image" />
-                                    {isPlayed && <div className="map-played-overlay">✓</div>}
+                                    {isSelected && <div className="map-played-overlay">✓</div>}
                                 </div>
                                 <div className="map-name">{mapKey.toUpperCase()}</div>
                                 {isPlayed && mapData && (
