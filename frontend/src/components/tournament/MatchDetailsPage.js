@@ -23,6 +23,7 @@ const MatchDetailsPage = () => {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const { user } = useUser();
     const [editingMapIndex, setEditingMapIndex] = useState(null);
+    const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
     const [score1Input, setScore1Input] = useState('');
     const [score2Input, setScore2Input] = useState('');
     const [isSavingMap, setIsSavingMap] = useState(false);
@@ -342,6 +343,19 @@ const MatchDetailsPage = () => {
             .map(s => normalizeMapName(s.map_name || s.map || s.name));
     }
 
+    function getPickedMapsFromSelections() {
+        const selections = match?.selections || [];
+        return selections
+            .filter(s => (s.action_type || s.type) === 'pick')
+            .map(s => normalizeMapName(s.map_name || s.map || s.name));
+    }
+
+    function getEditableMapsData() {
+        const rawMapsData = match?.maps_data;
+        if (Array.isArray(rawMapsData) && rawMapsData.length > 0) return rawMapsData;
+        return getPickedMapsFromSelections().map(n => ({ map_name: n, score1: null, score2: null }));
+    }
+
     const renderMapPool = () => {
         // 1) Согласованный маппул турнира (приоритетный список для сетки)
         const agreedPool = Array.isArray(match.available_maps)
@@ -391,18 +405,14 @@ const MatchDetailsPage = () => {
                                 className={`map-card ${isSelected ? 'map-played' : 'map-not-played'}`}
                                 onClick={() => {
                                     if (!isAdminOrCreator || !isSelected) return;
-                                    const mapsDataArr = Array.isArray(match.maps_data) && match.maps_data.length > 0
-                                        ? match.maps_data
-                                        : getPickedMapsFromSelections().map(n => ({ map_name: n, score1: null, score2: null }));
+                                    const mapsDataArr = getEditableMapsData();
                                     const idx = mapsDataArr.findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
                                     if (idx >= 0) {
                                         setEditingMapIndex(idx);
                                         const m = mapsDataArr[idx];
                                         setScore1Input(m.score1 ?? m.team1_score ?? '');
                                         setScore2Input(m.score2 ?? m.team2_score ?? '');
-                                        // Прокрутка к редактору в блоке выбранных карт, если есть
-                                        const anchor = document.querySelector('.match-picked-maps');
-                                        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        setIsScoreModalOpen(true);
                                     }
                                 }}
                                 style={{ cursor: isAdminOrCreator && isSelected ? 'pointer' : 'default' }}
@@ -719,8 +729,92 @@ const MatchDetailsPage = () => {
             {/* Карты */}
             {renderMapPool()}
 
-            {/* Выбранные карты с инлайн-редактором */}
-            {renderPickedMapsWithSides()}
+            {/* Модалка ввода счёта */}
+            {isScoreModalOpen && isAdminOrCreator && (
+                <div className="score-modal-overlay" onClick={() => setIsScoreModalOpen(false)}>
+                    <div className="score-modal" onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                            const mapsData = getEditableMapsData();
+                            const idx = editingMapIndex ?? 0;
+                            const current = mapsData[idx];
+                            const mapTitle = current?.map_name || 'Карта';
+                            const team1 = match.team1_name || 'Команда 1';
+                            const team2 = match.team2_name || 'Команда 2';
+                            return (
+                                <>
+                                    <div className="score-modal-header">
+                                        <span className="score-modal-title">{mapTitle.toUpperCase()}</span>
+                                        <button className="score-modal-close" onClick={() => setIsScoreModalOpen(false)}>✕</button>
+                                    </div>
+                                    <div className="score-modal-body">
+                                        <div className="score-field">
+                                            <label>{team1}</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="score-input"
+                                                value={score1Input}
+                                                onChange={(e) => setScore1Input(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="score-sep">:</div>
+                                        <div className="score-field">
+                                            <label>{team2}</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="score-input"
+                                                value={score2Input}
+                                                onChange={(e) => setScore2Input(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="score-modal-actions">
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={async () => {
+                                                try {
+                                                    setIsSavingMap(true);
+                                                    const token = localStorage.getItem('token');
+                                                    const s1 = score1Input === '' ? null : parseInt(score1Input, 10);
+                                                    const s2 = score2Input === '' ? null : parseInt(score2Input, 10);
+                                                    const mapsData = getEditableMapsData();
+                                                    const body = {
+                                                        maps_data: mapsData.map((mm, i) => i === (editingMapIndex ?? 0) ? { ...mm, score1: s1, score2: s2 } : mm)
+                                                    };
+                                                    const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                        body: JSON.stringify(body)
+                                                    });
+                                                    if (!resp.ok) throw new Error('Не удалось сохранить счёт карты');
+                                                    await fetchMatchDetails();
+                                                    setIsScoreModalOpen(false);
+                                                    setEditingMapIndex(null);
+                                                } catch (e) {
+                                                    alert(e.message);
+                                                } finally {
+                                                    setIsSavingMap(false);
+                                                }
+                                            }}
+                                            title="Сохранить"
+                                        >
+                                            ✓
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() => { setIsScoreModalOpen(false); setEditingMapIndex(null); }}
+                                            title="Отменить"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
             
             {/* Pick & Ban */}
             {renderPickBanHistory()}
