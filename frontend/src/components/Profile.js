@@ -19,10 +19,10 @@ import {
     ArcElement,
     Filler
 } from 'chart.js';
-// Удалены неиспользуемые импорты компонентов графиков
+import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
 // ✨ V4 ULTIMATE: Импорты революционных компонентов
-// import { useV4ProfileHooks } from './V4ProfileHooks';
+import { useV4ProfileHooks } from './V4ProfileHooks';
 import V4StatsDashboard from './V4StatsDashboard';
 import './V4Stats.css';
 
@@ -99,11 +99,11 @@ function PreloadedAvatarPicker({ onPicked }) {
 }
 
 function Profile() {
-    const { user, updateUser } = useAuth(); // Получаем пользователя из AuthContext
+    const { user, loading: authLoading, updateUser } = useAuth(); // Получаем пользователя из AuthContext
     const [stats, setStats] = useState(null);
     const [cs2Stats, setCs2Stats] = useState(null);
     const [isLoadingCs2Stats, setIsLoadingCs2Stats] = useState(false);
-    // const [faceitId, setFaceitId] = useState(''); // unused
+    const [faceitId, setFaceitId] = useState('');
     const [faceitInfo, setFaceitInfo] = useState(null);
     const [isLoadingFaceitInfo, setIsLoadingFaceitInfo] = useState(false);
     const [newUsername, setNewUsername] = useState('');
@@ -124,7 +124,7 @@ function Profile() {
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isClosingModal, setIsClosingModal] = useState(false);
     const [verificationError, setVerificationError] = useState('');
-    // const [verificationSuccess, setVerificationSuccess] = useState(''); // unused
+    const [verificationSuccess, setVerificationSuccess] = useState('');
     
     // Email adding states
     const [showAddEmailModal, setShowAddEmailModal] = useState(false);
@@ -266,7 +266,7 @@ function Profile() {
     const [recalculationStatus, setRecalculationStatus] = useState('');
     const [recalculationError, setRecalculationError] = useState('');
 
-    /* UNUSED: V4 ULTIMATE experimental states (disabled to silence lints)
+    // ✨ V4 ULTIMATE: Новые состояния для революционной функциональности
     const [v4EnhancedStats, setV4EnhancedStats] = useState(null);
     const [aiAnalysis, setAiAnalysis] = useState(null);
     const [performanceData, setPerformanceData] = useState([]);
@@ -280,10 +280,9 @@ function Profile() {
     const [globalRank, setGlobalRank] = useState(null);
     const [weeklyProgress, setWeeklyProgress] = useState(null);
     const [personalBests, setPersonalBests] = useState({});
-    const [v4ActiveView, setV4ActiveView] = useState('overview');
-    */
+    const [v4ActiveView, setV4ActiveView] = useState('overview'); // overview, charts, achievements, ai
 
-    /* UNUSED: Extended achievements system (disabled to silence lints)
+    // 🏆 РАСШИРЕННАЯ СИСТЕМА ДОСТИЖЕНИЙ
     const [playerLevel, setPlayerLevel] = useState(1);
     const [playerXP, setPlayerXP] = useState(0);
     const [xpToNextLevel, setXpToNextLevel] = useState(1000);
@@ -297,12 +296,11 @@ function Profile() {
         longest: 0,
         lastActivity: null
     });
-    */
 
     // ✨ V4 ULTIMATE: Инициализация революционного хука
-    // const v4Data = useV4ProfileHooks(user, activeTab); // unused in current view
+    const v4Data = useV4ProfileHooks(user, activeTab);
 
-    /* UNUSED: achievement categories (disabled)
+    // 🏆 КОНСТАНТЫ КАТЕГОРИЙ ДОСТИЖЕНИЙ
     const achievementCategories = [
         { id: 'all', name: 'Все', icon: '🎯' },
         { id: 'tournaments', name: 'Турниры', icon: '🏆' },
@@ -311,7 +309,6 @@ function Profile() {
         { id: 'streaks', name: 'Серии', icon: '🔥' },
         { id: 'special', name: 'Особые', icon: '💎' }
     ];
-    */
 
     // 🔄 Функция расширенного пересчета с AI анализом
     const requestEnhancedRecalculation = async () => {
@@ -367,7 +364,7 @@ function Profile() {
 
     // OpenDota константы героев (будем кэшировать)
     const [heroesData, setHeroesData] = useState(null);
-    // const [dotaConstants, setDotaConstants] = useState(null); // unused
+    const [dotaConstants, setDotaConstants] = useState(null);
 
     // Функция для получения данных о героях из OpenDota API
     const fetchHeroesData = async () => {
@@ -386,27 +383,28 @@ function Profile() {
     };
 
     // Функция для получения констант из OpenDota API
-    // const fetchDotaConstants = async (resource) => {
-    //     try {
-    //         const response = await api.get(`/api/dota-stats/constants/${resource}`, {
-    //             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    //         });
-    //         return response.data;
-    //     } catch (err) {
-    //         console.error(`Ошибка получения констант ${resource}:`, err);
-    //         return null;
-    //     }
-    // };
+    const fetchDotaConstants = async (resource) => {
+        try {
+            const response = await api.get(`/api/dota-stats/constants/${resource}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            return response.data;
+        } catch (err) {
+            console.error(`Ошибка получения констант ${resource}:`, err);
+            return null;
+        }
+    };
 
-    // UNUSED: getHeroImageUrl (закомментировано, чтобы убрать предупреждение линтера)
-    // const getHeroImageUrl = (heroId) => {
-    //     if (!heroId) return '/default-hero.png';
-    //     return `https://cdn.opendota.com/apps/dota2/images/heroes/${getHeroName(heroId)}_full.png`;
-    // };
+    // Функция для получения URL изображения героя через OpenDota CDN
+    const getHeroImageUrl = (heroId) => {
+        if (!heroId) return '/default-hero.png';
+        
+        // OpenDota использует прямые ссылки на изображения героев
+        return `https://cdn.opendota.com/apps/dota2/images/heroes/${getHeroName(heroId)}_full.png`;
+    };
 
     // Обновленная функция для получения имени героя с поддержкой OpenDota констант
-    // UNUSED: getHeroName (закомментировано, чтобы убрать предупреждение линтера)
-    /* const getHeroName = (heroId) => {
+    const getHeroName = (heroId) => {
         // Если есть данные о героях из API, используем их
         if (heroesData) {
             const hero = heroesData.find(h => h.id === heroId);
@@ -544,18 +542,19 @@ function Profile() {
         };
         
         return heroNames[heroId] || `hero_${heroId}`;
-    }; */
+    };
 
-    // UNUSED: getHeroLocalizedName (закомментировано, чтобы убрать предупреждение линтера)
-    // const getHeroLocalizedName = (heroId) => {
-    //     if (heroesData) {
-    //         const hero = heroesData.find(h => h.id === heroId);
-    //         if (hero) {
-    //             return hero.localized_name;
-    //         }
-    //     }
-    //     const heroLocalizedNames = {
-/*
+    // Функция для получения локализованного имени героя
+    const getHeroLocalizedName = (heroId) => {
+        if (heroesData) {
+            const hero = heroesData.find(h => h.id === heroId);
+            if (hero) {
+                return hero.localized_name;
+            }
+        }
+        
+        // Фолбэк на английские имена
+        const heroLocalizedNames = {
             1: 'Anti-Mage',
             2: 'Axe',
             3: 'Bane',
@@ -680,10 +679,10 @@ function Profile() {
             136: 'Marci',
             137: 'Primal Beast',
             138: 'Muerta'
-*/
-    //     };
-    //     return heroLocalizedNames[heroId] || `Hero ${heroId}`;
-    // };
+        };
+        
+        return heroLocalizedNames[heroId] || `Hero ${heroId}`;
+    };
 
     // Обновленная функция для получения URL иконки ранга с поддержкой новой системы OpenDota
     const getRankImageUrl = (rankTier) => {
@@ -731,8 +730,7 @@ function Profile() {
     };
 
     // Функция для получения приблизительного MMR на основе rank_tier
-    // UNUSED: getDotaMMR (закомментировано, чтобы убрать предупреждение линтера)
-    /* const getDotaMMR = (dotaStatsProfile) => {
+    const getDotaMMR = (dotaStatsProfile) => {
         if (!dotaStatsProfile) return 0;
         
         // Приоритет 1: точный MMR из соревновательного режима
@@ -773,7 +771,7 @@ function Profile() {
         }
         
         return 0;
-    }; */
+    };
 
     // УБИРАЕМ ЗАПРОС К /api/users/me - используем данные из AuthContext
     const initializeUserData = () => {
@@ -1011,7 +1009,6 @@ function Profile() {
         }
     };
 
-    /* UNUSED: unlinkDotaSteam
     const unlinkDotaSteam = async () => {
         try {
             console.log('🔗 Отвязываем Dota 2 профиль...');
@@ -1028,10 +1025,9 @@ function Profile() {
             console.error('❌ Ошибка отвязки Dota 2 профиля:', err);
             setError(err.response?.data?.details || 'OpenDota API временно недоступен');
         }
-    }; */
+    };
 
     // Функция для обновления статистики Dota 2 через OpenDota API
-    /* UNUSED: refreshDotaStats
     const refreshDotaStats = async () => {
         if (!dotaProfile || !dotaProfile.steam_id) {
             setError('Сначала привяжите аккаунт Dota 2');
@@ -1067,7 +1063,7 @@ function Profile() {
                 setIsLoadingDotaStats(false);
             }, 2000); // Показываем загрузку еще 2 секунды
         }
-    }; */
+    };
 
     const linkSteam = () => {
         const token = localStorage.getItem('token');
@@ -1082,7 +1078,7 @@ function Profile() {
 
     const handleSteamCallback = async (steamId, token) => {
         try {
-            await api.post('/api/users/link-steam', { steamId }, {
+            const response = await api.post('/api/users/link-steam', { steamId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // setUser(prevUser => prevUser ? { ...prevUser, steam_id: steamId, steam_url: `https://steamcommunity.com/profiles/${steamId}` } : null); // Убран - используем AuthContext
@@ -1142,7 +1138,7 @@ function Profile() {
     const updateUsername = async () => {
         const token = localStorage.getItem('token');
         try {
-            await api.post('/api/users/update-username', { username: newUsername }, {
+            const response = await api.post('/api/users/update-username', { username: newUsername }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // setUser(prevUser => prevUser ? { ...prevUser, username: newUsername } : null); // Убран - используем AuthContext
@@ -1876,16 +1872,15 @@ function Profile() {
                         const resultClass = result === 'win' ? 'win' : result === 'draw' ? 'draw' : 'loss';
                         const statusLabel = result === 'win' ? 'Победа' : result === 'draw' ? 'Ничья' : 'Поражение';
                         const rawOpponent = match.opponent || '';
-                        const opponent = rawOpponent && rawOpponent !== 'Неизвестный соперник' ? rawOpponent : '';
+                        const opponent = rawOpponent && rawOpponent !== 'Неизвестный соперник' ? rawOpponent : '—';
                         const dateText = match.date ? new Date(match.date).toLocaleDateString('ru-RU') : '';
-                        const hasData = Boolean(dateText || opponent || match.score);
                         return (
-                            <div key={index} className={`match-row ${resultClass}${hasData ? '' : ' no-data'}`}>
+                            <div key={index} className={`match-row ${resultClass}`}>
                                 <div className="match-date" title={dateText}>{dateText}</div>
-                                <div className="match-opponent" title={opponent}>{opponent || ' '}</div>
-                                <div className="match-score">{hasData ? (match.score || '—') : 'Нет данных'}</div>
+                                <div className="match-opponent" title={opponent}>{opponent}</div>
+                                <div className="match-score">{match.score || '—'}</div>
                                 <div className="match-status">
-                                    {hasData ? <span>{statusLabel}</span> : <span style={{color: 'var(--text-muted)'}}>—</span>}
+                                    <span>{statusLabel}</span>
                                     {(match.is_test || match.test) && <span className="match-badge-test">Тест</span>}
                                 </div>
                             </div>
@@ -2134,7 +2129,7 @@ function Profile() {
                 formData.append('logo', organizationLogo);
             }
             
-            await api.post('/api/users/create-organization-request', formData, {
+            const response = await api.post('/api/users/create-organization-request', formData, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
@@ -2673,19 +2668,15 @@ function Profile() {
                                                     <div className="stats-label subtle">Выигранных турниров</div>
                                                 </div>
                                                 <div className="stats-card stat-compact">
-                                                    {(() => {
-                                                        const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                                        const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
-                                                        const winRate = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
-                                                        return (
-                                                            <div className="winrate-card">
-                                                                <div className="winrate-ring" style={{ '--p': `${winRate}` }}>
-                                                                    <div className="winrate-inner">{winRate}%</div>
-                                                                </div>
-                                                                <div className="stats-label subtle">Винрейт</div>
-                                                            </div>
-                                                        );
-                                                    })()}
+                                                    <div className="stat-icon" aria-hidden>%</div>
+                                                    <div className="stats-value emphasis">
+                                                        {(() => {
+                                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                                        })()}%
+                                                    </div>
+                                                    <div className="stats-label subtle">Винрейт</div>
                                                 </div>
                                             </div>
                                         ) : (
