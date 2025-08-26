@@ -374,7 +374,24 @@ const MatchDetailsPage = () => {
                         const isPlayed = playedMapsData.has(mapKey);
                         
                         return (
-                            <div key={mapKey} className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}>
+                            <div
+                                key={mapKey}
+                                className={`map-card ${isPlayed ? 'map-played' : 'map-not-played'}`}
+                                onClick={() => {
+                                    if (!isAdminOrCreator || !isPlayed) return;
+                                    const idx = (match.maps_data || []).findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
+                                    if (idx >= 0) {
+                                        setEditingMapIndex(idx);
+                                        const m = match.maps_data[idx];
+                                        setScore1Input(m.score1 ?? m.team1_score ?? '');
+                                        setScore2Input(m.score2 ?? m.team2_score ?? '');
+                                        // Прокрутка к редактору в блоке выбранных карт, если есть
+                                        const anchor = document.querySelector('.match-picked-maps');
+                                        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }}
+                                style={{ cursor: isAdminOrCreator && isPlayed ? 'pointer' : 'default' }}
+                            >
                                 <div className="map-image-wrapper">
                                     <img src={getMapImage(mapKey)} alt={mapKey} className="map-image" />
                                     {isPlayed && <div className="map-played-overlay">✓</div>}
