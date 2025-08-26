@@ -112,6 +112,35 @@ const MatchDetailsPage = () => {
             let s1 = Number.isFinite(match.score1) ? match.score1 : 0;
             let s2 = Number.isFinite(match.score2) ? match.score2 : 0;
 
+            // Если есть данные по картам
+            if (Array.isArray(match.maps_data) && match.maps_data.length > 0) {
+                // 1) Ровно одна карта — финальный счёт = счёт этой карты
+                if (match.maps_data.length === 1) {
+                    const only = match.maps_data[0];
+                    const m1 = (only.score1 ?? only.team1_score);
+                    const m2 = (only.score2 ?? only.team2_score);
+                    if (typeof m1 === 'number' && typeof m2 === 'number') {
+                        s1 = m1;
+                        s2 = m2;
+                    }
+                } else {
+                    // 2) Несколько карт — агрегируем как количество выигранных карт
+                    let wins1 = 0;
+                    let wins2 = 0;
+                    for (const m of match.maps_data) {
+                        const m1 = (m.score1 ?? m.team1_score);
+                        const m2 = (m.score2 ?? m.team2_score);
+                        if (typeof m1 === 'number' && typeof m2 === 'number') {
+                            if (m1 > m2) wins1++; else if (m2 > m1) wins2++;
+                        }
+                    }
+                    if (wins1 + wins2 > 0) {
+                        s1 = wins1;
+                        s2 = wins2;
+                    }
+                }
+            }
+
             if (!winnerTeamId) {
                 if (s1 !== s2) {
                     winnerTeamId = s1 > s2 ? match.team1_id : match.team2_id;
