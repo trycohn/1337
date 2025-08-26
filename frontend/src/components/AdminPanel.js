@@ -93,7 +93,7 @@ function UploadLogo() {
 
 function AdminPanel() {
     const navigate = useNavigate();
-    const { user: authUser } = useAuth(); // Используем пользователя из AuthContext
+    const { user: authUser, loading: authLoading } = useAuth(); // Используем пользователя из AuthContext
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState([]);
@@ -128,9 +128,12 @@ function AdminPanel() {
     const checkAdminAccess = useCallback(async () => {
         try {
             // Используем пользователя из AuthContext вместо запроса к API
+            if (authLoading) {
+                return;
+            }
             if (!authUser) {
                 console.log('❌ Нет пользователя в AuthContext, редирект на авторизацию');
-                navigate('/auth');
+                navigate('/login');
                 return;
             }
 
@@ -144,11 +147,11 @@ function AdminPanel() {
             setUser(authUser);
         } catch (err) {
             console.error('Ошибка проверки доступа:', err);
-            navigate('/auth');
+            navigate('/login');
         } finally {
             setLoading(false);
         }
-    }, [navigate, authUser]); // Добавляем authUser в зависимости
+    }, [navigate, authUser, authLoading]); // Добавляем authUser в зависимости
 
     const fetchRequests = useCallback(async () => {
         try {
