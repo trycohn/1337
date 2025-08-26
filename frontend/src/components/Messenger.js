@@ -16,6 +16,7 @@ function Messenger() {
     const [newMessage, setNewMessage] = useState('');
     const [unreadCounts, setUnreadCounts] = useState({});
     const messagesEndRef = useRef(null);
+    const initialScrollDoneRef = useRef(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [sheetOpen, setSheetOpen] = useState(false);
     
@@ -353,10 +354,13 @@ function Messenger() {
         };
     }, [activeChat, fetchChatUserInfo]);
     
-    // Прокрутка до последнего сообщения при добавлении новых
+    // Прокрутка до последнего сообщения
+    // При первом показе чата — мгновенно; при новых сообщениях — плавно
     useEffect(() => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            const behavior = initialScrollDoneRef.current ? 'smooth' : 'auto';
+            messagesEndRef.current.scrollIntoView({ behavior });
+            if (!initialScrollDoneRef.current) initialScrollDoneRef.current = true;
         }
     }, [messages]);
     
@@ -366,6 +370,8 @@ function Messenger() {
         lastActiveChatId.current = activeChat ? activeChat.id : null; // Обновляем последний активный чат
 
         if (activeChat) {
+            // Сброс флага для мгновенного скролла при открытии нового чата
+            initialScrollDoneRef.current = false;
             console.log('🔄 [Messenger] Активный чат изменен на:', activeChat.id);
             
             // Присоединяемся к комнате чата через Socket.IO
