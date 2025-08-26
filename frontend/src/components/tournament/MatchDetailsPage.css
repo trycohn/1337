@@ -1,3 +1,18 @@
+.match-maps-grid {
+    position: relative;
+}
+
+.match-map-card {
+    position: relative;
+}
+
+.match-map-card * {
+    pointer-events: auto;
+}
+
+.match-map-card img {
+    display: block;
+}
 /* ==========================================
    MATCH DETAILS PAGE - HLTV STYLE
    Монохромный дизайн с красными акцентами

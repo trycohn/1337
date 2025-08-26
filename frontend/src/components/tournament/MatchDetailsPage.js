@@ -220,14 +220,17 @@ const MatchDetailsPage = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div className="map-edit-hint" style={{ marginTop: 8 }}>
+                            <div className="map-edit-hint" style={{ marginTop: 8, position: 'relative' }}>
                                 <button
                                     className="btn btn-secondary"
-                                    onClick={() => {
+                                    style={{ position: 'relative', zIndex: 2, pointerEvents: 'auto' }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setEditingMapIndex(idx);
                                         setScore1Input(m.score1 ?? '');
                                         setScore2Input(m.score2 ?? '');
                                     }}
+                                    title="Редактировать счёт карты"
                                 >
                                     Ввести счёт
                                 </button>
