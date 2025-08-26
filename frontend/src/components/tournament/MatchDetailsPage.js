@@ -125,7 +125,18 @@ const MatchDetailsPage = () => {
             const sideChooserTeamId = pickerTeamId ? (pickerTeamId === match.team1_id ? match.team2_id : match.team1_id) : null;
             const sideChooserName = sideChooserTeamId ? teamNameById[sideChooserTeamId] : 'Определяется';
             return (
-                <div key={`${m.map_name}-${idx}`} className="match-map-card">
+                <div
+                    key={`${m.map_name}-${idx}`}
+                    className="match-map-card"
+                    onClick={() => {
+                        if (!isAdminOrCreator) return;
+                        if (editingMapIndex === idx) return;
+                        setEditingMapIndex(idx);
+                        setScore1Input(m.score1 ?? '');
+                        setScore2Input(m.score2 ?? '');
+                    }}
+                    style={{ cursor: isAdminOrCreator ? 'pointer' : 'default' }}
+                >
                     <img src={getMapImage(m.map_name)} alt={m.map_name} />
                     <div className="map-title">Карта {idx + 1}: {m.map_name}</div>
                     <div className="map-meta">Сторону выбирает: {sideChooserName}</div>
