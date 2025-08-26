@@ -317,8 +317,9 @@ router.put('/preloaded-avatars/default', authenticateToken, requireAdmin, async 
 
         await client.query('BEGIN');
         await setSetting('default_avatar_url', targetUrl);
-        // Для новых пользователей
-        await client.query('ALTER TABLE users ALTER COLUMN avatar_url SET DEFAULT $1', [targetUrl]);
+        // Для новых пользователей (DDL нельзя параметризовать — экранируем вручную)
+        const escapedDefault = String(targetUrl).replace(/'/g, "''");
+        await client.query(`ALTER TABLE users ALTER COLUMN avatar_url SET DEFAULT '${escapedDefault}'`);
 
         // Обновляем только тех, у кого явно не задано, пусто или был старый дефолт
         if (previousDefault) {
