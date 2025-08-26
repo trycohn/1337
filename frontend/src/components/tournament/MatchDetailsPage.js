@@ -27,6 +27,20 @@ const MatchDetailsPage = () => {
     const [score2Input, setScore2Input] = useState('');
     const [isSavingMap, setIsSavingMap] = useState(false);
     const [userIsAdmin, setUserIsAdmin] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState(null);
+
+    useEffect(() => {
+        // Фолбек: получаем id пользователя из JWT, если контекст недоступен
+        try {
+            if (user?.id) { setCurrentUserId(user.id); return; }
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload?.id) setCurrentUserId(payload.id);
+        } catch (e) {
+            // ignore
+        }
+    }, [user]);
 
     useEffect(() => {
         fetchMatchDetails();
@@ -106,17 +120,18 @@ const MatchDetailsPage = () => {
         };
         return mapImages[mapName?.toLowerCase()] || '/images/maps/mirage.jpg';
     };
-    const isAdminOrCreator = !!(user && tournament && (
-        tournament.created_by === user.id || userIsAdmin ||
-        (Array.isArray(tournament.admins) && tournament.admins.some(a => a.user_id === user.id))
+    const isAdminOrCreator = !!(tournament && (
+        (currentUserId && tournament.created_by === currentUserId) ||
+        userIsAdmin ||
+        (Array.isArray(tournament.admins) && currentUserId && tournament.admins.some(a => a.user_id === currentUserId))
     ));
 
     useEffect(() => {
         // Фолбек-проверка прав администратора, если не создатель и список admins не загружен
         const checkAdmin = async () => {
             try {
-                if (!user || !tournamentId) return;
-                if (tournament && tournament.created_by === user.id) { setUserIsAdmin(true); return; }
+                if (!tournamentId) return;
+                if (tournament && currentUserId && tournament.created_by === currentUserId) { setUserIsAdmin(true); return; }
                 const token = localStorage.getItem('token');
                 if (!token) return;
                 const resp = await fetch(`/api/tournaments/${tournamentId}/admin-request-status`, {
@@ -128,7 +143,7 @@ const MatchDetailsPage = () => {
             } catch (_) {}
         };
         checkAdmin();
-    }, [user, tournament, tournamentId]);
+    }, [currentUserId, tournament, tournamentId]);
 
     const renderPickedMapsWithSides = () => {
         const mapsData = match?.maps_data || [];
