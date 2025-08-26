@@ -100,6 +100,54 @@ const MatchDetailsPage = () => {
         }
     };
 
+    const handleCompleteMatch = async () => {
+        if (!isAdminOrCreator) return;
+        if (!window.confirm('Подтвердить завершение матча? Результат будет зафиксирован.')) return;
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) { alert('Нужна авторизация'); return; }
+
+            // Определяем победителя
+            let winnerTeamId = match.winner_team_id;
+            let s1 = Number.isFinite(match.score1) ? match.score1 : 0;
+            let s2 = Number.isFinite(match.score2) ? match.score2 : 0;
+
+            if (!winnerTeamId) {
+                if (s1 !== s2) {
+                    winnerTeamId = s1 > s2 ? match.team1_id : match.team2_id;
+                } else if (Array.isArray(match.maps_data) && match.maps_data.length > 0) {
+                    let wins1 = 0, wins2 = 0;
+                    for (const m of match.maps_data) {
+                        const m1 = (m.score1 ?? m.team1_score) ?? 0;
+                        const m2 = (m.score2 ?? m.team2_score) ?? 0;
+                        if (m1 > m2) wins1++; else if (m2 > m1) wins2++;
+                    }
+                    if (wins1 !== wins2) winnerTeamId = wins1 > wins2 ? match.team1_id : match.team2_id;
+                }
+            }
+
+            if (!winnerTeamId) { alert('Невозможно определить победителя. Укажите счёт или победителя.'); return; }
+
+            const body = {
+                winner_team_id: winnerTeamId,
+                score1: s1,
+                score2: s2,
+                maps_data: match.maps_data || []
+            };
+
+            const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(body)
+            });
+            if (!resp.ok) throw new Error('Не удалось завершить матч');
+            await fetchMatchDetails();
+            alert('Матч завершён');
+        } catch (e) {
+            alert(e.message || 'Ошибка завершения матча');
+        }
+    };
+
     const getTeamLogo = (team) => {
         if (!team) return '/default-avatar.png';
         return team.avatar_url || team.logo_url || '/default-avatar.png';
@@ -678,9 +726,16 @@ const MatchDetailsPage = () => {
                         {getMatchStatusText(match.status)}
                     </span>
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
-                    <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
-                        🔗 Поделиться
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {isAdminOrCreator && (
+                            <button className="btn btn-primary" onClick={handleCompleteMatch} title="Завершить матч и зафиксировать результат">
+                                Завершить матч
+                            </button>
+                        )}
+                        <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
+                            🔗 Поделиться
+                        </button>
+                    </div>
                 </div>
 
                 <div className="match-main-header">
