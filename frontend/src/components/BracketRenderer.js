@@ -694,6 +694,32 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         return `Матч ${displayNumber}`;
     };
 
+    // Вспомогательный расчет итогового счета по картам/матчу
+    const getComputedScores = (m) => {
+        const maps = m?.maps_data;
+        if (Array.isArray(maps) && maps.length > 0) {
+            if (maps.length === 1) {
+                const only = maps[0];
+                const s1 = (only.score1 ?? only.team1_score);
+                const s2 = (only.score2 ?? only.team2_score);
+                if (typeof s1 === 'number' && typeof s2 === 'number') return [s1, s2];
+            } else {
+                let wins1 = 0, wins2 = 0;
+                for (const mm of maps) {
+                    const s1 = (mm.score1 ?? mm.team1_score);
+                    const s2 = (mm.score2 ?? mm.team2_score);
+                    if (typeof s1 === 'number' && typeof s2 === 'number') {
+                        if (s1 > s2) wins1++; else if (s2 > s1) wins2++;
+                    }
+                }
+                if (wins1 + wins2 > 0) return [wins1, wins2];
+            }
+        }
+        const s1 = (typeof m?.score1 === 'number') ? m.score1 : 0;
+        const s2 = (typeof m?.score2 === 'number') ? m.score2 : 0;
+        return [s1, s2];
+    };
+
     // 🔧 ИСПРАВЛЕНО: Определяем данные участников
     const getParticipantData = (participantIndex) => {
         const participants = match.participants || [];
@@ -711,18 +737,11 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         // 🔧 УЛУЧШЕНО: Проверяем, является ли участник TBD
         const isTBD = !participant.id || participant.id === 'tbd' || participant.name === 'TBD';
         
-        // 🆕 НОВОЕ: Логика отображения счета одной карты
-        let displayScore = participant.score !== null && participant.score !== undefined ? participant.score : participant.resultText;
-        
-        // Если матч завершен и играется только на одной карте - показываем счет этой карты
-        if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
-            const mapData = match.maps_data[0];
-            if (mapData && (mapData.score1 !== null || mapData.score2 !== null)) {
-                // Показываем счет соответствующего участника из карты
-                displayScore = participantIndex === 0 ? 
-                    (mapData.score1 !== null ? mapData.score1 : displayScore) : 
-                    (mapData.score2 !== null ? mapData.score2 : displayScore);
-            }
+        // 🆕 Логика отображения счёта: одна карта -> реальный счёт; несколько -> кол-во выигранных карт; иначе -> score1/score2
+        const [c1, c2] = getComputedScores(match);
+        let displayScore = participantIndex === 0 ? c1 : c2;
+        if (displayScore === null || displayScore === undefined) {
+            displayScore = participant.score !== null && participant.score !== undefined ? participant.score : participant.resultText;
         }
         
         return {
