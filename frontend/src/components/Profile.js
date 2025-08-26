@@ -1872,15 +1872,25 @@ function Profile() {
                         const resultClass = result === 'win' ? 'win' : result === 'draw' ? 'draw' : 'loss';
                         const statusLabel = result === 'win' ? 'Победа' : result === 'draw' ? 'Ничья' : 'Поражение';
                         const rawOpponent = match.opponent || '';
-                        const opponent = rawOpponent && rawOpponent !== 'Неизвестный соперник' ? rawOpponent : '—';
+                        const isOpponentKnown = !!rawOpponent && rawOpponent !== 'Неизвестный соперник';
+                        const opponent = isOpponentKnown ? rawOpponent : 'Нет данных';
                         const dateText = match.date ? new Date(match.date).toLocaleDateString('ru-RU') : '';
+                        const hasScore = !!match.score;
+                        const scoreText = hasScore ? match.score : '—';
+                        if (!isOpponentKnown && !hasScore) {
+                            return (
+                                <div key={index} className="match-row empty">
+                                    <div className="match-empty">Нет данных</div>
+                                </div>
+                            );
+                        }
                         return (
                             <div key={index} className={`match-row ${resultClass}`}>
-                                <div className="match-date" title={dateText}>{dateText}</div>
-                                <div className="match-opponent" title={opponent}>{opponent}</div>
-                                <div className="match-score">{match.score || '—'}</div>
+                                <div className="match-date" title={dateText}>{dateText || '—'}</div>
+                                <div className={`match-opponent${isOpponentKnown ? '' : ' empty'}`} title={opponent}>{opponent}</div>
+                                <div className="match-score">{scoreText}</div>
                                 <div className="match-status">
-                                    <span>{statusLabel}</span>
+                                    <span className="result">{statusLabel}</span>
                                     {(match.is_test || match.test) && <span className="match-badge-test">Тест</span>}
                                 </div>
                             </div>
@@ -1888,7 +1898,7 @@ function Profile() {
                     })}
                 </div>
                 <button className="view-all-btn view-all-btn-red" onClick={openMatchHistoryModal}>
-                    Показать все матчи
+                    Показать все матчи →
                 </button>
             </div>
         );
@@ -2667,15 +2677,18 @@ function Profile() {
                                                     </div>
                                                     <div className="stats-label subtle">Выигранных турниров</div>
                                                 </div>
-                                                <div className="stats-card stat-compact">
+                                                <div className="stats-card stat-compact stat-winrate">
                                                     <div className="stat-icon" aria-hidden>%</div>
-                                                    <div className="stats-value emphasis">
-                                                        {(() => {
-                                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
-                                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
-                                                        })()}%
-                                                    </div>
+                                                    {(() => {
+                                                        const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                                        const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                                        const wr = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
+                                                        return (
+                                                            <div className="winrate-ring" style={{ '--value': wr }}>
+                                                                <div className="ring-inner">{wr}%</div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                     <div className="stats-label subtle">Винрейт</div>
                                                 </div>
                                             </div>

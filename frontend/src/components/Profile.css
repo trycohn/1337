@@ -465,7 +465,10 @@
     font-size: 14px;
     opacity: 0.9;
     line-height: 1;
+    transition: var(--transition);
 }
+
+.stat-compact:hover .stat-icon { text-shadow: 0 0 8px rgba(255,0,0,0.4); }
 
 .stats-value.emphasis {
     font-size: 22px;
@@ -506,13 +509,21 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 3px;
-    background: #666;
+    width: 4px; /* тоньше и ярче */
+    background: #777;
 }
 
 .match-row.win::before { background: #2e7d32; }
 .match-row.loss::before { background: #8b0000; }
 .match-row.draw::before { background: #777; }
+
+.match-row.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+}
+.match-empty { color: var(--text-muted); font-size: 13px; }
 
 .match-date {
     justify-self: start;
@@ -521,9 +532,18 @@
 }
 
 .match-opponent { color: #fff; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.match-opponent.empty { color: var(--text-muted); }
 .match-score { color: #fff; font-weight: 800; font-size: 18px; }
 .match-status { color: #ccc; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.match-status .result { font-weight: 600; }
+.match-row.win .match-status .result { color: #2e7d32; }
+.match-row.loss .match-status .result { color: #ff4d4d; }
+.match-row.draw .match-status .result { color: #aaa; }
 .match-badge-test { color: var(--btn-order-color); font-size: 11px; border: 1px solid var(--btn-order-color); padding: 2px 6px; }
+
+.matches-list .match-row:nth-child(odd) { background: #121212; }
+.matches-list .match-row:nth-child(even) { background: #0c0c0c; }
+.match-row:hover { border-color: var(--btn-order-color); box-shadow: 0 0 10px rgba(255,0,0,0.12); }
 
 .view-all-btn {
     margin-top: 10px;
@@ -533,15 +553,35 @@
     background: var(--btn-order-color);
     color: #fff;
     border: 1px solid var(--btn-order-color);
-    padding: 8px 14px;
-    border-radius: 0;
+    padding: 10px 16px;
+    border-radius: 8px; /* дороже выглядящая кнопка */
     transition: var(--transition);
 }
 
 .view-all-btn-red:hover {
-    filter: drop-shadow(0 0 8px rgba(255,0,0,0.5));
+    filter: drop-shadow(0 0 10px rgba(255,0,0,0.6));
     background: #cc0000;
 }
+
+/* Winrate ring (CSS-only) */
+.stat-winrate .winrate-ring {
+    --size: 56px;
+    --track: #1f1f1f;
+    --bar: #ff0000;
+    --value: 0; /* 0..100 */
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    position: relative;
+    background:
+      conic-gradient(var(--bar) calc(var(--value) * 1%), transparent 0),
+      radial-gradient(farthest-side, var(--bg-secondary) calc(100% - 6px), transparent 0),
+      var(--track);
+    display: grid;
+    place-items: center;
+    margin: 4px 0;
+}
+.stat-winrate .ring-inner { font-weight: 800; color: #fff; font-size: 14px; }
 
 .btn-secondary.btn-steam {
     background-color: #2a475e;
