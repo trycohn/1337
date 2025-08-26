@@ -427,6 +427,30 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
 export default TournamentResults;
 
 // Вспомогательные функции
+function getComputedScoresForMatch(m) {
+    const maps = m?.maps_data;
+    if (Array.isArray(maps) && maps.length > 0) {
+        if (maps.length === 1) {
+            const only = maps[0];
+            const s1 = (only.score1 ?? only.team1_score);
+            const s2 = (only.score2 ?? only.team2_score);
+            if (typeof s1 === 'number' && typeof s2 === 'number') return [s1, s2];
+        } else {
+            let wins1 = 0, wins2 = 0;
+            for (const mm of maps) {
+                const s1 = (mm.score1 ?? mm.team1_score);
+                const s2 = (mm.score2 ?? mm.team2_score);
+                if (typeof s1 === 'number' && typeof s2 === 'number') {
+                    if (s1 > s2) wins1++; else if (s2 > s1) wins2++;
+                }
+            }
+            if (wins1 + wins2 > 0) return [wins1, wins2];
+        }
+    }
+    const s1 = (typeof m?.score1 === 'number') ? m.score1 : 0;
+    const s2 = (typeof m?.score2 === 'number') ? m.score2 : 0;
+    return [s1, s2];
+}
 function getFormatDisplayName(format) {
     const formats = {
         'single_elimination': 'Single Elimination',
@@ -452,32 +476,9 @@ function getBracketTypeDisplayName(bracketType) {
 }
 
 function getFormattedScore(match) {
-    let winnerScore, loserScore;
-    
-    // Если есть данные о картах и только одна карта - показываем счет карты
-    if (match.maps_data && Array.isArray(match.maps_data) && match.maps_data.length === 1) {
-        const mapData = match.maps_data[0];
-        if (mapData.team1_score !== undefined && mapData.team2_score !== undefined) {
-            // Определяем счет победителя и проигравшего
-            if (match.winner_team_id === match.team1_id) {
-                winnerScore = mapData.team1_score;
-                loserScore = mapData.team2_score;
-            } else {
-                winnerScore = mapData.team2_score;
-                loserScore = mapData.team1_score;
-            }
-            return `${winnerScore}:${loserScore}`;
-        }
-    }
-    
-    // Иначе показываем общий счет матча (победитель:проигравший)
-    if (match.winner_team_id === match.team1_id) {
-        winnerScore = match.score1 || 0;
-        loserScore = match.score2 || 0;
-    } else {
-        winnerScore = match.score2 || 0;
-        loserScore = match.score1 || 0;
-    }
-    
-    return `${winnerScore}:${loserScore}`;
+    const [team1Display, team2Display] = getComputedScoresForMatch(match);
+    if (!match.winner_team_id) return `${team1Display}:${team2Display}`;
+    return match.winner_team_id === match.team1_id
+        ? `${team1Display}:${team2Display}`
+        : `${team2Display}:${team1Display}`;
 }
