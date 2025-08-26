@@ -321,25 +321,25 @@ router.put('/preloaded-avatars/default', authenticateToken, requireAdmin, async 
         const escapedDefault = String(targetUrl).replace(/'/g, "''");
         await client.query(`ALTER TABLE users ALTER COLUMN avatar_url SET DEFAULT '${escapedDefault}'`);
 
-        // Обновляем только тех, у кого явно не задано, пусто или был старый дефолт
-        if (previousDefault) {
+        // 1) Обновляем пустые/некорректные значения
+        await client.query(
+            `UPDATE users
+             SET avatar_url = $1
+             WHERE avatar_url IS NULL
+                OR trim(avatar_url) = ''
+                OR lower(avatar_url) IN ('null','undefined')`,
+            [targetUrl]
+        );
+
+        // 2) Обновляем тех, у кого стоит предыдущий дефолт или системный circle-user.svg
+        const legacyDefault = '/uploads/avatars/preloaded/circle-user.svg';
+        const candidates = [previousDefault, legacyDefault].filter(Boolean);
+        if (candidates.length > 0) {
             await client.query(
                 `UPDATE users
                  SET avatar_url = $1
-                 WHERE avatar_url IS NULL
-                    OR trim(avatar_url) = ''
-                    OR lower(avatar_url) IN ('null','undefined')
-                    OR avatar_url = $2`,
-                [targetUrl, previousDefault]
-            );
-        } else {
-            await client.query(
-                `UPDATE users
-                 SET avatar_url = $1
-                 WHERE avatar_url IS NULL
-                    OR trim(avatar_url) = ''
-                    OR lower(avatar_url) IN ('null','undefined')`,
-                [targetUrl]
+                 WHERE avatar_url = ANY($2::text[])`,
+                [targetUrl, candidates]
             );
         }
 
