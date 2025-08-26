@@ -646,9 +646,11 @@ function AdminPanel() {
                                         <span style={{position:'absolute', top:6, left:6, background:'#222', border:'1px solid #444', padding:'2px 6px', fontSize:12}}>Дефолт</span>
                                     )}
                                 </div>
-                                <div style={{display:'flex', gap:6}}>
-                                    <button className="btn-small" disabled={defaultAvatarUrl === a.url} onClick={()=>confirmSetDefault(a)}>Сделать дефолтом</button>
+                                <div style={{display:'flex', flexDirection:'column', gap:6}}>
                                     <button className="btn-small danger" onClick={()=>deletePreloadedAvatar(a.filename)}>Удалить</button>
+                                    {defaultAvatarUrl !== a.url && (
+                                        <button className="btn-small" onClick={()=>confirmSetDefault(a)}>Сделать дефолтом</button>
+                                    )}
                                 </div>
                             </div>
                         ))}
