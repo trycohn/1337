@@ -1867,20 +1867,27 @@ function Profile() {
             <div className="recent-matches">
                 <h4>Последние 5 матчей</h4>
                 <div className="matches-list">
-                    {lastFive.map((match, index) => (
-                        <div key={index} className={`match-item ${match.result === 'win' ? 'win' : 'loss'}`}>
-                            <div className="match-date">{new Date(match.date).toLocaleDateString()}</div>
-                            <div className="match-info">
-                                <span className="match-opponent">{match.opponent}</span>
-                                <span className="match-score">{match.score}</span>
+                    {lastFive.map((match, index) => {
+                        const result = (match.result || '').toLowerCase();
+                        const resultClass = result === 'win' ? 'win' : result === 'draw' ? 'draw' : 'loss';
+                        const statusLabel = result === 'win' ? 'Победа' : result === 'draw' ? 'Ничья' : 'Поражение';
+                        const rawOpponent = match.opponent || '';
+                        const opponent = rawOpponent && rawOpponent !== 'Неизвестный соперник' ? rawOpponent : '—';
+                        const dateText = match.date ? new Date(match.date).toLocaleDateString('ru-RU') : '';
+                        return (
+                            <div key={index} className={`match-row ${resultClass}`}>
+                                <div className="match-date" title={dateText}>{dateText}</div>
+                                <div className="match-opponent" title={opponent}>{opponent}</div>
+                                <div className="match-score">{match.score || '—'}</div>
+                                <div className="match-status">
+                                    <span>{statusLabel}</span>
+                                    {(match.is_test || match.test) && <span className="match-badge-test">Тест</span>}
+                                </div>
                             </div>
-                            <div className="match-tournament">
-                                <a href={`/tournament/${match.tournament_id}`}>{match.tournament_name}</a>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
-                <button className="view-all-btn" onClick={openMatchHistoryModal}>
+                <button className="view-all-btn view-all-btn-red" onClick={openMatchHistoryModal}>
                     Показать все матчи
                 </button>
             </div>
@@ -2640,32 +2647,36 @@ function Profile() {
                                     </div>
                                     <div className="card-content">
                                         {stats ? (
-                                            <div className="stats-grid">
-                                                <div className="stats-card">
-                                                    <div className="stats-value">
+                                            <div className="stats-grid stats-grid-compact">
+                                                <div className="stats-card stat-compact">
+                                                    <div className="stat-icon" aria-hidden>🎮</div>
+                                                    <div className="stats-value emphasis">
                                                         {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
                                                     </div>
-                                                    <div className="stats-label">Всего матчей</div>
+                                                    <div className="stats-label subtle">Всего матчей</div>
                                                 </div>
-                                                <div className="stats-card">
-                                                    <div className="stats-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
-                                                    <div className="stats-label">Турниров</div>
+                                                <div className="stats-card stat-compact">
+                                                    <div className="stat-icon" aria-hidden>🏆</div>
+                                                    <div className="stats-value emphasis">{stats.tournaments ? stats.tournaments.length : 0}</div>
+                                                    <div className="stats-label subtle">Турниров</div>
                                                 </div>
-                                                <div className="stats-card">
-                                                    <div className="stats-value">
+                                                <div className="stats-card stat-compact">
+                                                    <div className="stat-icon" aria-hidden>🏆</div>
+                                                    <div className="stats-value emphasis">
                                                         {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
                                                     </div>
-                                                    <div className="stats-label">Выигранных турниров</div>
+                                                    <div className="stats-label subtle">Выигранных турниров</div>
                                                 </div>
-                                                <div className="stats-card">
-                                                    <div className="stats-value">
+                                                <div className="stats-card stat-compact">
+                                                    <div className="stat-icon" aria-hidden>%</div>
+                                                    <div className="stats-value emphasis">
                                                         {(() => {
                                                             const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
                                                             const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
                                                             return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
                                                         })()}%
                                                     </div>
-                                                    <div className="stats-label">Винрейт</div>
+                                                    <div className="stats-label subtle">Винрейт</div>
                                                 </div>
                                             </div>
                                         ) : (
