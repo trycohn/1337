@@ -718,6 +718,9 @@ const MatchDetailsPage = () => {
 
             {/* Карты */}
             {renderMapPool()}
+
+            {/* Выбранные карты с инлайн-редактором */}
+            {renderPickedMapsWithSides()}
             
             {/* Pick & Ban */}
             {renderPickBanHistory()}
