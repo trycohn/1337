@@ -26,6 +26,7 @@ const MatchDetailsPage = () => {
     const [score1Input, setScore1Input] = useState('');
     const [score2Input, setScore2Input] = useState('');
     const [isSavingMap, setIsSavingMap] = useState(false);
+    const [userIsAdmin, setUserIsAdmin] = useState(false);
 
     useEffect(() => {
         fetchMatchDetails();
@@ -106,9 +107,28 @@ const MatchDetailsPage = () => {
         return mapImages[mapName?.toLowerCase()] || '/images/maps/mirage.jpg';
     };
     const isAdminOrCreator = !!(user && tournament && (
-        tournament.created_by === user.id ||
+        tournament.created_by === user.id || userIsAdmin ||
         (Array.isArray(tournament.admins) && tournament.admins.some(a => a.user_id === user.id))
     ));
+
+    useEffect(() => {
+        // Фолбек-проверка прав администратора, если не создатель и список admins не загружен
+        const checkAdmin = async () => {
+            try {
+                if (!user || !tournamentId) return;
+                if (tournament && tournament.created_by === user.id) { setUserIsAdmin(true); return; }
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const resp = await fetch(`/api/tournaments/${tournamentId}/admin-request-status`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data?.status === 'accepted') setUserIsAdmin(true);
+            } catch (_) {}
+        };
+        checkAdmin();
+    }, [user, tournament, tournamentId]);
 
     const renderPickedMapsWithSides = () => {
         const mapsData = match?.maps_data || [];
