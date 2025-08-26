@@ -385,6 +385,32 @@ const MatchDetailsPage = () => {
         return statusTexts[status] || status;
     };
 
+    function getDisplayedScores(matchObj) {
+        const maps = matchObj?.maps_data;
+        if (Array.isArray(maps) && maps.length > 0) {
+            // Одна карта — показываем реальный счёт карты
+            if (maps.length === 1) {
+                const only = maps[0];
+                const m1 = (only.score1 ?? only.team1_score);
+                const m2 = (only.score2 ?? only.team2_score);
+                if (typeof m1 === 'number' && typeof m2 === 'number') return [m1, m2];
+            }
+            // Несколько карт — показываем количество выигранных карт
+            let wins1 = 0, wins2 = 0;
+            for (const m of maps) {
+                const m1 = (m.score1 ?? m.team1_score);
+                const m2 = (m.score2 ?? m.team2_score);
+                if (typeof m1 === 'number' && typeof m2 === 'number') {
+                    if (m1 > m2) wins1++; else if (m2 > m1) wins2++;
+                }
+            }
+            if (wins1 + wins2 > 0) return [wins1, wins2];
+        }
+        const s1 = Number.isFinite(matchObj?.score1) ? matchObj.score1 : 0;
+        const s2 = Number.isFinite(matchObj?.score2) ? matchObj.score2 : 0;
+        return [s1, s2];
+    }
+
     const formatDate = (date) => {
         if (!date) return '';
         return new Date(date).toLocaleDateString('ru-RU', {
@@ -783,13 +809,13 @@ const MatchDetailsPage = () => {
                     {/* Счет */}
                     <div className="match-score-block">
                         <div className="match-score">
-                            <span className={`score ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}>
-                                {match.score1 || 0}
-                            </span>
-                            <span className="score-separator">:</span>
-                            <span className={`score ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}>
-                                {match.score2 || 0}
-                            </span>
+                            {(() => { const [d1, d2] = getDisplayedScores(match); return (
+                                <>
+                                    <span className={`score ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}>{d1}</span>
+                                    <span className="score-separator">:</span>
+                                    <span className={`score ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}>{d2}</span>
+                                </>
+                            ); })()}
                         </div>
                         <div className="match-format">
                             {match.round_name || `Раунд ${match.round}`}
