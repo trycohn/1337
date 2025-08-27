@@ -1893,6 +1893,13 @@ function TournamentDetails() {
                 endpoint = `/api/tournaments/${id}/lobby-enabled`;
                 payload = { lobby_enabled: value };
                 break;
+            case 'mix_link_requirements':
+                endpoint = `/api/tournaments/${id}/mix-link-requirements`;
+                payload = { 
+                    require_faceit_linked: !!value.require_faceit_linked,
+                    require_steam_linked: !!value.require_steam_linked
+                };
+                break;
             default:
                 throw new Error(`Неизвестное поле настройки: ${field}`);
         }

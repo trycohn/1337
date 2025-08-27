@@ -1063,52 +1063,9 @@ const TournamentInfoSection = ({
                                         Текущий: {getRatingTypeDisplayName(tournament.mix_rating_type)}
                                     </span>
                                 </div>
-                                <div className="rating-type-buttons">
-                                    <button 
-                                        className={`rating-type-btn ${tournament.mix_rating_type === 'faceit' ? 'active' : ''}`}
-                                        onClick={() => handleRatingTypeChange('faceit')}
-                                        disabled={ratingTypeLoading || tournament.mix_rating_type === 'faceit'}
-                                        title="Формировать команды по FACEIT ELO рейтингу"
-                                    >
-                                        {ratingTypeLoading && tournament.mix_rating_type !== 'faceit' ? (
-                                            <span className="loading-spinner-small"></span>
-                                        ) : (
-                                            '🎯'
-                                        )}
-                                        FACEIT ELO
-                                    </button>
-                                    <button 
-                                        className={`rating-type-btn ${tournament.mix_rating_type === 'premier' ? 'active' : ''}`}
-                                        onClick={() => handleRatingTypeChange('premier')}
-                                        disabled={ratingTypeLoading || tournament.mix_rating_type === 'premier'}
-                                        title="Формировать команды по CS2 Premier рангу"
-                                    >
-                                        {ratingTypeLoading && tournament.mix_rating_type !== 'premier' ? (
-                                            <span className="loading-spinner-small"></span>
-                                        ) : (
-                                            '🏆'
-                                        )}
-                                        CS2 Premier
-                                    </button>
-                                    <button 
-                                        className={`rating-type-btn ${(!tournament.mix_rating_type || tournament.mix_rating_type === 'mixed') ? 'active' : ''}`}
-                                        onClick={() => handleRatingTypeChange('mixed')}
-                                        disabled={ratingTypeLoading || (!tournament.mix_rating_type || tournament.mix_rating_type === 'mixed')}
-                                        title="Случайное формирование команд"
-                                    >
-                                        {ratingTypeLoading && tournament.mix_rating_type !== 'mixed' ? (
-                                            <span className="loading-spinner-small"></span>
-                                        ) : (
-                                            '🎲'
-                                        )}
-                                        Случайный
-                                    </button>
+                                <div className="rating-type-buttons disabled">
+                                    <span className="hint">Изменение доступно во вкладке «⚙️ Управление»</span>
                                 </div>
-                                {ratingTypeLoading && (
-                                    <div className="rating-type-loading">
-                                        <span className="loading-text">Изменяем тип рейтинга...</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>

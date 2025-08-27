@@ -716,6 +716,37 @@ class TournamentService {
     }
 
     /**
+     * 🆕 Обновление требований привязки аккаунтов для MIX турниров
+     */
+    static async updateMixLinkRequirements(tournamentId, { require_faceit_linked, require_steam_linked }, userId) {
+        console.log(`🔗 [TournamentService.updateMixLinkRequirements] t=${tournamentId}, faceit=${require_faceit_linked}, steam=${require_steam_linked}`);
+
+        await this._checkTournamentAccess(tournamentId, userId);
+
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) throw new Error('Турнир не найден');
+        if (tournament.format !== 'mix') throw new Error('Требования привязки доступны только для MIX турниров');
+
+        // Нормализация: запрещаем конфликты и зависим от текущего типа рейтинга
+        let faceitReq = !!require_faceit_linked;
+        let steamReq = !!require_steam_linked;
+        if (tournament.mix_rating_type === 'faceit') steamReq = false;
+        if (tournament.mix_rating_type === 'premier') faceitReq = false;
+        if (tournament.mix_rating_type === 'mixed') { faceitReq = false; steamReq = false; }
+
+        const updated = await TournamentRepository.updateMixLinkRequirements(tournamentId, faceitReq, steamReq);
+
+        await logTournamentEvent(tournamentId, userId, 'mix_link_requirements_updated', {
+            require_faceit_linked: faceitReq,
+            require_steam_linked: steamReq
+        });
+
+        const fullTournamentData = await this.getTournamentById(tournamentId);
+        broadcastTournamentUpdate(tournamentId, fullTournamentData, 'updateMixLinkRequirements');
+        return updated;
+    }
+
+    /**
      * 🎮 Обновление дисциплины турнира
      */
     static async updateGame(tournamentId, game, userId) {

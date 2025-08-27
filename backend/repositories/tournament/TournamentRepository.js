@@ -460,6 +460,17 @@ class TournamentRepository {
     }
 
     /**
+     * 🆕 Обновление флагов требований привязки аккаунтов для MIX турниров
+     */
+    static async updateMixLinkRequirements(tournamentId, requireFaceitLinked, requireSteamLinked) {
+        const result = await pool.query(
+            'UPDATE tournaments SET require_faceit_linked = $1, require_steam_linked = $2 WHERE id = $3 RETURNING *',
+            [!!requireFaceitLinked, !!requireSteamLinked, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
      * Сброс результатов матчей турнира
      */
     static async resetMatchResults(tournamentId, userId) {

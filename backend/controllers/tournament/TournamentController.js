@@ -595,6 +595,39 @@ class TournamentController {
         });
     });
 
+    // 🆕 Обновление требований привязки аккаунтов (MIX)
+    static updateMixLinkRequirements = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ 
+                message: 'ID турнира должен быть положительным числом',
+                received_id: id
+            });
+        }
+
+        const { require_faceit_linked, require_steam_linked } = req.body;
+
+        // Базовая валидация типов
+        if (require_faceit_linked !== undefined && typeof require_faceit_linked !== 'boolean') {
+            return res.status(400).json({ message: 'require_faceit_linked должен быть булевым' });
+        }
+        if (require_steam_linked !== undefined && typeof require_steam_linked !== 'boolean') {
+            return res.status(400).json({ message: 'require_steam_linked должен быть булевым' });
+        }
+
+        const tournament = await TournamentService.updateMixLinkRequirements(
+            tournamentId,
+            { require_faceit_linked, require_steam_linked },
+            req.user.id
+        );
+
+        res.json({
+            message: 'Требования привязки аккаунтов обновлены',
+            tournament
+        });
+    });
+
     // 🎮 Обновление дисциплины турнира
     static updateGame = asyncHandler(async (req, res) => {
         const { id } = req.params;

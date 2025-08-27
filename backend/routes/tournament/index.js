@@ -75,6 +75,9 @@ router.put('/:id/description', authenticateToken, verifyEmailRequired, verifyAdm
 // 🎯 Обновление типа рейтинга для микс-турниров
 router.put('/:id/rating-type', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateRatingType);
 
+// 🆕 Обновление требований привязки аккаунтов (MIX)
+router.put('/:id/mix-link-requirements', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateMixLinkRequirements);
+
 // 🎮 Обновление дисциплины турнира
 router.put('/:id/game', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateGame);
 

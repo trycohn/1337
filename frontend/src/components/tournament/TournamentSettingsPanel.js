@@ -432,6 +432,53 @@ const TournamentSettingsPanel = ({
                     </div>
                 )}
 
+                {/* 🆕 ТРЕБОВАНИЯ ПРИВЯЗКИ АККАУНТА (только для MIX) */}
+                {tournament.format === 'mix' && (
+                    <div className="setting-item">
+                        <div className="setting-label">
+                            <span className="label-icon">🔗</span>
+                            <span>Требовать привязки аккаунта</span>
+                        </div>
+                        <div className="setting-content">
+                            {/* FACEIT */}
+                            <div className="display-field">
+                                <label className="checkbox-inline">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!tournament.require_faceit_linked}
+                                        onChange={(e) => onUpdateSetting('mix_link_requirements', {
+                                            require_faceit_linked: e.target.checked,
+                                            require_steam_linked: tournament.require_steam_linked
+                                        })}
+                                        disabled={!canEdit || tournament.mix_rating_type !== 'faceit'}
+                                    />
+                                    <span>FACEIT (активно для типа рейтинга FACEIT)</span>
+                                </label>
+                            </div>
+
+                            {/* STEAM */}
+                            <div className="display-field">
+                                <label className="checkbox-inline">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!tournament.require_steam_linked}
+                                        onChange={(e) => onUpdateSetting('mix_link_requirements', {
+                                            require_faceit_linked: tournament.require_faceit_linked,
+                                            require_steam_linked: e.target.checked
+                                        })}
+                                        disabled={!canEdit || tournament.mix_rating_type !== 'premier'}
+                                    />
+                                    <span>Steam (активно для типа рейтинга CS2 Premier)</span>
+                                </label>
+                            </div>
+
+                            <small className="form-hint">
+                                Выбранный тип рейтинга определяет, какой чекбокс может быть включён. Для «Случайный микс» требования отключены.
+                            </small>
+                        </div>
+                    </div>
+                )}
+
                 {/* 🆕 РАЗМЕР КОМАНДЫ (только для микс-турниров и только для создателя) */}
                 {tournament.format === 'mix' && isCreator && (
                     <div className="setting-item">
