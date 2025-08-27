@@ -1052,21 +1052,7 @@ const TournamentInfoSection = ({
                     </div>
                 )}
 
-                {/* 🆕 Блок управления типом рейтинга для микс-турниров */}
-                {canChangeRatingType() && (
-                    <div className="meta-row">
-                        <div className="meta-item rating-type-control">
-                            <strong>⚙️ Управление типом рейтинга:</strong>
-                            <div className="rating-type-selector">
-                                <div className="rating-type-info">
-                                    <span className="current-type">
-                                        Текущий: {getRatingTypeDisplayName(tournament.mix_rating_type)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* блок управления типом рейтинга удалён */}
 
                 <div className="meta-row">
                     <div className="meta-item">
@@ -1117,7 +1103,7 @@ const TournamentInfoSection = ({
                                 <strong>🎯 Участие в турнире:</strong>
                                 <div className="participation-controls">
                                     <button 
-                                        className="participate-btn"
+                                        className="btn btn-primary"
                                         onClick={handleParticipateClick}
                                         disabled={participationLoading}
                                     >
