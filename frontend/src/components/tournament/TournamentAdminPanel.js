@@ -148,6 +148,17 @@ const TournamentAdminPanel = ({
             .filter(t => statusFilter === 'all' ? true : (t.status === statusFilter));
     }, [allTournaments, tournament.id, statusFilter, searchQuery]);
 
+    const existsInQualifiers = useCallback((id) => {
+        return (qualifiers || []).some(q => parseInt(q.qualifier_tournament_id) === parseInt(id));
+    }, [qualifiers]);
+
+    const handleAddFromSuggestions = useCallback((t) => {
+        if (!t || !t.id) return;
+        if (t.id === tournament.id) return;
+        if (existsInQualifiers(t.id)) return;
+        setQualifiers([...(qualifiers || []), { qualifier_tournament_id: t.id, slots: 1 }]);
+    }, [qualifiers, tournament.id, existsInQualifiers]);
+
     async function handleSaveQualifiers(nextQualifiers) {
         if (!tournament?.id) return;
         try {
@@ -570,6 +581,28 @@ const TournamentAdminPanel = ({
                             </select>
                             <span className="qualifier-count">Найдено: {filteredTournaments.length}</span>
                         </div>
+
+                        {/* Live‑подсказки по поиску */}
+                        {(searchQuery || '').trim().length >= 3 && !liveLoading && filteredTournaments.length > 0 && (
+                            <div className="qualifier-suggestions">
+                                {filteredTournaments.slice(0, 20).map(t => {
+                                    const disabled = t.id === tournament.id || existsInQualifiers(t.id);
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            className={`suggestion-item ${disabled ? 'disabled' : ''}`}
+                                            onClick={() => !disabled && handleAddFromSuggestions(t)}
+                                            disabled={disabled}
+                                            title={disabled ? 'Уже добавлен' : 'Добавить отборочный'}
+                                        >
+                                            {t.name} (#{t.id}) — {t.status}
+                                            {disabled && ' ✓'}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
 
                         {qualifiersLoading || tournamentsLoading || liveLoading ? (
                             <p>Загрузка...</p>

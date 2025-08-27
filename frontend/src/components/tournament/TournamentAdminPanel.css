@@ -920,3 +920,130 @@
     cursor: not-allowed;
 }
  
+/* 🏁 Финал серии: улучшенный UI */
+.final-series-section {
+    background: #000;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.final-series-section h4 {
+    margin: 0 0 14px 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qualifiers-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.qualifier-search-input {
+    flex: 1;
+    min-width: 240px;
+    padding: 10px 12px;
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 6px;
+}
+.qualifier-search-input:focus {
+    outline: none;
+    border-color: #ff0000;
+    box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.15);
+}
+
+.qualifier-status-filter {
+    min-width: 180px;
+    padding: 10px 12px;
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 6px;
+}
+.qualifier-status-filter:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.qualifier-count {
+    color: #999;
+    font-size: 12px;
+}
+
+.qualifiers-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.qualifier-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.qualifier-select,
+.qualifier-slots-select {
+    background: #000;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+.qualifier-select:focus,
+.qualifier-slots-select:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.final-series-section .action-btn-v2 {
+    color: #ff0000;
+    border-color: #ff0000;
+}
+.final-series-section .action-btn-v2:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.qualifier-suggestions {
+    background: #000;
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.suggestion-item {
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+}
+.suggestion-item:hover:not(.disabled) {
+    background: #1a1a1a;
+    border-color: #ff0000;
+}
+.suggestion-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
