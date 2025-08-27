@@ -28,9 +28,25 @@
 
 .profile-header-content {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto 1fr auto;
     gap: var(--spacing-xl);
     align-items: center;
+}
+
+/* Правый блок действий в хедере публичного профиля */
+.profile-header-actions { display: flex; align-items: center; gap: 8px; }
+.profile-header-actions .add-friend-btn,
+.profile-header-actions .remove-friend-btn,
+.profile-header-actions .pending-request-btn,
+.profile-header-actions .accept-request-btn,
+.profile-header-actions .reject-request-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-size: 12px;
 }
 
 /* Avatar Section */

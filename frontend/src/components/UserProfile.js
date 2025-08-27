@@ -354,6 +354,8 @@ function UserProfile() {
                                 </div>
                             )}
                         </div>
+                    </div>
+                    <div className="profile-header-actions">
                         {renderFriendActionButton()}
                     </div>
                 </div>
