@@ -143,7 +143,8 @@ class TournamentService {
             name, game, format, participant_type, max_participants,
             start_date, description, bracket_type, team_size, mix_rating_type,
             lobby_enabled, lobby_match_format, selected_maps, full_double_elimination,
-            require_faceit_linked, require_steam_linked
+            require_faceit_linked, require_steam_linked,
+            is_series_final
         } = tournamentData;
 
         const tournament = await TournamentRepository.create({
@@ -164,7 +165,9 @@ class TournamentService {
             full_double_elimination: (bracket_type === 'double_elimination' && full_double_elimination) || false,
             // 🆕 Требования привязки аккаунтов (только для MIX)
             require_faceit_linked: format === 'mix' ? !!require_faceit_linked : false,
-            require_steam_linked: format === 'mix' ? !!require_steam_linked : false
+            require_steam_linked: format === 'mix' ? !!require_steam_linked : false,
+            // 🆕 Флаг финального турнира серии
+            is_series_final: !!is_series_final
         });
 
         // Если включены настройки лобби, создаем их
@@ -188,6 +191,44 @@ class TournamentService {
 
         console.log('✅ TournamentService: Турнир создан', tournament);
         return tournament;
+    }
+
+    /**
+     * 🆕 Обновление флага финального турнира серии
+     */
+    static async updateSeriesFinalFlag(tournamentId, isFinal, userId) {
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) throw new Error('Турнир не найден');
+        if (tournament.created_by !== userId) {
+            const isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+            if (!isAdmin) throw new Error('Недостаточно прав');
+        }
+        const result = await pool.query(
+            'UPDATE tournaments SET is_series_final = $1 WHERE id = $2 RETURNING *',
+            [!!isFinal, tournamentId]
+        );
+        return result.rows[0];
+    }
+
+    /**
+     * 🆕 Установка связей финал ↔ отборочные (перезапись)
+     */
+    static async setFinalQualifiers(finalTournamentId, qualifiers, userId) {
+        const tournament = await TournamentRepository.getById(finalTournamentId);
+        if (!tournament) throw new Error('Турнир не найден');
+        if (!tournament.is_series_final) throw new Error('Турнир не помечен как финал серии');
+        if (tournament.created_by !== userId) {
+            const isAdmin = await TournamentRepository.isAdmin(finalTournamentId, userId);
+            if (!isAdmin) throw new Error('Недостаточно прав');
+        }
+        return TournamentRepository.setFinalQualifiers(finalTournamentId, qualifiers);
+    }
+
+    /**
+     * 🆕 Получить список отборочных турниров финала
+     */
+    static async getFinalQualifiers(finalTournamentId) {
+        return TournamentRepository.getFinalQualifiers(finalTournamentId);
     }
 
     /**

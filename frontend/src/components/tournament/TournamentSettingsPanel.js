@@ -205,6 +205,40 @@ const TournamentSettingsPanel = ({
                 </div>
             </div>
 
+            {/* 🆕 Секция: Финал серии и отборочные */}
+            {isCreator && tournament && (
+                <div className="setting-item full-width">
+                    <div className="setting-label">
+                        <span className="label-icon">🏁</span>
+                        <span>Финал серии турниров</span>
+                    </div>
+                    <div className="setting-content">
+                        <label className="checkbox-inline">
+                            <input
+                                type="checkbox"
+                                checked={!!tournament.is_series_final}
+                                onChange={async (e) => {
+                                    const value = e.target.checked;
+                                    setFieldLoading({ ...fieldLoading, is_series_final: true });
+                                    try {
+                                        await onUpdateSetting?.('series-final-flag', { is_series_final: value });
+                                    } finally {
+                                        setFieldLoading({ ...fieldLoading, is_series_final: false });
+                                    }
+                                }}
+                                disabled={fieldLoading.is_series_final}
+                            />
+                            <span>Турнир является финалом серии</span>
+                        </label>
+                        {tournament.is_series_final && (
+                            <div className="qualifiers-box">
+                                <small>Отборочные и слоты на финал настраиваются в админ‑панели турнира.</small>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="settings-grid">
                 {/* 🎮 ДИСЦИПЛИНА ТУРНИРА */}
                 <div className="setting-item">

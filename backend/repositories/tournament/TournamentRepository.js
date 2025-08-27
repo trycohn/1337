@@ -60,17 +60,64 @@ class TournamentRepository {
             max_participants, start_date, description, bracket_type, team_size, mix_rating_type,
             full_double_elimination,
             require_faceit_linked = false,
-            require_steam_linked = false
+            require_steam_linked = false,
+            is_series_final = false
         } = tournamentData;
 
         const result = await pool.query(
             `INSERT INTO tournaments
-             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination, require_faceit_linked, require_steam_linked)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked]
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination, require_faceit_linked, require_steam_linked, is_series_final)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked, !!is_series_final]
         );
 
         return result.rows[0];
+    }
+
+    /**
+     * 🆕 Задать список отборочных турниров для финала (перезапись)
+     */
+    static async setFinalQualifiers(finalTournamentId, qualifiers) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('DELETE FROM tournament_qualifiers WHERE final_tournament_id = $1', [finalTournamentId]);
+
+            for (const q of qualifiers) {
+                const qualifierId = parseInt(q.qualifier_tournament_id);
+                const slots = Math.max(1, Math.min(3, parseInt(q.slots || 1)));
+                if (!qualifierId || qualifierId === finalTournamentId) continue;
+                await client.query(
+                    `INSERT INTO tournament_qualifiers (final_tournament_id, qualifier_tournament_id, slots)
+                     VALUES ($1, $2, $3)
+                     ON CONFLICT (final_tournament_id, qualifier_tournament_id) DO UPDATE SET slots = EXCLUDED.slots`,
+                    [finalTournamentId, qualifierId, slots]
+                );
+            }
+
+            await client.query('COMMIT');
+            return { success: true };
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * 🆕 Получить список отборочных турниров для финала
+     */
+    static async getFinalQualifiers(finalTournamentId) {
+        const res = await pool.query(
+            `SELECT q.qualifier_tournament_id, q.slots, t.name as qualifier_name, t.status
+             FROM tournament_qualifiers q
+             LEFT JOIN tournaments t ON t.id = q.qualifier_tournament_id
+             WHERE q.final_tournament_id = $1
+             ORDER BY q.id ASC`,
+            [finalTournamentId]
+        );
+        return res.rows;
     }
 
     /**
