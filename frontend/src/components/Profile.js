@@ -2508,7 +2508,7 @@ function Profile() {
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Email</div>
                                                 <div className="mi-value" style={{justifySelf: 'start', paddingLeft: '13px'}}>{user.email || 'Не указан'}</div>
-                                                <div className="mi-actions" style={{justifySelf:'center'}}>
+                                                <div className="mi-actions">
                                                     {user.email ? (
                                                         user.is_verified ? (
                                                             <div className="mi-badge mi-badge-success">Подтвержден</div>
