@@ -813,18 +813,12 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         if (onMatchClick) onMatchClick(match);
     };
 
-    const handleCreateLobby = async (e) => {
-        e.stopPropagation();
+    const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
+
+    const createLobbyWithFormat = async (format) => {
         if (!api || !tournament?.id || !match?.id) return;
         try {
             setIsCreatingLobby(true);
-            // Выбор формата матча
-            const choice = window.prompt('Выберите формат: bo1, bo3 или bo5', 'bo1');
-            const format = (choice || '').toLowerCase();
-            if (!['bo1','bo3','bo5'].includes(format)) {
-                alert('Некорректный формат. Допустимо: bo1, bo3, bo5');
-                return;
-            }
             const token = localStorage.getItem('token');
             const res = await api.post(
                 `/api/tournaments/${tournament.id}/matches/${match.id}/create-lobby`,
@@ -845,7 +839,13 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             console.error('❌ Создание лобби не удалось:', err);
         } finally {
             setIsCreatingLobby(false);
+            setIsFormatMenuOpen(false);
         }
+    };
+
+    const handleCreateLobby = (e) => {
+        e.stopPropagation();
+        setIsFormatMenuOpen(v => !v);
     };
 
     return (
@@ -953,22 +953,61 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                             Перейти в лобби
                         </button>
                     )}
-                    <button
-                        type="button"
-                        disabled={isCreatingLobby}
-                        onClick={handleCreateLobby}
-                        style={{
-                            background: isCreatingLobby ? '#222' : '#ff0000',
-                            color: '#fff',
-                            border: '1px solid #ff0000',
-                            borderRadius: 4,
-                            padding: '4px 8px',
-                            cursor: isCreatingLobby ? 'default' : 'pointer'
-                        }}
-                        title="Создать лобби"
-                    >
-                        {isCreatingLobby ? 'Создание…' : 'Создать лобби'}
-                    </button>
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            type="button"
+                            disabled={isCreatingLobby}
+                            onClick={handleCreateLobby}
+                            style={{
+                                background: isCreatingLobby ? '#222' : '#ff0000',
+                                color: '#fff',
+                                border: '1px solid #ff0000',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                cursor: isCreatingLobby ? 'default' : 'pointer'
+                            }}
+                            title="Создать лобби"
+                        >
+                            {isCreatingLobby ? 'Создание…' : 'Создать лобби'}
+                        </button>
+                        {isFormatMenuOpen && (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    background: '#000',
+                                    border: '1px solid #ff0000',
+                                    borderRadius: 6,
+                                    padding: 6,
+                                    marginTop: 6,
+                                    display: 'flex',
+                                    gap: 6,
+                                    zIndex: 10
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {['bo1','bo3','bo5'].map(fmt => (
+                                    <button
+                                        key={fmt}
+                                        type="button"
+                                        onClick={() => createLobbyWithFormat(fmt)}
+                                        style={{
+                                            background: '#111',
+                                            color: '#fff',
+                                            border: '1px solid #333',
+                                            borderRadius: 4,
+                                            padding: '4px 8px',
+                                            cursor: 'pointer'
+                                        }}
+                                        title={`Создать лобби (${fmt.toUpperCase()})`}
+                                    >
+                                        {fmt.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
