@@ -5,6 +5,7 @@ import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
 import { DoubleEliminationFormat } from '../utils/tournament/formats/DoubleEliminationFormat';
 import useDragAndZoom from '../hooks/useDragAndZoom';
+import { useAuth } from '../context/AuthContext';
 
 // Регистрируем форматы
 formatManager.register(new SingleEliminationFormat());
@@ -634,9 +635,28 @@ const BracketRenderer = ({
 
 // MatchCard компонент с поддержкой bracket_type и кастомных меток
 const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false }) => {
+    const { user } = useAuth();
     const [isHovered, setIsHovered] = useState(false);
     const [isCreatingLobby, setIsCreatingLobby] = useState(false);
     const canShowActions = isAdminOrCreator && tournament?.status === 'in_progress';
+
+    function isUserCaptainOfMatch() {
+        if (!user || !tournament || tournament.participant_type !== 'team') return false;
+        const teamIds = [match?.team1_id, match?.team2_id].filter(Boolean);
+        if (!Array.isArray(tournament.teams) || teamIds.length === 0) return false;
+        const userIsCaptainInTeam = (team) => {
+            if (!team) return false;
+            if (team.captain_id && Number(team.captain_id) === Number(user.id)) return true;
+            if (Array.isArray(team.members)) {
+                return team.members.some(m => (m.is_captain === true) && (Number(m.user_id || m.id) === Number(user.id)));
+            }
+            return false;
+        };
+        const team1 = tournament.teams.find(t => Number(t.id) === Number(match?.team1_id));
+        const team2 = tournament.teams.find(t => Number(t.id) === Number(match?.team2_id));
+        return userIsCaptainInTeam(team1) || userIsCaptainInTeam(team2);
+    }
+    const isCaptainForThisMatch = isUserCaptainOfMatch();
     let api;
     try { api = require('../axios').default; } catch (_) {}
     const [activeLobbyId, setActiveLobbyId] = useState(null);
@@ -953,7 +973,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                             Перейти в лобби
                         </button>
                     )}
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                         <button
                             type="button"
                             disabled={isCreatingLobby}
@@ -1008,6 +1028,40 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                             </div>
                         )}
                     </div>
+                </div>
+            )}
+            {!canShowActions && isHovered && isCaptainForThisMatch && activeLobbyId && (
+                <div
+                    className="bracket-match-actions"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        display: 'flex',
+                        gap: 6,
+                        background: 'rgba(0,0,0,0.85)',
+                        border: '1px solid #ff0000',
+                        borderRadius: 6,
+                        padding: '6px 8px',
+                        zIndex: 3
+                    }}
+                >
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
+                        style={{
+                            background: '#111',
+                            color: '#fff',
+                            border: '1px solid #ff0000',
+                            borderRadius: 4,
+                            padding: '4px 8px',
+                            cursor: 'pointer'
+                        }}
+                        title="Перейти в лобби"
+                    >
+                        Перейти в лобби
+                    </button>
                 </div>
             )}
         </div>
