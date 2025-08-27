@@ -66,6 +66,56 @@ const TournamentAdminPanel = ({
         setShowManualBracketEditor(false);
     }, []);
 
+    const [qualifiers, setQualifiers] = useState([]);
+    const [qualifiersLoading, setQualifiersLoading] = useState(false);
+    const hasFinalControls = !!tournament?.is_series_final && isCreatorOrAdmin;
+
+    const fetchQualifiers = async () => {
+        if (!tournament?.id) return;
+        setQualifiersLoading(true);
+        try {
+            const res = await axios.get(`/api/tournaments/${tournament.id}/qualifiers`);
+            setQualifiers(res.data || []);
+        } catch (e) {
+            console.error('Ошибка загрузки отборочных:', e);
+        } finally {
+            setQualifiersLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (hasFinalControls) fetchQualifiers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournament?.id, hasFinalControls]);
+
+    async function handleSaveQualifiers(nextQualifiers) {
+        if (!tournament?.id) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`/api/tournaments/${tournament.id}/qualifiers`, { qualifiers: nextQualifiers }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchQualifiers();
+        } catch (e) {
+            console.error('Ошибка сохранения отборочных:', e);
+            alert('Не удалось сохранить отборочные турниры');
+        }
+    }
+
+    async function handleSyncQualifiers() {
+        if (!tournament?.id) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`/api/tournaments/${tournament.id}/qualifiers/sync`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(`Синхронизировано записей: ${res.data?.promotions?.length || 0}`);
+        } catch (e) {
+            console.error('Ошибка синхронизации победителей:', e);
+            alert('Не удалось синхронизировать победителей');
+        }
+    }
+
     if (!isCreatorOrAdmin) {
         return null;
     }
@@ -432,6 +482,82 @@ const TournamentAdminPanel = ({
                         isCreator={user?.id === tournament?.created_by}
                         onUpdateSetting={onUpdateTournamentSetting}
                     />
+                )}
+
+                {/* 🏁 Финал серии: выбор отборочных и top-N */}
+                {hasFinalControls && (
+                    <div className="final-series-section">
+                        <h4>🏁 Финал серии: отборочные турниры</h4>
+                        {qualifiersLoading ? (
+                            <p>Загрузка...</p>
+                        ) : (
+                            <div className="qualifiers-editor">
+                                {(qualifiers || []).map((q, idx) => (
+                                    <div key={q.qualifier_tournament_id || idx} className="qualifier-row">
+                                        <input
+                                            type="number"
+                                            className="qualifier-id-input"
+                                            value={q.qualifier_tournament_id}
+                                            onChange={(e) => {
+                                                const v = parseInt(e.target.value || 0);
+                                                const next = qualifiers.slice();
+                                                next[idx] = { ...next[idx], qualifier_tournament_id: v };
+                                                setQualifiers(next);
+                                            }}
+                                            placeholder="ID отборочного"
+                                        />
+                                        <select
+                                            className="qualifier-slots-select"
+                                            value={q.slots || 1}
+                                            onChange={(e) => {
+                                                const v = parseInt(e.target.value || 1);
+                                                const next = qualifiers.slice();
+                                                next[idx] = { ...next[idx], slots: v };
+                                                setQualifiers(next);
+                                            }}
+                                        >
+                                            <option value={1}>top 1</option>
+                                            <option value={2}>top 2</option>
+                                            <option value={3}>top 3</option>
+                                        </select>
+                                        <button
+                                            className="action-btn-v2"
+                                            onClick={() => {
+                                                const next = qualifiers.filter((_, i) => i !== idx);
+                                                setQualifiers(next);
+                                            }}
+                                            title="Удалить отборочный"
+                                        >
+                                            ❌
+                                        </button>
+                                    </div>
+                                ))}
+
+                                <div className="qualifier-row">
+                                    <button
+                                        className="action-btn-v2"
+                                        onClick={() => setQualifiers([...(qualifiers || []), { qualifier_tournament_id: 0, slots: 1 }])}
+                                    >
+                                        ➕ Добавить отборочный
+                                    </button>
+                                    <button
+                                        className="action-btn-v2"
+                                        onClick={() => handleSaveQualifiers(qualifiers)}
+                                    >
+                                        💾 Сохранить связи
+                                    </button>
+                                    <button
+                                        className="action-btn-v2"
+                                        onClick={handleSyncQualifiers}
+                                        title="Добавить победителей в финал"
+                                    >
+                                        🔄 Синхронизировать победителей
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        <small>Укажите ID турниров‑отборочных (например: 1, 4, 6, 7) и число призовых слотов для каждого (top1..top3).</small>
+                    </div>
                 )}
 
                 {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}

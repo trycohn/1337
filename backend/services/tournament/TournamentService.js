@@ -232,6 +232,96 @@ class TournamentService {
     }
 
     /**
+     * 🆕 Ручная синхронизация победителей отборочных турниров в финал
+     * Берём top N мест (1..slots) из каждого отборочного и добавляем участников в финальный турнир
+     */
+    static async syncQualifiersToFinal(finalTournamentId, userId) {
+        const finalTournament = await TournamentRepository.getById(finalTournamentId);
+        if (!finalTournament) throw new Error('Турнир не найден');
+        if (!finalTournament.is_series_final) throw new Error('Турнир не помечен как финал серии');
+        if (finalTournament.created_by !== userId) {
+            const isAdmin = await TournamentRepository.isAdmin(finalTournamentId, userId);
+            if (!isAdmin) throw new Error('Недостаточно прав');
+        }
+
+        const qualifiers = await TournamentRepository.getFinalQualifiers(finalTournamentId);
+        const promotions = [];
+
+        for (const q of qualifiers) {
+            const qualifierId = q.qualifier_tournament_id;
+            const slots = Math.max(1, Math.min(3, parseInt(q.slots || 1)));
+
+            // Получаем призовые места отборочного
+            const res = await pool.query(`
+                WITH finals AS (
+                  SELECT m.* FROM matches m WHERE m.tournament_id = $1
+                ),
+                gf AS (
+                  SELECT winner_team_id, team1_id, team2_id
+                  FROM finals
+                  WHERE bracket_type IN ('grand_final_reset','grand_final','final')
+                  ORDER BY (bracket_type='grand_final_reset') DESC, id DESC
+                  LIMIT 1
+                ),
+                first_place AS (
+                  SELECT COALESCE(gf.winner_team_id, NULL) AS id FROM gf
+                ),
+                second_place AS (
+                  SELECT CASE WHEN gf.winner_team_id = gf.team1_id THEN gf.team2_id ELSE gf.team1_id END AS id FROM gf
+                ),
+                third_place AS (
+                  SELECT winner_team_id AS id
+                  FROM finals
+                  WHERE bracket_type = 'placement' OR is_third_place_match = true
+                  ORDER BY id DESC LIMIT 1
+                )
+                SELECT id FROM (
+                  SELECT id FROM first_place
+                  UNION ALL
+                  SELECT id FROM second_place
+                  UNION ALL
+                  SELECT id FROM third_place
+                ) places WHERE id IS NOT NULL LIMIT $2;
+            `, [qualifierId, slots]);
+
+            const promotedIds = res.rows.map(r => r.id);
+            for (let placed = 1; placed <= promotedIds.length; placed++) {
+                const refId = promotedIds[placed - 1];
+                if (!refId) continue;
+
+                // Поддержка командных турниров: считаем, что refId указывает на team_id/participant_id
+                // Добавляем как участника в финальный турнир (минимально: ссылка на participant/team запись)
+                await pool.query(
+                    `INSERT INTO tournament_promotions (final_tournament_id, qualifier_tournament_id, team_id, placed, meta)
+                     VALUES ($1,$2,$3,$4,$5)`,
+                    [finalTournamentId, qualifierId, refId, placed, JSON.stringify({ source: 'manual_sync' })]
+                );
+
+                // Если финал командный → создаём команду‑прокси или участника‑прокси. Для минимальной реализации: добавляем participant запись, если её нет
+                await pool.query(
+                    `INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
+                     SELECT $1, NULL, COALESCE(tt.name, tp.name, 'Qualified #' || $3), false
+                     FROM (SELECT 1) s
+                     LEFT JOIN tournament_teams tt ON tt.id = $3
+                     LEFT JOIN tournament_participants tp ON tp.id = $3
+                     WHERE NOT EXISTS (
+                        SELECT 1 FROM tournament_participants p
+                        WHERE p.tournament_id = $1 AND (p.name = COALESCE(tt.name, tp.name))
+                     )`,
+                    [finalTournamentId, qualifierId, refId]
+                );
+
+                promotions.push({ qualifierId, refId, placed });
+            }
+        }
+
+        await logAdvancement(finalTournamentId, userId, { type: 'manual_sync', promotions_count: promotions.length });
+        await broadcastTournamentUpdate(finalTournamentId);
+
+        return { success: true, promotions };
+    }
+
+    /**
      * Обновление турнира
      */
     static async updateTournament(tournamentId, updateData, userId) {

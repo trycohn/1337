@@ -69,6 +69,7 @@ router.put('/:id/series-final-flag', authenticateToken, verifyEmailRequired, ver
 // 🆕 Связи финал ↔ отборочные
 router.put('/:id/qualifiers', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.setFinalQualifiers);
 router.get('/:id/qualifiers', TournamentController.getFinalQualifiers);
+router.post('/:id/qualifiers/sync', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.syncQualifiers);
 
 // 🗑️ Удаление турнира
 router.delete('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.deleteTournament);
