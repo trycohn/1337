@@ -53,7 +53,7 @@ class MatchLobbyService {
     }
 
     // 🔄 Полное пересоздание лобби: удаляет старое лобби и связанные данные, затем создаёт новое
-    static async recreateLobby(matchId, tournamentId) {
+    static async recreateLobby(matchId, tournamentId, matchFormat) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
@@ -75,7 +75,7 @@ class MatchLobbyService {
             client.release();
         }
         // Создаём новое лобби обычным путём
-        return this.createMatchLobby(matchId, tournamentId);
+        return this.createMatchLobby(matchId, tournamentId, matchFormat);
     }
     // 🔎 Список активных лобби для пользователя (по приглашениям)
     static async getActiveLobbiesForUser(userId) {
@@ -125,7 +125,7 @@ class MatchLobbyService {
     }
     
     // 🏁 Создание лобби для матча
-    static async createMatchLobby(matchId, tournamentId) {
+    static async createMatchLobby(matchId, tournamentId, matchFormat) {
         const client = await pool.connect();
         
         try {
@@ -167,13 +167,15 @@ class MatchLobbyService {
             }
             
             const settings = settingsResult.rows[0];
+            const allowedFormats = new Set(['bo1','bo3','bo5']);
+            const chosenFormat = allowedFormats.has(matchFormat) ? matchFormat : (settings.match_format || 'bo1');
             
             // Создаем лобби
             const lobbyResult = await client.query(
                 `INSERT INTO match_lobbies (match_id, tournament_id, match_format, status)
                  VALUES ($1, $2, $3, 'waiting')
                  RETURNING *`,
-                [matchId, tournamentId, settings.match_format]
+                [matchId, tournamentId, chosenFormat]
             );
             
             const lobby = lobbyResult.rows[0];
@@ -196,69 +198,35 @@ class MatchLobbyService {
             
             const match = matchResult.rows[0];
             
-            // Создаем приглашения для капитанов команд или соло участников
+            // Создаем приглашения для всех участников обеих команд, чтобы они могли наблюдать за пиками/банами.
+            // Право действий (ready/pick/ban) оставляем только капитанам — проверяется в соответствующих методах.
             const invitations = [];
-            
-            // Для командного турнира - приглашаем капитанов, при отсутствии капитана в команде приглашаем всех её участников
             if (match.team1_id && match.team2_id) {
                 const teamIds = [match.team1_id, match.team2_id];
-                const captainsResult = await client.query(
-                    `SELECT tm.user_id, tm.team_id, u.username
+                const membersResult = await client.query(
+                    `SELECT tm.user_id, tm.team_id
                      FROM tournament_team_members tm
-                     JOIN users u ON tm.user_id = u.id
-                     WHERE tm.team_id IN ($1, $2) AND tm.is_captain = true`,
-                    [teamIds[0], teamIds[1]]
+                     WHERE tm.team_id = ANY($1::int[])`,
+                    [teamIds]
                 );
-
                 const invitedUserIds = new Set();
-                const captainTeams = new Set(captainsResult.rows.map(r => r.team_id));
-
-                // Приглашаем капитанов (если есть)
-                for (const captain of captainsResult.rows) {
-                    const invResult = await client.query(
+                for (const member of membersResult.rows) {
+                    if (invitedUserIds.has(member.user_id)) continue;
+                    const invRes = await client.query(
                         `INSERT INTO lobby_invitations (lobby_id, user_id, team_id)
                          VALUES ($1, $2, $3) RETURNING *`,
-                        [lobby.id, captain.user_id, captain.team_id]
+                        [lobby.id, member.user_id, member.team_id]
                     );
-                    invitations.push(invResult.rows[0]);
-                    invitedUserIds.add(captain.user_id);
-                    await sendNotification(captain.user_id, {
+                    invitations.push(invRes.rows[0]);
+                    invitedUserIds.add(member.user_id);
+                    await sendNotification(member.user_id, {
                         id: Date.now(),
-                        user_id: captain.user_id,
+                        user_id: member.user_id,
                         type: 'match_lobby_invite',
                         message: `Вы приглашены в лобби матча турнира. Нажмите для входа.`,
                         metadata: JSON.stringify({ lobbyId: lobby.id, matchId, tournamentId }),
                         created_at: new Date()
                     });
-                }
-
-                // Фолбек: для команды без капитана приглашаем всех участников команды
-                const teamsWithoutCaptain = teamIds.filter(tid => !captainTeams.has(tid));
-                if (teamsWithoutCaptain.length > 0) {
-                    const membersResult = await client.query(
-                        `SELECT tm.user_id, tm.team_id
-                         FROM tournament_team_members tm
-                         WHERE tm.team_id = ANY($1::int[])`,
-                        [teamsWithoutCaptain]
-                    );
-                    for (const member of membersResult.rows) {
-                        if (invitedUserIds.has(member.user_id)) continue;
-                        const invRes = await client.query(
-                            `INSERT INTO lobby_invitations (lobby_id, user_id, team_id)
-                             VALUES ($1, $2, $3) RETURNING *`,
-                            [lobby.id, member.user_id, member.team_id]
-                        );
-                        invitations.push(invRes.rows[0]);
-                        invitedUserIds.add(member.user_id);
-                        await sendNotification(member.user_id, {
-                            id: Date.now(),
-                            user_id: member.user_id,
-                            type: 'match_lobby_invite',
-                            message: `Вы приглашены в лобби матча турнира. Нажмите для входа.`,
-                            metadata: JSON.stringify({ lobbyId: lobby.id, matchId, tournamentId }),
-                            created_at: new Date()
-                        });
-                    }
                 }
             }
             
@@ -341,17 +309,25 @@ class MatchLobbyService {
         try {
             await client.query('BEGIN');
             
-            // Проверяем, является ли пользователь участником
+            // Проверяем, является ли пользователь приглашенным и капитаном своей команды
             const inviteResult = await client.query(
-                `SELECT i.*, tm.team_id
+                `SELECT 
+                    i.team_id,
+                    EXISTS (
+                        SELECT 1 FROM tournament_team_members tm
+                        WHERE tm.user_id = i.user_id AND tm.team_id = i.team_id AND tm.is_captain = true
+                    ) AS is_captain
                  FROM lobby_invitations i
-                 LEFT JOIN tournament_team_members tm ON i.user_id = tm.user_id
-                 WHERE i.lobby_id = $1 AND i.user_id = $2`,
+                 WHERE i.lobby_id = $1 AND i.user_id = $2
+                 LIMIT 1`,
                 [lobbyId, userId]
             );
             
             if (!inviteResult.rows[0]) {
                 throw new Error('Вы не приглашены в это лобби');
+            }
+            if (!inviteResult.rows[0].is_captain) {
+                throw new Error('Только капитан команды может менять статус готовности');
             }
             
             const teamId = inviteResult.rows[0].team_id;
@@ -493,6 +469,18 @@ class MatchLobbyService {
                 throw new Error('Сейчас не ваш ход');
             }
             
+            // Проверяем, что действует капитан команды-ходящего
+            const isCaptainRes = await client.query(
+                `SELECT 1
+                 FROM tournament_team_members tm
+                 WHERE tm.user_id = $1 AND tm.team_id = $2 AND tm.is_captain = true
+                 LIMIT 1`,
+                [userId, lobby.user_team_id]
+            );
+            if (isCaptainRes.rows.length === 0) {
+                throw new Error('Только капитан команды может выполнять пик/бан');
+            }
+
             // Проверяем, не была ли карта уже выбрана/забанена
             const existingSelection = await client.query(
                 'SELECT * FROM map_selections WHERE lobby_id = $1 AND map_name = $2',

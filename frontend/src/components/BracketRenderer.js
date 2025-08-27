@@ -818,10 +818,17 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         if (!api || !tournament?.id || !match?.id) return;
         try {
             setIsCreatingLobby(true);
+            // Выбор формата матча
+            const choice = window.prompt('Выберите формат: bo1, bo3 или bo5', 'bo1');
+            const format = (choice || '').toLowerCase();
+            if (!['bo1','bo3','bo5'].includes(format)) {
+                alert('Некорректный формат. Допустимо: bo1, bo3, bo5');
+                return;
+            }
             const token = localStorage.getItem('token');
             const res = await api.post(
                 `/api/tournaments/${tournament.id}/matches/${match.id}/create-lobby`,
-                {},
+                { matchFormat: format },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res?.data?.alreadyExists && isAdminOrCreator) {
@@ -829,7 +836,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 if (confirmRecreate) {
                     await api.post(
                         `/api/tournaments/${tournament.id}/matches/${match.id}/recreate-lobby`,
-                        {},
+                        { matchFormat: format },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                 }

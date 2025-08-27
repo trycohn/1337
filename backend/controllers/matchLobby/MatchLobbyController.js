@@ -82,6 +82,7 @@ class MatchLobbyController {
     static async createMatchLobby(req, res) {
         try {
             const { tournamentId, matchId } = req.params;
+            const { matchFormat } = req.body || {};
             const userId = req.user.id;
             
             // Проверяем права доступа
@@ -103,7 +104,7 @@ class MatchLobbyController {
                 });
             }
 
-            const result = await MatchLobbyService.createMatchLobby(matchId, tournamentId);
+            const result = await MatchLobbyService.createMatchLobby(matchId, tournamentId, matchFormat);
             
             // Отправляем уведомления через WebSocket
             const io = req.app.get('io');
@@ -136,6 +137,7 @@ class MatchLobbyController {
     static async recreateMatchLobby(req, res) {
         try {
             const { tournamentId, matchId } = req.params;
+            const { matchFormat } = req.body || {};
             const userId = req.user.id;
 
             const isAdmin = await req.checkTournamentAccess(tournamentId, userId);
@@ -145,7 +147,7 @@ class MatchLobbyController {
                 });
             }
 
-            const result = await MatchLobbyService.recreateLobby(matchId, tournamentId);
+            const result = await MatchLobbyService.recreateLobby(matchId, tournamentId, matchFormat);
 
             const io = req.app.get('io');
             if (io) {
