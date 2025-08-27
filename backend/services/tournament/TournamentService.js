@@ -322,6 +322,13 @@ class TournamentService {
     }
 
     /**
+     * 🆕 Live‑поиск турниров
+     */
+    static async searchTournaments(q, status, limit = 20) {
+        return TournamentRepository.searchTournaments(q, status, limit);
+    }
+
+    /**
      * Обновление турнира
      */
     static async updateTournament(tournamentId, updateData, userId) {

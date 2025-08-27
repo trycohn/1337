@@ -91,6 +91,7 @@ const TournamentAdminPanel = ({
         const fetchAllTournaments = async () => {
             setTournamentsLoading(true);
             try {
+                // При первом открытии подгружаем последние турниры (fallback)
                 const res = await axios.get('/api/tournaments');
                 const list = Array.isArray(res.data) ? res.data : [];
                 setAllTournaments(list);
@@ -109,12 +110,42 @@ const TournamentAdminPanel = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tournament?.id, hasFinalControls]);
 
+    // Live поиск: дергаем backend после 3+ символов и debounce
+    const [liveLoading, setLiveLoading] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        const q = (searchQuery || '').trim();
+        if (q.length < 3) return; // показываем fallback список до 3 символов
+
+        const handler = setTimeout(async () => {
+            setLiveLoading(true);
+            try {
+                const res = await axios.get('/api/tournaments/search/live', {
+                    params: { q, status: statusFilter === 'all' ? undefined : statusFilter, limit: 20 }
+                });
+                if (!cancelled) setAllTournaments(Array.isArray(res.data) ? res.data : []);
+            } catch (e) {
+                if (!cancelled) console.error('Ошибка live‑поиска турниров:', e);
+            } finally {
+                if (!cancelled) setLiveLoading(false);
+            }
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(handler);
+        };
+    }, [searchQuery, statusFilter]);
+
     const filteredTournaments = useMemo(() => {
-        const q = (searchQuery || '').toLowerCase();
+        // Если введено >=3 символов — список уже отфильтрован бекендом; дополнительно исключим текущий турнир
+        if ((searchQuery || '').trim().length >= 3) {
+            return (allTournaments || []).filter(t => t.id !== tournament.id);
+        }
+        // Иначе применяем локальный фильтр по статусу
         return (allTournaments || [])
             .filter(t => t.id !== tournament.id)
-            .filter(t => statusFilter === 'all' ? true : (t.status === statusFilter))
-            .filter(t => q ? (String(t.name || '').toLowerCase().includes(q) || String(t.id).includes(q)) : true);
+            .filter(t => statusFilter === 'all' ? true : (t.status === statusFilter));
     }, [allTournaments, tournament.id, statusFilter, searchQuery]);
 
     async function handleSaveQualifiers(nextQualifiers) {
@@ -540,7 +571,7 @@ const TournamentAdminPanel = ({
                             <span className="qualifier-count">Найдено: {filteredTournaments.length}</span>
                         </div>
 
-                        {qualifiersLoading || tournamentsLoading ? (
+                        {qualifiersLoading || tournamentsLoading || liveLoading ? (
                             <p>Загрузка...</p>
                         ) : (
                             <div className="qualifiers-editor">

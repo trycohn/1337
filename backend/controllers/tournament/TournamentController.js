@@ -125,6 +125,16 @@ class TournamentController {
         res.json(result);
     });
 
+    // 🆕 Live‑поиск турниров
+    static searchTournaments = asyncHandler(async (req, res) => {
+        const { q = '', status, limit } = req.query;
+        if (!q || String(q).trim().length < 3) {
+            return res.json([]);
+        }
+        const items = await TournamentService.searchTournaments(String(q).trim(), status, limit ? parseInt(limit, 10) : 20);
+        res.json(items);
+    });
+
     // 📖 Получение турнира
     static getTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;

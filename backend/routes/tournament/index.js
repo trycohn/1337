@@ -71,6 +71,9 @@ router.put('/:id/qualifiers', authenticateToken, verifyEmailRequired, verifyAdmi
 router.get('/:id/qualifiers', TournamentController.getFinalQualifiers);
 router.post('/:id/qualifiers/sync', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.syncQualifiers);
 
+// 🆕 Live‑поиск турниров
+router.get('/search/live', TournamentController.searchTournaments);
+
 // 🗑️ Удаление турнира
 router.delete('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.deleteTournament);
 

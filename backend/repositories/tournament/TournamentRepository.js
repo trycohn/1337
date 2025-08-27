@@ -135,6 +135,35 @@ class TournamentRepository {
     }
 
     /**
+     * 🆕 Поиск турниров по названию/ID с фильтром статуса
+     */
+    static async searchTournaments(query, status, limit = 20) {
+        const q = `%${query}%`;
+        const clauses = [];
+        const params = [];
+
+        // имя/ID
+        clauses.push('(LOWER(t.name) LIKE LOWER($1) OR CAST(t.id AS TEXT) LIKE $1)');
+        params.push(q);
+
+        if (status && ['registration','active','in_progress','completed'].includes(status)) {
+            clauses.push('t.status = $2');
+            params.push(status);
+        }
+
+        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+        const sql = `
+            SELECT t.id, t.name, t.status, t.game, t.format
+            FROM tournaments t
+            ${where}
+            ORDER BY t.created_at DESC
+            LIMIT ${Math.max(1, Math.min(100, parseInt(limit) || 20))}
+        `;
+        const res = await pool.query(sql, params);
+        return res.rows;
+    }
+
+    /**
      * Обновление турнира
      */
     static async update(tournamentId, updateData) {
