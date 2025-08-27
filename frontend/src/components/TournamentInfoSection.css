@@ -57,9 +57,10 @@
     grid-area: tournament-meta-grid;
 }
 
-.meta-row {
+.tournament-meta-grid .meta-row {
     display: grid;
     gap: 24px;
+    margin-bottom: 12px;
 }
 
 .meta-item {
