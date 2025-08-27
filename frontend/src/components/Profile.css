@@ -132,19 +132,19 @@
 /* Единая мета-строка: ID | Email | Steam */
 .meta-row { 
     flex-wrap: nowrap; 
-    gap: 12px; 
+    align-items: center;
+    gap: 0; 
 }
 .meta-row .meta-item { 
     display: inline-flex; 
     align-items: center; 
     gap: 6px; 
     color: var(--text-secondary);
+    padding: 0 12px;
+    border-left: 1px solid var(--border-color);
+    line-height: 1.2;
 }
-.meta-row .meta-item + .meta-item::before { 
-    content: '|'; 
-    color: var(--text-muted); 
-    margin: 0 4px 0 0; 
-}
+.meta-row .meta-item:first-child { padding-left: 0; border-left: none; }
 .meta-row .meta-item.ok { color: #fff; }
 .meta-row .meta-item.warn { color: var(--accent-warning); }
 .meta-row .meta-item.muted { color: var(--text-muted); }
