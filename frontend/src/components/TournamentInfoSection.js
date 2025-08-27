@@ -884,8 +884,22 @@ const TournamentInfoSection = ({
             const errorMessage = error.response?.data?.error || 
                                error.response?.data?.message || 
                                'Произошла ошибка при регистрации в турнире';
-            
-            alert(errorMessage);
+
+            // 🆕 Если требуются привязки аккаунтов — предлагаем привязку
+            const code = error.response?.data?.code;
+            if (code === 'FACEIT_LINK_REQUIRED') {
+                if (window.confirm('Для участия требуется привязать FACEIT аккаунт. Перейти к привязке?')) {
+                    window.location.href = '/profile#faceit';
+                    return;
+                }
+            } else if (code === 'STEAM_LINK_REQUIRED') {
+                if (window.confirm('Для участия требуется привязать Steam аккаунт. Перейти к привязке?')) {
+                    window.location.href = '/profile#steam';
+                    return;
+                }
+            } else {
+                alert(errorMessage);
+            }
         } finally {
             setIsParticipating(false);
         }

@@ -9,12 +9,20 @@ class ParticipantController {
         const { id } = req.params;
         const { teamId, newTeamName } = req.body;
         
-        await ParticipantService.participateInTournament(
-            parseInt(id), 
-            req.user.id, 
-            req.user.username,
-            { teamId, newTeamName }
-        );
+        try {
+            await ParticipantService.participateInTournament(
+                parseInt(id), 
+                req.user.id, 
+                req.user.username,
+                { teamId, newTeamName }
+            );
+        } catch (err) {
+            const code = err.code;
+            if (code === 'FACEIT_LINK_REQUIRED' || code === 'STEAM_LINK_REQUIRED') {
+                return res.status(400).json({ error: err.message, code });
+            }
+            throw err;
+        }
         
         res.json({ message: 'Вы успешно зарегистрированы в турнире' });
     });

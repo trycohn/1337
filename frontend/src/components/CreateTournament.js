@@ -35,6 +35,9 @@ function CreateTournament() {
     rules: '',
     bracket_type: 'single_elimination',
     mix_rating_type: 'faceit',
+    // 🆕 Требования привязок для MIX
+    require_faceit_linked: false,
+    require_steam_linked: false,
     seeding_type: 'random',
     seeding_config: {},
     lobby_enabled: false,
@@ -132,6 +135,9 @@ function CreateTournament() {
             rules: formData.rules,
             bracket_type: formData.bracket_type, // 🔧 ИСПРАВЛЕНО: передаем bracket_type как есть для всех типов турниров
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
+            // 🆕 Передаём флаги требований привязок только для MIX
+            require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
+            require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,
             seeding_type: formData.seeding_type,
             seeding_config: formData.seeding_config,
             // Настройки лобби
@@ -575,7 +581,7 @@ function CreateTournament() {
                   onChange={handleInputChange}
                   min="2"
                   max="10"
-                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
+                  disabled={!verificationStatus.canCreate}
                   required
                 />
               </div>
@@ -586,7 +592,7 @@ function CreateTournament() {
                   name="mix_rating_type"
                   value={formData.mix_rating_type}
                   onChange={handleInputChange}
-                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
+                  disabled={!verificationStatus.canCreate}
                   required
                 >
                   <option value="faceit">FACEIT ELO</option>
@@ -599,6 +605,37 @@ function CreateTournament() {
                   {formData.mix_rating_type === 'mixed' && 'Участники будут распределены случайно, без учета рейтинга'}
                 </small>
               </div>
+
+              {/* 🆕 Требования привязки аккаунтов */}
+              {formData.mix_rating_type === 'faceit' && (
+                <div className="form-group full-width">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="require_faceit_linked"
+                      checked={formData.require_faceit_linked}
+                      onChange={handleInputChange}
+                      disabled={!verificationStatus.canCreate}
+                    />
+                    <span className="checkbox-text">Требовать привязки FACEIT аккаунта</span>
+                  </label>
+                </div>
+              )}
+
+              {formData.mix_rating_type === 'premier' && (
+                <div className="form-group full-width">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      name="require_steam_linked"
+                      checked={formData.require_steam_linked}
+                      onChange={handleInputChange}
+                      disabled={!verificationStatus.canCreate}
+                    />
+                    <span className="checkbox-text">Требовать привязки Steam аккаунта</span>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -74,6 +74,33 @@ class ParticipantService {
             throw new Error('Вы уже участвуете в этом турнире');
         }
 
+        // 🆕 Проверяем требования привязок для MIX турниров
+        if (tournament.format === 'mix') {
+            try {
+                const pool = require('../../db');
+                const userResult = await pool.query('SELECT id, steam_id, faceit_id FROM users WHERE id = $1', [userId]);
+                const user = userResult.rows[0] || {};
+
+                const needsFaceit = !!tournament.require_faceit_linked && (tournament.mix_rating_type === 'faceit');
+                const needsSteam = !!tournament.require_steam_linked && (tournament.mix_rating_type === 'premier');
+
+                if (needsFaceit && !user.faceit_id) {
+                    const err = new Error('Для участия требуется привязать FACEIT аккаунт');
+                    err.code = 'FACEIT_LINK_REQUIRED';
+                    throw err;
+                }
+
+                if (needsSteam && !user.steam_id) {
+                    const err = new Error('Для участия требуется привязать Steam аккаунт');
+                    err.code = 'STEAM_LINK_REQUIRED';
+                    throw err;
+                }
+            } catch (checkErr) {
+                // Пробрасываем дальше; фронтенд покажет кнопки привязки
+                throw checkErr;
+            }
+        }
+
         // Проверяем лимит участников
         if (tournament.max_participants) {
             const currentCount = await ParticipantRepository.getCountByTournamentId(tournamentId);

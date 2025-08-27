@@ -69,6 +69,19 @@ class TournamentValidator {
             if (!data.team_size || ![2, 5].includes(parseInt(data.team_size))) {
                 errors.push('Для mix-турниров размер команды должен быть 2 или 5');
             }
+            // 🆕 Валидация новых флагов требований привязок
+            if (data.require_faceit_linked !== undefined && typeof data.require_faceit_linked !== 'boolean') {
+                errors.push('Поле require_faceit_linked должно быть булевым');
+            }
+            if (data.require_steam_linked !== undefined && typeof data.require_steam_linked !== 'boolean') {
+                errors.push('Поле require_steam_linked должно быть булевым');
+            }
+            if (data.mix_rating_type === 'faceit' && data.require_steam_linked === true) {
+                errors.push('Для рейтинга FACEIT нельзя требовать Steam привязку');
+            }
+            if (data.mix_rating_type === 'premier' && data.require_faceit_linked === true) {
+                errors.push('Для рейтинга CS2 Premier нельзя требовать FACEIT привязку');
+            }
         }
 
         // Проверка даты начала

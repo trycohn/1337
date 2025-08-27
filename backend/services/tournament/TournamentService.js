@@ -142,7 +142,8 @@ class TournamentService {
         const {
             name, game, format, participant_type, max_participants,
             start_date, description, bracket_type, team_size, mix_rating_type,
-            lobby_enabled, lobby_match_format, selected_maps, full_double_elimination
+            lobby_enabled, lobby_match_format, selected_maps, full_double_elimination,
+            require_faceit_linked, require_steam_linked
         } = tournamentData;
 
         const tournament = await TournamentRepository.create({
@@ -160,7 +161,10 @@ class TournamentService {
             mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null,
             lobby_enabled: lobby_enabled || false,
             // 🆕 НОВОЕ: Опция Full Double Elimination
-            full_double_elimination: (bracket_type === 'double_elimination' && full_double_elimination) || false
+            full_double_elimination: (bracket_type === 'double_elimination' && full_double_elimination) || false,
+            // 🆕 Требования привязки аккаунтов (только для MIX)
+            require_faceit_linked: format === 'mix' ? !!require_faceit_linked : false,
+            require_steam_linked: format === 'mix' ? !!require_steam_linked : false
         });
 
         // Если включены настройки лобби, создаем их
