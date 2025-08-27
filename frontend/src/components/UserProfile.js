@@ -322,27 +322,36 @@ function UserProfile() {
     return (
         <div className="profile-container">
             <div className="profile-header">
-                <div className="avatar-container">
-                    <img 
-                        src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
-                        alt="Аватар пользователя" 
-                        className="user-avatar"
-                    />
-                </div>
-                <div className="user-info">
-                    <h2>{user.username}</h2>
-                    {user.online_status && (
-                        <div className={`online-status ${getOnlineStatusClass()}`}>
-                            {user.online_status}
-                        </div>
-                    )}
-                    {/* Блок привязок под ником */}
-                    <div className="profile-links-inline">
-                        <div className="link-item">Email: {user.email || '—'}</div>
-                        <div className="link-item">Steam: {user.steam_url ? '✔' : '—'}</div>
-                        <div className="link-item">Faceit: {user.faceit ? '✔' : '—'}</div>
+                <div className="profile-header-content">
+                    <div className="profile-avatar-section">
+                        <img 
+                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
+                            alt="Аватар пользователя" 
+                            className="profile-avatar avatar-glow"
+                        />
                     </div>
-                    {renderFriendActionButton()}
+                    <div className="profile-user-info">
+                        <p className="profile-user-name">{user.username}</p>
+                        <div className="profile-user-status">
+                            <span className={`status-indicator ${user.online_status === 'online' ? '' : 'offline'}`}></span>
+                            <span>{user.online_status === 'online' ? 'Онлайн' : 'Не в сети'}</span>
+                        </div>
+                        <div className="profile-user-meta meta-row">
+                            <div className="meta-item">
+                                <span>ID: {user.id || userId}</span>
+                            </div>
+                            <div className={`meta-item ${user.email ? (user.is_verified ? 'ok' : 'warn') : 'muted'}`}>
+                                <span>✉ {user.email ? (user.is_verified ? 'Подтвержден' : 'Не подтвержден') : 'Нет'}</span>
+                            </div>
+                            <div className={`meta-item ${user.steam_url ? 'ok' : 'muted'}`}>
+                                <span>🎮 {user.steam_url ? 'Steam' : 'Нет'}</span>
+                            </div>
+                            <div className={`meta-item ${(user.faceit || user.faceit_id) ? 'ok' : 'muted'}`}>
+                                <span>⚡ {(user.faceit || user.faceit_id) ? 'FACEIT' : 'Нет'}</span>
+                            </div>
+                        </div>
+                        {renderFriendActionButton()}
+                    </div>
                 </div>
             </div>
             

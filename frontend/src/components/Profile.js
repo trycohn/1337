@@ -2331,6 +2331,9 @@ function Profile() {
                             <div className={`meta-item ${user.steam_url ? 'ok' : 'muted'}`}>
                                 <span>🎮 {user.steam_url ? 'Steam' : 'Нет'}</span>
                             </div>
+                            <div className={`meta-item ${user.faceit_id ? 'ok' : 'muted'}`}>
+                                <span>⚡ {user.faceit_id ? 'FACEIT' : 'Нет'}</span>
+                            </div>
                         </div>
                     </div>
                     
