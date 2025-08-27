@@ -980,7 +980,10 @@
 
 .bracket-match-actions {
     align-items: center;
+    justify-content: center;
 }
+
+/* Анимация разделителя */
 
 /* Анимация разделителя */
 @keyframes bracket-render-divider-glow {

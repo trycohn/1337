@@ -953,7 +953,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                             Перейти в лобби
                         </button>
                     )}
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                         <button
                             type="button"
                             disabled={isCreatingLobby}
