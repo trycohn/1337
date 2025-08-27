@@ -450,10 +450,10 @@
 }
 
 /* === Макетная карточка основной информации (mi-*) === */
-.mi-scope { background: var(--bg); }
+.mi-scope { background: transparent; }
 .mi-container { max-width: 800px; padding: 0; }
 .mi-card {
-    background: var(--surface);
+    background: transparent; /* убираем фон позади контейнеров */
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 24px;
@@ -466,7 +466,7 @@
     color: var(--accent);
     text-transform: uppercase;
     letter-spacing: .08em;
-    text-align: center;
+    text-align: left;
     font-weight: 700;
 }
 
@@ -530,8 +530,9 @@
 /* Привязки аккаунтов */
 .mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); }
 .mi-bind-row:first-of-type { border-top:0; }
-.mi-bind-left { display:flex; align-items:center; gap:8px; }
+.mi-bind-left { display:flex; align-items:center; gap:12px; }
 .mi-bind-left > div { text-align:left; }
+.mi-bind-left > div > div:first-child { margin-bottom: 4px; }
 .mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--line); color: var(--muted); }
 .mi-status { color: var(--muted); font-size: 14px; }
 .mi-status.ok { color: var(--accent); font-weight: 600; }
