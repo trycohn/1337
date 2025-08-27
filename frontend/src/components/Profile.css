@@ -28,7 +28,7 @@
 
 .profile-header-content {
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: auto 1fr;
     gap: var(--spacing-xl);
     align-items: center;
 }

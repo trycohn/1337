@@ -2334,38 +2334,7 @@ function Profile() {
                         </div>
                     </div>
                     
-                    <div className="profile-quick-stats">
-                        {stats && (
-                            <>
-                                <div className="quick-stat-card">
-                                    <div className="quick-stat-value">
-                                        {(stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0)}
-                                    </div>
-                                    <div className="quick-stat-label">Всего матчей</div>
-                                </div>
-                                <div className="quick-stat-card">
-                                    <div className="quick-stat-value">{stats.tournaments ? stats.tournaments.length : 0}</div>
-                                    <div className="quick-stat-label">Турниров</div>
-                                </div>
-                                <div className="quick-stat-card">
-                                    <div className="quick-stat-value">
-                                        {stats.tournaments ? stats.tournaments.filter(t => t.result === 'Победитель').length : 0}
-                                    </div>
-                                    <div className="quick-stat-label">Выигранных турниров</div>
-                                </div>
-                                <div className="quick-stat-card">
-                                    <div className="quick-stat-value">
-                                        {(() => {
-                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
-                                            return totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
-                                        })()}%
-                                    </div>
-                                    <div className="quick-stat-label">Винрейт</div>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    {/* Убраны быстрые статблоки из хедера по запросу */}
                 </div>
             </div>
             
