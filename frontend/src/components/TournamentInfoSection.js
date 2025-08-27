@@ -1389,29 +1389,50 @@ const TournamentInfoSection = ({
                 </div>
             </div>
 
-            {/* Участники турнира - скрываем для микс-турниров с сформированными командами */}
-            {!(tournament?.format === 'mix' && tournament?.teams && tournament?.teams.length > 0) && (
+            {/* Участники турнира / Команды: показываем участников для solo, команды для team */}
+            {(
+                // Solo турниры — показываем список участников
+                tournament?.participant_type === 'solo' ||
+                // Командные турниры — показываем блок команд
+                (['team','cs2_classic_5v5','cs2_wingman_2v2'].includes(tournament?.participant_type) && Array.isArray(tournament?.teams) && tournament.teams.length > 0)
+            ) && (
                 <div className="participants-section">
-                    <h3>👥 Участники турнира</h3>
-                    <div className="participants-list">
-                        {tournament?.participants?.map(participant => (
-                            <div 
-                                key={participant.id} 
-                                className="participant-item"
-                                onClick={() => handleParticipantClick(participant)}
-                            >
-                                <img 
-                                    src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                    alt={participant.username || participant.name || 'Участник'}
-                                    className="participant-avatar"
-                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                />
-                                <span className="participant-name">
-                                    {participant.username || participant.name || 'Участник'}
-                                </span>
+                    {tournament?.participant_type === 'solo' ? (
+                        <>
+                            <h3>👥 Участники турнира</h3>
+                            <div className="participants-list">
+                                {tournament?.participants?.map(participant => (
+                                    <div 
+                                        key={participant.id} 
+                                        className="participant-item"
+                                        onClick={() => handleParticipantClick(participant)}
+                                    >
+                                        <img 
+                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                            alt={participant.username || participant.name || 'Участник'}
+                                            className="participant-avatar"
+                                            onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                        />
+                                        <span className="participant-name">
+                                            {participant.username || participant.name || 'Участник'}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    ) : (
+                        <>
+                            <h3>👥 Команды участники</h3>
+                            <div className="participants-list">
+                                {tournament?.teams?.map(team => (
+                                    <div key={team.id} className="participant-item">
+                                        <div className="team-avatar-placeholder">🏷️</div>
+                                        <span className="participant-name">{team.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
 
                     {showActions && selectedParticipant && (
                         <div className="participant-actions-modal" onClick={() => setShowActions(false)}>

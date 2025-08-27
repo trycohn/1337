@@ -563,8 +563,11 @@ const BracketManagementPanel = ({
             );
         }
     } else {
-        // Проверка наличия участников для обычных турниров
-        const participantsCount = tournament?.participants?.length || 0;
+        // Проверка наличия участников для обычных/командных турниров
+        const isTeamTournament = ['team', 'cs2_classic_5v5', 'cs2_wingman_2v2'].includes(tournament?.participant_type);
+        const participantsCount = isTeamTournament
+            ? (tournament?.teams?.length || 0)
+            : (tournament?.participants?.length || 0);
         if (participantsCount < 2) {
             return (
                 <div className="bracket-management-panel">
