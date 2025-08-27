@@ -14,13 +14,12 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
     const [actionLoading, setActionLoading] = useState(false);
     const [responded, setResponded] = useState(false);
     
-    // Утилита: форматирует markdown-ссылки и plain-URL в кликабельные ссылки
+    // Утилита: форматирует только markdown-ссылки (без автоссылок на сырые URL)
     function renderHtmlFromMarkdown(text) {
         if (!text) return { __html: '' };
         const html = text
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1<\/strong>')
             .replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1<\/a>')
-            .replace(/(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1<\/a>')
             .replace(/\n/g, '<br/>');
         return { __html: html };
     }
