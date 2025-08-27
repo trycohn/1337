@@ -121,6 +121,20 @@ class TournamentRepository {
     }
 
     /**
+     * 🆕 Получить финальные турниры, для которых данный турнир является отборочным
+     */
+    static async getFinalsByQualifier(qualifierTournamentId) {
+        const res = await pool.query(
+            `SELECT q.final_tournament_id AS id, t.name, t.created_by, t.is_series_final, q.slots
+             FROM tournament_qualifiers q
+             JOIN tournaments t ON t.id = q.final_tournament_id
+             WHERE q.qualifier_tournament_id = $1`,
+            [qualifierTournamentId]
+        );
+        return res.rows;
+    }
+
+    /**
      * Обновление турнира
      */
     static async update(tournamentId, updateData) {

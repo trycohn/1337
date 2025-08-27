@@ -505,6 +505,26 @@ class TournamentService {
             `Турнир "${updatedTournament.name}" завершен`
         );
 
+        // 🆕 Авто‑промо: если турнир является отборочным для одного или нескольких финалов — синхронизируем победителей
+        try {
+            const finals = await TournamentRepository.getFinalsByQualifier(tournamentId);
+            if (Array.isArray(finals) && finals.length > 0) {
+                console.log(`🔄 [endTournament] Найдено финалов для авто‑промо: ${finals.length}`);
+                for (const f of finals) {
+                    if (!f.is_series_final) continue;
+                    try {
+                        // Используем системного инициатора = автор финала либо завершивший пользователь
+                        await this.syncQualifiersToFinal(f.id, f.created_by || userId);
+                        console.log(`✅ [endTournament] Автосинхронизация в финал ${f.id} выполнена`);
+                    } catch (e) {
+                        console.warn(`⚠️ [endTournament] Автосинхронизация в финал ${f.id} не удалась:`, e.message);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ [endTournament] Ошибка во время авто‑промо:', e.message);
+        }
+
         console.log('✅ TournamentService: Турнир завершен');
         return updatedTournament;
     }
