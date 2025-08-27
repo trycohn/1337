@@ -447,6 +447,8 @@
 }
 
 /* === Макетная карточка основной информации (mi-*) === */
+.mi-scope { background: var(--bg-primary); }
+.mi-container { max-width: 800px; padding: 0; }
 .mi-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);

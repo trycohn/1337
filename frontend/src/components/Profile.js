@@ -2483,113 +2483,116 @@ function Profile() {
                                 <div className="content-header">
                                     <h2 className="content-title">Основная информация</h2>
                                 </div>
+                                {/* Макетная зона: контейнер и карточки как в шаблоне */}
+                                <div className="mi-scope">
+                                    <div className="mi-container">
+                                        <section className="mi-card">
+                                            <h3 className="mi-title">Данные пользователя</h3>
 
-                                {/* Макетный стиль: единая карточка данных пользователя */}
-                                <section className="mi-card">
-                                    <h3 className="mi-title">Данные пользователя</h3>
-
-                                    {/* Строка: Имя пользователя */}
-                                    <div className="mi-form-row">
-                                        <div className="mi-label">Имя пользователя</div>
-                                        <input
-                                            className="mi-input"
-                                            type="text"
-                                            value={newUsername}
-                                            onChange={(e) => setNewUsername(e.target.value)}
-                                            placeholder="Новый никнейм"
-                                        />
-                                        <div className="mi-actions">
-                                            <button className="mi-btn" onClick={updateUsername}>Изменить ник</button>
-                                        </div>
-                                    </div>
-
-                                    {/* Строка: Email */}
-                                    <div className="mi-form-row">
-                                        <div className="mi-label">Email</div>
-                                        <div className="mi-value">{user.email || 'Не указан'}</div>
-                                        <div className="mi-actions">
-                                            {user.email ? (
-                                                user.is_verified ? (
-                                                    <div className="mi-badge mi-badge-success">Подтвержден</div>
-                                                ) : (
-                                                    <button className="mi-btn" onClick={openEmailVerificationModal}>Подтвердить</button>
-                                                )
-                                            ) : (
-                                                <button className="mi-btn" onClick={openAddEmailModal}>Привязать</button>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Строка: Пароль */}
-                                    <div className="mi-form-row">
-                                        <div className="mi-label">Пароль</div>
-                                        <div className="mi-value">••••••••</div>
-                                        <div className="mi-actions">
-                                            <button className="mi-btn" onClick={openChangePasswordModal}>Сменить пароль</button>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                {/* Макетный стиль: привязки аккаунтов */}
-                                <section className="mi-card">
-                                    <h3 className="mi-title">Привязки аккаунтов</h3>
-
-                                    {/* Steam */}
-                                    <div className="mi-bind-row">
-                                        <div className="mi-bind-left">
-                                            <div className="mi-service-icon" aria-hidden="true">
-                                                <span>●</span>
+                                            {/* Строка: Имя пользователя */}
+                                            <div className="mi-form-row">
+                                                <div className="mi-label">Имя пользователя</div>
+                                                <input
+                                                    className="mi-input"
+                                                    type="text"
+                                                    value={newUsername}
+                                                    onChange={(e) => setNewUsername(e.target.value)}
+                                                    placeholder="Новый никнейм"
+                                                />
+                                                <div className="mi-actions">
+                                                    <button className="mi-btn" onClick={updateUsername}>Изменить ник</button>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div>Steam</div>
-                                                <div className={`mi-status ${user.steam_url ? 'ok' : 'none'}`}>
-                                                    {user.steam_url ? (
-                                                        <>
-                                                            Привязан {steamNickname ? (
+
+                                            {/* Строка: Email */}
+                                            <div className="mi-form-row">
+                                                <div className="mi-label">Email</div>
+                                                <div className="mi-value">{user.email || 'Не указан'}</div>
+                                                <div className="mi-actions">
+                                                    {user.email ? (
+                                                        user.is_verified ? (
+                                                            <div className="mi-badge mi-badge-success">Подтвержден</div>
+                                                        ) : (
+                                                            <button className="mi-btn" onClick={openEmailVerificationModal}>Подтвердить</button>
+                                                        )
+                                                    ) : (
+                                                        <button className="mi-btn" onClick={openAddEmailModal}>Привязать</button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Строка: Пароль */}
+                                            <div className="mi-form-row">
+                                                <div className="mi-label">Пароль</div>
+                                                <div className="mi-value">••••••••</div>
+                                                <div className="mi-actions">
+                                                    <button className="mi-btn" onClick={openChangePasswordModal}>Сменить пароль</button>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        {/* Макетный стиль: привязки аккаунтов */}
+                                        <section className="mi-card">
+                                            <h3 className="mi-title">Привязки аккаунтов</h3>
+
+                                            {/* Steam */}
+                                            <div className="mi-bind-row">
+                                                <div className="mi-bind-left">
+                                                    <div className="mi-service-icon" aria-hidden="true">
+                                                        <span>●</span>
+                                                    </div>
+                                                    <div>
+                                                        <div>Steam</div>
+                                                        <div className={`mi-status ${user.steam_url ? 'ok' : 'none'}`}>
+                                                            {user.steam_url ? (
                                                                 <>
-                                                                    <span style={{ color: '#fff', marginLeft: 6 }}>
-                                                                        <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
-                                                                    </span>
+                                                                    Привязан {steamNickname ? (
+                                                                        <>
+                                                                            <span style={{ color: '#fff', marginLeft: 6 }}>
+                                                                                <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
+                                                                            </span>
+                                                                        </>
+                                                                    ) : ''}
                                                                 </>
-                                                            ) : ''}
-                                                        </>
-                                                    ) : 'Не привязан'}
+                                                            ) : 'Не привязан'}
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                                {user.steam_url ? (
+                                                    <button className="mi-btn mi-btn-danger" onClick={unlinkSteam}>Отвязать</button>
+                                                ) : (
+                                                    <button className="mi-btn" onClick={linkSteam}>Привязать</button>
+                                                )}
                                             </div>
-                                        </div>
-                                        {user.steam_url ? (
-                                            <button className="mi-btn mi-btn-danger" onClick={unlinkSteam}>Отвязать</button>
-                                        ) : (
-                                            <button className="mi-btn" onClick={linkSteam}>Привязать</button>
-                                        )}
-                                    </div>
 
-                                    {/* Faceit */}
-                                    <div className="mi-bind-row">
-                                        <div className="mi-bind-left">
-                                            <div className="mi-service-icon" aria-hidden="true">
-                                                <span>▲</span>
-                                            </div>
-                                            <div>
-                                                <div>Faceit</div>
-                                                <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
-                                                    {user.faceit_id ? (
-                                                        isLoadingFaceitInfo ? 'Загрузка...' : (faceitInfo ? (
-                                                            <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
-                                                        ) : 'Привязан')
-                                                    ) : 'Не привязан'}
+                                            {/* Faceit */}
+                                            <div className="mi-bind-row">
+                                                <div className="mi-bind-left">
+                                                    <div className="mi-service-icon" aria-hidden="true">
+                                                        <span>▲</span>
+                                                    </div>
+                                                    <div>
+                                                        <div>Faceit</div>
+                                                        <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
+                                                            {user.faceit_id ? (
+                                                                isLoadingFaceitInfo ? 'Загрузка...' : (faceitInfo ? (
+                                                                    <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
+                                                                ) : 'Привязан')
+                                                            ) : 'Не привязан'}
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                                {user.faceit_id ? (
+                                                    <button className="mi-btn mi-btn-danger" onClick={unlinkFaceit}>Отвязать</button>
+                                                ) : (
+                                                    <button className="mi-btn" onClick={linkFaceit}>Привязать</button>
+                                                )}
                                             </div>
-                                        </div>
-                                        {user.faceit_id ? (
-                                            <button className="mi-btn mi-btn-danger" onClick={unlinkFaceit}>Отвязать</button>
-                                        ) : (
-                                            <button className="mi-btn" onClick={linkFaceit}>Привязать</button>
-                                        )}
-                                    </div>
 
-                                    <div className="mi-helper">Опасные действия подсвечены красным. Привязка откроется в новом окне сервиса.</div>
-                                </section>
+                                            <div className="mi-helper">Опасные действия подсвечены красным. Привязка откроется в новом окне сервиса.</div>
+                                        </section>
+                                    </div>
+                                </div>
                             </>
                         )}
                         
