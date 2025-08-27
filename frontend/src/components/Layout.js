@@ -294,7 +294,14 @@ function Layout() {
                             <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                             {user && (
                                 <>
-                                    <Link to="/messages" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Чаты</Link>
+                                    <Link to="/messages" className="nav-link btn-ghost messages-link" onClick={() => setIsMenuOpen(false)}>
+                                        Чаты
+                                        {unreadCount > 0 && (
+                                            <span className="unread-badge" aria-label={`Непрочитанных: ${unreadCount}`}>
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
+                                    </Link>
                                     <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                                     {user.role === 'admin' && (
                                         <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
