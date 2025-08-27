@@ -974,6 +974,10 @@
     white-space: nowrap;
 }
 
+.bracket-match-actions button {
+    font-size: 14px;
+}
+
 /* Анимация разделителя */
 @keyframes bracket-render-divider-glow {
     0%, 100% {
