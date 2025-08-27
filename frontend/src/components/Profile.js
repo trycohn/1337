@@ -2507,7 +2507,7 @@ function Profile() {
                                             {/* Строка: Email */}
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Email</div>
-                                                <div className="mi-value" style={{justifySelf: 'start'}}>{user.email || 'Не указан'}</div>
+                                                <div className="mi-value" style={{justifySelf: 'start', paddingLeft: '13px'}}>{user.email || 'Не указан'}</div>
                                                 <div className="mi-actions">
                                                     {user.email ? (
                                                         user.is_verified ? (
@@ -2524,7 +2524,7 @@ function Profile() {
                                             {/* Строка: Пароль */}
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Пароль</div>
-                                                <div className="mi-value" style={{justifySelf: 'start'}}>••••••••</div>
+                                                <div className="mi-value" style={{justifySelf: 'start', paddingLeft: '13px'}}>••••••••</div>
                                                 <div className="mi-actions">
                                                     <button className="mi-btn" onClick={openChangePasswordModal}>Сменить пароль</button>
                                                 </div>

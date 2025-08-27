@@ -501,7 +501,7 @@
 
 .mi-actions { display: flex; gap: 8px; }
 
-.mi-value { color: var(--text); font-size: 16px; padding-left: 12px; }
+.mi-value { color: var(--text); font-size: 16px; padding-left: 13px; }
 
 .mi-badge { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.05); font-size:13px; color: var(--muted); }
 .mi-badge-success { color:#ffffff; border-color: var(--accent); background: #e82a2a26; }
@@ -530,7 +530,8 @@
 /* Привязки аккаунтов */
 .mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); }
 .mi-bind-row:first-of-type { border-top:0; }
-.mi-bind-left { display:flex; align-items:center; gap:12px; }
+.mi-bind-left { display:flex; align-items:center; gap:8px; }
+.mi-bind-left > div { text-align:left; }
 .mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--line); color: var(--muted); }
 .mi-status { color: var(--muted); font-size: 14px; }
 .mi-status.ok { color: var(--accent); font-weight: 600; }
