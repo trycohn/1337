@@ -63,6 +63,13 @@ router.get('/:id/results', TournamentController.getTournamentResults);
 // Создание нового турнира
 router.post('/', authenticateToken, verifyEmailRequired, TournamentController.createTournament);
 
+// 🆕 Обновление флага финала серии
+router.put('/:id/series-final-flag', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.updateSeriesFinalFlag);
+
+// 🆕 Связи финал ↔ отборочные
+router.put('/:id/qualifiers', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.setFinalQualifiers);
+router.get('/:id/qualifiers', TournamentController.getFinalQualifiers);
+
 // 🗑️ Удаление турнира
 router.delete('/:id', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TournamentController.deleteTournament);
 

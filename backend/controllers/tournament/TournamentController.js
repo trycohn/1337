@@ -67,6 +67,52 @@ class TournamentController {
         });
     });
 
+    // 🆕 Обновление флага финала серии
+    static updateSeriesFinalFlag = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ message: 'ID турнира должен быть положительным числом' });
+        }
+
+        const { is_series_final } = req.body;
+        if (typeof is_series_final !== 'boolean') {
+            return res.status(400).json({ message: 'is_series_final должен быть булевым' });
+        }
+
+        const updated = await TournamentService.updateSeriesFinalFlag(tournamentId, is_series_final, req.user.id);
+        res.json({ message: 'Флаг финала серии обновлен', tournament: updated });
+    });
+
+    // 🆕 Привязка отборочных турниров к финалу (перезапись)
+    static setFinalQualifiers = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ message: 'ID турнира должен быть положительным числом' });
+        }
+
+        const { qualifiers } = req.body; // [{ qualifier_tournament_id, slots }]
+        if (!Array.isArray(qualifiers)) {
+            return res.status(400).json({ message: 'qualifiers должен быть массивом' });
+        }
+
+        const result = await TournamentService.setFinalQualifiers(tournamentId, qualifiers, req.user.id);
+        res.json({ message: 'Связи финал↔отборочные обновлены', success: true, count: qualifiers.length, result });
+    });
+
+    // 🆕 Получение списка отборочных турниров для финала
+    static getFinalQualifiers = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ message: 'ID турнира должен быть положительным числом' });
+        }
+
+        const items = await TournamentService.getFinalQualifiers(tournamentId);
+        res.json(items);
+    });
+
     // 📖 Получение турнира
     static getTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;

@@ -44,7 +44,9 @@ function CreateTournament() {
     lobby_match_format: null,
     selected_maps: [],
     // 🆕 НОВОЕ: Опция Full Double Elimination
-    full_double_elimination: false
+    full_double_elimination: false,
+    // 🆕 Флаг финального турнира серии
+    is_series_final: false
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -145,7 +147,9 @@ function CreateTournament() {
             lobby_match_format: formData.lobby_enabled ? formData.lobby_match_format : null,
             selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
             // 🆕 НОВОЕ: Опция Full Double Elimination
-            full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false
+            full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
+            // 🆕 Передаём флаг финала серии
+            is_series_final: !!formData.is_series_final
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -564,6 +568,21 @@ function CreateTournament() {
                 </small>
               </div>
             )}
+
+            {/* 🆕 Флаг: Является ли турнир финалом серии */}
+            <div className="form-group full-width">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="is_series_final"
+                  checked={formData.is_series_final}
+                  onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate}
+                />
+                <span className="checkbox-text">🏁 Является ли турнир Финалом серии турниров?</span>
+              </label>
+              <small className="form-hint">Если включено, турнир может автоматически получать победителей из указанных отборочных турниров.</small>
+            </div>
           </div>
         </div>
 

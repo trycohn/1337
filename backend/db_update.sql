@@ -273,6 +273,39 @@ CREATE TABLE IF NOT EXISTS tournament_logs (
 CREATE INDEX idx_tournament_logs_tournament_id ON tournament_logs(tournament_id);
 CREATE INDEX idx_tournament_logs_created_at ON tournament_logs(created_at DESC);
 
+-- 🆕 Многоступенчатые турниры (Вариант 1): финалы и отборочные
+-- Флаг финального турнира серии
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS is_series_final BOOLEAN DEFAULT FALSE;
+
+-- Связи финал ↔ отборочные
+CREATE TABLE IF NOT EXISTS tournament_qualifiers (
+    id SERIAL PRIMARY KEY,
+    final_tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    qualifier_tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    slots INTEGER NOT NULL DEFAULT 1 CHECK (slots BETWEEN 1 AND 3),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(final_tournament_id, qualifier_tournament_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_qualifiers_final ON tournament_qualifiers(final_tournament_id);
+CREATE INDEX IF NOT EXISTS idx_tournament_qualifiers_qualifier ON tournament_qualifiers(qualifier_tournament_id);
+
+-- Опционально: аудит продвижений (подготовка к Варианту 2)
+CREATE TABLE IF NOT EXISTS tournament_promotions (
+    id SERIAL PRIMARY KEY,
+    final_tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    qualifier_tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE SET NULL,
+    team_id INTEGER NOT NULL,
+    placed INTEGER NOT NULL CHECK (placed >= 1),
+    meta JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tournament_promotions_final ON tournament_promotions(final_tournament_id);
+
+-- Инициализация: помечаем турнир 11 как финал
+UPDATE tournaments SET is_series_final = TRUE WHERE id = 11;
+
 -- Типы событий:
 -- 'tournament_created' - создание турнира
 -- 'participant_joined' - участник присоединился
