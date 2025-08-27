@@ -1063,9 +1063,6 @@ const TournamentInfoSection = ({
                                         Текущий: {getRatingTypeDisplayName(tournament.mix_rating_type)}
                                     </span>
                                 </div>
-                                <div className="rating-type-buttons disabled">
-                                    <span className="hint">Изменение доступно во вкладке «⚙️ Управление»</span>
-                                </div>
                             </div>
                         </div>
                     </div>
