@@ -299,19 +299,141 @@ class TournamentService {
 
                 // Вставляем участника в финал в зависимости от participant_type
                 if (['team','cs2_classic_5v5','cs2_wingman_2v2'].includes(finalTournament.participant_type)) {
-                    // Командный финал: создаём команду‑прокси по имени исходной команды/участника
-                    await pool.query(
-                        `INSERT INTO tournament_teams (tournament_id, name, creator_id)
-                         SELECT $1, COALESCE(tt.name, tp.name, 'Qualified #' || $2), tt.creator_id
-                         FROM (SELECT 1) s
-                         LEFT JOIN tournament_teams tt ON tt.id = $2
-                         LEFT JOIN tournament_participants tp ON tp.id = $2
-                         WHERE NOT EXISTS (
-                            SELECT 1 FROM tournament_teams t
-                            WHERE t.tournament_id = $1 AND (t.name = COALESCE(tt.name, tp.name))
-                         )`,
-                        [finalTournamentId, refId]
+                    // Командный финал: создаём команду по имени источника и переносим состав
+                    // 1) Определяем имя и создателя исходной команды/участника
+                    const srcTeamRes = await pool.query(
+                        `SELECT id, name, creator_id FROM tournament_teams WHERE id = $1`,
+                        [refId]
                     );
+                    let sourceName = null;
+                    let sourceCreatorId = null;
+                    let isTeamSource = false;
+                    if (srcTeamRes.rows.length > 0) {
+                        isTeamSource = true;
+                        sourceName = srcTeamRes.rows[0].name;
+                        sourceCreatorId = srcTeamRes.rows[0].creator_id || null;
+                    } else {
+                        const srcPartRes = await pool.query(
+                            `SELECT tp.name, tp.user_id FROM tournament_participants tp WHERE tp.id = $1`,
+                            [refId]
+                        );
+                        if (srcPartRes.rows.length > 0) {
+                            sourceName = srcPartRes.rows[0].name || ('Qualified #' + refId);
+                            sourceCreatorId = srcPartRes.rows[0].user_id || null;
+                        } else {
+                            sourceName = 'Qualified #' + refId;
+                            sourceCreatorId = null;
+                        }
+                    }
+
+                    // 2) Создаём команду в финале, если нет
+                    const insertTeamRes = await pool.query(
+                        `WITH ins AS (
+                           INSERT INTO tournament_teams (tournament_id, name, creator_id)
+                           SELECT $1, $2, $3
+                           WHERE NOT EXISTS (
+                             SELECT 1 FROM tournament_teams t WHERE t.tournament_id = $1 AND t.name = $2
+                           )
+                           RETURNING id
+                         )
+                         SELECT id FROM ins
+                         UNION ALL
+                         SELECT id FROM tournament_teams WHERE tournament_id = $1 AND name = $2 LIMIT 1`,
+                        [finalTournamentId, sourceName, sourceCreatorId]
+                    );
+                    const finalTeamId = insertTeamRes.rows[0]?.id;
+
+                    // 3) Переносим состав
+                    if (isTeamSource && finalTeamId) {
+                        const membersRes = await pool.query(
+                            `SELECT user_id, participant_id, is_captain, captain_rating
+                             FROM tournament_team_members WHERE team_id = $1`,
+                            [refId]
+                        );
+
+                        for (const m of (membersRes.rows || [])) {
+                            let newUserId = m.user_id || null;
+                            let newParticipantId = null;
+
+                            // Если нет user_id, но есть participant_id — создадим участника в финале с тем же именем
+                            if (!newUserId && m.participant_id) {
+                                const srcP = await pool.query(
+                                    `SELECT name FROM tournament_participants WHERE id = $1`,
+                                    [m.participant_id]
+                                );
+                                const pName = srcP.rows[0]?.name || ('Qualified #' + refId);
+                                const insP = await pool.query(
+                                    `WITH ins AS (
+                                       INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
+                                       SELECT $1, NULL, $2, false
+                                       WHERE NOT EXISTS (
+                                         SELECT 1 FROM tournament_participants p WHERE p.tournament_id = $1 AND p.name = $2
+                                       )
+                                       RETURNING id
+                                     )
+                                     SELECT id FROM ins
+                                     UNION ALL
+                                     SELECT id FROM tournament_participants WHERE tournament_id = $1 AND name = $2 LIMIT 1`,
+                                    [finalTournamentId, pName]
+                                );
+                                newParticipantId = insP.rows[0]?.id || null;
+                            }
+
+                            // Вставляем участника команды в финале, избегая дублей по user_id/participant_id
+                            await pool.query(
+                                `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
+                                 SELECT $1, $2, $3, $4, $5
+                                 WHERE NOT EXISTS (
+                                   SELECT 1 FROM tournament_team_members ttm
+                                   WHERE ttm.team_id = $1 AND (
+                                     (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
+                                   )
+                                 )`,
+                                [finalTeamId, newUserId, newParticipantId, !!m.is_captain, m.captain_rating || null]
+                            );
+                        }
+                    } else if (finalTeamId) {
+                        // Источник не команда — добавим одного участника как члена команды
+                        const srcPartRes = await pool.query(
+                            `SELECT tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $2) AS name
+                             FROM tournament_participants tp
+                             LEFT JOIN users u ON u.id = tp.user_id
+                             WHERE tp.id = $2`,
+                            [finalTournamentId, refId]
+                        );
+                        const userId = srcPartRes.rows[0]?.user_id || null;
+                        let participantId = null;
+                        if (!userId) {
+                            const name = srcPartRes.rows[0]?.name || ('Qualified #' + refId);
+                            const insP = await pool.query(
+                                `WITH ins AS (
+                                   INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
+                                   SELECT $1, NULL, $2, false
+                                   WHERE NOT EXISTS (
+                                     SELECT 1 FROM tournament_participants p WHERE p.tournament_id = $1 AND p.name = $2
+                                   )
+                                   RETURNING id
+                                 )
+                                 SELECT id FROM ins
+                                 UNION ALL
+                                 SELECT id FROM tournament_participants WHERE tournament_id = $1 AND name = $2 LIMIT 1`,
+                                [finalTournamentId, name]
+                            );
+                            participantId = insP.rows[0]?.id || null;
+                        }
+
+                        await pool.query(
+                            `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
+                             SELECT $1, $2, $3, false, NULL
+                             WHERE NOT EXISTS (
+                               SELECT 1 FROM tournament_team_members ttm
+                               WHERE ttm.team_id = $1 AND (
+                                 (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
+                               )
+                             )`,
+                            [finalTeamId, userId, participantId]
+                        );
+                    }
                 } else {
                     // Индивидуальный финал: добавляем участника
                     await pool.query(
