@@ -2508,7 +2508,7 @@ function Profile() {
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Email</div>
                                                 <div className="mi-value" style={{justifySelf: 'start', paddingLeft: '13px'}}>{user.email || 'Не указан'}</div>
-                                                <div className="mi-actions">
+                                                <div className="mi-actions" style={{justifySelf:'center'}}>
                                                     {user.email ? (
                                                         user.is_verified ? (
                                                             <div className="mi-badge mi-badge-success">Подтвержден</div>
@@ -2545,15 +2545,11 @@ function Profile() {
                                                         <div>Steam</div>
                                                         <div className={`mi-status ${user.steam_url ? 'ok' : 'none'}`}>
                                                             {user.steam_url ? (
-                                                                <>
-                                                                    Привязан {steamNickname ? (
-                                                                        <>
-                                                                            <span style={{ color: '#fff', marginLeft: 6 }}>
-                                                                                <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
-                                                                            </span>
-                                                                        </>
-                                                                    ) : ''}
-                                                                </>
+                                                                steamNickname ? (
+                                                                    <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
+                                                                ) : (
+                                                                    'Активен'
+                                                                )
                                                             ) : 'Не привязан'}
                                                         </div>
                                                     </div>
@@ -2577,7 +2573,7 @@ function Profile() {
                                                             {user.faceit_id ? (
                                                                 isLoadingFaceitInfo ? 'Загрузка...' : (faceitInfo ? (
                                                                     <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
-                                                                ) : 'Привязан')
+                                                                ) : 'Активен')
                                                             ) : 'Не привязан'}
                                                         </div>
                                                     </div>

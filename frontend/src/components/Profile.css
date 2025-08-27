@@ -453,7 +453,7 @@
 .mi-scope { background: transparent; }
 .mi-container { max-width: 800px; padding: 0; }
 .mi-card {
-    background: transparent; /* убираем фон позади контейнеров */
+    background: var(--surface); /* фон только внутри контейнеров */
     border: 1px solid var(--line);
     border-radius: 12px;
     padding: 24px;
@@ -518,8 +518,9 @@
     color: var(--accent);
     cursor: pointer;
     text-decoration: none;
-    font-weight: 700; font-size: 15px;
-    letter-spacing: .02em;
+    font-weight: 400; font-size: 15px;
+    letter-spacing: 0;
+    text-transform: none;
     transition: .2s ease;
 }
 
@@ -537,7 +538,11 @@
 .mi-status { color: var(--muted); font-size: 14px; }
 .mi-status.ok { color: var(--accent); font-weight: 600; }
 .mi-status.none { color: var(--muted); }
-.mi-helper { font-size:12px; color: var(--muted); margin-top:8px; }
+.mi-helper { font-size:12px; color: var(--muted); margin-top:8px; text-align:left; }
+
+/* Ссылки ника в статусе привязки */
+.mi-status a { color: var(--accent); text-decoration: none; font-weight: 400; }
+.mi-status a:hover { text-decoration: underline; }
 
 /* Cards */
 .content-card {
