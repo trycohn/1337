@@ -113,6 +113,18 @@ class TournamentController {
         res.json(items);
     });
 
+    // 🆕 Ручная синхронизация победителей отборочных в финал
+    static syncQualifiers = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const tournamentId = parseInt(id, 10);
+        if (isNaN(tournamentId) || tournamentId <= 0) {
+            return res.status(400).json({ message: 'ID турнира должен быть положительным числом' });
+        }
+
+        const result = await TournamentService.syncQualifiersToFinal(tournamentId, req.user.id);
+        res.json(result);
+    });
+
     // 📖 Получение турнира
     static getTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
