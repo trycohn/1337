@@ -2307,7 +2307,7 @@ function Profile() {
                         <img 
                             src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
                             alt="Аватар пользователя" 
-                            className="profile-avatar"
+                            className="profile-avatar avatar-glow"
                             onClick={openAvatarModal}
                         />
                         <button className="avatar-change-btn" onClick={openAvatarModal}>
@@ -2321,25 +2321,16 @@ function Profile() {
                             <span className="status-indicator"></span>
                             <span>Онлайн</span>
                         </div>
-                        <div className="profile-user-meta">
+                        <div className="profile-user-meta meta-row">
                             <div className="meta-item">
                                 <span>ID: {user.id}</span>
                             </div>
-                            {user.email && (
-                                <div className="meta-item">
-                                    <span>Email: {user.is_verified ? '✓ Подтвержден' : '⚠ Не подтвержден'}</span>
-                                </div>
-                            )}
-                            {user.steam_url && (
-                                <div className="meta-item">
-                                    <span>Steam: Привязан</span>
-                                </div>
-                            )}
-                            {user.faceit_id && (
-                                <div className="meta-item">
-                                    <span>FACEIT: Привязан</span>
-                                </div>
-                            )}
+                            <div className={`meta-item ${user.email ? (user.is_verified ? 'ok' : 'warn') : 'muted'}`}>
+                                <span>✉ {user.email ? (user.is_verified ? 'Подтвержден' : 'Не подтвержден') : 'Нет'}</span>
+                            </div>
+                            <div className={`meta-item ${user.steam_url ? 'ok' : 'muted'}`}>
+                                <span>🎮 {user.steam_url ? 'Steam' : 'Нет'}</span>
+                            </div>
                         </div>
                     </div>
                     

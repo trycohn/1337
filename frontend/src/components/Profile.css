@@ -42,14 +42,24 @@
 }
 
 .profile-avatar {
-    width: 120px;
-    height: 120px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--border-color);
     cursor: pointer;
     transition: var(--transition);
 }
+
+/* Динамическая белая подсветка вокруг аватара */
+.avatar-glow {
+    position: relative;
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+}
+.avatar-glow:hover {
+    box-shadow: 0 0 18px rgba(255,255,255,0.45), 0 0 36px rgba(255,255,255,0.15);
+}
+
 
 .profile-avatar:hover {
     border-color: var(--border-hover);
@@ -85,22 +95,22 @@
 }
 
 .profile-user-name {
-    font-size: 2rem;
-    font-weight: 300;
-    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin: 0 0 4px 0;
     color: var(--text-primary);
-    letter-spacing: 1px;
-    line-height: 1.2;
+    letter-spacing: .5px;
+    line-height: 1.1;
 }
 
 .profile-user-status {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    font-size: 1rem;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: .95rem;
     color: var(--text-secondary);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .status-indicator {
@@ -113,11 +123,31 @@
 .profile-user-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-lg);
+    gap: 10px;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 300;
 }
+
+/* Единая мета-строка: ID | Email | Steam */
+.meta-row { 
+    flex-wrap: nowrap; 
+    gap: 12px; 
+}
+.meta-row .meta-item { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    color: var(--text-secondary);
+}
+.meta-row .meta-item + .meta-item::before { 
+    content: '|'; 
+    color: var(--text-muted); 
+    margin: 0 4px 0 0; 
+}
+.meta-row .meta-item.ok { color: #fff; }
+.meta-row .meta-item.warn { color: var(--accent-warning); }
+.meta-row .meta-item.muted { color: var(--text-muted); }
 
 /* Привязки сервисов под ником */
 .profile-links-inline {
