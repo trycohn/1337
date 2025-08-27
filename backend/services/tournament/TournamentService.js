@@ -297,19 +297,36 @@ class TournamentService {
                     [finalTournamentId, qualifierId, refId, placed, JSON.stringify({ source: 'manual_sync' })]
                 );
 
-                // Если финал командный → создаём команду‑прокси или участника‑прокси. Для минимальной реализации: добавляем participant запись, если её нет
-                await pool.query(
-                    `INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
-                     SELECT $1, NULL, COALESCE(tt.name, tp.name, 'Qualified #' || $2), false
-                     FROM (SELECT 1) s
-                     LEFT JOIN tournament_teams tt ON tt.id = $2
-                     LEFT JOIN tournament_participants tp ON tp.id = $2
-                     WHERE NOT EXISTS (
-                        SELECT 1 FROM tournament_participants p
-                        WHERE p.tournament_id = $1 AND (p.name = COALESCE(tt.name, tp.name))
-                     )`,
-                    [finalTournamentId, refId]
-                );
+                // Вставляем участника в финал в зависимости от participant_type
+                if (['team','cs2_classic_5v5','cs2_wingman_2v2'].includes(finalTournament.participant_type)) {
+                    // Командный финал: создаём команду‑прокси по имени исходной команды/участника
+                    await pool.query(
+                        `INSERT INTO tournament_teams (tournament_id, name, creator_id)
+                         SELECT $1, COALESCE(tt.name, tp.name, 'Qualified #' || $2), tt.creator_id
+                         FROM (SELECT 1) s
+                         LEFT JOIN tournament_teams tt ON tt.id = $2
+                         LEFT JOIN tournament_participants tp ON tp.id = $2
+                         WHERE NOT EXISTS (
+                            SELECT 1 FROM tournament_teams t
+                            WHERE t.tournament_id = $1 AND (t.name = COALESCE(tt.name, tp.name))
+                         )`,
+                        [finalTournamentId, refId]
+                    );
+                } else {
+                    // Индивидуальный финал: добавляем участника
+                    await pool.query(
+                        `INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
+                         SELECT $1, tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $2), false
+                         FROM tournament_participants tp
+                         LEFT JOIN users u ON u.id = tp.user_id
+                         WHERE tp.id = $2
+                         AND NOT EXISTS (
+                            SELECT 1 FROM tournament_participants p
+                            WHERE p.tournament_id = $1 AND (p.user_id = tp.user_id OR p.name = COALESCE(tp.name, u.username))
+                         )`,
+                        [finalTournamentId, refId]
+                    );
+                }
 
                 promotions.push({ qualifierId, refId, placed });
             }
