@@ -300,15 +300,15 @@ class TournamentService {
                 // Если финал командный → создаём команду‑прокси или участника‑прокси. Для минимальной реализации: добавляем participant запись, если её нет
                 await pool.query(
                     `INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
-                     SELECT $1, NULL, COALESCE(tt.name, tp.name, 'Qualified #' || $3), false
+                     SELECT $1, NULL, COALESCE(tt.name, tp.name, 'Qualified #' || $2), false
                      FROM (SELECT 1) s
-                     LEFT JOIN tournament_teams tt ON tt.id = $3
-                     LEFT JOIN tournament_participants tp ON tp.id = $3
+                     LEFT JOIN tournament_teams tt ON tt.id = $2
+                     LEFT JOIN tournament_participants tp ON tp.id = $2
                      WHERE NOT EXISTS (
                         SELECT 1 FROM tournament_participants p
                         WHERE p.tournament_id = $1 AND (p.name = COALESCE(tt.name, tp.name))
                      )`,
-                    [finalTournamentId, qualifierId, refId]
+                    [finalTournamentId, refId]
                 );
 
                 promotions.push({ qualifierId, refId, placed });
