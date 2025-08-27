@@ -8,7 +8,7 @@
  * @features Аватары участников, ELO рейтинги, кнопки в заголовке, масштабируемость
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import ManualBracketEditor from './ManualBracketEditor';
 import { Link } from 'react-router-dom';
@@ -68,6 +68,10 @@ const TournamentAdminPanel = ({
 
     const [qualifiers, setQualifiers] = useState([]);
     const [qualifiersLoading, setQualifiersLoading] = useState(false);
+    const [allTournaments, setAllTournaments] = useState([]);
+    const [tournamentsLoading, setTournamentsLoading] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const hasFinalControls = !!tournament?.is_series_final && isCreatorOrAdmin;
 
     const fetchQualifiers = async () => {
@@ -84,9 +88,34 @@ const TournamentAdminPanel = ({
     };
 
     useEffect(() => {
-        if (hasFinalControls) fetchQualifiers();
+        const fetchAllTournaments = async () => {
+            setTournamentsLoading(true);
+            try {
+                const res = await axios.get('/api/tournaments');
+                const list = Array.isArray(res.data) ? res.data : [];
+                setAllTournaments(list);
+            } catch (e) {
+                console.error('Ошибка загрузки списка турниров:', e);
+                setAllTournaments([]);
+            } finally {
+                setTournamentsLoading(false);
+            }
+        };
+
+        if (hasFinalControls) {
+            fetchQualifiers();
+            fetchAllTournaments();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tournament?.id, hasFinalControls]);
+
+    const filteredTournaments = useMemo(() => {
+        const q = (searchQuery || '').toLowerCase();
+        return (allTournaments || [])
+            .filter(t => t.id !== tournament.id)
+            .filter(t => statusFilter === 'all' ? true : (t.status === statusFilter))
+            .filter(t => q ? (String(t.name || '').toLowerCase().includes(q) || String(t.id).includes(q)) : true);
+    }, [allTournaments, tournament.id, statusFilter, searchQuery]);
 
     async function handleSaveQualifiers(nextQualifiers) {
         if (!tournament?.id) return;
@@ -488,24 +517,52 @@ const TournamentAdminPanel = ({
                 {hasFinalControls && (
                     <div className="final-series-section">
                         <h4>🏁 Финал серии: отборочные турниры</h4>
-                        {qualifiersLoading ? (
+                        {/* Фильтры и поиск */}
+                        <div className="qualifiers-filters">
+                            <input
+                                type="text"
+                                className="qualifier-search-input"
+                                placeholder="Поиск турнира по названию или #id"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <select
+                                className="qualifier-status-filter"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">Все статусы</option>
+                                <option value="registration">Registration</option>
+                                <option value="active">Active</option>
+                                <option value="in_progress">In progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                            <span className="qualifier-count">Найдено: {filteredTournaments.length}</span>
+                        </div>
+
+                        {qualifiersLoading || tournamentsLoading ? (
                             <p>Загрузка...</p>
                         ) : (
                             <div className="qualifiers-editor">
                                 {(qualifiers || []).map((q, idx) => (
                                     <div key={q.qualifier_tournament_id || idx} className="qualifier-row">
-                                        <input
-                                            type="number"
-                                            className="qualifier-id-input"
-                                            value={q.qualifier_tournament_id}
+                                        <select
+                                            className="qualifier-select"
+                                            value={q.qualifier_tournament_id || ''}
                                             onChange={(e) => {
                                                 const v = parseInt(e.target.value || 0);
                                                 const next = qualifiers.slice();
                                                 next[idx] = { ...next[idx], qualifier_tournament_id: v };
                                                 setQualifiers(next);
                                             }}
-                                            placeholder="ID отборочного"
-                                        />
+                                        >
+                                            <option value="" disabled>Выберите турнир‑отборочный</option>
+                                            {filteredTournaments.map(t => (
+                                                    <option key={t.id} value={t.id}>
+                                                        {t.name} (#{t.id}) — {t.status}
+                                                    </option>
+                                                ))}
+                                        </select>
                                         <select
                                             className="qualifier-slots-select"
                                             value={q.slots || 1}
