@@ -2,7 +2,9 @@
    МИНИМАЛИСТИЧНЫЙ ПРОФИЛЬ 
    ========================= */
 /* CSS Variables - Черно-белая тема */
-:root { --bg-primary:#000; --bg-secondary:#111; --bg-tertiary:#1a1a1a; --text-primary:#fff; --text-secondary:#ccc; --text-muted:#888; --text-disabled:#666; --border-color:#333; --border-hover:#555; --accent-success:#4caf50; --accent-error:#ff6b6b; --btn-order-color:#ff0000; --accent-warning:#ff0000; --spacing-xs:8px; --spacing-sm:12px; --spacing-md:14px; --spacing-lg:18px; --spacing-xl:24px; --spacing-2xl:32px; --transition: all 0.2s ease; }
+:root { --bg-primary:#000; --bg-secondary:#111; --bg-tertiary:#1a1a1a; --text-primary:#fff; --text-secondary:#ccc; --text-muted:#888; --text-disabled:#666; --border-color:#333; --border-hover:#555; --accent-success:#4caf50; --accent-error:#ff6b6b; --btn-order-color:#ff0000; --accent-warning:#ff0000; --spacing-xs:8px; --spacing-sm:12px; --spacing-md:14px; --spacing-lg:18px; --spacing-xl:24px; --spacing-2xl:32px; --transition: all 0.2s ease; 
+        /* Макетные токены */
+        --bg:#0b0c0d; --surface:#131314; --line:#2a2a2a; --text:#ffffff; --muted:#9a9a9a; --accent:#e82a2a; }
 
 /* Base Styles */
 .profile-container {
@@ -434,7 +436,7 @@
     align-items: center;
     justify-content: space-between;
     padding-bottom: var(--spacing-lg);
-    border-bottom: 2px solid #ff0000;
+    border-bottom: 2px solid var(--accent);
 }
 
 .content-title {
@@ -447,11 +449,11 @@
 }
 
 /* === Макетная карточка основной информации (mi-*) === */
-.mi-scope { background: var(--bg-primary); }
+.mi-scope { background: var(--bg); }
 .mi-container { max-width: 800px; padding: 0; }
 .mi-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: var(--surface);
+    border: 1px solid var(--line);
     border-radius: 12px;
     padding: 24px;
     margin-top: 16px;
@@ -460,7 +462,7 @@
 .mi-title {
     margin: 0 0 14px 0;
     font-size: 14px;
-    color: #ff0000;
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: .08em;
     text-align: center;
@@ -473,35 +475,35 @@
     align-items: center;
     gap: 12px;
     padding: 10px 0;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--line);
 }
 
 .mi-form-row:first-of-type { border-top: 0; }
 
-.mi-label { color: var(--text-muted); font-weight: 600; }
+.mi-label { color: var(--muted); font-weight: 600; }
 
 .mi-input {
     width: 100%;
     height: 40px;
     border-radius: 10px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--line);
     background: #0f1012;
-    color: var(--text-primary);
+    color: var(--text);
     padding: 0 12px;
     outline: 0;
 }
 
 .mi-input:focus {
-    border-color: #ff0000;
-    box-shadow: 0 0 0 3px rgba(255,0,0,.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,42,42,.2);
 }
 
 .mi-actions { display: flex; gap: 8px; }
 
-.mi-value { color: var(--text-primary); }
+.mi-value { color: var(--text); }
 
-.mi-badge { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--border-color); background:rgba(255,255,255,.05); font-size:13px; color: var(--text-muted); }
-.mi-badge-success { color:#ffffff; border-color:#ff0000; background: rgba(255,0,0,.15); }
+.mi-badge { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.05); font-size:13px; color: var(--muted); }
+.mi-badge-success { color:#ffffff; border-color: var(--accent); background: #e82a2a26; }
 
 .mi-btn {
     display: inline-flex;
@@ -510,9 +512,9 @@
     height: 38px;
     padding: 0 14px;
     border-radius: 10px;
-    border: 1px solid #ff0000;
+    border: 1px solid var(--accent);
     background: transparent;
-    color: #ffffff;
+    color: var(--accent);
     cursor: pointer;
     text-decoration: none;
     font-weight: 700;
@@ -520,19 +522,19 @@
     transition: .2s ease;
 }
 
-.mi-btn:hover { background: #111111; transform: translateY(-1px); }
-.mi-btn-danger { border-color: #ff0000; color: #ffffff; }
-.mi-btn-danger:hover { background: rgba(255,0,0,.15); }
+.mi-btn:hover { background: #e82a2a26; transform: translateY(-1px); }
+.mi-btn-danger { border-color: var(--accent); color: var(--accent); }
+.mi-btn-danger:hover { background: rgba(232,42,42,.25); }
 
 /* Привязки аккаунтов */
-.mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border-color); }
+.mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); }
 .mi-bind-row:first-of-type { border-top:0; }
 .mi-bind-left { display:flex; align-items:center; gap:12px; }
-.mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--border-color); color: var(--text-muted); }
-.mi-status { color: var(--text-muted); }
-.mi-status.ok { color: #ff0000; font-weight: 600; }
-.mi-status.none { color: var(--text-muted); }
-.mi-helper { font-size:12px; color: var(--text-muted); margin-top:8px; }
+.mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--line); color: var(--muted); }
+.mi-status { color: var(--muted); }
+.mi-status.ok { color: var(--accent); font-weight: 600; }
+.mi-status.none { color: var(--muted); }
+.mi-helper { font-size:12px; color: var(--muted); margin-top:8px; }
 
 /* Cards */
 .content-card {
