@@ -1438,6 +1438,11 @@
     gap: var(--spacing-md);
 }
 
+/* Force compact header stats to stay in one row on desktop */
+.stats-grid.stats-grid-compact {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 /* Мобильные адаптации профиля */
 @media (max-width: 768px) {
   .profile-container { padding: 16px; }
@@ -1453,6 +1458,8 @@
   .stats-card { padding: 10px; }
   .stats-value { font-size: 1.4rem; }
   .stats-label { font-size: 0.7rem; }
+  /* Compact header stats: two columns on tablets/phones */
+  .stats-grid.stats-grid-compact { grid-template-columns: repeat(2, 1fr); }
   /* Сводный блок статистики под хедером */
   .profile-stats-mobile { margin: 8px 0 12px; }
   .profile-stats-mobile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
@@ -3350,4 +3357,6 @@
 	.rank-item { flex: 1 1 calc(50% - 6px); }
 	.stats-card { padding: 8px; }
 	.stats-value { font-size: 1.2rem; }
+    /* Compact header stats: stack as single column on very small screens */
+    .stats-grid.stats-grid-compact { grid-template-columns: 1fr; }
 }
