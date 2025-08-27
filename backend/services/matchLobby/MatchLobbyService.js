@@ -206,11 +206,13 @@ class MatchLobbyService {
                 const membersResult = await client.query(
                     `SELECT tm.user_id, tm.team_id
                      FROM tournament_team_members tm
-                     WHERE tm.team_id = ANY($1::int[])`,
+                     WHERE tm.team_id = ANY($1::int[])
+                       AND tm.user_id IS NOT NULL`,
                     [teamIds]
                 );
                 const invitedUserIds = new Set();
                 for (const member of membersResult.rows) {
+                    if (!member.user_id) continue; // фильтр безопасности
                     if (invitedUserIds.has(member.user_id)) continue;
                     const invRes = await client.query(
                         `INSERT INTO lobby_invitations (lobby_id, user_id, team_id)
