@@ -447,6 +447,90 @@
     letter-spacing: 0.5px;
 }
 
+/* === Макетная карточка основной информации (mi-*) === */
+.mi-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.mi-title {
+    margin: 0 0 14px 0;
+    font-size: 14px;
+    color: #ff0000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.mi-form-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.mi-form-row:first-of-type { border-top: 0; }
+
+.mi-label { color: var(--text-muted); font-weight: 600; }
+
+.mi-input {
+    width: 100%;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: #0f1012;
+    color: var(--text-primary);
+    padding: 0 12px;
+    outline: 0;
+}
+
+.mi-input:focus {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 3px rgba(255,0,0,.15);
+}
+
+.mi-actions { display: flex; gap: 8px; }
+
+.mi-value { color: var(--text-primary); }
+
+.mi-badge { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--border-color); background:rgba(255,255,255,.05); font-size:13px; color: var(--text-muted); }
+.mi-badge-success { color:#ffffff; border-color:#ff0000; background: rgba(255,0,0,.15); }
+
+.mi-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #ff0000;
+    background: transparent;
+    color: #ff0000;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: .02em;
+    transition: .2s ease;
+}
+
+.mi-btn:hover { background: #111111; transform: translateY(-1px); }
+.mi-btn-danger { border-color: #ff0000; color: #ff0000; }
+.mi-btn-danger:hover { background: rgba(255,0,0,.15); }
+
+/* Привязки аккаунтов */
+.mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--border-color); }
+.mi-bind-row:first-of-type { border-top:0; }
+.mi-bind-left { display:flex; align-items:center; gap:12px; }
+.mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--border-color); color: var(--text-muted); }
+.mi-status { color: var(--text-muted); }
+.mi-status.ok { color: #ff0000; }
+.mi-status.none { color: var(--text-muted); }
+.mi-helper { font-size:12px; color: var(--text-muted); margin-top:8px; }
+
 /* Cards */
 .content-card {
     padding: var(--spacing-xl);
