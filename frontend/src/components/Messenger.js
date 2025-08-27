@@ -312,6 +312,7 @@ function Messenger() {
             // Подписываемся на события
             socketHook.on('new_message', handleNewMessage);
             socketHook.on('read_status', updateMessageReadStatus);
+            socketHook.on('messages_read', updateMessageReadStatus);
             socketHook.on('notification_update', handleNotificationUpdate);
             socketHook.on('error', handleError);
             
@@ -323,11 +324,12 @@ function Messenger() {
                 console.log('🧹 [Messenger] Отписываемся от Socket.IO событий');
                 socketHook.off('new_message', handleNewMessage);
                 socketHook.off('read_status', updateMessageReadStatus);
+                socketHook.off('messages_read', updateMessageReadStatus);
                 socketHook.off('notification_update', handleNotificationUpdate);
                 socketHook.off('error', handleError);
             };
         }
-    }, [fetchChats, handleNewMessage, socketHook]);
+    }, [fetchChats, handleNewMessage]);
     
     // ✅ ВКЛЮЧАЕМ ОБРАТНО автоматическое обновление онлайн статуса С ЗАЩИТОЙ
     useEffect(() => {

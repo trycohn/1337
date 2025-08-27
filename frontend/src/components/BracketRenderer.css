@@ -984,8 +984,6 @@
 }
 
 /* Анимация разделителя */
-
-/* Анимация разделителя */
 @keyframes bracket-render-divider-glow {
     0%, 100% {
         filter: brightness(1);

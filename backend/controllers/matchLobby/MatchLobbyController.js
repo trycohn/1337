@@ -2,6 +2,7 @@
 const MatchLobbyService = require('../../services/matchLobby/MatchLobbyService');
 const { sendSystemNotification, ensureSystemUser } = require('../../utils/systemNotifications');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
+const pool = require('../../db');
 
 class MatchLobbyController {
     // 🔧 Создание/обновление настроек лобби для турнира
@@ -120,39 +121,54 @@ class MatchLobbyController {
                 });
             }
 
-            // 📨 Дублируем приглашение в личный чат пользователю от системного пользователя
+            // 📨 Дублируем приглашение в личный чат (без иконок, персонализировано)
             try {
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
                 const matchUrl = `${baseUrl}/tournaments/${tournamentId}/match/${matchId}`;
+                const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
 
-                const message = `🎮 Создано лобби матча. Перейти в лобби: ${lobbyUrl}`;
-                const metadata = {
-                    type: 'match_lobby_invite',
+                // Получаем название турнира
+                const tRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [tournamentId]);
+                const tournamentName = tRes.rows[0]?.name || `Турнир #${tournamentId}`;
+
+                const team1Name = result.match?.team1_name || 'Команда 1';
+                const team2Name = result.match?.team2_name || 'Команда 2';
+                const team1Id = result.match?.team1_id;
+                const team2Id = result.match?.team2_id;
+
+                const metadataBase = {
+                    type: 'lobby_invite',
                     tournament_id: Number(tournamentId),
                     match_id: Number(matchId),
                     lobby_id: Number(result.lobby.id),
                     actions: [
-                        { type: 'open_lobby', label: '➡ Перейти в лобби', action: 'open_lobby', style: 'primary', url: lobbyUrl, target: '_blank' },
-                        { type: 'open_match', label: '🗂 Страница матча', action: 'open_match', style: 'ghost', url: matchUrl, target: '_blank' }
+                        { type: 'open_lobby', label: 'Перейти в лобби', action: 'open_lobby', style: 'primary', url: lobbyUrl, target: '_blank' }
                     ]
                 };
 
-                await Promise.all(
-                    result.invitations.map(inv => sendSystemNotification(inv.user_id, message, 'match_lobby_invite', metadata))
-                );
+                await Promise.all(result.invitations.map(async (inv) => {
+                    // Имя пользователя
+                    const uRes = await pool.query('SELECT username FROM users WHERE id = $1', [inv.user_id]);
+                    const username = uRes.rows[0]?.username || 'участник';
+                    // Определяем соперника
+                    const opponentName = inv.team_id && team1Id && team2Id
+                        ? (Number(inv.team_id) === Number(team1Id) ? team2Name : team1Name)
+                        : (team1Name && team2Name ? `${team1Name} / ${team2Name}` : 'соперник');
+
+                    // Форматированное сообщение с Markdown-ссылкой
+                    const message = `Привет, ${username}! Турнир [${tournamentName}](${tournamentUrl}), ваш матч против "${opponentName}" ожидает. [Лобби матча](${lobbyUrl}).`;
+
+                    await sendSystemNotification(inv.user_id, message, 'lobby_invite', metadataBase);
+                }));
             } catch (e) {
-                console.warn('⚠️ Не удалось отправить системные сообщения о лобби:', e.message);
+                console.warn('⚠️ Не удалось отправить персональные сообщения о лобби:', e.message);
             }
 
             // 💬 Анонс в чат турнира от системного пользователя
             try {
                 const systemUserId = await ensureSystemUser();
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
                 const announcement = `📢 Создано лобби для матча ID ${matchId}. Перейдите: ${lobbyUrl}`;
                 await sendTournamentChatAnnouncement(Number(tournamentId), announcement, 'system', systemUserId);
@@ -202,31 +218,43 @@ class MatchLobbyController {
                 });
             }
 
-            // 📨 Дублируем приглашение в личный чат пользователю от системного пользователя
+            // 📨 Дублируем приглашение в личный чат (пересоздание, без иконок, персонально)
             try {
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
-                const matchUrl = `${baseUrl}/tournaments/${tournamentId}/match/${matchId}`;
+                const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
 
-                const message = `🔁 Лобби матча пересоздано. Перейти в лобби: ${lobbyUrl}`;
-                const metadata = {
+                const tRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [tournamentId]);
+                const tournamentName = tRes.rows[0]?.name || `Турнир #${tournamentId}`;
+
+                const team1Name = result.match?.team1_name || 'Команда 1';
+                const team2Name = result.match?.team2_name || 'Команда 2';
+                const team1Id = result.match?.team1_id;
+                const team2Id = result.match?.team2_id;
+
+                const metadataBase = {
                     type: 'match_lobby_invite',
                     tournament_id: Number(tournamentId),
                     match_id: Number(matchId),
                     lobby_id: Number(result.lobby.id),
                     actions: [
-                        { type: 'open_lobby', label: '➡ Перейти в лобби', action: 'open_lobby', style: 'primary', url: lobbyUrl, target: '_blank' },
-                        { type: 'open_match', label: '🗂 Страница матча', action: 'open_match', style: 'ghost', url: matchUrl, target: '_blank' }
+                        { type: 'open_lobby', label: 'Перейти в лобби', action: 'open_lobby', style: 'primary', url: lobbyUrl, target: '_blank' }
                     ]
                 };
 
-                await Promise.all(
-                    result.invitations.map(inv => sendSystemNotification(inv.user_id, message, 'match_lobby_invite', metadata))
-                );
+                await Promise.all(result.invitations.map(async (inv) => {
+                    const uRes = await pool.query('SELECT username FROM users WHERE id = $1', [inv.user_id]);
+                    const username = uRes.rows[0]?.username || 'участник';
+                    const opponentName = inv.team_id && team1Id && team2Id
+                        ? (Number(inv.team_id) === Number(team1Id) ? team2Name : team1Name)
+                        : (team1Name && team2Name ? `${team1Name} / ${team2Name}` : 'соперник');
+
+                    const message = `Привет, ${username}! Турнир [${tournamentName}](${tournamentUrl}), ваш матч против "${opponentName}" ожидает. [Лобби матча](${lobbyUrl}).`;
+
+                    await sendSystemNotification(inv.user_id, message, 'match_lobby_invite_interactive', metadataBase);
+                }));
             } catch (e) {
-                console.warn('⚠️ Не удалось отправить системные сообщения о пересоздании лобби:', e.message);
+                console.warn('⚠️ Не удалось отправить персональные сообщения о пересоздании лобби:', e.message);
             }
 
             // 💬 Анонс в чат турнира от системного пользователя

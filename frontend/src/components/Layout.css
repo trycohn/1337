@@ -70,6 +70,36 @@
   padding: 8px 10px;
 }
 
+/* Бейдж непрочитанных сообщений для кнопки "Чаты" */
+.messages-link {
+  position: relative;
+}
+.messages-link .unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #FF3838;
+  color: #fff;
+  font-family: Play, Arial, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .messages-link .unread-badge {
+    top: -4px;
+    right: 8px;
+  }
+}
+
 /* Figma: Ghost buttons for nav links */
 .nav-link.btn-ghost {
   color: #ffffff;

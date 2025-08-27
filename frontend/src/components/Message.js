@@ -14,6 +14,16 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
     const [actionLoading, setActionLoading] = useState(false);
     const [responded, setResponded] = useState(false);
     
+    // Утилита: форматирует только markdown-ссылки (без автоссылок на сырые URL)
+    function renderHtmlFromMarkdown(text) {
+        if (!text) return { __html: '' };
+        const html = text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1<\/strong>')
+            .replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1<\/a>')
+            .replace(/\n/g, '<br/>');
+        return { __html: html };
+    }
+    
     // Выбор класса для сообщения в зависимости от отправителя
     const messageClass = () => {
         let baseClass = isOwn ? 'message own' : 'message';
@@ -24,7 +34,8 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
         } else if (message.message_type === 'image') {
             baseClass += ' image-message';
         } else if (message.message_type === 'admin_invitation_interactive' || 
-                   message.message_type === 'tournament_invite_interactive') {
+                   message.message_type === 'tournament_invite_interactive' ||
+                   message.message_type === 'lobby_invite') {
             baseClass = 'message interactive-wrapper';
         }
         
@@ -235,6 +246,7 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
         switch (message.message_type) {
             case 'admin_invitation_interactive':
             case 'tournament_invite_interactive':
+            case 'lobby_invite':
                 // 🆕 Интерактивные сообщения с кнопками
                 return (
                     <InteractiveMessage 
@@ -325,7 +337,10 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
                     <div className="message-announcement">
                         <div className="announcement-icon">📣</div>
                         <div className="announcement-content">
-                            <div className="announcement-text">{message.content}</div>
+                            <div 
+                                className="announcement-text"
+                                dangerouslySetInnerHTML={renderHtmlFromMarkdown(message.content)}
+                            />
                             
                             {canRespond && !responded && !isProcessed && (
                                 <div className="announcement-actions">
@@ -402,8 +417,13 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
                 );
                 
             default:
-                // Обычное текстовое сообщение
-                return <div className="message-text">{message.content}</div>;
+                // Обычное текстовое сообщение (рендерим markdown-ссылки и URL)
+                return (
+                    <div 
+                        className="message-text"
+                        dangerouslySetInnerHTML={renderHtmlFromMarkdown(message.content)}
+                    />
+                );
         }
     };
     
