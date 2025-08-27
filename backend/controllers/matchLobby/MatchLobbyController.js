@@ -123,9 +123,7 @@ class MatchLobbyController {
 
             // 📨 Дублируем приглашение в личный чат (без иконок, персонализировано)
             try {
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
                 const matchUrl = `${baseUrl}/tournaments/${tournamentId}/match/${matchId}`;
                 const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
@@ -140,7 +138,7 @@ class MatchLobbyController {
                 const team2Id = result.match?.team2_id;
 
                 const metadataBase = {
-                    type: 'match_lobby_invite',
+                    type: 'lobby_invite',
                     tournament_id: Number(tournamentId),
                     match_id: Number(matchId),
                     lobby_id: Number(result.lobby.id),
@@ -161,7 +159,7 @@ class MatchLobbyController {
                     // Форматированное сообщение с Markdown-ссылкой
                     const message = `Привет, ${username}! Турнир [${tournamentName}](${tournamentUrl}), ваш матч против "${opponentName}" ожидает. [Лобби матча](${lobbyUrl}).`;
 
-                    await sendSystemNotification(inv.user_id, message, 'match_lobby_invite_interactive', metadataBase);
+                    await sendSystemNotification(inv.user_id, message, 'lobby_invite', metadataBase);
                 }));
             } catch (e) {
                 console.warn('⚠️ Не удалось отправить персональные сообщения о лобби:', e.message);
@@ -170,9 +168,7 @@ class MatchLobbyController {
             // 💬 Анонс в чат турнира от системного пользователя
             try {
                 const systemUserId = await ensureSystemUser();
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
                 const announcement = `📢 Создано лобби для матча ID ${matchId}. Перейдите: ${lobbyUrl}`;
                 await sendTournamentChatAnnouncement(Number(tournamentId), announcement, 'system', systemUserId);
@@ -224,9 +220,7 @@ class MatchLobbyController {
 
             // 📨 Дублируем приглашение в личный чат (пересоздание, без иконок, персонально)
             try {
-                const baseUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com'
-                    : 'http://localhost:3000';
+                const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
                 const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
                 const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
 

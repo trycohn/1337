@@ -24,7 +24,8 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
         } else if (message.message_type === 'image') {
             baseClass += ' image-message';
         } else if (message.message_type === 'admin_invitation_interactive' || 
-                   message.message_type === 'tournament_invite_interactive') {
+                   message.message_type === 'tournament_invite_interactive' ||
+                   message.message_type === 'lobby_invite') {
             baseClass = 'message interactive-wrapper';
         }
         
@@ -235,6 +236,7 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
         switch (message.message_type) {
             case 'admin_invitation_interactive':
             case 'tournament_invite_interactive':
+            case 'lobby_invite':
                 // 🆕 Интерактивные сообщения с кнопками
                 return (
                     <InteractiveMessage 
