@@ -54,8 +54,6 @@
     margin-bottom: 32px;
     padding: 24px;
     background: #000000;
-    border: 1px solid #1a1a1a;
-    border-radius: 8px;
     grid-area: tournament-meta-grid;
 }
 
@@ -69,8 +67,6 @@
     flex-direction: column;
     gap: 8px;
     padding: 16px;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
     transition: all 0.2s ease;
 }
 
@@ -1005,6 +1001,11 @@
 /* рџ†• РЎС‚РёР»Рё РґР»СЏ СѓС‡Р°СЃС‚РёСЏ РІ С‚СѓСЂРЅРёСЂРµ */
 .participation-section {
     margin-top: 8px;
+}
+
+.participation-section .participation-controls {
+    margin: 0px;
+    padding: 6px 12px;
 }
 
 .participation-controls {
