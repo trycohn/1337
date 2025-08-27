@@ -2328,12 +2328,16 @@ function Profile() {
                             <div className={`meta-item ${user.email ? (user.is_verified ? 'ok' : 'warn') : 'muted'}`}>
                                 <span>✉ {user.email ? (user.is_verified ? 'Подтвержден' : 'Не подтвержден') : 'Нет'}</span>
                             </div>
-                            <div className={`meta-item ${user.steam_url ? 'ok' : 'muted'}`}>
-                                <span>🎮 {user.steam_url ? 'Steam' : 'Нет'}</span>
-                            </div>
-                            <div className={`meta-item ${user.faceit_id ? 'ok' : 'muted'}`}>
-                                <span>⚡ {user.faceit_id ? 'FACEIT' : 'Нет'}</span>
-                            </div>
+                            {user.steam_url && (
+                                <div className="meta-item ok">
+                                    <span>🎮 Steam</span>
+                                </div>
+                            )}
+                            {user.faceit_id && (
+                                <div className="meta-item ok">
+                                    <span>⚡ FACEIT</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     
