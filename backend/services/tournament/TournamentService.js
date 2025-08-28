@@ -409,8 +409,8 @@ class TournamentService {
                             const key = `${fm.user_id || ''}|${fm.participant_id || ''}`;
                             if (!sourcePairs.has(key)) {
                                 await pool.query(
-                                    `DELETE FROM tournament_team_members WHERE team_id = $1 AND 
-                                     (user_id IS NOT DISTINCT FROM $2) AND (participant_id IS NOT DISTINCT FROM $3)`,
+                                    `DELETE FROM tournament_team_members WHERE team_id = $1::int AND 
+                                     (user_id IS NOT DISTINCT FROM $2::int) AND (participant_id IS NOT DISTINCT FROM $3::int)`,
                                     [finalTeamId, fm.user_id, fm.participant_id]
                                 );
                             }
