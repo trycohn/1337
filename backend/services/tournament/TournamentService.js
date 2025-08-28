@@ -403,17 +403,18 @@ class TournamentService {
                             );
                         }
 
-                        // Удаляем лишних в финальной команде (которых нет в источнике)
-                        const sourcePairs = new Set((membersRes.rows || []).map(x => `${x.user_id || ''}|${x.participant_id || ''}`));
-                        for (const fm of finalMembers) {
-                            const key = `${fm.user_id || ''}|${fm.participant_id || ''}`;
-                            if (!sourcePairs.has(key)) {
-                                await pool.query(
-                                    `DELETE FROM tournament_team_members WHERE team_id = $1::int AND 
-                                     (user_id IS NOT DISTINCT FROM $2::int) AND (participant_id IS NOT DISTINCT FROM $3::int)`,
-                                    [finalTeamId, fm.user_id, fm.participant_id]
-                                );
-                            }
+                        // Мягкая чистка: удаляем только тех, у кого есть user_id, которого нет в источнике
+                        const sourceUserIds = (membersRes.rows || [])
+                            .map(x => x.user_id)
+                            .filter(uid => uid !== null && uid !== undefined);
+                        if (sourceUserIds.length > 0) {
+                            await pool.query(
+                                `DELETE FROM tournament_team_members 
+                                 WHERE team_id = $1::int 
+                                   AND user_id IS NOT NULL 
+                                   AND NOT (user_id = ANY($2::int[]))`,
+                                [finalTeamId, sourceUserIds]
+                            );
                         }
                     } else if (finalTeamId) {
                         // Источник не команда — добавим одного участника как члена команды
@@ -457,14 +458,7 @@ class TournamentService {
                             [finalTeamId, userId, participantId]
                         );
                         
-                        // Для одиночного источника удалим все лишние записи кроме текущего пользователя/участника
-                        await pool.query(
-                            `DELETE FROM tournament_team_members 
-                             WHERE team_id = $1::int AND NOT (
-                               (user_id IS NOT DISTINCT FROM $2) OR (participant_id IS NOT DISTINCT FROM $3)
-                             )`,
-                            [finalTeamId, userId, participantId]
-                        );
+                        // Не удаляем остальных членов: только добавляем недостающего участника
                     }
                 } else {
                     // Индивидуальный финал: добавляем участника
