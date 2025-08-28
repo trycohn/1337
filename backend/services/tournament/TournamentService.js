@@ -482,8 +482,20 @@ class TournamentService {
             }
         }
 
-        await logAdvancement(finalTournamentId, userId, { type: 'manual_sync', promotions_count: promotions.length });
-        await broadcastTournamentUpdate(finalTournamentId);
+        // Лог продвижения: не критично к падению (в БД может не быть таблицы)
+        try {
+            await logAdvancement(finalTournamentId, userId, { type: 'manual_sync', promotions_count: promotions.length });
+        } catch (e) {
+            console.warn('⚠️ [TournamentLogService] Пропуск логирования продвижения:', e?.message || e);
+        }
+
+        // Отправка обновления: передаем полные данные турнира
+        try {
+            const fullTournamentData = await this.getTournamentById(finalTournamentId);
+            await broadcastTournamentUpdate(finalTournamentId, fullTournamentData, 'qualifiersSync');
+        } catch (e) {
+            console.warn('⚠️ [broadcastTournamentUpdate] Ошибка при отправке обновления турнира', finalTournamentId, e?.message || e);
+        }
 
         return { success: true, promotions };
     }
