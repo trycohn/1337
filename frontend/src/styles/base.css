@@ -84,3 +84,29 @@ button:active {
   padding: var(--spacing-xl) 0;
 }
 /* Отзывчивость удалена */ 
+
+/* Глобальные стили скроллбара в тёмной теме */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333333 #111111;
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: #111111;
+}
+*::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+*::-webkit-scrollbar-corner {
+  background: #111111;
+}
