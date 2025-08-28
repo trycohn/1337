@@ -2448,7 +2448,7 @@ function TournamentDetails() {
                         className="cs2-hero-header"
                         role="img"
                         aria-label="CS2 header"
-                        style={{ backgroundImage: "url('/public/images/CS2 header.png'), url('/images/CS2 header.png')" }}
+                        style={{ backgroundImage: "url('/images/headers/CS2-header.png')" }}
                     />
                 )}
                 <div className="tournament-layout">
