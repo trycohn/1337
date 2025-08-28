@@ -254,7 +254,7 @@ class TournamentService {
             // Получаем призовые места отборочного
             const res = await pool.query(`
                 WITH finals AS (
-                  SELECT m.* FROM matches m WHERE m.tournament_id = $1
+                  SELECT m.* FROM matches m WHERE m.tournament_id = $1::int
                 ),
                 gf AS (
                   SELECT winner_team_id, team1_id, team2_id
@@ -281,7 +281,7 @@ class TournamentService {
                   SELECT id FROM second_place
                   UNION ALL
                   SELECT id FROM third_place
-                ) places WHERE id IS NOT NULL LIMIT $2;
+                ) places WHERE id IS NOT NULL LIMIT $2::int;
             `, [qualifierId, slots]);
 
             const promotedIds = res.rows.map(r => r.id);
