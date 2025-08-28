@@ -393,13 +393,19 @@ class TournamentRepository {
 
                 console.log(`📊 [getTeamsWithMembers] Команда "${team.name}": FACEIT=${averageRatingFaceit}, Premier=${averageRatingPremier}, итоговый (${ratingType})=${averageRating}`);
 
+                // 🆕 Аватар команды по умолчанию = аватар капитана (или первого участника)
+                const captain = members.find(m => m.is_captain) || members[0];
+                const captainAvatar = captain?.avatar_url || null;
+
                 return {
                     ...team,
                     members: members,
                     averageRatingFaceit: averageRatingFaceit,
                     averageRatingPremier: averageRatingPremier,
                     averageRating: averageRating,
-                    ratingType: ratingType // 🆕 Добавляем информацию о типе рейтинга
+                    ratingType: ratingType,
+                    avatar_url: captainAvatar,
+                    logo_url: team.logo_url || captainAvatar
                 };
             }));
 
