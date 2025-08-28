@@ -15,6 +15,20 @@
     background-size: 100% 400px; /* фиксированная высота 400px, ширина на весь экран */
 }
 
+/* 🆕 Фон на уровне root (body) для CS2 */
+/* Класс для body/html задаётся из Layout через document.body.classList */
+.cs2-root-bg {
+    background-image: url('/images/headers/CS2-header.png');
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: 100% 400px; /* ширина -> экран, высота фикс 400px */
+}
+
+/* Контентный контейнер делаем прозрачным, чтобы был виден root‑фон */
+.tournament-details-tournamentdetails.with-root-bg {
+    background-color: transparent;
+}
+
 /* 🆕 CS2 hero header (400px full-width top image) */
 .cs2-hero-header {
     width: 100vw;

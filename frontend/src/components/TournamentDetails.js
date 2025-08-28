@@ -1356,6 +1356,14 @@ function TournamentDetails() {
         }
     }, [tournament?.game, fetchMapsForGame]);
 
+    // 🆕 Root‑фон для CS2 (body.classList)
+    useEffect(() => {
+        const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+        if (isCS2) document.body.classList.add('cs2-root-bg');
+        else document.body.classList.remove('cs2-root-bg');
+        return () => document.body.classList.remove('cs2-root-bg');
+    }, [tournament?.game]);
+
     // WebSocket соединение
     useEffect(() => {
         if (!user || !tournament?.id) {
@@ -2442,9 +2450,8 @@ function TournamentDetails() {
     return (
         <TournamentErrorBoundary>
             <div
-                className={`tournament-details-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'cs2-bg' : ''}`}
+                className={`tournament-details-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-root-bg' : ''}`}
                 data-testid="tournament-details"
-                style={tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? { backgroundImage: "url('/images/headers/CS2-header.png')" } : undefined}
             >
                 <div className="tournament-layout">
                     <div className="tournament-main">
