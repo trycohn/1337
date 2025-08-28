@@ -28,6 +28,7 @@
 /* Контентный контейнер делаем прозрачным, чтобы был виден root‑фон */
 .tournament-details-tournamentdetails.with-root-bg {
     background-color: transparent;
+    padding-top: 0px;
 }
 
 /* 🆕 CS2 hero header (400px full-width top image) */
@@ -42,10 +43,10 @@
 }
 
 .tournament-header .with-cs2-hero {
-    display: grid;
-    gap: 20px;
-    align-items: flex-end;
-    grid-template-columns: 1.5fr 1fr; /* слева название+мета+кнопки, справа инфо-блок */
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-direction: column;
 }
 
 .tournament-header-tournamentdetails .with-cs2-hero {
@@ -68,13 +69,13 @@
 }
 
 /* Инфоблок под заголовком */
-.header-stats {
-    margin-top: 10px;
-}
+
+
 .header-stats .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    margin-top: 0px;
 }
 .header-stats .stat-item {
     background: transparent;
@@ -114,10 +115,31 @@
     font-size: 14px;
 }
 .header-meta-row .meta-label {
-    color: #aaa;
+    color: #949494;
+    font-family: Play;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 12px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 8%;
 }
+
 .header-meta-row .meta-value {
-    color: #fff;
+    color: #FF3838;
+    font-family: Play;
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 12px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 8%;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-decoration-offset: 0%;
+    text-decoration-thickness: 0%;
+    text-decoration-skip-ink: auto;
 }
 .header-actions {
     display: flex;
