@@ -62,7 +62,9 @@
 
 .tournament-participants .teams-list {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    display: flex;
+
 }
 
 .team-card {
@@ -71,6 +73,7 @@
     border-radius: 12px;
     padding: 20px;
     transition: all 0.3s ease;
+    flex-basis: calc(100% / 4.5);
 }
 
 .team-card:hover {
