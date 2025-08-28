@@ -80,7 +80,8 @@
     align-items: center;
     height: 96px;
     width: 384px;
-    background: rgba(0, 0, 0, 0.5);
+    background: #1d1d1d;
+    padding: 16px;
 }
 
 .team-info-participants {
@@ -128,20 +129,9 @@
 .team-members-participants {
     display: flex;
     flex-direction: column;
-    gap: 12px;
 }
 
 .team-member-participants {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #0a0a0a;
-    border-radius: 8px;
-    border: 1px solid #222222;
-}
-
-.team-members-participants .team-member-participants {
     padding: 1px;
     border-bottom: 1px solid var(--Neutral-White-alpha-8, rgba(255, 255, 255, 0.08));
     background-color: #0a0a0a;
@@ -153,7 +143,6 @@
     padding-right: 32px;
     padding-bottom: 16px;
     padding-left: 32px;
-
 }
 
 .member-info-participants {
