@@ -242,13 +242,7 @@ const TournamentParticipants = ({
                 </div>
             )}
 
-            <div className="participants-header-participants">
-                <h3>👥 Участники турнира</h3>
-                <div className="participants-count-participants">
-                    Участников: {participantsList.length}
-                    {tournament?.max_participants && ` / ${tournament.max_participants}`}
-                </div>
-            </div>
+            {/* Удален заголовок вкладки участников как дублирующий информацию */}
 
             {/* 🆕 Для микс турниров ВСЕГДА показываем TeamGenerator */}
             {tournament?.format === 'mix' && (

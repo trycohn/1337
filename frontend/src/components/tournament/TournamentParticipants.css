@@ -59,10 +59,11 @@
     margin-bottom: 24px;
 }
 
-.tournament-participants .teams-list-participants {
+.teams-list-participants {
     flex-direction: row;
     flex-wrap: wrap;
     display: flex;
+    gap: 20px;
 
 }
 
