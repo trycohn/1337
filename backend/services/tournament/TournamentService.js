@@ -293,7 +293,7 @@ class TournamentService {
                 // Добавляем как участника в финальный турнир (минимально: ссылка на participant/team запись)
                 await pool.query(
                     `INSERT INTO tournament_promotions (final_tournament_id, qualifier_tournament_id, team_id, placed, meta)
-                     VALUES ($1,$2,$3,$4,$5)
+                     VALUES ($1::int,$2::int,$3::int,$4::int,$5::jsonb)
                      ON CONFLICT (final_tournament_id, qualifier_tournament_id, team_id, placed)
                      DO UPDATE SET meta = EXCLUDED.meta, created_at = NOW()`,
                     [finalTournamentId, qualifierId, refId, placed, JSON.stringify({ source: 'manual_sync' })]
@@ -304,7 +304,7 @@ class TournamentService {
                     // Командный финал: создаём команду по имени источника и переносим состав
                     // 1) Определяем имя и создателя исходной команды/участника
                     const srcTeamRes = await pool.query(
-                        `SELECT id, name, creator_id FROM tournament_teams WHERE id = $1`,
+                        `SELECT id, name, creator_id FROM tournament_teams WHERE id = $1::int`,
                         [refId]
                     );
                     let sourceName = null;
@@ -316,7 +316,7 @@ class TournamentService {
                         sourceCreatorId = srcTeamRes.rows[0].creator_id || null;
                     } else {
                         const srcPartRes = await pool.query(
-                            `SELECT tp.name, tp.user_id FROM tournament_participants tp WHERE tp.id = $1`,
+                            `SELECT tp.name, tp.user_id FROM tournament_participants tp WHERE tp.id = $1::int`,
                             [refId]
                         );
                         if (srcPartRes.rows.length > 0) {
@@ -375,15 +375,15 @@ class TournamentService {
                                 const insP = await pool.query(
                                     `WITH ins AS (
                                        INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
-                                       SELECT $1, NULL, $2, false
+                                       SELECT $1::int, NULL, $2::text, false
                                        WHERE NOT EXISTS (
-                                         SELECT 1 FROM tournament_participants p WHERE p.tournament_id = $1 AND p.name = $2
+                                         SELECT 1 FROM tournament_participants p WHERE p.tournament_id = $1::int AND p.name = $2::text
                                        )
                                        RETURNING id
                                      )
                                      SELECT id FROM ins
                                      UNION ALL
-                                     SELECT id FROM tournament_participants WHERE tournament_id = $1 AND name = $2 LIMIT 1`,
+                                     SELECT id FROM tournament_participants WHERE tournament_id = $1::int AND name = $2::text LIMIT 1`,
                                     [finalTournamentId, pName]
                                 );
                                 newParticipantId = insP.rows[0]?.id || null;
