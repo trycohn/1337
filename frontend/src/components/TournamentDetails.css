@@ -66,6 +66,9 @@
 /* Метаданные и действия в левом блоке */
 .header-meta {
     margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
 }
 
 /* Инфоблок под заголовком */
@@ -77,11 +80,19 @@
     gap: 12px;
     margin-top: 0px;
 }
+.header-stats .stats-grid.stats-top { /* top row */ margin-top: 0; }
+.header-stats .stats-grid.stats-bottom { margin-top: 6px; }
 .header-stats .stat-item {
     background: transparent;
     border: 1px solid #1f1f1f;
     padding: 10px 12px;
 }
+.header-stats .stat-item.stat-prize { border-color: #333333; }
+.header-stats .stat-item.stat-start { border-color: #2a2a2a; }
+.header-stats .stat-item.stat-status { border-color: #262626; }
+.header-stats .stat-item.stat-format { border-color: #2a2a2a; }
+.header-stats .stat-item.stat-participants { border-color: #333333; }
+.header-stats .stat-item.stat-team-size { border-color: #262626; }
 .header-stats .stat-label {
     color: #aaaaaa;
     font-size: 12px;
@@ -118,28 +129,22 @@
     color: #949494;
     font-family: Play;
     font-weight: 400;
-    font-style: Regular;
+    font-style: normal;
     font-size: 12px;
-    leading-trim: NONE;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
 }
 
 .header-meta-row .meta-value {
     color: #FF3838;
     font-family: Play;
     font-weight: 700;
-    font-style: Bold;
+    font-style: normal;
     font-size: 12px;
-    leading-trim: NONE;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    text-decoration: underline;
-    text-decoration-style: solid;
-    text-decoration-offset: 0%;
-    text-decoration-thickness: 0%;
-    text-decoration-skip-ink: auto;
+    text-decoration: none;
 }
 .header-actions {
     display: flex;
