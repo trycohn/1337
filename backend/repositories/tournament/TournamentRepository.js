@@ -287,7 +287,8 @@ class TournamentRepository {
             const teams = await Promise.all(teamsResult.rows.map(async (team) => {
                 const membersResult = await pool.query(
                     `SELECT tm.team_id, tm.user_id, tm.participant_id, tm.is_captain, tm.captain_rating,
-                            tp.name, u.username, u.avatar_url, 
+                            tp.name, u.username, u.avatar_url,
+                            COALESCE(tp.name, u.username) AS display_name,
                             tp.faceit_elo, tp.cs2_premier_rank,
                             u.faceit_elo as user_faceit_elo, u.cs2_premier_rank as user_premier_rank,
                             u.faceit_elo as user_faceit_rating, u.cs2_premier_rank as user_premier_rating

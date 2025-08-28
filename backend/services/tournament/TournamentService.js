@@ -293,7 +293,9 @@ class TournamentService {
                 // Добавляем как участника в финальный турнир (минимально: ссылка на participant/team запись)
                 await pool.query(
                     `INSERT INTO tournament_promotions (final_tournament_id, qualifier_tournament_id, team_id, placed, meta)
-                     VALUES ($1,$2,$3,$4,$5)`,
+                     VALUES ($1,$2,$3,$4,$5)
+                     ON CONFLICT (final_tournament_id, qualifier_tournament_id, team_id, placed)
+                     DO UPDATE SET meta = EXCLUDED.meta, created_at = NOW()`,
                     [finalTournamentId, qualifierId, refId, placed, JSON.stringify({ source: 'manual_sync' })]
                 );
 
@@ -343,7 +345,7 @@ class TournamentService {
                     );
                     const finalTeamId = insertTeamRes.rows[0]?.id;
 
-                    // 3) Переносим состав
+                    // 3) Переносим состав (и синхронизируем: добавляем недостающих, удаляем лишних)
                     if (isTeamSource && finalTeamId) {
                         const membersRes = await pool.query(
                             `SELECT user_id, participant_id, is_captain, captain_rating
@@ -351,6 +353,14 @@ class TournamentService {
                             [refId]
                         );
 
+                        // Текущее состояние финальной команды
+                        const finalMembersRes = await pool.query(
+                            `SELECT user_id, participant_id FROM tournament_team_members WHERE team_id = $1`,
+                            [finalTeamId]
+                        );
+                        const finalMembers = finalMembersRes.rows || [];
+
+                        // Добавляем недостающих из источника
                         for (const m of (membersRes.rows || [])) {
                             let newUserId = m.user_id || null;
                             let newParticipantId = null;
@@ -392,6 +402,19 @@ class TournamentService {
                                 [finalTeamId, newUserId, newParticipantId, !!m.is_captain, m.captain_rating || null]
                             );
                         }
+
+                        // Удаляем лишних в финальной команде (которых нет в источнике)
+                        const sourcePairs = new Set((membersRes.rows || []).map(x => `${x.user_id || ''}|${x.participant_id || ''}`));
+                        for (const fm of finalMembers) {
+                            const key = `${fm.user_id || ''}|${fm.participant_id || ''}`;
+                            if (!sourcePairs.has(key)) {
+                                await pool.query(
+                                    `DELETE FROM tournament_team_members WHERE team_id = $1 AND 
+                                     (user_id IS NOT DISTINCT FROM $2) AND (participant_id IS NOT DISTINCT FROM $3)`,
+                                    [finalTeamId, fm.user_id, fm.participant_id]
+                                );
+                            }
+                        }
                     } else if (finalTeamId) {
                         // Источник не команда — добавим одного участника как члена команды
                         const srcPartRes = await pool.query(
@@ -430,6 +453,15 @@ class TournamentService {
                                WHERE ttm.team_id = $1 AND (
                                  (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
                                )
+                             )`,
+                            [finalTeamId, userId, participantId]
+                        );
+                        
+                        // Для одиночного источника удалим все лишние записи кроме текущего пользователя/участника
+                        await pool.query(
+                            `DELETE FROM tournament_team_members 
+                             WHERE team_id = $1 AND NOT (
+                               (user_id IS NOT DISTINCT FROM $2) OR (participant_id IS NOT DISTINCT FROM $3)
                              )`,
                             [finalTeamId, userId, participantId]
                         );
