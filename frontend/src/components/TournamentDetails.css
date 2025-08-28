@@ -1020,7 +1020,15 @@ div.score-container input {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    align-items: center;
 }
+
+.team-member .member-info {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
 .member-name {
     font-size: 14px;
     font-weight: 300;
