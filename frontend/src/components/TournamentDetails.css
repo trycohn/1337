@@ -12,7 +12,7 @@
 .tournament-details-tournamentdetails.cs2-bg {
     background-position: top center;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: 100% 400px; /* фиксированная высота 400px, ширина на весь экран */
 }
 
 /* 🆕 CS2 hero header (400px full-width top image) */
@@ -28,7 +28,7 @@
 
 /* Отступ для навигации по вкладкам, если есть hero */
 .tabs-navigation-tournamentdetails.offset-from-hero {
-    margin-top: 400px;
+    margin-top: 400px; /* начинать после фонового блока */
 }
 .tournament-details-tournamentdetails h2 {
     margin-bottom: 20px;
