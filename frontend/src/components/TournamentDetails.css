@@ -64,7 +64,7 @@
 
 /* Отступ для навигации по вкладкам, если есть hero */
 .tabs-navigation-tournamentdetails.offset-from-hero {
-    margin-top: 180px; /* начинать после фонового блока */
+    margin-top: 100px; /* начинать после фонового блока */
 }
 .tournament-details-tournamentdetails h2 {
     margin-bottom: 20px;
@@ -74,7 +74,7 @@
     line-height: 100%;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    
+
 }
 .tournament-details-tournamentdetails p {
     margin-bottom: 10px;
