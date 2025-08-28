@@ -2441,7 +2441,11 @@ function TournamentDetails() {
     // 🆕 Основной рендер с системой вкладок
     return (
         <TournamentErrorBoundary>
-            <div className={`tournament-details-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'cs2-bg' : ''}`} data-testid="tournament-details">
+            <div
+                className={`tournament-details-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'cs2-bg' : ''}`}
+                data-testid="tournament-details"
+                style={tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? { backgroundImage: "url('/images/headers/CS2-header.png')" } : undefined}
+            >
                 <div className="tournament-layout">
                     <div className="tournament-main">
                         {/* Заголовок турнира */}
