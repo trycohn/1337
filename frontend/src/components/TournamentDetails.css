@@ -62,6 +62,32 @@
     min-height: 160px;
 }
 
+/* Метаданные и действия в левом блоке */
+.header-meta {
+    margin-top: 8px;
+}
+.header-meta-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 14px;
+}
+.header-meta-row .meta-label {
+    color: #aaa;
+}
+.header-meta-row .meta-value {
+    color: #fff;
+}
+.header-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+}
+.invite-only {
+    color: #ffb84d;
+    font-weight: 600;
+}
+
 /* Отступ для навигации по вкладкам, если есть hero */
 .tabs-navigation-tournamentdetails.offset-from-hero {
     margin-top: 100px; /* начинать после фонового блока */

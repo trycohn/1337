@@ -2465,12 +2465,72 @@ function TournamentDetails() {
                     <div className="tournament-main">
                         {/* Заголовок турнира (CS2: делим на 2 блока в общем флексе) */}
                         <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}
-                             style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
+                             style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', width: '100%' }}>
                             <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                                 <h2 data-testid="tournament-title">{tournament.name}</h2>
+                                <div className="header-meta">
+                                    <div className="header-meta-row">
+                                        <span className="meta-label">Организатор:</span>
+                                        <span className="meta-value">
+                                            {tournament?.organizer_name || tournament?.organizer?.name || tournament?.organizer || tournament?.organizer_slug || '—'}
+                                        </span>
+                                    </div>
+                                    <div className="header-meta-row">
+                                        <span className="meta-label">Дисциплина:</span>
+                                        <span className="meta-value">{tournament?.game || '—'}</span>
+                                    </div>
+                                </div>
+                                <div className="header-actions">
+                                    {tournament?.access_type === 'closed' ? (
+                                        <span className="invite-only">🔒 Invite only</span>
+                                    ) : (
+                                        <button 
+                                            className="btn btn-primary"
+                                            onClick={async () => {
+                                                try {
+                                                    if (!user) {
+                                                        localStorage.setItem('returnToTournament', tournament.id);
+                                                        localStorage.setItem('tournamentAction', 'participate');
+                                                        window.location.href = '/register?action=participate';
+                                                        return;
+                                                    }
+                                                    const participantType = tournament.participant_type;
+                                                    const payload = tournament.format === 'mix'
+                                                        ? {}
+                                                        : participantType === 'solo' ? {} : { teamId: null, newTeamName: null };
+                                                    const token = localStorage.getItem('token');
+                                                    await api.post(`/api/tournaments/${tournament.id}/participate`, payload, {
+                                                        headers: { Authorization: `Bearer ${token}` }
+                                                    });
+                                                    await fetchTournamentData();
+                                                } catch (e) {
+                                                    console.error('Ошибка участия:', e);
+                                                }
+                                            }}
+                                        >
+                                            Принять участие
+                                        </button>
+                                    )}
+                                    <button 
+                                        className="btn btn-secondary"
+                                        onClick={() => {
+                                            setActiveTab('info');
+                                            requestAnimationFrame(() => {
+                                                setTimeout(() => {
+                                                    const el = document.querySelector('.rules-block');
+                                                    if (el && typeof el.scrollIntoView === 'function') {
+                                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                    }
+                                                }, 50);
+                                            });
+                                        }}
+                                    >
+                                        Регламент
+                                    </button>
+                                </div>
                             </div>
                             <div className={`tournament-header-infoblock ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
-                                {/* сюда позже добавим инфо о турнире */}
+                                {/* правый инфоблок (резерв под дату, призовой и т.д.) */}
                             </div>
                         </div>
 
