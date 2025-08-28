@@ -8,6 +8,14 @@
     min-height: 100vh;
 }
 
+/* 🆕 Фоновое изображение для CS2 (верхние 400px занимаются фоном) */
+.tournament-details-tournamentdetails.cs2-bg {
+    background-image: url('/images/headers/CS2-header.png');
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
 /* 🆕 CS2 hero header (400px full-width top image) */
 .cs2-hero-header {
     width: 100vw;
