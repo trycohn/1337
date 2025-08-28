@@ -409,7 +409,7 @@ const TournamentParticipants = ({
                     <h4>👥 Пригласить друзей</h4>
                     <div className="referral-actions">
                         <button 
-                            className="invite-referral-btn"
+                            className="btn btn-secondary"
                             onClick={() => setReferralModal(true)}
                             title="Создать реферальную ссылку для приглашения друзей"
                         >

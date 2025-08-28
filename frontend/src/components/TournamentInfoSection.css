@@ -689,7 +689,7 @@
 
 .participants-list {
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 12px;
