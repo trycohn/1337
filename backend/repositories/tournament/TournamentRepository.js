@@ -309,7 +309,7 @@ class TournamentRepository {
                     // 🔧 ИСПРАВЛЕНО: Используем ту же логику что в MixTeamService.normalizeParticipantRating
                     const faceitRatings = members.map(member => {
                         // FACEIT приоритет: faceit_elo -> user_faceit_elo -> faceit_rating -> user_faceit_rating -> 1000
-                        console.log(`🔍 [getTeamsWithMembers] Участник ${member.name}:`, {
+                        console.log(`🔍 [getTeamsWithMembers] Участник ${member.display_name || member.name}:`, {
                             faceit_elo: member.faceit_elo,
                             user_faceit_elo: member.user_faceit_elo,
                             faceit_rating: member.faceit_rating,
@@ -319,23 +319,23 @@ class TournamentRepository {
                         let rating;
                         if (member.faceit_elo && !isNaN(parseInt(member.faceit_elo)) && parseInt(member.faceit_elo) > 0) {
                             rating = parseInt(member.faceit_elo);
-                            console.log(`✅ [getTeamsWithMembers] ${member.name}: используем faceit_elo = ${rating}`);
+                            console.log(`✅ [getTeamsWithMembers] ${member.display_name || member.name}: используем faceit_elo = ${rating}`);
                             return rating;
                         } else if (member.user_faceit_elo && !isNaN(parseInt(member.user_faceit_elo)) && parseInt(member.user_faceit_elo) > 0) {
                             rating = parseInt(member.user_faceit_elo);
-                            console.log(`✅ [getTeamsWithMembers] ${member.name}: используем user_faceit_elo = ${rating}`);
+                            console.log(`✅ [getTeamsWithMembers] ${member.display_name || member.name}: используем user_faceit_elo = ${rating}`);
                             return rating;
                         } else if (member.faceit_rating && !isNaN(parseInt(member.faceit_rating)) && parseInt(member.faceit_rating) > 0) {
                             rating = parseInt(member.faceit_rating);
-                            console.log(`✅ [getTeamsWithMembers] ${member.name}: используем faceit_rating = ${rating}`);
+                            console.log(`✅ [getTeamsWithMembers] ${member.display_name || member.name}: используем faceit_rating = ${rating}`);
                             return rating;
                         } else if (member.user_faceit_rating && !isNaN(parseInt(member.user_faceit_rating)) && parseInt(member.user_faceit_rating) > 0) {
                             rating = parseInt(member.user_faceit_rating);
-                            console.log(`✅ [getTeamsWithMembers] ${member.name}: используем user_faceit_rating = ${rating}`);
+                            console.log(`✅ [getTeamsWithMembers] ${member.display_name || member.name}: используем user_faceit_rating = ${rating}`);
                             return rating;
                         } else {
                             rating = 1000; // Дефолт для FACEIT
-                            console.log(`⚠️ [getTeamsWithMembers] ${member.name}: используем дефолт FACEIT = ${rating}`);
+                            console.log(`⚠️ [getTeamsWithMembers] ${member.display_name || member.name}: используем дефолт FACEIT = ${rating}`);
                             return rating;
                         }
                     });

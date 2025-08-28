@@ -396,7 +396,8 @@ class TournamentService {
                                  WHERE NOT EXISTS (
                                    SELECT 1 FROM tournament_team_members ttm
                                    WHERE ttm.team_id = $1::int AND (
-                                     (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
+                                     (ttm.user_id IS NOT DISTINCT FROM $2)
+                                     OR ($3 IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3)
                                    )
                                  )`,
                                 [finalTeamId, newUserId, newParticipantId, !!m.is_captain, m.captain_rating || null]
@@ -452,7 +453,8 @@ class TournamentService {
                              WHERE NOT EXISTS (
                                SELECT 1 FROM tournament_team_members ttm
                                WHERE ttm.team_id = $1::int AND (
-                                 (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
+                                 (ttm.user_id IS NOT DISTINCT FROM $2)
+                                 OR ($3 IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3)
                                )
                              )`,
                             [finalTeamId, userId, participantId]
