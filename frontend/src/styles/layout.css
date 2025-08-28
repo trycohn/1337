@@ -5,7 +5,7 @@
 }
 /* Глобальный отступ, чтобы контент не прятался под шапку */
 main {
-  padding-top: var(--header-height);
+  padding-top: 12px;
 }
 /* Макет */
 .app {
