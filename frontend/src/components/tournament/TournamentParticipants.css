@@ -145,6 +145,16 @@
     padding: 1px;
     border-bottom: 1px solid var(--Neutral-White-alpha-8, rgba(255, 255, 255, 0.08));
     background-color: #0a0a0a;
+    height: 64;
+    gap: 8px;
+    angle: 0 deg;
+    opacity: 1;
+    border-bottom-width: 1px;
+    padding-top: 16px;
+    padding-right: 32px;
+    padding-bottom: 16px;
+    padding-left: 32px;
+
 }
 
 .member-info {
