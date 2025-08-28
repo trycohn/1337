@@ -42,29 +42,9 @@ const calculateTournamentProgress = (matches = [], tournamentStatus, tournament 
                                bracketType === 'doubleElimination' ||
                                bracketType === 'DOUBLE_ELIMINATION';
 
-    let realMatches;
-    let totalMatches;
-
-    if (isDoubleElimination) {
-        // 🏆 DOUBLE ELIMINATION: все созданные матчи потенциально играбельны
-        // Не фильтруем по team1_id/team2_id, т.к. многие матчи заполняются по ходу турнира
-        realMatches = matches.filter(match => 
-            // Исключаем только технические/служебные матчи если они есть
-            match.bracket_type && 
-            ['winner', 'loser', 'grand_final', 'grand_final_reset'].includes(match.bracket_type)
-        );
-        totalMatches = realMatches.length;
-        
-        console.log(`🏆 DE турнир: всего матчей в структуре: ${totalMatches}`);
-    } else {
-        // 🎯 SINGLE ELIMINATION: фильтруем только матчи с участниками
-        realMatches = matches.filter(match => 
-            match.team1_id && match.team2_id
-        );
-        totalMatches = realMatches.length;
-        
-        console.log(`🎯 SE турнир: матчи с участниками: ${totalMatches}`);
-    }
+    // 🔁 Унифицированный подсчет: учитываем ВСЕ матчи турнира без фильтров
+    let realMatches = matches;
+    let totalMatches = matches.length;
 
     // 🔧 ИСПРАВЛЕНО: правильная проверка завершенных матчей
     const completedMatches = realMatches.filter(match => {

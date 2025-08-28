@@ -1,7 +1,7 @@
 # 🏗️ АРХИТЕКТУРА ПРОЕКТА: 1337 Community Tournament System
 
-**Версия**: 4.22.4  
-**Дата обновления**: 27 августа 2025  
+**Версия**: 4.23.0  
+**Дата обновления**: 28 августа 2025  
 **Статус**: Продакшн
 
 ## 🎯 ОБЗОР ПРОЕКТА
@@ -29,7 +29,7 @@
 - **CSS3** - стилизация (монохромная тема с прогресс-барами)
 - **SVG** - визуализация турнирных сеток
 - **🆕 React DnD** - система Drag & Drop для ручного редактирования
-- **🆕 Font Awesome (free brands)** - иконки соцсетей в шейринге (Telegram, VK, Discord)
+- **🆕 Font Awesome (free brands, free solid)** - бренды для шейринга (Telegram, VK, Discord) и solid-иконки (корона капитана)
 
 **🆕 Drag & Drop зависимости:**
 - **react-dnd**: ^16.0.1 - основная библиотека перетаскивания
@@ -83,6 +83,30 @@
 Ключевые файлы:
 - Frontend: `frontend/src/pages/HomePage.js`, `frontend/src/styles/HomePage.css`
 - Backend: `backend/routes/admin.js`, `backend/server.js`
+
+## ♻️ Последние изменения (v4.23.0)
+
+- Многоступенчатые турниры (финал ↔ отборочные)
+  - БД: `tournaments` расширена полями `is_series_final`, `access_type` (open/closed)
+  - БД: добавлены `tournament_qualifiers`, `tournament_promotions` (уникальность по финалу/отборочному/команде/месту)
+  - API: `PUT /:id/qualifiers`, `GET /:id/qualifiers`, `POST /:id/qualifiers/sync`, `PUT /:id/series-final-flag`, `GET /search/live`
+  - События: автосинхронизация победителей при завершении отборочного
+  - Frontend admin: выбор отборочных из списка, live‑поиск (3+ символа), фильтры
+
+- Типы доступа турниров
+  - `access_type` = open/closed; Closed скрывает кнопку «Участвовать» и показывает «Invite only»
+  - «Тип турнира»: Open / Closed / Series Final; Series Final включает `is_series_final`
+
+- Участники/Команды (UI)
+  - Капитаны отмечены иконкой короны (FA Solid)
+  - Имена участников кликабельны (`/user/:id`), названия команд кликабельны (`/teams/:id`)
+
+- Зависимости
+  - Добавлен `@fortawesome/free-solid-svg-icons`
+
+Ключевые файлы:
+- Backend: `TournamentService.js`, `TournamentRepository.js`, `TournamentController.js`, `routes/tournament/index.js`
+- Frontend: `CreateTournament.js`, `tournament/TournamentAdminPanel.js`, `TournamentInfoSection.js`, `tournament/TournamentParticipants.js`, CSS
 
 ### ♻️ Обновления лобби и отображения матчей (v4.22.4)
 
@@ -758,7 +782,10 @@ const isAdminOrCreator = (user.id === tournament.created_by) ||
 tournaments (
     id, name, game, format, bracket_type, 
     status, created_by, max_participants,
-    team_size, mix_rating_type, lobby_enabled
+    team_size, mix_rating_type, lobby_enabled,
+    -- 🆕 v4.23.0
+    is_series_final BOOLEAN DEFAULT FALSE,
+    access_type VARCHAR(10) DEFAULT 'open'
 )
 
 -- Участники
@@ -819,6 +846,26 @@ messages (
     metadata,     -- 🆕 JSONB для интерактивных действий
     content_meta,
     created_at
+)
+```
+
+### 🆕 Отборочные и промоушены (v4.23.0)
+
+```sql
+-- Связь финала с отборочными
+tournament_qualifiers (
+    id, final_tournament_id, qualifier_tournament_id,
+    slots INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT NOW()
+)
+
+-- Лог продвижений победителей в финал
+tournament_promotions (
+    id, final_tournament_id, qualifier_tournament_id,
+    team_id, placed INTEGER,
+    meta JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (final_tournament_id, qualifier_tournament_id, team_id, placed)
 )
 ```
 
