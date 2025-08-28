@@ -100,6 +100,13 @@
     font-weight: 600;
     color: #ffffff;
 }
+.team-name-link {
+    color: inherit;
+    text-decoration: none;
+}
+.team-name-link:hover {
+    color: #ff0000;
+}
 
 .team-members-count {
     font-size: 14px;
@@ -156,6 +163,13 @@
 .member-name {
     font-weight: 500;
     color: #ffffff;
+}
+.member-link {
+    color: inherit;
+    text-decoration: none;
+}
+.member-link:hover {
+    color: #ff0000;
 }
 
 .captain-icon {

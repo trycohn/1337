@@ -274,7 +274,13 @@ const TournamentParticipants = ({
                                 <div key={team.id || index} className="team-card">
                                     <div className="team-header">
                                         <div className="team-info">
-                                            <h4 className="team-name">{team.name}</h4>
+                                            <h4 className="team-name">
+                                                {team.id ? (
+                                                    <a href={`/teams/${team.id}`} className="team-name-link">{team.name}</a>
+                                                ) : (
+                                                    team.name
+                                                )}
+                                            </h4>
                                             <span className="team-members-count">
                                                 {team.members?.length || 0} участников
                                             </span>
@@ -300,7 +306,13 @@ const TournamentParticipants = ({
                                                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
                                                     />
                                                     <span className="member-name">
-                                                        {member.display_name || member.name || member.username}
+                                                        {member.user_id ? (
+                                                            <a href={`/user/${member.user_id}`} className="member-link">
+                                                                {member.display_name || member.name || member.username}
+                                                            </a>
+                                                        ) : (
+                                                            member.display_name || member.name || member.username
+                                                        )}
                                                         {member.is_captain && (
                                                             <span className="captain-icon" title="Капитан">
                                                                 <FontAwesomeIcon icon={byPrefixAndName.fas['crown']} />
@@ -339,7 +351,13 @@ const TournamentParticipants = ({
                                         )}
                                         <div className="participant-details">
                                             <span className="participant-name">
-                                                {participant.username || participant.name || participant.display_name}
+                                                {participant.user_id ? (
+                                                    <a href={`/user/${participant.user_id}`} className="member-link">
+                                                        {participant.username || participant.name || participant.display_name}
+                                                    </a>
+                                                ) : (
+                                                    participant.username || participant.name || participant.display_name
+                                                )}
                                             </span>
                                             <div className="participant-stats">
                                                 {participant.faceit_elo && (
