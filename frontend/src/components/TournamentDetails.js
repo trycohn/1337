@@ -50,6 +50,7 @@ import './tournament/BracketManagementPanel.css';
 import PodiumSection from './tournament/PodiumSection';
 
 // 🆕 Прогресс-бар турнира
+import TournamentProgressBar from './tournament/TournamentProgressBar';
 
 // Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
 const LazyBracketRenderer = React.lazy(() => 
