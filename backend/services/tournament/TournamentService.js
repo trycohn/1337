@@ -332,15 +332,15 @@ class TournamentService {
                     const insertTeamRes = await pool.query(
                         `WITH ins AS (
                            INSERT INTO tournament_teams (tournament_id, name, creator_id)
-                           SELECT $1, $2, $3
+                           SELECT $1::int, $2::text, $3
                            WHERE NOT EXISTS (
-                             SELECT 1 FROM tournament_teams t WHERE t.tournament_id = $1 AND t.name = $2
+                             SELECT 1 FROM tournament_teams t WHERE t.tournament_id = $1::int AND t.name = $2::text
                            )
                            RETURNING id
                          )
                          SELECT id FROM ins
                          UNION ALL
-                         SELECT id FROM tournament_teams WHERE tournament_id = $1 AND name = $2 LIMIT 1`,
+                         SELECT id FROM tournament_teams WHERE tournament_id = $1::int AND name = $2::text LIMIT 1`,
                         [finalTournamentId, sourceName, sourceCreatorId]
                     );
                     const finalTeamId = insertTeamRes.rows[0]?.id;
@@ -349,13 +349,13 @@ class TournamentService {
                     if (isTeamSource && finalTeamId) {
                         const membersRes = await pool.query(
                             `SELECT user_id, participant_id, is_captain, captain_rating
-                             FROM tournament_team_members WHERE team_id = $1`,
+                             FROM tournament_team_members WHERE team_id = $1::int`,
                             [refId]
                         );
 
                         // Текущее состояние финальной команды
                         const finalMembersRes = await pool.query(
-                            `SELECT user_id, participant_id FROM tournament_team_members WHERE team_id = $1`,
+                            `SELECT user_id, participant_id FROM tournament_team_members WHERE team_id = $1::int`,
                             [finalTeamId]
                         );
                         const finalMembers = finalMembersRes.rows || [];
@@ -368,7 +368,7 @@ class TournamentService {
                             // Если нет user_id, но есть participant_id — создадим участника в финале с тем же именем
                             if (!newUserId && m.participant_id) {
                                 const srcP = await pool.query(
-                                    `SELECT name FROM tournament_participants WHERE id = $1`,
+                                    `SELECT name FROM tournament_participants WHERE id = $1::int`,
                                     [m.participant_id]
                                 );
                                 const pName = srcP.rows[0]?.name || ('Qualified #' + refId);
@@ -392,10 +392,10 @@ class TournamentService {
                             // Вставляем участника команды в финале, избегая дублей по user_id/participant_id
                             await pool.query(
                                 `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
-                                 SELECT $1, $2, $3, $4, $5
+                                 SELECT $1::int, $2, $3, $4, $5
                                  WHERE NOT EXISTS (
                                    SELECT 1 FROM tournament_team_members ttm
-                                   WHERE ttm.team_id = $1 AND (
+                                   WHERE ttm.team_id = $1::int AND (
                                      (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
                                    )
                                  )`,
@@ -447,10 +447,10 @@ class TournamentService {
 
                         await pool.query(
                             `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
-                             SELECT $1, $2, $3, false, NULL
+                             SELECT $1::int, $2, $3, false, NULL
                              WHERE NOT EXISTS (
                                SELECT 1 FROM tournament_team_members ttm
-                               WHERE ttm.team_id = $1 AND (
+                               WHERE ttm.team_id = $1::int AND (
                                  (ttm.user_id IS NOT DISTINCT FROM $2) OR (ttm.participant_id IS NOT DISTINCT FROM $3)
                                )
                              )`,
@@ -460,7 +460,7 @@ class TournamentService {
                         // Для одиночного источника удалим все лишние записи кроме текущего пользователя/участника
                         await pool.query(
                             `DELETE FROM tournament_team_members 
-                             WHERE team_id = $1 AND NOT (
+                             WHERE team_id = $1::int AND NOT (
                                (user_id IS NOT DISTINCT FROM $2) OR (participant_id IS NOT DISTINCT FROM $3)
                              )`,
                             [finalTeamId, userId, participantId]
