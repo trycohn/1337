@@ -181,9 +181,6 @@ const MyTeams = ({ user }) => {
                 {teams.length === 0 ? (
                     <div className="no-teams">
                         <p>У вас пока нет команд</p>
-                        <button className="btn btn-secondary" onClick={openCreateModal}>
-                            Создать первую команду
-                        </button>
                     </div>
                 ) : (
                     teams.map(team => (
