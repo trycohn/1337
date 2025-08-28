@@ -290,13 +290,12 @@ const TournamentParticipants = ({
                                         {team.members?.map((member, memberIndex) => (
                                             <div key={member.id || memberIndex} className="team-member">
                                                 <div className="member-info">
-                                                    {member.avatar_url && (
-                                                        <img 
-                                                            src={member.avatar_url} 
-                                                            alt={member.display_name || member.name || member.username}
-                                                            className="member-avatar"
-                                                        />
-                                                    )}
+                                                    <img 
+                                                        src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
+                                                        alt={member.display_name || member.name || member.username}
+                                                        className="member-avatar"
+                                                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                                    />
                                                     <span className="member-name">{member.display_name || member.name || member.username}</span>
                                                 </div>
                                                 <div className="member-stats">
