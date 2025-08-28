@@ -144,7 +144,8 @@ class TournamentService {
             start_date, description, bracket_type, team_size, mix_rating_type,
             lobby_enabled, lobby_match_format, selected_maps, full_double_elimination,
             require_faceit_linked, require_steam_linked,
-            is_series_final
+            is_series_final,
+            access_type
         } = tournamentData;
 
         const tournament = await TournamentRepository.create({
@@ -167,7 +168,8 @@ class TournamentService {
             require_faceit_linked: format === 'mix' ? !!require_faceit_linked : false,
             require_steam_linked: format === 'mix' ? !!require_steam_linked : false,
             // 🆕 Флаг финального турнира серии
-            is_series_final: !!is_series_final
+            is_series_final: !!is_series_final,
+            access_type: access_type === 'closed' ? 'closed' : 'open'
         });
 
         // Если включены настройки лобби, создаем их

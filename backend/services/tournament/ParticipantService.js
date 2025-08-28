@@ -68,6 +68,29 @@ class ParticipantService {
             throw new Error('Турнир не активен');
         }
 
+        // 🆕 Закрытый турнир: участие только по приглашению или через квалификацию
+        if (tournament.access_type === 'closed') {
+            // Проверяем наличие приглашения
+            const InvitationRepository = require('../../repositories/tournament/InvitationRepository');
+            const hasInvitation = InvitationRepository?.hasAcceptedInvitation
+                ? await InvitationRepository.hasAcceptedInvitation(tournamentId, userId)
+                : false;
+
+            // Проверяем авто-квалификацию (promotions)
+            const pool = require('../../db');
+            const promotedRes = await pool.query(
+                `SELECT 1 FROM tournament_promotions tp
+                 JOIN tournament_teams tt ON tt.id = tp.team_id
+                 JOIN tournament_team_members ttm ON ttm.team_id = tt.id
+                 WHERE tp.final_tournament_id = $1 AND ttm.user_id = $2 LIMIT 1`,
+                [tournamentId, userId]
+            );
+
+            if (!hasInvitation && promotedRes.rows.length === 0) {
+                throw new Error('Участие доступно только по приглашению или через отборочный турнир');
+            }
+        }
+
         // Проверяем, не участвует ли уже пользователь
         const existingParticipant = await ParticipantRepository.getUserParticipation(tournamentId, userId);
         if (existingParticipant) {

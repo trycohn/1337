@@ -45,7 +45,9 @@ function CreateTournament() {
     selected_maps: [],
     // 🆕 НОВОЕ: Опция Full Double Elimination
     full_double_elimination: false,
-    // 🆕 Флаг финального турнира серии
+    // 🆕 Тип турнира: open | closed | final
+    tournament_type: 'open',
+    // (устаревшее поле – вычисляется из tournament_type)
     is_series_final: false
   });
   const { runWithLoader } = useLoaderAutomatic();
@@ -148,8 +150,10 @@ function CreateTournament() {
             selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
             // 🆕 НОВОЕ: Опция Full Double Elimination
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
-            // 🆕 Передаём флаг финала серии
-            is_series_final: !!formData.is_series_final
+            // 🆕 Тип доступа
+            access_type: formData.tournament_type === 'closed' ? 'closed' : 'open',
+            // 🆕 Флаг финала серии (из выпадающего списка)
+            is_series_final: formData.tournament_type === 'final'
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -425,6 +429,25 @@ function CreateTournament() {
                 </select>
               </div>
 
+              {/* 🆕 Тип турнира: открытый/закрытый/финал серии */}
+              <div className="form-group">
+                <label>Тип турнира</label>
+                <select
+                  name="tournament_type"
+                  value={formData.tournament_type}
+                  onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate}
+                  required
+                >
+                  <option value="open">Открытый</option>
+                  <option value="closed">Закрытый</option>
+                  <option value="final">Финал серии</option>
+                </select>
+                <small className="form-hint">
+                  Открытый — свободное вступление; Закрытый — по приглашению/из отборочных; Финал серии — только победители отборочных.
+                </small>
+              </div>
+
               {formData.format !== 'mix' && (
                 <div className="form-group">
                   <label>Тип участников</label>
@@ -569,20 +592,7 @@ function CreateTournament() {
               </div>
             )}
 
-            {/* 🆕 Флаг: Является ли турнир финалом серии */}
-            <div className="form-group full-width">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="is_series_final"
-                  checked={formData.is_series_final}
-                  onChange={handleInputChange}
-                  disabled={!verificationStatus.canCreate}
-                />
-                <span className="checkbox-text">🏁 Является ли турнир Финалом серии турниров?</span>
-              </label>
-              <small className="form-hint">Если включено, турнир может автоматически получать победителей из указанных отборочных турниров.</small>
-            </div>
+            {/* Убран флажок финала серии — используется выпадающий список "Тип турнира" */}
           </div>
         </div>
 
