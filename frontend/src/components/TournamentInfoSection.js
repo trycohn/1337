@@ -1426,7 +1426,12 @@ const TournamentInfoSection = ({
                             <div className="participants-list">
                                 {tournament?.teams?.map(team => (
                                     <div key={team.id} className="participant-item">
-                                        <div className="team-avatar-placeholder">🏷️</div>
+                                        <img
+                                            src={ensureHttps(team.avatar_url || team.logo_url) || '/uploads/avatars/preloaded/circle-user.svg'}
+                                            alt={team.name}
+                                            className="participant-avatar"
+                                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                        />
                                         <span className="participant-name">{team.name}</span>
                                     </div>
                                 ))}
