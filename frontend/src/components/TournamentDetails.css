@@ -74,6 +74,7 @@
 /* Инфоблок под заголовком */
 .header-stats {
     background-color: #1D1D1D;
+    width: 464px;
 }
 
 .header-stats .stats-grid {
@@ -89,7 +90,7 @@
         'prize prize'
         'start status';
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 0px;
     margin-top: 0px;
     }
 
@@ -102,10 +103,9 @@
         'format format'
         'participants team-size';
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 6px; 
-
+    gap: 0px;
 }
+
 .header-stats .stat-item {
     background: transparent;
     padding: 10px 12px;
@@ -142,7 +142,7 @@
     font-weight: 500;
 }
 .header-stats .stats-progress {
-    margin: 10px 0 6px 0;
+    margin: 0;
 }
 
 @media (max-width: 992px) {
@@ -1422,6 +1422,7 @@ div.score-container input {
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
+    flex-direction: row;
 }
 .stat-label {
     font-weight: 500;
