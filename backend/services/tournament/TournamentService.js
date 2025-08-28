@@ -392,12 +392,12 @@ class TournamentService {
                             // Вставляем участника команды в финале, избегая дублей по user_id/participant_id
                             await pool.query(
                                 `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
-                                 SELECT $1::int, $2, $3, $4, $5
+                                 SELECT $1::int, $2::int, $3::int, $4, $5
                                  WHERE NOT EXISTS (
                                    SELECT 1 FROM tournament_team_members ttm
                                    WHERE ttm.team_id = $1::int AND (
-                                     (ttm.user_id IS NOT DISTINCT FROM $2)
-                                     OR ($3 IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3)
+                                     (ttm.user_id IS NOT DISTINCT FROM $2::int)
+                                     OR ($3::int IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3::int)
                                    )
                                  )`,
                                 [finalTeamId, newUserId, newParticipantId, !!m.is_captain, m.captain_rating || null]
@@ -449,12 +449,12 @@ class TournamentService {
 
                         await pool.query(
                             `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
-                             SELECT $1::int, $2, $3, false, NULL
+                             SELECT $1::int, $2::int, $3::int, false, NULL
                              WHERE NOT EXISTS (
                                SELECT 1 FROM tournament_team_members ttm
                                WHERE ttm.team_id = $1::int AND (
-                                 (ttm.user_id IS NOT DISTINCT FROM $2)
-                                 OR ($3 IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3)
+                                 (ttm.user_id IS NOT DISTINCT FROM $2::int)
+                                 OR ($3::int IS NOT NULL AND ttm.participant_id IS NOT DISTINCT FROM $3::int)
                                )
                              )`,
                             [finalTeamId, userId, participantId]
