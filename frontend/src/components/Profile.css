@@ -3,8 +3,15 @@
    ========================= */
 /* CSS Variables - Черно-белая тема */
 :root { --bg-primary:#000; --bg-secondary:#111; --bg-tertiary:#1a1a1a; --text-primary:#fff; --text-secondary:#ccc; --text-muted:#888; --text-disabled:#666; --border-color:#333; --border-hover:#555; --accent-success:#4caf50; --accent-error:#ff6b6b; --btn-order-color:#ff0000; --accent-warning:#ff0000; --spacing-xs:8px; --spacing-sm:12px; --spacing-md:14px; --spacing-lg:18px; --spacing-xl:24px; --spacing-2xl:32px; --transition: all 0.2s ease; 
-        /* Макетные токены */
-        --bg:#0b0c0d; --surface:#131314; --line:#2a2a2a; --text:#ffffff; --muted:#9a9a9a; --accent:#e82a2a; }
+        /* Макетные токены (обновлённая палитра) */
+        --bg:#0b0c0d; 
+        --surface:#222325; 
+        --control:#2e3033;
+        --line:rgba(255,255,255,.06); 
+        --text:#f5f6f7; 
+        --muted:#c4c6c9; 
+        --accent:#e82a2a; /* сохранён для редких акцентов */
+        --icon:#aeb2b7; }
 
 /* Base Styles */
 .profile-container {
@@ -437,7 +444,7 @@
     align-items: center;
     justify-content: space-between;
     padding-bottom: var(--spacing-lg);
-    border-bottom: 2px solid var(--accent);
+    border-bottom: 2px solid var(--line);
 }
 
 .content-title {
@@ -463,7 +470,7 @@
 .mi-title {
     margin: 0 0 14px 0;
     font-size: 14px;
-    color: var(--accent);
+    color: var(--text);
     text-transform: uppercase;
     letter-spacing: .08em;
     text-align: left;
@@ -488,7 +495,7 @@
     height: 40px;
     border-radius: 10px;
     border: 1px solid var(--line);
-    background: #0f1012;
+    background: var(--control);
     color: var(--text);
     padding: 0 12px;
     outline: 0;
@@ -513,9 +520,9 @@
     height: 38px;
     padding: 0 14px;
     border-radius: 10px;
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
+    border: 1px solid var(--line);
+    background: var(--control);
+    color: var(--text);
     cursor: pointer;
     text-decoration: none;
     font-weight: 400; font-size: 15px;
@@ -524,9 +531,9 @@
     transition: .2s ease;
 }
 
-.mi-btn:hover { background: #e82a2a26; transform: translateY(-1px); }
-.mi-btn-danger { border-color: var(--accent); color: var(--accent); }
-.mi-btn-danger:hover { background: rgba(232,42,42,.25); }
+.mi-btn:hover { background: rgba(255,255,255,.04); transform: translateY(-1px); }
+.mi-btn-danger { border-color: var(--line); color: var(--text); }
+.mi-btn-danger:hover { background: rgba(255,255,255,.06); }
 
 /* Привязки аккаунтов */
 .mi-bind-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); }
@@ -534,14 +541,14 @@
 .mi-bind-left { display:flex; align-items:center; gap:12px; }
 .mi-bind-left > div { text-align:left; }
 .mi-bind-left > div > div:first-child { margin-bottom: 4px; }
-.mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:#1b1b1d; border:1px solid var(--line); color: var(--muted); }
+.mi-service-icon { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background: var(--surface); border:1px solid var(--line); color: var(--icon); }
 .mi-status { color: var(--muted); font-size: 14px; }
-.mi-status.ok { color: var(--accent); font-weight: 600; }
+.mi-status.ok { color: var(--text); font-weight: 600; }
 .mi-status.none { color: var(--muted); }
 .mi-helper { font-size:12px; color: var(--muted); margin-top:8px; text-align:left; }
 
 /* Ссылки ника в статусе привязки */
-.mi-status a { color: var(--accent); text-decoration: none; font-weight: 400; }
+.mi-status a { color: var(--text); text-decoration: none; font-weight: 400; }
 .mi-status a:hover { text-decoration: underline; }
 
 /* Cards */
