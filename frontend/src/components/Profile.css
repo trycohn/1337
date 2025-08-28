@@ -1097,6 +1097,10 @@
 
 .avatar-modal-right {
     min-height: 200px;
+    /* Делаем правую колонку (быстрый выбор) прокручиваемой, чтобы влезало больше аватаров */
+    max-height: calc(90vh - 160px);
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
 }
 
 .preloaded-avatars-container .preloaded-header h4 {
@@ -1160,6 +1164,8 @@
         display: block;
     }
     .avatar-modal-divider { display: none; }
+    /* На мобиле позволяем модалке скроллиться целиком, без локального скролла правой части */
+    .avatar-modal-right { max-height: none; overflow: visible; padding-right: 0; }
 }
 
 .avatar-preview {
