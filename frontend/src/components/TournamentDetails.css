@@ -12,7 +12,9 @@
 .cs2-hero-header {
     width: 100vw;
     height: 400px;
-    background: url('/images/CS2 header.png') top center / cover no-repeat;
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-size: cover;
     margin-left: calc(50% - 50vw); /* full-bleed */
     margin-right: calc(50% - 50vw);
 }

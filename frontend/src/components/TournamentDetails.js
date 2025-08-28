@@ -2444,7 +2444,12 @@ function TournamentDetails() {
             <div className="tournament-details-tournamentdetails" data-testid="tournament-details">
                 {/* 🆕 CS2 Hero header */}
                 {tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) && (
-                    <div className="cs2-hero-header" role="img" aria-label="CS2 header" />
+                    <div
+                        className="cs2-hero-header"
+                        role="img"
+                        aria-label="CS2 header"
+                        style={{ backgroundImage: "url('/public/images/CS2 header.png'), url('/images/CS2 header.png')" }}
+                    />
                 )}
                 <div className="tournament-layout">
                     <div className="tournament-main">
