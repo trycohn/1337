@@ -2442,15 +2442,19 @@ function TournamentDetails() {
     return (
         <TournamentErrorBoundary>
             <div className="tournament-details-tournamentdetails" data-testid="tournament-details">
+                {/* 🆕 CS2 Hero header */}
+                {tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) && (
+                    <div className="cs2-hero-header" role="img" aria-label="CS2 header" />
+                )}
                 <div className="tournament-layout">
                     <div className="tournament-main">
                         {/* Заголовок турнира */}
-                        <div className="tournament-header-tournamentdetails">
+                        <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                             <h2 data-testid="tournament-title">{tournament.name}</h2>
                                 </div>
 
                         {/* 🆕 Навигация по вкладкам */}
-                        <div className="tabs-navigation-tournamentdetails">
+                        <div className={`tabs-navigation-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'offset-from-hero' : ''}`}>
                             <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
                                 onClick={() => switchTab('info')}

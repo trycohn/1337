@@ -7,6 +7,20 @@
     color: #ffffff;
     min-height: 100vh;
 }
+
+/* 🆕 CS2 hero header (400px full-width top image) */
+.cs2-hero-header {
+    width: 100vw;
+    height: 400px;
+    background: url('/images/CS2 header.png') top center / cover no-repeat;
+    margin-left: calc(50% - 50vw); /* full-bleed */
+    margin-right: calc(50% - 50vw);
+}
+
+/* Отступ для навигации по вкладкам, если есть hero */
+.tabs-navigation-tournamentdetails.offset-from-hero {
+    margin-top: 400px;
+}
 .tournament-details-tournamentdetails h2 {
     margin-bottom: 20px;
     color: #ffffff;
