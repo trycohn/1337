@@ -38,13 +38,11 @@
     padding-bottom: 16px;
     border-bottom: 1px solid #333333;
     border-top-left-radius: 8px;
-    border-top-right-radius: 8px
+    border-top-right-radius: 8px;
     font-weight: 700;
-    font-style: Bold;
     font-size: 12px;
-    leading-trim: NONE;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
 }
 
 .participants-count-participants {
@@ -136,7 +134,7 @@
     padding: 1px;
     border-bottom: 1px solid var(--Neutral-White-alpha-8, rgba(255, 255, 255, 0.08));
     background-color: #0a0a0a;
-    height: 64;
+    height: 64px;
     gap: 8px;
     opacity: 1;
     border-bottom-width: 1px;
@@ -162,11 +160,10 @@
 .member-name-participants {
     font-family: Play;
     font-weight: 700;
-    font-style: Bold;
+    font-style: normal;
     font-size: 12px;
-    leading-trim: NONE;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     
 }
 .member-link-participants {
@@ -286,7 +283,7 @@
     border-top: 1px solid #333333;
 }
 
-.team-generator-section h4 {
+.team-generator-section-participants h4 {
     margin: 0 0 16px 0;
     font-size: 20px;
     font-weight: 600;
