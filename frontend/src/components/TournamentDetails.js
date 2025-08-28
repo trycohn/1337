@@ -9,7 +9,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../utils/api';
 import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
-import TournamentProgressBar from './tournament/TournamentProgressBar';
 import { useModalSystem } from '../hooks/useModalSystem';
 import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
@@ -51,7 +50,6 @@ import './tournament/BracketManagementPanel.css';
 import PodiumSection from './tournament/PodiumSection';
 
 // 🆕 Прогресс-бар турнира
-import TournamentProgressBar from './tournament/TournamentProgressBar';
 
 // Ленивая загрузка BracketRenderer с улучшенной обработкой ошибок
 const LazyBracketRenderer = React.lazy(() => 
