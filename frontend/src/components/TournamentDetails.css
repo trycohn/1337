@@ -72,7 +72,9 @@
 }
 
 /* Инфоблок под заголовком */
-
+.header-stats {
+    background-color: #1D1D1D;
+}
 
 .header-stats .stats-grid {
     display: grid;
@@ -80,19 +82,53 @@
     gap: 12px;
     margin-top: 0px;
 }
-.header-stats .stats-grid.stats-top { /* top row */ margin-top: 0; }
-.header-stats .stats-grid.stats-bottom { margin-top: 6px; }
+.header-stats .stats-grid.stats-top {
+    margin-top: 0; 
+    display: grid;
+    grid-template-areas: 
+        'prize prize'
+        'start status';
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 0px;
+    }
+
+
+
+
+.header-stats .stats-grid.stats-bottom { 
+    display: grid;
+    grid-template-areas: 
+        'format format'
+        'participants team-size';
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 6px; 
+
+}
 .header-stats .stat-item {
     background: transparent;
-    border: 1px solid #1f1f1f;
     padding: 10px 12px;
 }
-.header-stats .stat-item.stat-prize { border-color: #333333; }
-.header-stats .stat-item.stat-start { border-color: #2a2a2a; }
-.header-stats .stat-item.stat-status { border-color: #262626; }
-.header-stats .stat-item.stat-format { border-color: #2a2a2a; }
-.header-stats .stat-item.stat-participants { border-color: #333333; }
-.header-stats .stat-item.stat-team-size { border-color: #262626; }
+
+.header-stats .stat-item.stat-prize { 
+    grid-area: prize;
+}
+.header-stats .stat-item.stat-start { 
+    grid-area: start;
+}
+.header-stats .stat-item.stat-status { 
+    grid-area: status;
+}
+.header-stats .stat-item.stat-format { 
+    grid-area: format;
+}
+.header-stats .stat-item.stat-participants { 
+    grid-area: participants; 
+}
+.header-stats .stat-item.stat-team-size { 
+    grid-area: team-size;
+}
 .header-stats .stat-label {
     color: #aaaaaa;
     font-size: 12px;
