@@ -42,9 +42,10 @@
 }
 
 .tournament-header .with-cs2-hero {
-    display: flex;
+    display: grid;
     gap: 20px;
     align-items: flex-end;
+    grid-template-columns: 1.5fr 1fr;
 }
 
 .tournament-header-tournamentdetails .with-cs2-hero {
