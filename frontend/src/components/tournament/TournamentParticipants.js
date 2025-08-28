@@ -293,11 +293,11 @@ const TournamentParticipants = ({
                                                     {member.avatar_url && (
                                                         <img 
                                                             src={member.avatar_url} 
-                                                            alt={member.username}
+                                                            alt={member.display_name || member.name || member.username}
                                                             className="member-avatar"
                                                         />
                                                     )}
-                                                    <span className="member-name">{member.username}</span>
+                                                    <span className="member-name">{member.display_name || member.name || member.username}</span>
                                                 </div>
                                                 <div className="member-stats">
                                                     {member.faceit_elo && (
