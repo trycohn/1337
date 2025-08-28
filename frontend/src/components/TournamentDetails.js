@@ -9,6 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../utils/api';
 import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
+import TournamentProgressBar from './tournament/TournamentProgressBar';
 import { useModalSystem } from '../hooks/useModalSystem';
 import useTournamentManagement from '../hooks/tournament/useTournamentManagement';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
@@ -2464,8 +2465,7 @@ function TournamentDetails() {
                 <div className="tournament-layout">
                     <div className="tournament-main">
                         {/* Заголовок турнира (CS2: делим на 2 блока в общем флексе) */}
-                        <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}
-                             style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', width: '100%' }}>
+                        <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                             <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                                 <h2 data-testid="tournament-title">{tournament.name}</h2>
                                 <div className="header-meta">
@@ -2530,7 +2530,40 @@ function TournamentDetails() {
                                 </div>
                             </div>
                             <div className={`tournament-header-infoblock ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
-                                {/* правый инфоблок (резерв под дату, призовой и т.д.) */}
+                                {/* Правый инфоблок: призовой, старт, статус, прогресс, формат, участники, команда */}
+                                <div className="header-stats">
+                                    <div className="stats-grid">
+                                        <div className="stat-item">
+                                            <div className="stat-label">Призовой фонд</div>
+                                            <div className="stat-value">{tournament?.prize_pool ? tournament.prize_pool : 'Не указан'}</div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Старт</div>
+                                            <div className="stat-value">{tournament?.start_date ? new Date(tournament.start_date).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Статус</div>
+                                            <div className="stat-value">{(() => { const map = { registration: 'Регистрация', active: 'Активный', in_progress: 'Идет', completed: 'Завершен', upcoming: 'Предстоящий' }; return map[tournament?.status] || tournament?.status || '—'; })()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="stats-progress">
+                                        <TournamentProgressBar matches={matches || []} tournamentStatus={tournament?.status} tournament={tournament} compact={true} />
+                                    </div>
+                                    <div className="stats-grid">
+                                        <div className="stat-item">
+                                            <div className="stat-label">Формат</div>
+                                            <div className="stat-value">{tournament?.format === 'mix' ? 'Микс' : (tournament?.participant_type === 'team' ? 'Командный' : 'Соло')}</div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Участники</div>
+                                            <div className="stat-value">{(() => { const displayed = tournament?.format === 'mix' ? (tournament?.players_count ?? tournament?.participant_count ?? 0) : (tournament?.participant_count ?? 0); return tournament?.max_participants ? `${displayed} из ${tournament.max_participants}` : displayed; })()}</div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">В команде</div>
+                                            <div className="stat-value">{tournament?.team_size || 5}</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
