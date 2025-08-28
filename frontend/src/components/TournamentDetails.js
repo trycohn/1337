@@ -1356,12 +1356,20 @@ function TournamentDetails() {
         }
     }, [tournament?.game, fetchMapsForGame]);
 
-    // 🆕 Root‑фон для CS2 (body.classList)
+    // 🆕 Root‑фон для CS2 (body.classList + inline backgroundImage)
     useEffect(() => {
         const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
-        if (isCS2) document.body.classList.add('cs2-root-bg');
-        else document.body.classList.remove('cs2-root-bg');
-        return () => document.body.classList.remove('cs2-root-bg');
+        if (isCS2) {
+            document.body.classList.add('cs2-root-bg');
+            document.body.style.backgroundImage = "url('/images/headers/CS2-header.png')";
+        } else {
+            document.body.classList.remove('cs2-root-bg');
+            document.body.style.backgroundImage = '';
+        }
+        return () => {
+            document.body.classList.remove('cs2-root-bg');
+            document.body.style.backgroundImage = '';
+        };
     }, [tournament?.game]);
 
     // WebSocket соединение

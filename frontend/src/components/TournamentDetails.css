@@ -18,8 +18,7 @@
 /* 🆕 Фон на уровне root (body) для CS2 */
 /* Класс для body/html задаётся из Layout через document.body.classList */
 .cs2-root-bg {
-    /* путь указывается в index.html как <link rel> не требуется; тут CSS остаётся, но без пересборки можно держать */
-    background-image: url(/images/headers/CS2-header.png);
+    /* Фон задаётся инлайном из JS (во избежание resolve на этапе сборки) */
     background-position: top center;
     background-repeat: no-repeat;
     background-size: 100% 400px; /* ширина -> экран, высота фикс 400px */
