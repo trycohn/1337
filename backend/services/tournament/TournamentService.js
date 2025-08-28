@@ -418,11 +418,11 @@ class TournamentService {
                     } else if (finalTeamId) {
                         // Источник не команда — добавим одного участника как члена команды
                         const srcPartRes = await pool.query(
-                            `SELECT tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $2::text) AS name
+                            `SELECT tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $3) AS name
                              FROM tournament_participants tp
                              LEFT JOIN users u ON u.id = tp.user_id
-                             WHERE tp.id = $2::int`,
-                            [finalTournamentId, refId]
+                             WHERE tp.id = $2`,
+                            [finalTournamentId, refId, String(refId)]
                         );
                         const userId = srcPartRes.rows[0]?.user_id || null;
                         let participantId = null;
@@ -470,15 +470,15 @@ class TournamentService {
                     // Индивидуальный финал: добавляем участника
                     await pool.query(
                         `INSERT INTO tournament_participants (tournament_id, user_id, name, in_team)
-                         SELECT $1, tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $2::text), false
+                         SELECT $1, tp.user_id, COALESCE(tp.name, u.username, 'Qualified #' || $3), false
                          FROM tournament_participants tp
                          LEFT JOIN users u ON u.id = tp.user_id
-                         WHERE tp.id = $2::int
+                         WHERE tp.id = $2
                          AND NOT EXISTS (
                             SELECT 1 FROM tournament_participants p
                             WHERE p.tournament_id = $1 AND (p.user_id = tp.user_id OR p.name = COALESCE(tp.name, u.username))
                          )`,
-                        [finalTournamentId, refId]
+                        [finalTournamentId, refId, String(refId)]
                     );
                 }
 
