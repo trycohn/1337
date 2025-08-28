@@ -69,23 +69,18 @@
 
 .team-card {
     background: #111111;
-    border: 1px solid #333333;
     border-radius: 12px;
-    padding: 20px;
     transition: all 0.3s ease;
     flex-basis: calc(100% / 4.5);
-}
-
-.team-card:hover {
-    border-color: #555555;
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
 .team-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    height: 96px;
+    width: 384px;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .team-info {
@@ -144,6 +139,12 @@
     background: #0a0a0a;
     border-radius: 8px;
     border: 1px solid #222222;
+}
+
+.team-members .team-member {
+    padding: 1px;
+    border-bottom: 1px solid var(--Neutral-White-alpha-8, rgba(255, 255, 255, 0.08));
+    background-color: #0a0a0a;
 }
 
 .member-info {
