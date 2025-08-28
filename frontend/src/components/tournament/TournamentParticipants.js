@@ -242,9 +242,9 @@ const TournamentParticipants = ({
                 </div>
             )}
 
-            <div className="participants-header">
+            <div className="participants-header-participants">
                 <h3>👥 Участники турнира</h3>
-                <div className="participants-count">
+                <div className="participants-count-participants">
                     Участников: {participantsList.length}
                     {tournament?.max_participants && ` / ${tournament.max_participants}`}
                 </div>
@@ -252,7 +252,7 @@ const TournamentParticipants = ({
 
             {/* 🆕 Для микс турниров ВСЕГДА показываем TeamGenerator */}
             {tournament?.format === 'mix' && (
-                <div className="team-generator-section">
+                <div className="team-generator-section-participants">
                     <TeamGenerator
                         tournament={tournament}
                         participants={participantsList}
@@ -269,25 +269,25 @@ const TournamentParticipants = ({
                 <>
                     {/* Список участников для команд */}
                     {tournament?.participant_type === 'team' && (
-                        <div className="teams-list">
+                        <div className="teams-list-participants">
                             {tournament.teams?.map((team, index) => (
-                                <div key={team.id || index} className="team-card">
-                                    <div className="team-header">
-                                        <div className="team-info">
-                                            <h4 className="team-name">
+                                <div key={team.id || index} className="team-card-participants">
+                                    <div className="team-header-participants">
+                                        <div className="team-info-participants">
+                                            <h4 className="team-name-participants">
                                                 {team.id ? (
-                                                    <a href={`/teams/${team.id}`} className="team-name-link">{team.name}</a>
+                                                    <a href={`/teams/${team.id}`} className="team-name-link-participants">{team.name}</a>
                                                 ) : (
                                                     team.name
                                                 )}
                                             </h4>
-                                            <span className="team-members-count">
+                                            <span className="team-members-count-participants">
                                                 {team.members?.length || 0} участников
                                             </span>
                                         </div>
                                         {isAdminOrCreator && (
                                             <button 
-                                                className="remove-team-btn"
+                                                className="remove-team-btn-participants"
                                                 onClick={() => removeParticipant(team.id, team.name)}
                                                 title="Удалить команду"
                                             >
@@ -295,32 +295,32 @@ const TournamentParticipants = ({
                                             </button>
                                         )}
                                     </div>
-                                    <div className="team-members">
+                                    <div className="team-members-participants">
                                         {team.members?.map((member, memberIndex) => (
-                                            <div key={member.id || memberIndex} className="team-member">
-                                                <div className="member-info">
+                                            <div key={member.id || memberIndex} className="team-member-participants">
+                                                <div className="member-info-participants">
                                                     <img 
                                                         src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
                                                         alt={member.display_name || member.name || member.username}
-                                                        className="member-avatar"
+                                                        className="member-avatar-participants"
                                                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
                                                     />
-                                                    <span className="member-name">
+                                                    <span className="member-name-participants">
                                                         {member.user_id ? (
-                                                            <a href={`/user/${member.user_id}`} className="member-link">
+                                                            <a href={`/user/${member.user_id}`} className="member-link-participants">
                                                                 {member.display_name || member.name || member.username}
                                                             </a>
                                                         ) : (
                                                             member.display_name || member.name || member.username
                                                         )}
                                                         {member.is_captain && (
-                                                            <span className="captain-icon" title="Капитан">
+                                                            <span className="captain-icon-participants" title="Капитан">
                                                                 <FontAwesomeIcon icon={byPrefixAndName.fas['crown']} />
                                                             </span>
                                                         )}
                                                     </span>
                                                 </div>
-                                                <div className="member-stats">
+                                                <div className="member-stats-participants">
                                                     {member.faceit_elo && (
                                                         <span className="stat">FACEIT: {member.faceit_elo}</span>
                                                     )}
@@ -338,28 +338,28 @@ const TournamentParticipants = ({
 
                     {/* Список участников для соло турниров */}
                     {tournament?.participant_type === 'solo' && (
-                        <div className="participants-list">
+                        <div className="participants-list-participants">
                             {participantsList.map((participant, index) => (
-                                <div key={participant.id || index} className="participant-card">
-                                    <div className="participant-info">
+                                <div key={participant.id || index} className="participant-card-participants">
+                                    <div className="participant-info-participants">
                                         {participant.avatar_url && (
                                             <img 
-                                                src={participant.avatar_url} 
+                                                src={participant.avatar_url}
                                                 alt={participant.username || participant.name}
-                                                className="participant-avatar"
+                                                className="participant-avatar-participants"
                                             />
                                         )}
-                                        <div className="participant-details">
-                                            <span className="participant-name">
+                                        <div className="participant-details-participants">
+                                            <span className="participant-name-participants">
                                                 {participant.user_id ? (
-                                                    <a href={`/user/${participant.user_id}`} className="member-link">
+                                                    <a href={`/user/${participant.user_id}`} className="member-link-participants">
                                                         {participant.username || participant.name || participant.display_name}
                                                     </a>
                                                 ) : (
                                                     participant.username || participant.name || participant.display_name
                                                 )}
                                             </span>
-                                            <div className="participant-stats">
+                                            <div className="participant-stats-participants">
                                                 {participant.faceit_elo && (
                                                     <span className="stat">FACEIT: {participant.faceit_elo}</span>
                                                 )}
@@ -371,7 +371,7 @@ const TournamentParticipants = ({
                                     </div>
                                     {isAdminOrCreator && (
                                         <button 
-                                            className="remove-participant-btn"
+                                            className="remove-participant-btn-participants"
                                             onClick={() => removeParticipant(
                                                 participant.id, 
                                                 participant.username || participant.name || participant.display_name

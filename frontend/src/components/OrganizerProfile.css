@@ -370,7 +370,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
-    margin-left: var(--spacing-lg);
 }
 .team-member {
     display: flex;

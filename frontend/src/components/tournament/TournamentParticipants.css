@@ -30,7 +30,7 @@
 }
 
 /* Р—Р°РіРѕР»РѕРІРѕРє СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
-.participants-header {
+.participants-header-participants {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -39,81 +39,77 @@
     border-bottom: 1px solid #333333;
 }
 
-.participants-header h3 {
+.participants-header-participants h3 {
     margin: 0;
     font-size: 24px;
     font-weight: 600;
     letter-spacing: -0.5px;
 }
 
-.participants-count {
+.participants-count-participants {
     font-size: 16px;
     color: #888888;
     font-weight: 500;
 }
 
 /* РЎРїРёСЃРѕРє РєРѕРјР°РЅРґ */
-.teams-list {
+.teams-list-participants {
     display: flex;
     flex-direction: column;
     gap: 16px;
     margin-bottom: 24px;
 }
 
-.tournament-participants .teams-list {
+.tournament-participants .teams-list-participants {
     flex-direction: row;
     flex-wrap: wrap;
     display: flex;
 
 }
 
-.team-card {
+.team-card-participants {
     background: #111111;
-    border: 1px solid #333333;
     border-radius: 12px;
-    padding: 20px;
     transition: all 0.3s ease;
     flex-basis: calc(100% / 4.5);
 }
 
-.team-card:hover {
-    border-color: #555555;
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
-}
-
-.team-header {
+.team-header-participants {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    height: 96px;
+    width: 384px;
+    background: #1d1d1d;
+    padding: 16px;
 }
 
-.team-info {
+.team-info-participants {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.team-name {
+.team-name-participants {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
     color: #ffffff;
 }
-.team-name-link {
+.team-name-link-participants {
     color: inherit;
     text-decoration: none;
 }
-.team-name-link:hover {
+.team-name-link-participants:hover {
     color: #ff0000;
 }
 
-.team-members-count {
+.team-members-count-participants {
     font-size: 14px;
     color: #888888;
 }
 
-.remove-team-btn {
+.remove-team-btn-participants {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
@@ -124,35 +120,38 @@
     font-size: 14px;
 }
 
-.remove-team-btn:hover {
+.remove-team-btn-participants:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* РЈС‡Р°СЃС‚РЅРёРєРё РєРѕРјР°РЅРґС‹ */
-.team-members {
+.team-members-participants {
     display: flex;
     flex-direction: column;
+}
+
+.team-member-participants {
+    padding: 1px;
+    border-bottom: 1px solid var(--Neutral-White-alpha-8, rgba(255, 255, 255, 0.08));
+    background-color: #0a0a0a;
+    height: 64;
+    gap: 8px;
+    opacity: 1;
+    border-bottom-width: 1px;
+    padding-top: 16px;
+    padding-right: 32px;
+    padding-bottom: 16px;
+    padding-left: 32px;
+}
+
+.member-info-participants {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 
-.team-member {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #0a0a0a;
-    border-radius: 8px;
-    border: 1px solid #222222;
-}
-
-.member-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.member-avatar {
+.member-avatar-participants {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -160,29 +159,29 @@
     border: 1px solid #333333;
 }
 
-.member-name {
+.member-name-participants {
     font-weight: 500;
     color: #ffffff;
 }
-.member-link {
+.member-link-participants {
     color: inherit;
     text-decoration: none;
 }
-.member-link:hover {
+.member-link-participants:hover {
     color: #ff0000;
 }
 
-.captain-icon {
+.captain-icon-participants {
     margin-left: 6px;
     color: #ffd700;
 }
 
-.member-stats {
+.member-stats-participants {
     display: flex;
     gap: 12px;
 }
 
-.member-stats .stat {
+.member-stats-participants .stat {
     font-size: 12px;
     color: #888888;
     background: #1a1a1a;
@@ -192,7 +191,7 @@
 }
 
 /* РЎРїРёСЃРѕРє СѓС‡Р°СЃС‚РЅРёРєРѕРІ РґР»СЏ СЃРѕР»Рѕ С‚СѓСЂРЅРёСЂРѕРІ */
-.participants-list {
+.participants-list-participants {
     display: flex;
     justify-content: center;
     flex-direction: row;
@@ -201,7 +200,7 @@
     margin-bottom: 24px;
 }
 
-.participant-card {
+.participant-card-participants {
     background: #111111;
     border: 1px solid #333333;
     border-radius: 12px;
@@ -212,19 +211,19 @@
     align-items: center;
 }
 
-.participant-card:hover {
+.participant-card-participants:hover {
     border-color: #555555;
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
 }
 
-.participant-info {
+.participant-info-participants {
     display: flex;
     align-items: center;
     gap: 12px;
     flex: 1;
 }
 
-.participant-avatar {
+.participant-avatar-participants {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -232,24 +231,24 @@
     border: 1px solid #333333;
 }
 
-.participant-details {
+.participant-details-participants {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.participant-name {
+.participant-name-participants {
     font-weight: 500;
     color: #ffffff;
     font-size: 16px;
 }
 
-.participant-stats {
+.participant-stats-participants {
     display: flex;
     gap: 8px;
 }
 
-.participant-stats .stat {
+.participant-stats-participants .stat {
     font-size: 12px;
     color: #888888;
     background: #1a1a1a;
@@ -258,7 +257,7 @@
     border: 1px solid #333333;
 }
 
-.remove-participant-btn {
+.remove-participant-btn-participants {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
@@ -269,13 +268,13 @@
     font-size: 14px;
 }
 
-.remove-participant-btn:hover {
+.remove-participant-btn-participants:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* Р“РµРЅРµСЂР°С‚РѕСЂ РєРѕРјР°РЅРґ */
-.team-generator-section {
+.team-generator-section-participants {
     margin-top: 24px;
     padding-top: 24px;
     border-top: 1px solid #333333;
