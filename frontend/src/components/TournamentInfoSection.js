@@ -1082,10 +1082,11 @@ const TournamentInfoSection = ({
                     )}
                 </div>
 
-                {/* 🆕 Кнопка участия в турнире */}
+                {/* 🆕 Кнопка участия в турнире / Invite only */}
                 {(() => {
                     const canParticipateResult = canParticipate();
                     const isParticipantResult = isUserParticipant();
+                    const isClosed = tournament?.access_type === 'closed';
                     
                     console.log('🎯 Рендеринг блока участия:', {
                         canParticipate: canParticipateResult,
@@ -1097,6 +1098,19 @@ const TournamentInfoSection = ({
                         participantsCount: tournament?.participants?.length
                     });
                     
+                    if (isClosed) {
+                        return (
+                            <div className="meta-row">
+                                <div className="meta-item participation-section">
+                                    <strong>🎯 Участие в турнире:</strong>
+                                    <div className="participation-controls">
+                                        <span className="invite-only-label">Invite only</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     return canParticipateResult ? (
                         <div className="meta-row">
                             <div className="meta-item participation-section">
