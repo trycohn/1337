@@ -41,25 +41,33 @@
     margin-right: calc(50% - 50vw);
 }
 
-.tournament-header-tournamentdetails .with-cs2-hero {
-    width: 90%;
-    height: 241;
+.tournament-header .with-cs2-hero {
+    display: flex;
     gap: 20px;
-    angle: 0 deg;
-    opacity: 1;
-    top: 131px;
-    left: 122px;
+    align-items: flex-end;
 }
 
-.tournament-header-tournamentdetails .with-cs2-hero h2{
+.tournament-header-tournamentdetails .with-cs2-hero {
+    width: 90%;
+    height: 241px;
+    gap: 20px;
+    opacity: 1;
+}
+
+.tournament-header-tournamentdetails .with-cs2-hero h2 {
     font-weight: 700;
-    font-style: Bold;
     font-size: 48px;
-    leading-trim: NONE;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     
+}
+
+.tournament-header-infoblock .with-cs2-hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 160px;
 }
 
 /* Отступ для навигации по вкладкам, если есть hero */

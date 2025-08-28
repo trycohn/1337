@@ -2463,10 +2463,16 @@ function TournamentDetails() {
             >
                 <div className="tournament-layout">
                     <div className="tournament-main">
-                        {/* Заголовок турнира */}
-                        <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
-                            <h2 data-testid="tournament-title">{tournament.name}</h2>
-                                </div>
+                        {/* Заголовок турнира (CS2: делим на 2 блока в общем флексе) */}
+                        <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}
+                             style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
+                            <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
+                                <h2 data-testid="tournament-title">{tournament.name}</h2>
+                            </div>
+                            <div className={`tournament-header-infoblock ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
+                                {/* сюда позже добавим инфо о турнире */}
+                            </div>
+                        </div>
 
                         {/* 🆕 Навигация по вкладкам */}
                         <div className={`tabs-navigation-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'offset-from-hero' : ''}`}>
