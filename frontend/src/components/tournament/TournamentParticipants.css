@@ -158,6 +158,11 @@
     color: #ffffff;
 }
 
+.captain-icon {
+    margin-left: 6px;
+    color: #ffd700;
+}
+
 .member-stats {
     display: flex;
     gap: 12px;
@@ -334,10 +339,7 @@
 }
 
 .invite-participant-btn,
-.add-unregistered-btn { /* заменено глобальными .btn — локальные стили удалены */ }
-
-.invite-participant-btn:hover,
-.add-unregistered-btn:hover { }
+.add-unregistered-btn { /* заменено глобальными .btn — локальные стили удалены */ display: inline-flex; }
 
 /* Модальные окна */
 .modal-overlay {

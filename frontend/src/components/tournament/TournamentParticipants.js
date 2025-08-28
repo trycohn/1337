@@ -1,9 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCrown } from '@fortawesome/free-solid-svg-icons';
 import TeamGenerator from '../TeamGenerator';
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
+const byPrefixAndName = { fas: { crown: faCrown } };
 
 const TournamentParticipants = ({ 
     tournament, 
@@ -296,7 +299,14 @@ const TournamentParticipants = ({
                                                         className="member-avatar"
                                                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
                                                     />
-                                                    <span className="member-name">{member.display_name || member.name || member.username}</span>
+                                                    <span className="member-name">
+                                                        {member.display_name || member.name || member.username}
+                                                        {member.is_captain && (
+                                                            <span className="captain-icon" title="Капитан">
+                                                                <FontAwesomeIcon icon={byPrefixAndName.fas['crown']} />
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </div>
                                                 <div className="member-stats">
                                                     {member.faceit_elo && (
