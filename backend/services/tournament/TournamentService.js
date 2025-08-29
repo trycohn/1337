@@ -21,7 +21,18 @@ class TournamentService {
     // 🆕 Турниры пользователя: где он создатель или администратор
     static async getMyTournaments(userId) {
         const sql = `
-            SELECT DISTINCT t.*
+            SELECT DISTINCT 
+                t.*,
+                CASE 
+                  WHEN t.participant_type = 'solo' THEN (
+                    SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
+                  )
+                  WHEN t.participant_type = 'team' THEN (
+                    SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
+                  )
+                  ELSE 0
+                END AS participant_count,
+                t.players_count AS players_count
             FROM tournaments t
             LEFT JOIN tournament_admins ta ON ta.tournament_id = t.id
             WHERE t.created_by = $1 OR ta.user_id = $1
