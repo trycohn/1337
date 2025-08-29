@@ -1088,14 +1088,6 @@ function TournamentDetails() {
                         />
 
                         <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
-                            {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА НА ВКЛАДКЕ СЕТКА */}
-                            {tournament && (
-                                <TournamentProgressBar 
-                                    matches={matches}
-                                    tournamentStatus={tournament?.status}
-                                    tournament={tournament}
-                                />
-                            )}
 
                             {games.length > 0 ? (
                                 <TournamentErrorBoundary>
