@@ -112,6 +112,8 @@
 }
 
 .infoblock-stats .infoblock-item.infoblock-prize { 
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
     grid-area: prize;
     display: flex;
     flex-direction: row;
