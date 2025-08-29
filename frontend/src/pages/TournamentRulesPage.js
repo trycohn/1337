@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../axios';
 import SafeRichTextEditor from '../components/SafeRichTextEditor';
@@ -13,6 +13,7 @@ function TournamentRulesPage() {
     const [rules, setRules] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -32,8 +33,27 @@ function TournamentRulesPage() {
         return () => { cancelled = true; };
     }, [id]);
 
+    // Загружаем текущего пользователя для проверки прав
+    useEffect(() => {
+        let cancelled = false;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        api.get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => { if (!cancelled) setUser(res.data); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
+
+    const isAdminOrCreator = useMemo(() => {
+        if (!tournament || !user) return false;
+        if (Number(user.id) === Number(tournament.created_by)) return true;
+        const admins = Array.isArray(tournament.admins) ? tournament.admins : [];
+        return admins.some(a => Number(a.user_id) === Number(user.id));
+    }, [tournament, user]);
+
     async function saveDescription() {
         if (!tournament?.id) return;
+        if (!isAdminOrCreator) { setEditingDescription(false); return; }
         setSaving(true);
         try {
             const token = localStorage.getItem('token');
@@ -62,6 +82,7 @@ function TournamentRulesPage() {
 
     async function saveRules() {
         if (!tournament?.id) return;
+        if (!isAdminOrCreator) { setEditingRules(false); return; }
         setSaving(true);
         try {
             const token = localStorage.getItem('token');
@@ -97,7 +118,7 @@ function TournamentRulesPage() {
 
             <div className="rules-section-block">
                 <h3>Описание</h3>
-                {editingDescription ? (
+                {isAdminOrCreator && editingDescription ? (
                     <>
                         <SafeRichTextEditor value={description} onChange={setDescription} forceSimpleEditor={true} />
                         <div style={{ marginTop: 12 }}>
@@ -110,16 +131,18 @@ function TournamentRulesPage() {
                 ) : (
                     <>
                         <SafeRichTextDisplay content={description} />
-                        <div style={{ marginTop: 12 }}>
-                            <button className="btn btn-secondary" onClick={() => setEditingDescription(true)}>Редактировать</button>
-                        </div>
+                        {isAdminOrCreator && (
+                            <div style={{ marginTop: 12 }}>
+                                <button className="btn btn-secondary" onClick={() => setEditingDescription(true)}>Редактировать</button>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
 
             <div className="rules-section-block rules-block" style={{ marginTop: 24 }}>
                 <h3>Регламент</h3>
-                {editingRules ? (
+                {isAdminOrCreator && editingRules ? (
                     <>
                         <SafeRichTextEditor value={rules} onChange={setRules} forceSimpleEditor={true} />
                         <div style={{ marginTop: 12 }}>
@@ -132,9 +155,11 @@ function TournamentRulesPage() {
                 ) : (
                     <>
                         <SafeRichTextDisplay content={rules} />
-                        <div style={{ marginTop: 12 }}>
-                            <button className="btn btn-secondary" onClick={() => setEditingRules(true)}>Редактировать</button>
-                        </div>
+                        {isAdminOrCreator && (
+                            <div style={{ marginTop: 12 }}>
+                                <button className="btn btn-secondary" onClick={() => setEditingRules(true)}>Редактировать</button>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
