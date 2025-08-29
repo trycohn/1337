@@ -502,31 +502,39 @@ function UserProfile() {
                     )}
                     
                     {activeTab === 'friends' && user.friends && user.friends.length > 0 && (
-                        <div className="friends-tab">
-                            <section className="friends-section">
-                                <h3>Друзья</h3>
-                                <div className="friends-list">
-                                    {user.friends.map(friend => (
-                                        <div key={friend.id} className="friend-item">
-                                            <a href={isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`} className="friend-link">
-                                                <img 
-                                                    src={ensureHttps(friend.avatar_url) || '/default-avatar.png'} 
-                                                    alt={friend.username} 
-                                                    className="friend-avatar" 
-                                                />
-                                                <div className="friend-details">
-                                                    <span className="friend-username">{friend.username}</span>
-                                                    {friend.online_status && (
-                                                        <span className={`friend-status ${friend.online_status === 'online' ? 'status-online' : 'status-offline'}`}>
-                                                            {friend.online_status}
-                                                        </span>
-                                                    )}
+                        <div className="friends-wrap">
+                            <div className="section">
+                                <div className="list">
+                                    <h2>Друзья ({user.friends.length})</h2>
+                                    <div className="grid">
+                                        {user.friends.map(friend => {
+                                            const statusRaw = friend.online_status || 'offline';
+                                            let dotClass = 'offline';
+                                            let statusLabel = 'Не в сети';
+                                            if (statusRaw === 'online') { dotClass = 'online'; statusLabel = 'В сети'; }
+                                            else if (statusRaw === 'ingame' || statusRaw === 'in_game' || statusRaw === 'playing') { dotClass = 'ingame'; statusLabel = 'В игре'; }
+                                            const profileHref = isCurrentUser(friend.id) ? `/profile` : `/user/${friend.id}`;
+                                            return (
+                                                <div key={friend.id} className="card">
+                                                    <div className="avatar">
+                                                        <img src={ensureHttps(friend.avatar_url) || '/default-avatar.png'} alt={friend.username} />
+                                                    </div>
+                                                    <div className="info">
+                                                        <div className="name" title={friend.username}>{friend.username}</div>
+                                                        <div className="meta">
+                                                            <span className={`dot ${dotClass}`}></span>
+                                                            <span>{statusLabel}</span>
+                                                        </div>
+                                                        <div className="toolbar">
+                                                            <a className="btn" href={profileHref}>Профиль</a>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </a>
-                                        </div>
-                                    ))}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </section>
+                            </div>
                         </div>
                     )}
                 </div>
