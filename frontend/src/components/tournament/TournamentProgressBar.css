@@ -34,6 +34,17 @@
     margin-bottom: 8px;
 }
 
+.progress-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-container.inline {
+    flex: 1 1 auto;
+    margin: 0;
+}
+
 .progress-bar-background {
     width: 100%;
     height: 6px;
@@ -76,9 +87,7 @@
     height: 9px;
 }
 
-.tournament-progress-bar.compact .progress-status {
-    font-size: 0.8rem;
-}
+.tournament-progress-bar.compact .progress-status { display: none; }
 
 /* Адаптивность */
 @media (max-width: 768px) {

@@ -120,22 +120,33 @@ const TournamentProgressBar = ({
 
     const { percentage, statusText } = progressData;
 
+    if (compact) {
+        return (
+            <div className={`tournament-progress-bar compact`}>
+                <div className="progress-inline">
+                    <span className="progress-title">Прогресс турнира</span>
+                    <div className="progress-bar-container inline">
+                        <div className="progress-bar-background">
+                            <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
+                        </div>
+                    </div>
+                    <span className="progress-percentage">{percentage}%</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className={`tournament-progress-bar ${compact ? 'compact' : ''}`}>
+        <div className={`tournament-progress-bar`}>
             <div className="progress-header">
                 <span className="progress-title">🏆 Прогресс турнира</span>
                 <span className="progress-percentage">{percentage}%</span>
             </div>
-
             <div className="progress-bar-container">
                 <div className="progress-bar-background">
-                    <div 
-                        className="progress-bar-fill"
-                        style={{ width: `${percentage}%` }}
-                    />
+                    <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
                 </div>
             </div>
-
             <div className="progress-status">{statusText}</div>
         </div>
     );
