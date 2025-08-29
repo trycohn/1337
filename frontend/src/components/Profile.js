@@ -1919,45 +1919,35 @@ function Profile() {
         }
     };
 
-    // Render friend item with additional info on hover
+    // Render friend item — новый дизайн карточки из макета
     const renderFriendItem = (friend) => {
-        // Проверяем и устанавливаем статус по умолчанию, если он отсутствует
-        const onlineStatus = friend.friend.online_status || 'offline';
-        
+        const statusRaw = friend.friend.online_status || 'offline';
+        const username = friend.friend.username;
+        const profileHref = isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`;
+
+        let dotClass = 'offline';
+        let statusLabel = 'Не в сети';
+        if (statusRaw === 'online') { dotClass = 'online'; statusLabel = 'В сети'; }
+        else if (statusRaw === 'ingame' || statusRaw === 'in_game' || statusRaw === 'playing') { dotClass = 'ingame'; statusLabel = 'В игре'; }
+
         return (
-            <div key={friend.id} className="friend-card">
-                <div className="friend-card-content">
-                    <img 
-                        src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'} 
-                        alt={friend.friend.username} 
-                        className="friend-avatar"
+            <div key={friend.id} className="card">
+                <div className="avatar">
+                    <img
+                        src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'}
+                        alt={username}
                     />
-                    <div className="friend-info">
-                        <a 
-                            href={isCurrentUser(friend.friend.id) ? `/profile` : `/user/${friend.friend.id}`} 
-                            className="friend-username"
-                            title={friend.friend.username}
-                        >
-                            {friend.friend.username}
-                        </a>
-                        <div className={`friend-status ${getOnlineStatusClass(onlineStatus)}`}>
-                            {onlineStatus === 'online' ? 'Онлайн' : 'Не в сети'}
-                        </div>
-                        {onlineStatus === 'offline' && friend.friend.last_online && (
-                            <div className="friend-last-online">
-                                Был в сети: {new Date(friend.friend.last_online).toLocaleDateString('ru-RU')}
-                            </div>
-                        )}
-                    </div>
                 </div>
-                <div className="friend-actions">
-                    <button 
-                        className="remove-friend-btn" 
-                        onClick={() => removeFriend(friend.friend.id)}
-                        title="Удалить из друзей"
-                    >
-                        ✕
-                    </button>
+                <div className="info">
+                    <div className="name" title={username}>{username}</div>
+                    <div className="meta">
+                        <span className={`dot ${dotClass}`}></span>
+                        <span>{statusLabel}</span>
+                    </div>
+                    <div className="toolbar">
+                        <a className="btn" href={profileHref}>Профиль</a>
+                        <button className="btn primary" onClick={() => openChatWith(friend.friend.id)}>Написать</button>
+                    </div>
                 </div>
             </div>
         );
@@ -2010,6 +2000,11 @@ function Profile() {
         } catch (err) {
             console.error('Ошибка отмены исходящей заявки в друзья:', err);
         }
+    };
+
+    // Открыть чат с пользователем (простая навигация)
+    const openChatWith = (userId) => {
+        window.location.href = `/chats?to=${userId}`;
     };
 
     // Обновляем функцию поиска
@@ -3012,78 +3007,66 @@ function Profile() {
                                     <h2 className="content-title">Друзья</h2>
                                 </div>
                                 
-                                {/* Friend Search */}
-                                <div className="content-card friends-section">
-                                    <div className="card-header">
-                                        <h3 className="card-title">Поиск друзей</h3>
-                                    </div>
-                                    <div className="card-content">
-                                        <div className="friends-search">
-                                            <div style={{ position: 'relative' }}>
-                                                <span className="search-icon">🔍</span>
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    placeholder="Поиск пользователя по нику..."
-                                                    value={searchQuery}
-                                                    onChange={handleSearchChange}
-                                                />
-                                            </div>
-                                            {searchResults.length > 0 && (
-                                                <div className="search-results">
-                                                    {searchResults.map(user => (
-                                                        <div key={user.id} className="search-item">
-                                                            <img
-                                                                src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
-                                                                alt={user.username}
-                                                                className="search-avatar"
-                                                            />
-                                                            <a href={`/user/${user.id}`} className="search-username">
-                                                                {user.username}
-                                                            </a>
-                                                            <div>
-                                                                {user.requestSent ? (
-                                                                    <button className="btn btn-sm" disabled>
-                                                                        Отправлено
-                                                                    </button>
-                                                                ) : (
-                                                                    <button 
-                                                                        onClick={() => sendFriendRequest(user.id)} 
-                                                                        className="btn btn-sm"
-                                                                    >
-                                                                        Добавить
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
-                                                <p className="empty-state-description">Пользователи не найдены</p>
-                                            )}
+                                {/* Friends — новый макет */}
+                                <div className="friends-wrap">
+                                    <div className="section">
+                                        <h2>Поиск друзей</h2>
+                                        <div className="search">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                            <input
+                                                type="text"
+                                                placeholder="Поиск пользователя по нику…"
+                                                value={searchQuery}
+                                                onChange={handleSearchChange}
+                                            />
                                         </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Friends List */}
-                                <div className="content-card">
-                                    <div className="card-header">
-                                        <h3 className="card-title">Мои друзья ({friends.length})</h3>
-                                    </div>
-                                    <div className="card-content">
-                                        {loadingFriends ? (
-                                            <div className="loading-spinner">Загрузка списка друзей...</div>
-                                        ) : friends.length > 0 ? (
-                                            <div className="friends-list">
-                                                {friends.map(friend => renderFriendItem(friend))}
-                                            </div>
-                                        ) : (
-                                            <div className="empty-state">
-                                                <div className="empty-state-title">У вас пока нет друзей</div>
-                                                <div className="empty-state-description">Используйте поиск выше, чтобы найти и добавить друзей</div>
+
+                                        {searchResults.length > 0 && (
+                                            <div className="search-results">
+                                                {searchResults.map(user => (
+                                                    <div key={user.id} className="search-item">
+                                                        <img
+                                                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                                            alt={user.username}
+                                                            className="search-avatar"
+                                                        />
+                                                        <a href={`/user/${user.id}`} className="search-username">
+                                                            {user.username}
+                                                        </a>
+                                                        <div>
+                                                            {user.requestSent ? (
+                                                                <button className="btn btn-sm" disabled>
+                                                                    Отправлено
+                                                                </button>
+                                                            ) : (
+                                                                <button onClick={() => sendFriendRequest(user.id)} className="btn btn-sm">
+                                                                    Добавить
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
+                                        {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
+                                            <p className="empty-state-description">Пользователи не найдены</p>
+                                        )}
+
+                                        <div className="list">
+                                            <h2>Мои друзья ({friends.length})</h2>
+                                            {loadingFriends ? (
+                                                <div className="loading-spinner">Загрузка списка друзей...</div>
+                                            ) : friends.length > 0 ? (
+                                                <div className="grid">
+                                                    {friends.map(friend => renderFriendItem(friend))}
+                                                </div>
+                                            ) : (
+                                                <div className="empty-state">
+                                                    <div className="empty-state-title">У вас пока нет друзей</div>
+                                                    <div className="empty-state-description">Используйте поиск выше, чтобы найти и добавить друзей</div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
