@@ -983,13 +983,13 @@
 }
 
 .bracket-render-section-header .bracket-render-grand-final-title {
-    color: #ffffffb3;
-    font-size: 14px;
+    font-size: 24px;
     font-weight: 600;
-    letter-spacing: .5px;
-    margin-top: 8px;
+    color: #FFF;
     text-align: center;
+    margin-top: 8px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 
@@ -1046,9 +1046,9 @@
 }
 
 .bracket-render-section-subtitle {
-    font-size: 14px;
+    font-size: 24px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
+    color: #FFF;
     text-align: center;
     margin-top: 8px;
     text-transform: uppercase;
