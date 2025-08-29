@@ -13,7 +13,17 @@ console.log('🔍 axios baseURL:', api.defaults.baseURL);
 const originalConsoleLog = console.log;
 
 api.interceptors.request.use(request => {
-    // Используем безопасный метод для вывода в консоль без ошибок
+    // Подставляем Bearer токен, если он есть и заголовок ещё не установлен
+    try {
+        const token = localStorage.getItem('token');
+        if (token && !request.headers?.Authorization) {
+            request.headers = request.headers || {};
+            request.headers.Authorization = `Bearer ${token}`;
+        }
+    } catch (_) {
+        // no-op
+    }
+    // Логируем целевой URL
     originalConsoleLog('🔍 Sending request to:', request.url);
     return request;
 });
