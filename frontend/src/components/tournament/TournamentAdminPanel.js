@@ -193,13 +193,13 @@ const TournamentAdminPanel = ({
 
     const getStatusDisplay = () => {
         const statusMap = {
-            'registration': { icon: '📋', text: 'Регистрация', class: 'status-registration' },
-            'active': { icon: '🎮', text: 'Активный', class: 'status-active' },
-            'in_progress': { icon: '⚔️', text: 'В процессе', class: 'status-in-progress' },
-            'completed': { icon: '🏆', text: 'Завершен', class: 'status-completed' }
+            'registration': { text: 'Регистрация', class: 'status-registration' },
+            'active': { text: 'Активный', class: 'status-active' },
+            'in_progress': { text: 'В процессе', class: 'status-in-progress' },
+            'completed': { text: 'Завершен', class: 'status-completed' }
         };
         
-        return statusMap[tournament?.status] || { icon: '❓', text: 'Неизвестно', class: 'status-unknown' };
+        return statusMap[tournament?.status] || { text: 'Неизвестно', class: 'status-unknown' };
     };
 
     // 🎯 НОВАЯ ФУНКЦИЯ ДЛЯ ОПРЕДЕЛЕНИЯ СЛЕДУЮЩЕГО ЭТАПА
@@ -215,7 +215,7 @@ const TournamentAdminPanel = ({
                     // Если сетка есть - можно начинать турнир
                     return {
                         action: 'start',
-                        label: '🚀 Начать турнир',
+                        label: 'Начать турнир',
                         className: 'next-stage-btn start-stage',
                         handler: onStartTournament
                     };
@@ -224,14 +224,14 @@ const TournamentAdminPanel = ({
                     if (participantsCount >= 2) {
                         return {
                             action: 'start_warning',
-                            label: '🚀 Начать турнир',
+                            label: 'Начать турнир',
                             className: 'next-stage-btn start-stage',
                             handler: () => handleStartWithWarning()
                         };
                     } else {
                         return {
                             action: 'waiting',
-                            label: '⏳ Ожидание участников',
+                            label: 'Ожидание участников',
                             className: 'next-stage-btn waiting-stage',
                             disabled: true
                         };
@@ -241,7 +241,7 @@ const TournamentAdminPanel = ({
             case 'in_progress':
                 return {
                     action: 'end',
-                    label: '🏁 Завершить турнир',
+                    label: 'Завершить турнир',
                     className: 'next-stage-btn end-stage',
                     handler: onEndTournament
                 };
@@ -249,7 +249,7 @@ const TournamentAdminPanel = ({
             case 'completed':
                 return {
                     action: 'completed',
-                    label: '✅ Турнир завершен',
+                    label: 'Турнир завершен',
                     className: 'next-stage-btn completed-stage',
                     disabled: true
                 };
@@ -262,7 +262,7 @@ const TournamentAdminPanel = ({
     // 🎯 НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ НАЧАЛА ТУРНИРА БЕЗ СЕТКИ
     const handleStartWithWarning = () => {
         const confirmed = window.confirm(
-            '⚠️ Внимание!\n\n' +
+            'Внимание!\n\n' +
             'Сетка турнира еще не создана. Перед началом турнира необходимо сгенерировать турнирную сетку.\n\n' +
             'Вы можете:\n' +
             '1. Сначала создать сетку в разделе "Управление сеткой"\n' +
@@ -286,7 +286,7 @@ const TournamentAdminPanel = ({
             {/* 🎯 ЗАГОЛОВОК С СТАТУСОМ И КНОПКОЙ СЛЕДУЮЩЕГО ЭТАПА */}
             <div className="admin-panel-header-v2">
                 <div className="header-main-info">
-                    <h3>⚙️ Панель управления турниром</h3>
+                    <h3>Панель управления турниром</h3>
                     <div className="status-and-action">
                         <div className={`tournament-status-v2 ${statusDisplay.class}`}>
                             <span className="status-icon-v2">{statusDisplay.icon}</span>
@@ -317,7 +317,7 @@ const TournamentAdminPanel = ({
                             disabled={isLoading}
                             title="Пересоздать турнирную сетку"
                         >
-                            🔄 Перегенерировать
+                            Перегенерировать
                         </button>
                     )}
                 </div>
@@ -737,7 +737,7 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Изменить расстановку участников вручную (все результаты будут сброшены)"
                             >
-                                ✏️ Изменить расстановку
+                                Изменить расстановку
                             </button>
                         )}
                         
