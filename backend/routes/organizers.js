@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
+const multer = require('multer');
+const sharp = require('sharp');
+const fs = require('fs');
+const path = require('path');
 
 // Функция для создания slug из названия
 function createSlug(name) {
@@ -355,6 +359,56 @@ router.delete('/:slug/members/:userId', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('Ошибка удаления участника:', err);
         res.status(500).json({ error: 'Не удалось удалить участника' });
+    }
+});
+
+// =============================
+//  Загрузка логотипа организации (1000x1000)
+//  Доступ: менеджер организации или администратор
+// =============================
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.mimetype)) return cb(new Error('Недопустимый тип файла'));
+        cb(null, true);
+    }
+});
+
+const logosDir = path.join(__dirname, '../uploads/logos/org');
+try { fs.mkdirSync(logosDir, { recursive: true }); } catch (_) {}
+
+router.post('/:slug/logo', authenticateToken, upload.single('logo'), async (req, res) => {
+    try {
+        const { slug } = req.params;
+
+        if (!req.file) return res.status(400).json({ success: false, error: 'Файл не загружен' });
+
+        // Получаем организатора
+        const organizerResult = await pool.query('SELECT * FROM organizers WHERE slug = $1', [slug]);
+        if (organizerResult.rows.length === 0) return res.status(404).json({ success: false, error: 'Организатор не найден' });
+        const organizer = organizerResult.rows[0];
+
+        // Проверяем права доступа
+        if (req.user.role !== 'admin' && organizer.manager_user_id !== req.user.id) {
+            return res.status(403).json({ success: false, error: 'Недостаточно прав' });
+        }
+
+        const safeSlug = String(slug).toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'logo';
+        const filename = `${safeSlug}-${Date.now()}.jpg`;
+        const outPath = path.join(logosDir, filename);
+
+        await sharp(req.file.buffer)
+            .resize(1000, 1000, { fit: 'cover', position: 'centre' })
+            .jpeg({ quality: 90 })
+            .toFile(outPath);
+
+        const publicUrl = `/uploads/logos/org/${filename}`;
+        return res.json({ success: true, message: 'Логотип сохранен', url: publicUrl });
+    } catch (e) {
+        console.error('Ошибка загрузки логотипа организации:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось сохранить логотип' });
     }
 });
 

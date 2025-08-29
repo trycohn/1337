@@ -229,6 +229,10 @@ function Profile() {
 
     // Состояния для участия в организациях
     const [userOrganizations, setUserOrganizations] = useState([]);
+    const [editingOrgSlug, setEditingOrgSlug] = useState(null);
+    const [editOrgData, setEditOrgData] = useState({ name: '', description: '', website_url: '', vk_url: '', telegram_url: '', contact_email: '', contact_phone: '', logo_url: '' });
+    const [editOrgLogoFile, setEditOrgLogoFile] = useState(null);
+    const editOrgFileInputRef = useRef(null);
     const [loadingOrganizations, setLoadingOrganizations] = useState(false);
     
     // Состояния для статуса заявки на организацию
@@ -3226,6 +3230,97 @@ function Profile() {
                                                             {org.description && (
                                                                 <div className="org-description">
                                                                     <p>{org.description}</p>
+                                                                </div>
+                                                            )}
+
+                                                            {(org.role === 'manager' || (user && user.role === 'admin')) && (
+                                                                <div className="org-actions" style={{ marginTop: '12px' }}>
+                                                                    {editingOrgSlug === org.slug ? (
+                                                                        <div className="org-edit-form">
+                                                                            <div className="form-group">
+                                                                                <label>Название</label>
+                                                                                <input value={editOrgData.name} onChange={(e)=>setEditOrgData({...editOrgData, name: e.target.value})} />
+                                                                            </div>
+                                                                            <div className="form-group">
+                                                                                <label>Описание</label>
+                                                                                <textarea rows="3" value={editOrgData.description||''} onChange={(e)=>setEditOrgData({...editOrgData, description: e.target.value})} />
+                                                                            </div>
+                                                                            <div className="form-row">
+                                                                                <div className="form-group">
+                                                                                    <label>Сайт</label>
+                                                                                    <input value={editOrgData.website_url||''} onChange={(e)=>setEditOrgData({...editOrgData, website_url: e.target.value})} />
+                                                                                </div>
+                                                                                <div className="form-group">
+                                                                                    <label>VK</label>
+                                                                                    <input value={editOrgData.vk_url||''} onChange={(e)=>setEditOrgData({...editOrgData, vk_url: e.target.value})} />
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="form-row">
+                                                                                <div className="form-group">
+                                                                                    <label>Telegram</label>
+                                                                                    <input value={editOrgData.telegram_url||''} onChange={(e)=>setEditOrgData({...editOrgData, telegram_url: e.target.value})} />
+                                                                                </div>
+                                                                                <div className="form-group">
+                                                                                    <label>Email</label>
+                                                                                    <input value={editOrgData.contact_email||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_email: e.target.value})} />
+                                                                                </div>
+                                                                                <div className="form-group">
+                                                                                    <label>Телефон</label>
+                                                                                    <input value={editOrgData.contact_phone||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_phone: e.target.value})} />
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="form-group">
+                                                                                <label>Логотип</label>
+                                                                                <div>
+                                                                                    <input type="file" ref={editOrgFileInputRef} accept="image/*" style={{display:'none'}} onChange={(e)=>{
+                                                                                        const f = e.target.files && e.target.files[0];
+                                                                                        if (!f) return;
+                                                                                        if (f.size > 10*1024*1024) return;
+                                                                                        setEditOrgLogoFile(f);
+                                                                                    }} />
+                                                                                    <button type="button" onClick={()=>editOrgFileInputRef.current && editOrgFileInputRef.current.click()} className="btn btn-secondary">Загрузить логотип</button>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="form-actions">
+                                                                                <button className="btn btn-primary" onClick={async()=>{
+                                                                                    try {
+                                                                                        const token = localStorage.getItem('token');
+                                                                                        // 1) если выбран новый файл логотипа — загрузим и получим URL
+                                                                                        let logoUrl = editOrgData.logo_url || '';
+                                                                                        if (editOrgLogoFile) {
+                                                                                            const fd = new FormData();
+                                                                                            fd.append('logo', editOrgLogoFile);
+                                                                                            const uploadRes = await api.post(`/api/organizers/${org.slug}/logo`, fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }});
+                                                                                            if (uploadRes.data && uploadRes.data.success) logoUrl = uploadRes.data.url;
+                                                                                        }
+                                                                                        // 2) обновим организацию
+                                                                                        const body = { ...editOrgData, logo_url: logoUrl };
+                                                                                        await api.put(`/api/organizers/${org.slug}`, body, { headers: { Authorization: `Bearer ${token}` }});
+                                                                                        setEditingOrgSlug(null);
+                                                                                        setEditOrgLogoFile(null);
+                                                                                        await fetchUserOrganizations();
+                                                                                    } catch (e) {}
+                                                                                }}>Сохранить</button>
+                                                                                <button className="btn btn-secondary" onClick={()=>{ setEditingOrgSlug(null); setEditOrgLogoFile(null); }}>Отмена</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <button className="btn btn-secondary" onClick={()=>{
+                                                                            setEditingOrgSlug(org.slug);
+                                                                            setEditOrgData({
+                                                                                name: org.name||'',
+                                                                                description: org.description||'',
+                                                                                website_url: org.website_url||'',
+                                                                                vk_url: org.vk_url||'',
+                                                                                telegram_url: org.telegram_url||'',
+                                                                                contact_email: org.contact_email||'',
+                                                                                contact_phone: org.contact_phone||'',
+                                                                                logo_url: org.logo_url||''
+                                                                            });
+                                                                        }}>Редактировать</button>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
