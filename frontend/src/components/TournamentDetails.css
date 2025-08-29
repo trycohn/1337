@@ -74,6 +74,7 @@
 .infoblock-stats {
     background-color: #1D1D1D;
     width: 464px;
+    border-radius: 8px;
 }
 
 .infoblock-stats .infoblock-grid {
@@ -116,7 +117,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 8px 16px;
     background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(167, 125, 42, 0) 0deg, #A77D2A 180deg, rgba(65, 49, 16, 0) 360deg);
 }
@@ -126,7 +127,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 16px 16px 8px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-status { 
@@ -135,8 +136,9 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 8px 16px;
+    justify-content: flex-end;
 
 }
 .infoblock-stats .infoblock-item.infoblock-format { 
@@ -145,7 +147,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 8px 16px 16px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-participants { 
@@ -154,7 +156,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 8px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-team-size { 
@@ -163,8 +165,9 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
+    align-items: baseline;
     padding: 8px 16px;
+    justify-content: flex-end;
 }
 .infoblock-stats .infoblock-label {
     color: #aaaaaa;
@@ -197,7 +200,6 @@
     font-size: 14px;
 }
 .header-meta-row .meta-label {
-    color: #949494;
     font-family: Play;
     font-weight: 400;
     font-style: normal;
@@ -239,7 +241,7 @@
     line-height: 100%;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-
+    min-height: 112px;
 }
 .tournament-details-tournamentdetails p {
     margin-bottom: 10px;

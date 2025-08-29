@@ -76,11 +76,24 @@
 }
 
 .tournament-progress-bar.compact .progress-title {
-    font-size: 0.9rem;
+    color: #949494;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 10px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 8%;
 }
 
 .tournament-progress-bar.compact .progress-percentage {
-    font-size: 1rem;
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 10px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 8%;
+    text-transform: uppercase;
+    color: #FFF;
 }
 
 .tournament-progress-bar.compact .progress-bar-background {

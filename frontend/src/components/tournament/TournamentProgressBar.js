@@ -124,7 +124,7 @@ const TournamentProgressBar = ({
         return (
             <div className={`tournament-progress-bar compact`}>
                 <div className="progress-inline">
-                    <span className="progress-title">Прогресс турнира</span>
+                    <span className="progress-title">Прогресс</span>
                     <div className="progress-bar-container inline">
                         <div className="progress-bar-background">
                             <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
