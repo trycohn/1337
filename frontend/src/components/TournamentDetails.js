@@ -2530,36 +2530,36 @@ function TournamentDetails() {
                             </div>
                             <div className={`tournament-header-infoblock ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                                 {/* Правый инфоблок: призовой, старт, статус, прогресс, формат, участники, команда */}
-                                <div className="header-stats">
-                                    <div className="stats-grid stats-top">
-                                        <div className="stat-item stat-prize">
-                                            <div className="stat-label">Призовой фонд</div>
-                                            <div className="stat-value">{tournament?.prize_pool ? tournament.prize_pool : 'Не указан'}</div>
+                                <div className="infoblock-stats">
+                                    <div className="infoblock-grid infoblock-top">
+                                        <div className="infoblock-item infoblock-prize">
+                                            <div className="infoblock-label">Призовой фонд</div>
+                                            <div className="infoblock-value">{tournament?.prize_pool ? tournament.prize_pool : 'Не указан'}</div>
                                         </div>
-                                        <div className="stat-item stat-start">
-                                            <div className="stat-label">Старт</div>
-                                            <div className="stat-value">{tournament?.start_date ? new Date(tournament.start_date).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                        <div className="infoblock-item infoblock-start">
+                                            <div className="infoblock-label">Старт</div>
+                                            <div className="infoblock-value">{tournament?.start_date ? new Date(tournament.start_date).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
                                         </div>
-                                        <div className="stat-item stat-status">
-                                            <div className="stat-label">Статус</div>
-                                            <div className="stat-value">{(() => { const map = { registration: 'Регистрация', active: 'Активный', in_progress: 'Идет', completed: 'Завершен', upcoming: 'Предстоящий' }; return map[tournament?.status] || tournament?.status || '—'; })()}</div>
+                                        <div className="infoblock-item infoblock-status">
+                                            <div className="infoblock-label">Статус</div>
+                                            <div className="infoblock-value">{(() => { const map = { registration: 'Регистрация', active: 'Активный', in_progress: 'Идет', completed: 'Завершен', upcoming: 'Предстоящий' }; return map[tournament?.status] || tournament?.status || '—'; })()}</div>
                                         </div>
                                     </div>
-                                    <div className="stats-progress">
+                                    <div className="infoblock-progress">
                                         <TournamentProgressBar matches={matches || []} tournamentStatus={tournament?.status} tournament={tournament} compact={true} />
                                     </div>
-                                    <div className="stats-grid stats-bottom">
-                                        <div className="stat-item stat-format">
-                                            <div className="stat-label">Формат</div>
-                                            <div className="stat-value">{tournament?.format === 'mix' ? 'Микс' : (tournament?.participant_type === 'team' ? 'Командный' : 'Соло')}</div>
+                                    <div className="infoblock-grid infoblock-bottom">
+                                        <div className="infoblock-item infoblock-format">
+                                            <div className="infoblock-label">Формат</div>
+                                            <div className="infoblock-value">{tournament?.format === 'mix' ? 'Микс' : (tournament?.participant_type === 'team' ? 'Командный' : 'Соло')}</div>
                                         </div>
-                                        <div className="stat-item stat-participants">
-                                            <div className="stat-label">Участники</div>
-                                            <div className="stat-value">{(() => { const displayed = tournament?.format === 'mix' ? (tournament?.players_count ?? tournament?.participant_count ?? 0) : (tournament?.participant_count ?? 0); return tournament?.max_participants ? `${displayed} из ${tournament.max_participants}` : displayed; })()}</div>
+                                        <div className="infoblock-item infoblock-participants">
+                                            <div className="infoblock-label">Участники</div>
+                                            <div className="infoblock-value">{(() => { const displayed = tournament?.format === 'mix' ? (tournament?.players_count ?? tournament?.participant_count ?? 0) : (tournament?.participant_count ?? 0); return tournament?.max_participants ? `${displayed} из ${tournament.max_participants}` : displayed; })()}</div>
                                         </div>
-                                        <div className="stat-item stat-team-size">
-                                            <div className="stat-label">В команде</div>
-                                            <div className="stat-value">{tournament?.team_size || 5}</div>
+                                        <div className="infoblock-item infoblock-team-size">
+                                            <div className="infoblock-label">В команде</div>
+                                            <div className="infoblock-value">{tournament?.team_size || 5}</div>
                                         </div>
                                     </div>
                                 </div>

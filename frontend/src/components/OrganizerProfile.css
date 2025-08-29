@@ -107,14 +107,10 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    border: 1px solid var(--border-color);
     padding: var(--spacing-md);
     transition: var(--transition);
 }
-.stat-item:hover {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-}
+
 .stat-value {
     font-size: 1.5rem;
     font-weight: 300;

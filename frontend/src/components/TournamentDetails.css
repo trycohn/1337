@@ -71,19 +71,18 @@
     gap: 16px;
 }
 
-/* Инфоблок под заголовком */
-.header-stats {
+.infoblock-stats {
     background-color: #1D1D1D;
     width: 464px;
 }
 
-.header-stats .stats-grid {
+.infoblock-stats .infoblock-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     margin-top: 0px;
 }
-.header-stats .stats-grid.stats-top {
+.infoblock-stats .infoblock-grid.infoblock-top {
     margin-top: 0; 
     display: grid;
     grid-template-areas: 
@@ -97,7 +96,7 @@
 
 
 
-.header-stats .stats-grid.stats-bottom { 
+.infoblock-stats .infoblock-grid.infoblock-bottom { 
     display: grid;
     grid-template-areas: 
         'format format'
@@ -106,70 +105,70 @@
     gap: 0px;
 }
 
-.header-stats .stat-item {
+.infoblock-stats .infoblock-item {
     background: transparent;
     padding: 10px 12px;
 }
 
-.header-stats .stat-item.stat-prize { 
+.infoblock-stats .infoblock-item.infoblock-prize { 
     grid-area: prize;
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-item.stat-start { 
+.infoblock-stats .infoblock-item.infoblock-start { 
     grid-area: start;
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-item.stat-status { 
+.infoblock-stats .infoblock-item.infoblock-status { 
     grid-area: status;
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-item.stat-format { 
+.infoblock-stats .infoblock-item.infoblock-format { 
     grid-area: format;
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-item.stat-participants { 
+.infoblock-stats .infoblock-item.infoblock-participants { 
     grid-area: participants; 
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-item.stat-team-size { 
+.infoblock-stats .infoblock-item.infoblock-team-size { 
     grid-area: team-size;
     display: flex;
     flex-direction: row;
     height: 44px;
 }
-.header-stats .stat-label {
+.infoblock-stats .infoblock-label {
     color: #aaaaaa;
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 4px;
 }
-.header-stats .stat-value {
+.infoblock-stats .infoblock-value {
     color: #ffffff;
     font-size: 14px;
     font-weight: 500;
 }
-.header-stats .stats-progress {
+.infoblock-stats .infoblock-progress {
     margin: 0;
 }
 
 @media (max-width: 992px) {
-    .header-stats .stats-grid {
+    .infoblock-stats .infoblock-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 @media (max-width: 576px) {
-    .header-stats .stats-grid {
+    .infoblock-stats .infoblock-grid {
         grid-template-columns: 1fr;
     }
 }
