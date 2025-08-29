@@ -117,7 +117,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 8px 16px;
     background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(167, 125, 42, 0) 0deg, #A77D2A 180deg, rgba(65, 49, 16, 0) 360deg);
 }
@@ -170,7 +170,7 @@
     justify-content: flex-end;
 }
 .infoblock-stats .infoblock-label {
-    color: #aaaaaa;
+    color: #ffffff;
     font-size: 12px;
     letter-spacing: 0.06em;
 }
@@ -180,6 +180,28 @@
     font-weight: 500;
     text-transform: uppercase;
 }
+
+.infoblock-stats .infoblock-prize .infoblock-label {
+    color: #ffffff;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 8%;
+    
+}
+
+.infoblock-stats .infoblock-prize .infoblock-value {
+    color: #ffffff;
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 8%;
+    text-transform: uppercase;
+}
+
+
 .infoblock-stats .infoblock-progress {
     margin: 0;
     padding: 8px 16px;
