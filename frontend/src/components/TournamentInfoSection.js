@@ -13,7 +13,8 @@ const TournamentInfoSection = ({
     isCreator, 
     isAdminOrCreator,
     onParticipationUpdate, // Колбэк для обновления данных турнира
-    userTeams = [] // Команды пользователя
+    userTeams = [], // Команды пользователя
+    isVisible = true
 }) => {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [isEditingRegulations, setIsEditingRegulations] = useState(false);
@@ -994,6 +995,8 @@ const TournamentInfoSection = ({
     const creatorInfo = getCreatorInfo();
     const adminsList = getAdmins();
     const statusInfo = getStatusDisplayName(tournament?.status);
+
+    if (!isVisible) return null;
 
     return (
         <div className="tournament-info-section">

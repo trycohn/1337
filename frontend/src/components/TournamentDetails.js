@@ -962,6 +962,9 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData]);
 
+    // 🆕 Переключатель видимости инфо-секции (скрыта по умолчанию)
+    const [showInfoSection, setShowInfoSection] = useState(false);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -998,6 +1001,7 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
+                            isVisible={showInfoSection}
                             matches={matches}
                         />
 
@@ -2524,18 +2528,23 @@ function TournamentDetails() {
                                     <button 
                                         className="btn btn-secondary"
                                         onClick={() => {
-                                            setActiveTab('info');
-                                            requestAnimationFrame(() => {
-                                                setTimeout(() => {
-                                                    const el = document.querySelector('.rules-block');
-                                                    if (el && typeof el.scrollIntoView === 'function') {
-                                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                    }
-                                                }, 50);
-                                            });
+                                            if (showInfoSection) {
+                                                setShowInfoSection(false);
+                                            } else {
+                                                setActiveTab('info');
+                                                setShowInfoSection(true);
+                                                requestAnimationFrame(() => {
+                                                    setTimeout(() => {
+                                                        const el = document.querySelector('.tournament-info-section');
+                                                        if (el && typeof el.scrollIntoView === 'function') {
+                                                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                        }
+                                                    }, 50);
+                                                });
+                                            }
                                         }}
                                     >
-                                        Регламент
+                                        {showInfoSection ? 'Скрыть' : 'Регламент'}
                                     </button>
                                 </div>
                             </div>
