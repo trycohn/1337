@@ -182,8 +182,11 @@
 }
 .infoblock-stats .infoblock-value {
     color: #ffffff;
-    font-size: 14px;
-    font-weight: 500;
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 8%;
     text-transform: uppercase;
 }
 
