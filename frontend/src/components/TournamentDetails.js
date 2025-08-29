@@ -888,7 +888,7 @@ function TournamentDetails() {
                 errorMessage = error.message;
             }
 
-            setMessage(`❌ ${errorMessage}`);
+            setMessage(`${errorMessage}`);
             setTimeout(() => setMessage(''), 5000);
         } finally {
             setLoading(false);
@@ -959,7 +959,7 @@ function TournamentDetails() {
                 errorMessage = error.message;
             }
 
-            setMessage(`❌ ${errorMessage}`);
+            setMessage(`${errorMessage}`);
             setTimeout(() => setMessage(''), 5000);
         } finally {
             setLoading(false);
@@ -1088,9 +1088,9 @@ function TournamentDetails() {
                                 
                                 // Показываем сообщение об успехе
                                 if (updateData.type === 'generated') {
-                                    setMessage('✅ Турнирная сетка успешно сгенерирована!');
+                                    setMessage('Турнирная сетка успешно сгенерирована!');
                                 } else if (updateData.type === 'regenerated') {
-                                    setMessage('✅ Турнирная сетка успешно регенерирована!');
+                                    setMessage('Турнирная сетка успешно регенерирована!');
                                 }
                                 
                                 setTimeout(() => setMessage(''), 5000);
@@ -1103,7 +1103,7 @@ function TournamentDetails() {
                                 <TournamentErrorBoundary>
                                     <Suspense fallback={
                                         <div className="bracket-loading" data-testid="bracket-loading">
-                                            🔄 Загрузка турнирной сетки...
+                                            Загрузка турнирной сетки...
                                         </div>
                                     }>
                                         <LazyBracketRenderer
@@ -1615,13 +1615,13 @@ function TournamentDetails() {
                 setAdminSearchResults(result.data || []);
             } else {
                 setAdminSearchResults([]);
-                setMessage(`❌ Ошибка поиска: ${result.error}`);
+                setMessage(`Ошибка поиска: ${result.error}`);
                 setTimeout(() => setMessage(''), 3000);
             }
         } catch (error) {
             console.error('❌ Ошибка поиска администраторов:', error);
             setAdminSearchResults([]);
-            setMessage('❌ Ошибка при поиске пользователей');
+            setMessage('Ошибка при поиске пользователей');
             setTimeout(() => setMessage(''), 3000);
         } finally {
             setIsSearchingAdmins(false);
@@ -1636,10 +1636,10 @@ function TournamentDetails() {
             
             if (result.success) {
                 // 🔧 ОБНОВЛЕННОЕ СООБЩЕНИЕ: учитываем повторные приглашения
-                let message = `✅ ${userName} приглашен в администраторы турнира`;
+                let message = `${userName} приглашен в администраторы турнира`;
                 
                 if (result.isResend && result.cancelledInvitations > 0) {
-                    message = `🔄 Предыдущее приглашение отменено. ${userName} получил новое приглашение в администраторы турнира`;
+                    message = `Предыдущее приглашение отменено. ${userName} получил новое приглашение в администраторы турнира`;
                 }
                 
                 setMessage(message);
@@ -1652,11 +1652,11 @@ function TournamentDetails() {
             } else {
                 // 🔧 УПРОЩЕННАЯ ОБРАБОТКА ОШИБОК (убираем сложную логику для повторных приглашений)
                 let errorMessage = result.message || 'Ошибка при приглашении администратора';
-                setMessage(`❌ ${errorMessage}`);
+                setMessage(`${errorMessage}`);
             }
         } catch (error) {
             console.error('❌ Ошибка приглашения администратора:', error);
-            setMessage(`❌ Ошибка при приглашении ${userName}: ${error.message || 'Неизвестная ошибка'}`);
+            setMessage(`Ошибка при приглашении ${userName}: ${error.message || 'Неизвестная ошибка'}`);
         } finally {
             setIsSearchingAdmins(false);
             setTimeout(() => setMessage(''), 5000);
@@ -1672,16 +1672,16 @@ function TournamentDetails() {
             const result = await tournamentManagement.removeAdmin(userId);
             
             if (result.success) {
-                setMessage('✅ Администратор удален из турнира');
+                setMessage('Администратор удален из турнира');
                 
                 // Обновляем данные турнира
                 await fetchTournamentData();
             } else {
-                setMessage(`❌ ${result.message || 'Ошибка при удалении администратора'}`);
+                setMessage(`${result.message || 'Ошибка при удалении администратора'}`);
             }
         } catch (error) {
             console.error('❌ Ошибка удаления администратора:', error);
-            setMessage('❌ Ошибка при удалении администратора');
+            setMessage('Ошибка при удалении администратора');
         } finally {
             setTimeout(() => setMessage(''), 5000);
         }
@@ -1751,7 +1751,7 @@ function TournamentDetails() {
             const result = await tournamentManagement.startTournament();
             
             if (result.success) {
-                setMessage('✅ Турнир успешно запущен!');
+                setMessage('Турнир успешно запущен!');
                 
                 // 🆕 ОЖИДАЕМ WEBSOCKET ОБНОВЛЕНИЕ ИЛИ ИСПОЛЬЗУЕМ FALLBACK
                 if (!websocketReceived) {
@@ -1766,14 +1766,14 @@ function TournamentDetails() {
                 
             } else {
                 clearTimeout(websocketTimeout);
-                setMessage(`❌ ${result.error || 'Ошибка при запуске турнира'}`);
+                setMessage(`${result.error || 'Ошибка при запуске турнира'}`);
                 
                 // Очищаем кеш при ошибке
                 clearAdaptiveCache('start_tournament_error');
             }
         } catch (error) {
             console.error('❌ [Hybrid] Ошибка при запуске турнира:', error);
-            setMessage('❌ Ошибка при запуске турнира');
+            setMessage('Ошибка при запуске турнира');
             
             // Очищаем кеш при ошибке и принудительно обновляем
             clearAdaptiveCache('start_tournament_exception');
@@ -1872,7 +1872,7 @@ function TournamentDetails() {
             await fetchTournamentData();
 
             // Показываем уведомление
-            setMessage(`✅ ${response.data.message || 'Настройка успешно обновлена'}`);
+            setMessage(`${response.data.message || 'Настройка успешно обновлена'}`);
             setTimeout(() => setMessage(''), 5000);
 
         } catch (error) {
@@ -1884,7 +1884,7 @@ function TournamentDetails() {
 
     // 🔧 УПРОЩЕННАЯ ФУНКЦИЯ ЗАВЕРШЕНИЯ ТУРНИРА (ЧЕРЕЗ ХУК)
     const handleEndTournament = useCallback(async () => {
-        const confirmMessage = `🏁 Вы собираетесь завершить турнир.\n\nПосле завершения:\n• Нельзя будет изменить результаты\n• Будут подведены итоги\n• Действие необратимо\n\nПродолжить?`;
+        const confirmMessage = `Вы собираетесь завершить турнир.\n\nПосле завершения:\n• Нельзя будет изменить результаты\n• Будут подведены итоги\n• Действие необратимо\n\nПродолжить?`;
         
         if (!window.confirm(confirmMessage)) return;
 
@@ -1893,14 +1893,14 @@ function TournamentDetails() {
             const result = await tournamentManagement.endTournament();
             
             if (result.success) {
-                setMessage('✅ Турнир успешно завершен!');
+                setMessage('Турнир успешно завершен!');
                 await fetchTournamentData();
             } else {
-                setMessage(`❌ ${result.error || 'Ошибка при завершении турнира'}`);
+                setMessage(`${result.error || 'Ошибка при завершении турнира'}`);
             }
         } catch (error) {
             console.error('❌ Ошибка при завершении турнира:', error);
-            setMessage('❌ Ошибка при завершении турнира');
+            setMessage('Ошибка при завершении турнира');
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
@@ -1910,7 +1910,7 @@ function TournamentDetails() {
     // 🗑️ ФУНКЦИЯ УДАЛЕНИЯ ТУРНИРА
     const handleDeleteTournament = useCallback(async () => {
         if (!tournament?.id) {
-            setMessage('❌ Не удалось определить ID турнира');
+            setMessage('Не удалось определить ID турнира');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
@@ -1944,7 +1944,7 @@ function TournamentDetails() {
             setDeleteTournamentModal(false);
 
             // Показываем сообщение об успехе
-            setMessage('✅ Турнир успешно удален!');
+            setMessage('Турнир успешно удален!');
             
             // Перенаправляем на главную страницу через 2 секунды
             setTimeout(() => {
@@ -1968,7 +1968,7 @@ function TournamentDetails() {
                 errorMessage = error.message;
             }
 
-            setMessage(`❌ ${errorMessage}`);
+            setMessage(`${errorMessage}`);
             setTimeout(() => setMessage(''), 5000);
         } finally {
             setIsDeletingTournament(false);
@@ -2026,7 +2026,7 @@ function TournamentDetails() {
             
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
-                setMessage(`✅ Турнирная сетка успешно сгенерирована ${matchText}!`);
+                setMessage(`Турнирная сетка успешно сгенерирована ${matchText}!`);
                 
                 // Очищаем кеш турнира
                 const cacheKey = `tournament_cache_${id}`;
@@ -2048,7 +2048,7 @@ function TournamentDetails() {
             
         } catch (error) {
             console.error('❌ Ошибка генерации сетки:', error);
-            setError(`❌ Ошибка генерации сетки: ${error.response?.data?.error || error.message}`);
+            setError(`Ошибка генерации сетки: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -2080,7 +2080,7 @@ function TournamentDetails() {
         const shuffleText = '\n• Участники будут случайно перемешаны для сбалансированной сетки';
         const thirdPlaceText = useThirdPlace ? '\n• Будет добавлен матч за 3-е место' : '\n• Матч за 3-е место не будет создан';
         
-        const confirmMessage = `🔄 Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}${thirdPlaceText}\n• Действие необратимо\n\nПродолжить?`;
+        const confirmMessage = `Вы собираетесь перегенерировать турнирную сетку.\n\nВНИМАНИЕ:\n• Все результаты матчей будут удалены\n• Сетка будет создана заново${shuffleText}${thirdPlaceText}\n• Действие необратимо\n\nПродолжить?`;
 
         if (!window.confirm(confirmMessage)) {
             return;
@@ -2099,7 +2099,7 @@ function TournamentDetails() {
             
             if (response.data.success) {
                 const matchText = useThirdPlace ? 'с матчем за 3-е место' : 'без матча за 3-е место';
-                setMessage(`✅ Турнирная сетка успешно перегенерирована ${matchText}!`);
+                setMessage(`Турнирная сетка успешно перегенерирована ${matchText}!`);
                 
                 // Очищаем кеш турнира
                 const cacheKey = `tournament_cache_${id}`;
@@ -2121,7 +2121,7 @@ function TournamentDetails() {
             
         } catch (error) {
             console.error('❌ Ошибка регенерации сетки:', error);
-            setError(`❌ Ошибка регенерации сетки: ${error.response?.data?.error || error.message}`);
+            setError(`Ошибка регенерации сетки: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -2130,18 +2130,18 @@ function TournamentDetails() {
     // 🚨 УПРОЩЕННАЯ ФУНКЦИЯ ЭКСТРЕННОЙ ОСТАНОВКИ (API v2.0)
     const handleKillGeneration = useCallback(async () => {
         if (user?.role !== 'admin') {
-            setMessage('❌ Только администраторы могут выполнять экстренную остановку процессов');
+            setMessage('Только администраторы могут выполнять экстренную остановку процессов');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
 
-        const confirmMessage = `🚨 ЭКСТРЕННАЯ ОСТАНОВКА ПРОЦЕССОВ\n\nВНИМАНИЕ:\n• Будут остановлены все зависшие процессы генерации\n• Незавершенные операции будут прерваны\n• Статус турнира будет восстановлен\n\nЭто действие следует использовать только при зависании системы!\n\nПродолжить?`;
+        const confirmMessage = `ЭКСТРЕННАЯ ОСТАНОВКА ПРОЦЕССОВ\n\nВНИМАНИЕ:\n• Будут остановлены все зависшие процессы генерации\n• Незавершенные операции будут прерваны\n• Статус турнира будет восстановлен\n\nЭто действие следует использовать только при зависании системы!\n\nПродолжить?`;
         
         if (!window.confirm(confirmMessage)) return;
 
         try {
             setLoading(true);
-            setMessage('🚨 Останавливаем зависшие процессы...');
+            setMessage('Останавливаем зависшие процессы...');
             
             const token = localStorage.getItem('token');
             const response = await api.post(`/api/tournaments/${id}/kill-generation`, {}, {
@@ -2149,7 +2149,7 @@ function TournamentDetails() {
             });
             
             if (response.data.success) {
-                setMessage(`✅ ${response.data.message}`);
+                setMessage(`${response.data.message}`);
                 console.log('🚨 Процессы остановлены:', response.data);
                 
                 // Очищаем кеш турнира
@@ -2160,7 +2160,7 @@ function TournamentDetails() {
                 
                 await fetchTournamentData();
             } else {
-                setMessage(`❌ ${response.data.error || 'Ошибка при остановке процессов'}`);
+                setMessage(`${response.data.error || 'Ошибка при остановке процессов'}`);
             }
         } catch (error) {
             console.error('❌ Ошибка при остановке процессов:', error);
@@ -2172,7 +2172,7 @@ function TournamentDetails() {
                 errorMessage = error.message;
             }
             
-            setMessage(`❌ ${errorMessage}`);
+            setMessage(`${errorMessage}`);
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 8000);
@@ -2210,7 +2210,7 @@ function TournamentDetails() {
 
     const handleThirdPlaceModalClose = useCallback(() => {
         const mode = isRegenerationMode ? 'регенерацию' : 'генерацию';
-        console.log(`❌ Пользователь отменил ${mode} сетки`);
+        console.log(`Пользователь отменил ${mode} сетки`);
         setShowThirdPlaceModal(false);
         setIsRegenerationMode(false); // Сбрасываем режим
     }, [isRegenerationMode]);
@@ -2240,7 +2240,7 @@ function TournamentDetails() {
             
             console.log('✅ Лобби матча создано:', response.data);
             
-            setMessage('✅ Лобби матча успешно создано! Приглашения отправлены участникам.');
+            setMessage('Лобби матча успешно создано! Приглашения отправлены участникам.');
             
             // Обновляем данные турнира
             await fetchTournamentData();
@@ -2258,7 +2258,7 @@ function TournamentDetails() {
                 errorMessage = error.message;
             }
             
-            setMessage(`❌ ${errorMessage}`);
+            setMessage(`${errorMessage}`);
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 5000);
@@ -2268,7 +2268,7 @@ function TournamentDetails() {
     // 👤 Обработчик добавления незарегистрированного участника
     const handleAddParticipant = useCallback(async () => {
         if (!newParticipantData.display_name?.trim()) {
-            setMessage('❌ Укажите имя участника');
+            setMessage('Укажите имя участника');
             setTimeout(() => setMessage(''), 3000);
             return;
         }
@@ -2329,15 +2329,15 @@ function TournamentDetails() {
                     fetchTournamentData();
                 }, 1000);
                 
-                setMessage(`✅ ${newParticipantData.display_name} добавлен в турнир`);
+                setMessage(`${newParticipantData.display_name} добавлен в турнир`);
                 setTimeout(() => setMessage(''), 3000);
             } else {
-                setMessage(`❌ ${result.error || 'Ошибка при добавлении участника'}`);
+                setMessage(`${result.error || 'Ошибка при добавлении участника'}`);
                 setTimeout(() => setMessage(''), 5000);
             }
         } catch (error) {
             console.error('❌ Ошибка при добавлении участника:', error);
-            setMessage(`❌ Ошибка при добавлении участника: ${error.message}`);
+            setMessage(`Ошибка при добавлении участника: ${error.message}`);
             setTimeout(() => setMessage(''), 5000);
         } finally {
             setLoading(false);
@@ -2349,7 +2349,7 @@ function TournamentDetails() {
                         return (
             <div className="tournament-loading" data-testid="tournament-loading">
                 <div className="loading-content">
-                    <h2>🔄 Загрузка турнира...</h2>
+                    <h2>Загрузка турнира...</h2>
                     <p>Пожалуйста, подождите</p>
                 </div>
                                             </div>
@@ -2360,7 +2360,7 @@ function TournamentDetails() {
         return (
             <div className="auth-error-container" data-testid="tournament-error">
                 <div className="auth-error-message">
-                    <h2>⚠️ Ошибка загрузки турнира</h2>
+                    <h2>Ошибка загрузки турнира</h2>
                     <p>{error}</p>
                                                         <button 
                         className="auth-error-button" 
@@ -2379,9 +2379,9 @@ function TournamentDetails() {
     if (!tournament) {
         return (
             <div className="tournament-not-found" data-testid="tournament-not-found">
-                <h2>❓ Турнир не найден</h2>
+                <h2>Турнир не найден</h2>
                 <p>Турнир с указанным ID не существует или был удален.</p>
-                <button onClick={() => navigate('/')}>🏠 На главную</button>
+                <button onClick={() => navigate('/')}>На главную</button>
                                                         </div>
         );
     }
@@ -2417,7 +2417,7 @@ function TournamentDetails() {
                                             Вы участвуете
                                         </button>
                                     ) : tournament?.access_type === 'closed' ? (
-                                        <span className="invite-only">🔒 Invite only</span>
+                                        <span className="invite-only">Invite only</span>
                                     ) : (
                                         <button 
                                             className="btn btn-primary"
@@ -2513,7 +2513,7 @@ function TournamentDetails() {
                                     className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
                                     onClick={() => switchTab('info')}
                                 >
-                                    <span className="tab-label-tournamentdetails">📋 Главная</span>
+                                    <span className="tab-label-tournamentdetails">Главная</span>
                                 </button>
                             )}
                             
@@ -2522,7 +2522,7 @@ function TournamentDetails() {
                                     className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
                                     onClick={() => switchTab('participants')}
                                 >
-                                    <span className="tab-label-tournamentdetails">👥 Участники</span>
+                                    <span className="tab-label-tournamentdetails">Участники</span>
                                 </button>
                             )}
                             
@@ -2537,7 +2537,7 @@ function TournamentDetails() {
                                 className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
                                 onClick={() => switchTab('results')}
                             >
-                                <span className="tab-label-tournamentdetails">📊 Результаты</span>
+                                <span className="tab-label-tournamentdetails">Результаты</span>
                             </button>
                             
                             {isAdminOrCreator && (
@@ -2545,7 +2545,7 @@ function TournamentDetails() {
                                     className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
                                     onClick={() => switchTab('management')}
                                 >
-                                    <span className="tab-label-tournamentdetails">⚙️ Управление</span>
+                                    <span className="tab-label-tournamentdetails">Управление</span>
                                 </button>
                             )}
                         </div>

@@ -2314,7 +2314,7 @@ function TournamentDetails() {
             <div className="tournament-not-found" data-testid="tournament-not-found">
                 <h2>❓ Турнир не найден</h2>
                 <p>Турнир с указанным ID не существует или был удален.</p>
-                <button onClick={() => navigate('/')}>🏠 На главную</button>
+                <button onClick={() => navigate('/')}>На главную</button>
                                                         </div>
         );
     }
@@ -2336,7 +2336,7 @@ function TournamentDetails() {
                                 className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
                                 onClick={() => switchTab('info')}
                             >
-                                <span className="tab-label-tournamentdetails">📋 Главная</span>
+                                <span className="tab-label-tournamentdetails">Главная</span>
                             </button>
                             
                             {shouldShowParticipantsTab && (
@@ -2344,7 +2344,7 @@ function TournamentDetails() {
                                     className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
                                     onClick={() => switchTab('participants')}
                                 >
-                                    <span className="tab-label-tournamentdetails">👥 Участники</span>
+                                    <span className="tab-label-tournamentdetails">Участники</span>
                                 </button>
                             )}
                             
@@ -2352,14 +2352,14 @@ function TournamentDetails() {
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
                                 onClick={() => switchTab('bracket')}
                             >
-                                <span className="tab-label-tournamentdetails">🏆 Сетка</span>
+                                <span className="tab-label-tournamentdetails">Сетка</span>
                             </button>
                             
                             <button 
                                 className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
                                 onClick={() => switchTab('results')}
                             >
-                                <span className="tab-label-tournamentdetails">📊 Результаты</span>
+                                <span className="tab-label-tournamentdetails">Результаты</span>
                             </button>
                             
                             {isAdminOrCreator && (
@@ -2367,7 +2367,7 @@ function TournamentDetails() {
                                     className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
                                     onClick={() => switchTab('management')}
                                 >
-                                    <span className="tab-label-tournamentdetails">⚙️ Управление</span>
+                                    <span className="tab-label-tournamentdetails">Управление</span>
                                 </button>
                             )}
                         </div>

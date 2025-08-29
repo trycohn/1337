@@ -234,7 +234,7 @@ const TournamentInfoSection = ({
         } catch (error) {
             console.error('❌ Сетевая ошибка при участии в турнире:', error);
             setShowParticipationConfirm(false);
-            alert(`❌ Сетевая ошибка: ${error.message}`);
+            alert(`Сетевая ошибка: ${error.message}`);
         } finally {
             setParticipationLoading(false);
         }
@@ -319,13 +319,13 @@ const TournamentInfoSection = ({
                 setSelectedTeam(null);
                 
                 // Показываем понятное сообщение пользователю
-                alert(`❌ ${errorMessage}`);
+                alert(`${errorMessage}`);
             }
         } catch (error) {
             console.error('❌ Сетевая ошибка при участии команды в турнире:', error);
             setShowParticipationConfirm(false);
             setSelectedTeam(null);
-            alert(`❌ Сетевая ошибка: ${error.message}`);
+            alert(`Сетевая ошибка: ${error.message}`);
         } finally {
             setParticipationLoading(false);
         }
@@ -396,17 +396,17 @@ const TournamentInfoSection = ({
     const getStatusDisplayName = (status) => {
         const statusConfig = {
             // 🔧 ИСПРАВЛЕННЫЕ СТАТУСЫ - соответствуют backend API
-            'active': { label: '🟢 Активный', class: 'status-active' },
-            'in_progress': { label: '🟢 Идет', class: 'status-in-progress' },
-            'in-progress': { label: '🟢 Идет', class: 'status-in-progress' }, // Альтернативное написание
-            'completed': { label: '✅ Завершен', class: 'status-completed' },
+            'active': { label: 'Активный', class: 'status-active' },
+            'in_progress': { label: 'Идет', class: 'status-in-progress' },
+            'in-progress': { label: 'Идет', class: 'status-in-progress' }, // Альтернативное написание
+            'completed': { label: 'Завершен', class: 'status-completed' },
             
             // 🔧 ДОПОЛНИТЕЛЬНЫЕ СТАТУСЫ (если будут добавлены в будущем)
-            'upcoming': { label: '🔜 Предстоящий', class: 'status-upcoming' },
-            'ongoing': { label: '🟢 Идет', class: 'status-ongoing' },
-            'cancelled': { label: '❌ Отменен', class: 'status-cancelled' },
-            'paused': { label: '⏸️ Приостановлен', class: 'status-paused' },
-            'pending': { label: '⏳ Ожидание', class: 'status-pending' }
+            'upcoming': { label: 'Предстоящий', class: 'status-upcoming' },
+            'ongoing': { label: 'Идет', class: 'status-ongoing' },
+            'cancelled': { label: 'Отменен', class: 'status-cancelled' },
+            'paused': { label: '⏸Приостановлен', class: 'status-paused' },
+            'pending': { label: 'Ожидание', class: 'status-pending' }
         };
         
         const result = statusConfig[status] || { label: `❓ ${status || 'Неизвестно'}`, class: 'status-unknown' };
@@ -772,7 +772,6 @@ const TournamentInfoSection = ({
                 <div class="container">
                     <div class="header">
                         <h1>
-                            <span class="logo">📋</span>
                             Регламент турнира
                         </h1>
                         <div class="tournament-name">${tournament?.name || 'Турнир'}</div>
@@ -962,13 +961,13 @@ const TournamentInfoSection = ({
                     'mixed': 'Случайный микс'
                 };
                 
-                alert(`✅ Тип рейтинга изменен на: ${typeNames[newRatingType] || newRatingType}`);
+                alert(`Тип рейтинга изменен на: ${typeNames[newRatingType] || newRatingType}`);
             } else {
                 throw new Error(data.message || 'Ошибка при изменении типа рейтинга');
             }
         } catch (error) {
             console.error('❌ Ошибка изменения типа рейтинга:', error);
-            alert(`❌ Ошибка: ${error.message}`);
+            alert(`Ошибка: ${error.message}`);
         } finally {
             setRatingTypeLoading(false);
         }
@@ -1001,7 +1000,7 @@ const TournamentInfoSection = ({
     return (
         <div className="tournament-info-section">
             <div className="section-header">
-                <h2>📋 Информация о турнире</h2>
+                <h2>Информация о турнире</h2>
             </div>
 
             {/* Основная информация о турнире */}
@@ -1013,7 +1012,7 @@ const TournamentInfoSection = ({
                     </div>
                     
                     <div className="meta-item">
-                        <strong>🏆 Формат турнира:</strong>
+                        <strong>Формат турнира:</strong>
                         <span>{getFormatDisplayName(tournament?.format)}</span>
                     </div>
                 </div>
@@ -1025,7 +1024,7 @@ const TournamentInfoSection = ({
                     </div>
                     
                     <div className="meta-item">
-                        <strong>📊 Участников:</strong>
+                        <strong>Участников:</strong>
                         <span>
                             {tournament?.participants?.length || 0}
                             {tournament?.max_participants && ` / ${tournament.max_participants}`}
@@ -1037,14 +1036,14 @@ const TournamentInfoSection = ({
                 {(isTeamTournament(tournament?.participant_type) || tournament?.format === 'mix') && tournament?.team_size && (
                     <div className="meta-row">
                         <div className="meta-item">
-                            <strong>👨‍👩‍👧‍👦 Игроков в команде:</strong>
+                            <strong>Игроков в команде:</strong>
                             <span>{tournament.team_size}</span>
                         </div>
                         
                         {/* 🆕 Дополнительная информация для микс турниров */}
                         {tournament?.format === 'mix' && (
                             <div className="meta-item">
-                                <strong>🎲 Тип микса:</strong>
+                                <strong>Тип микса:</strong>
                                 <span>
                                     {tournament.mix_rating_type === 'faceit' && 'По FACEIT ELO'}
                                     {tournament.mix_rating_type === 'premier' && 'По CS2 Premier Rank'}
@@ -1059,19 +1058,19 @@ const TournamentInfoSection = ({
 
                 <div className="meta-row">
                     <div className="meta-item">
-                        <strong>📅 Дата создания:</strong>
+                        <strong>Дата создания:</strong>
                         <span>{formatDate(tournament?.created_at)}</span>
                     </div>
                     
                     <div className="meta-item">
-                        <strong>🚀 Дата старта:</strong>
+                        <strong>Дата старта:</strong>
                         <span>{formatDate(tournament?.start_date) || 'Не назначена'}</span>
                     </div>
                 </div>
 
                 <div className="meta-row">
                     <div className="meta-item">
-                        <strong>⚡ Статус:</strong>
+                        <strong>Статус:</strong>
                         <span className={`status-badge ${statusInfo.class}`}>
                             {statusInfo.label}
                         </span>
@@ -1079,7 +1078,7 @@ const TournamentInfoSection = ({
 
                     {tournament?.prize_pool && (
                         <div className="meta-item">
-                            <strong>💰 Призовой фонд:</strong>
+                            <strong>Призовой фонд:</strong>
                             <span>{tournament.prize_pool}</span>
                         </div>
                     )}
@@ -1091,7 +1090,7 @@ const TournamentInfoSection = ({
                     const isParticipantResult = isUserParticipant();
                     const isClosed = tournament?.access_type === 'closed';
                     
-                    console.log('🎯 Рендеринг блока участия:', {
+                    console.log('Рендеринг блока участия:', {
                         canParticipate: canParticipateResult,
                         isUserParticipant: isParticipantResult,
                         userId: user?.id,
@@ -1105,7 +1104,7 @@ const TournamentInfoSection = ({
                         return (
                             <div className="meta-row">
                                 <div className="meta-item participation-section">
-                                    <strong>🎯 Участие в турнире:</strong>
+                                    <strong>Участие в турнире:</strong>
                                     <div className="participation-controls">
                                         <span className="invite-only-label">Invite only</span>
                                     </div>
@@ -1117,7 +1116,7 @@ const TournamentInfoSection = ({
                     return canParticipateResult ? (
                         <div className="meta-row">
                             <div className="meta-item participation-section">
-                                <strong>🎯 Участие в турнире:</strong>
+                                <strong>Участие в турнире:</strong>
                                 <div className="participation-controls">
                                     <button 
                                         className="btn btn-primary"
@@ -1169,9 +1168,9 @@ const TournamentInfoSection = ({
                     return isParticipantResult ? (
                         <div className="meta-row">
                             <div className="meta-item participation-status">
-                                <strong>✅ Ваш статус:</strong>
+                                <strong>Ваш статус:</strong>
                                 <span className="participant-status-badge">
-                                    🎯 Вы участвуете в турнире
+                                    Вы участвуете в турнире
                                 </span>
                             </div>
                         </div>
@@ -1279,14 +1278,14 @@ const TournamentInfoSection = ({
                                 onClick={handleSaveDescription}
                                 disabled={isLoading}
                             >
-                                💾 Сохранить
+                                Сохранить
                             </button>
                             <button 
                                 className="btn btn-secondary"
                                 onClick={handleCancelDescription}
                                 disabled={isLoading}
                             >
-                                ❌ Отмена
+                                Отмена
                             </button>
                         </div>
                     )}
@@ -1327,7 +1326,7 @@ const TournamentInfoSection = ({
             {/* Блок регламента */}
             <div className="rules-block">
                 <div className="block-header">
-                    <h3>📋 Регламент турнира</h3>
+                    <h3>Регламент турнира</h3>
                     {isAdminOrCreator && !isEditingRegulations && (
                         <div className="edit-controls">
                             <button 
@@ -1346,14 +1345,14 @@ const TournamentInfoSection = ({
                                 onClick={handleSaveRegulations}
                                 disabled={isLoading}
                             >
-                                💾 Сохранить
+                                Сохранить
                             </button>
                             <button 
                                 className="btn btn-secondary"
                                 onClick={handleCancelRegulations}
                                 disabled={isLoading}
                             >
-                                ❌ Отмена
+                                Отмена
                             </button>
                         </div>
                     )}
@@ -1391,7 +1390,7 @@ const TournamentInfoSection = ({
                                         </div>
                                     ) : (
                                         <div className="rule-section">
-                                            <h4>🎯 Общие правила</h4>
+                                            <h4>Общие правила</h4>
                                             <ul>
                                                 <li>Соблюдение правил Fair Play</li>
                                                 <li>Запрет на использование читов и эксплойтов</li>
@@ -1416,7 +1415,7 @@ const TournamentInfoSection = ({
                 <div className="participants-section">
                     {tournament?.participant_type === 'solo' ? (
                         <>
-                            <h3>👥 Участники турнира</h3>
+                            <h3>Участники турнира</h3>
                             <div className="participants-list">
                                 {tournament?.participants?.map(participant => (
                                     <div 
@@ -1464,7 +1463,7 @@ const TournamentInfoSection = ({
                                     className="action-button profile-button"
                                     onClick={handleOpenProfile}
                                 >
-                                    👤 Открыть профиль
+                                    Открыть профиль
                                 </button>
                                 {isAdminOrCreator && (
                                     <button 
@@ -1475,14 +1474,14 @@ const TournamentInfoSection = ({
                                             setShowActions(false);
                                         }}
                                     >
-                                        🗑️ Удалить из турнира
+                                        Удалить из турнира
                                     </button>
                                 )}
                                 <button 
                                     className="action-button cancel-button"
                                     onClick={() => setShowActions(false)}
                                 >
-                                    ❌ Отмена
+                                    Отмена
                                 </button>
                             </div>
                         </div>
