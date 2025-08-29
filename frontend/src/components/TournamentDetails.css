@@ -127,7 +127,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 16px 16px 8px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-status { 
@@ -136,7 +136,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 8px 16px;
     justify-content: flex-end;
 
@@ -147,7 +147,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 8px 16px 16px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-participants { 
@@ -156,7 +156,7 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 8px 16px;
 }
 .infoblock-stats .infoblock-item.infoblock-team-size { 
@@ -165,14 +165,18 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: baseline;
+    align-items: center;
     padding: 8px 16px;
     justify-content: flex-end;
 }
 .infoblock-stats .infoblock-label {
-    color: #ffffff;
-    font-size: 12px;
-    letter-spacing: 0.06em;
+    color: #949494;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 8%;
+    
 }
 .infoblock-stats .infoblock-value {
     color: #ffffff;

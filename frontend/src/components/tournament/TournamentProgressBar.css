@@ -71,6 +71,8 @@
 /* Компактная версия */
 .tournament-progress-bar.compact {
     background: #00000000;
+    padding: 0;
+    margin: 0;
 }
 
 .tournament-progress-bar.compact .progress-title {
