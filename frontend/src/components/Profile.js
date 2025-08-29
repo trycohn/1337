@@ -3307,35 +3307,35 @@ function Profile() {
                                             </div>
                                         </div>
 
-                                        {/* Статус заявки, если есть */}
-                                        {organizationRequest && (
-                                            <div className="organization-request-status">
-                                                <div className="content-card">
-                                                    <div className="card-header">
-                                                        <h3 className="card-title">Статус заявки на создание организации</h3>
-                                                    </div>
-                                                    <div className="card-content">
-                                                        <div className="request-status-card">
-                                                            <div className="status-header">
-                                                                <h4>{organizationRequest.organization_name}</h4>
-                                                                <span className={`status-badge status-${organizationRequest.status}`}>
+                                        {/* Статус заявки как карточка в общей сетке (только если не approved) */}
+                                        {organizationRequest && organizationRequest.status !== 'approved' && (
+                                            <div className="orgs-wrap" style={{paddingTop:0}}>
+                                                <div className="orgs-section">
+                                                    <div className="orgs-grid">
+                                                        <div className="org-card">
+                                                            <div className="org-head">
+                                                                <div className="org-avatar"><img src={ensureHttps(user?.avatar_url) || '/default-avatar.png'} alt="" /></div>
+                                                                <div>
+                                                                    <div className="org-name">{organizationRequest.organization_name}</div>
+                                                                    <div className="org-role">Заявка на организацию</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="org-meta">
+                                                                <span className={`org-badge ${organizationRequest.status}`}>
                                                                     {organizationRequest.status === 'pending' && 'На рассмотрении'}
-                                                                    {organizationRequest.status === 'approved' && 'Одобрена'}
                                                                     {organizationRequest.status === 'rejected' && 'Отклонена'}
                                                                 </span>
+                                                                <span className="org-badge">от {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</span>
                                                             </div>
-                                                            <div className="request-details">
-                                                                <p><strong>Описание:</strong> {organizationRequest.description}</p>
-                                                                <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
-                                                                {organizationRequest.reviewed_at && (
-                                                                    <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
-                                                                )}
-                                                                {organizationRequest.admin_comment && (
-                                                                    <div className="admin-comment">
-                                                                        <p><strong>Комментарий администратора:</strong></p>
-                                                                        <div className="comment-text">{organizationRequest.admin_comment}</div>
-                                                                    </div>
-                                                                )}
+                                                            {organizationRequest.description && (
+                                                                <div className="org-desc">{organizationRequest.description}</div>
+                                                            )}
+                                                            {organizationRequest.admin_comment && (
+                                                                <div className="org-desc">Комментарий администратора: {organizationRequest.admin_comment}</div>
+                                                            )}
+                                                            <div className="org-actions">
+                                                                <button className="org-btn" onClick={()=>fetchOrganizationRequest()}>Обновить статус</button>
+                                                                <button className="org-btn" onClick={()=>setShowOrgRequestForm(true)}>Изменить данные</button>
                                                             </div>
                                                         </div>
                                                     </div>
