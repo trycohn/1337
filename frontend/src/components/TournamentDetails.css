@@ -210,7 +210,7 @@
 
 .infoblock-stats .infoblock-progress {
     margin: 0;
-    padding: 8px 32px;
+    padding: 16px 32px;
 }
 
 @media (max-width: 992px) {

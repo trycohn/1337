@@ -1641,11 +1641,18 @@ function TournamentDetails() {
 
         // Проверка участия
         const participants = Array.isArray(tournament.participants) ? tournament.participants : [];
-        const isParticipant = participants.some(p => {
-            if (!validateParticipantData(p)) return false;
-            return (tournament.participant_type === 'solo' && p.user_id === user.id) ||
-                   (tournament.participant_type === 'team' && p.creator_id === user.id);
-        });
+        let isParticipant = false;
+        if (tournament.participant_type === 'solo') {
+            isParticipant = participants.some(p => p && p.user_id === user.id);
+        } else {
+            // Командный/микс: считаем участником, если юзер состоит в любой команде турнира
+            const inTeams = Array.isArray(tournament.teams) && tournament.teams.some(team =>
+                Array.isArray(team?.members) && team.members.some(m => m && m.user_id === user.id)
+            );
+            // Фолбэк: иногда API присылает участников-юзеров/капитанов
+            const inParticipants = participants.some(p => (p && (p.user_id === user.id || p.creator_id === user.id)));
+            isParticipant = !!(inTeams || inParticipants);
+        }
         setIsParticipating(isParticipant);
 
         // Проверка прав администратора
