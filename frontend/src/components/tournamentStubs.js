@@ -33,13 +33,13 @@ export const LazyBracketRenderer = BracketRenderer;
 
 export const TournamentWinners = ({ tournament }) => (
     <div className="tournament-winners-stub">
-        🏆 Победители: {tournament?.name}
+        Победители: {tournament?.name}
     </div>
 );
 
 export const TournamentParticipants = ({ tournament }) => (
     <div className="tournament-participants-stub">
-        👥 Участники: {tournament?.participants?.length || 0}
+        Участники: {tournament?.participants?.length || 0}
     </div>
 );
 

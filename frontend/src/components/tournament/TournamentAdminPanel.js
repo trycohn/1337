@@ -350,7 +350,7 @@ const TournamentAdminPanel = ({
                 {participants && participants.length > 0 && (
                     <div className="participants-section-v2">
                         <div className="section-header">
-                            <h4>👥 Участники ({participants.length})</h4>
+                            <h4>Участники ({participants.length})</h4>
                             {tournament?.status === 'active' && !hasBracket && (
                                 <div className="section-controls">
                                     <button 
@@ -436,7 +436,7 @@ const TournamentAdminPanel = ({
                 {/* 🆕 УПРАВЛЕНИЕ АДМИНИСТРАТОРАМИ ТУРНИРА */}
                 <div className="admins-section-v2">
                     <div className="section-header">
-                        <h4>👑 Администраторы турнира</h4>
+                        <h4>Администраторы турнира</h4>
                         <div className="section-controls">
                             <button 
                                 className="btn btn-secondary"
@@ -444,7 +444,7 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Пригласить администратора"
                             >
-                                ➕ Пригласить
+                                Пригласить
                             </button>
                         </div>
                     </div>
@@ -460,7 +460,7 @@ const TournamentAdminPanel = ({
                                 <div className="admin-role">Создатель турнира</div>
                             </div>
                             <div className="admin-actions">
-                                <span className="creator-badge">👑 Создатель</span>
+                                <span className="creator-badge">Создатель</span>
                             </div>
                         </div>
 
@@ -497,7 +497,7 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Создать турнирную сетку"
                             >
-                                🎲 Генерировать сетку
+                                Генерировать сетку
                             </button>
                         )}
                         
@@ -509,14 +509,14 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Перегенерировать турнирную сетку"
                             >
-                                🔄 Перегенерировать сетку
+                                Перегенерировать сетку
                             </button>
                         )}
                     </div>
 
                     {participants?.length < 2 && (
                         <div className="warning-message-v2">
-                            ⚠️ Для создания сетки нужно минимум 2 участника
+                            Для создания сетки нужно минимум 2 участника
                         </div>
                     )}
                 </div>
@@ -524,7 +524,7 @@ const TournamentAdminPanel = ({
                 {/* 🎮 УПРАВЛЕНИЕ ЛОББИ МАТЧЕЙ (для CS2) */}
                 {tournament?.lobby_enabled && tournament?.status === 'in_progress' && (
                     <div className="lobby-section-v2">
-                        <h4>🎮 Управление лобби матчей</h4>
+                        <h4>Управление лобби матчей</h4>
                         <div className="lobby-info">
                             <p>Лобби матчей включено для этого турнира</p>
                             <small>Участники будут получать приглашения для выбора карт перед началом матча</small>
@@ -538,7 +538,7 @@ const TournamentAdminPanel = ({
                                     disabled={isLoading}
                                     title={`Создать лобби для матча ${match.team1_name} vs ${match.team2_name}`}
                                 >
-                                    🎮 Создать лобби: {match.team1_name} vs {match.team2_name}
+                                    Создать лобби: {match.team1_name} vs {match.team2_name}
                                 </button>
                             ))}
                         </div>
@@ -558,7 +558,7 @@ const TournamentAdminPanel = ({
                 {/* 🏁 Финал серии: выбор отборочных и top-N */}
                 {hasFinalControls && (
                     <div className="final-series-section">
-                        <h4>🏁 Финал серии: отборочные турниры</h4>
+                        <h4>Финал серии: отборочные турниры</h4>
                         {/* Фильтры и поиск */}
                         <div className="qualifiers-filters">
                             <input
@@ -659,20 +659,20 @@ const TournamentAdminPanel = ({
                                         className="action-btn-v2"
                                         onClick={() => setQualifiers([...(qualifiers || []), { qualifier_tournament_id: 0, slots: 1 }])}
                                     >
-                                        ➕ Добавить отборочный
+                                        Добавить отборочный
                                     </button>
                                     <button
                                         className="action-btn-v2"
                                         onClick={() => handleSaveQualifiers(qualifiers)}
                                     >
-                                        💾 Сохранить связи
+                                        Сохранить связи
                                     </button>
                                     <button
                                         className="action-btn-v2"
                                         onClick={handleSyncQualifiers}
                                         title="Добавить победителей в финал"
                                     >
-                                        🔄 Синхронизировать победителей
+                                        Синхронизировать победителей
                                     </button>
                                 </div>
                             </div>
@@ -684,7 +684,7 @@ const TournamentAdminPanel = ({
                 {/* 🎯 УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ */}
                 {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
                     <div className="results-section-v2">
-                        <h4>📊 Управление результатами</h4>
+                        <h4>Управление результатами</h4>
                         <div className="results-actions">
                             <button 
                                 className="action-btn-v2 clear-btn"
@@ -692,7 +692,7 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Очистить все результаты матчей"
                             >
-                                🗑️ Очистить результаты
+                                Очистить результаты
                             </button>
                             <button 
                                 className="action-btn-v2 reset-btn"
@@ -700,7 +700,7 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Сбросить все результаты матчей и вернуть их в исходное состояние"
                             >
-                                🔄 Сбросить результаты
+                                Сбросить результаты
                             </button>
                         </div>
                     </div>
@@ -709,14 +709,14 @@ const TournamentAdminPanel = ({
                 {/* 🎯 УПРАВЛЕНИЕ МАТЧАМИ */}
                 {tournament?.status === 'in_progress' && matches?.some(m => m.status === 'completed') && (
                     <div className="matches-section-v2">
-                        <h4>⚔️ Управление матчами</h4>
+                        <h4>Управление матчами</h4>
                         <div className="matches-actions">
                             <button 
                                 className="btn btn-secondary"
                                 onClick={() => onEditMatchResult()}
                                 disabled={isLoading}
                             >
-                                ✏️ Редактировать результат
+                                Редактировать результат
                             </button>
                         </div>
                     </div>
@@ -724,9 +724,9 @@ const TournamentAdminPanel = ({
 
                 {/* 🚨 ОПАСНЫЕ ДЕЙСТВИЯ */}
                 <div className="danger-zone-section-v2">
-                    <h4>🚨 Опасные действия</h4>
+                    <h4>Опасные действия</h4>
                     <div className="danger-zone-warning">
-                        <p>⚠️ Действия в этой секции необратимы. Будьте осторожны!</p>
+                        <p>Действия в этой секции необратимы. Будьте осторожны!</p>
                     </div>
                     <div className="danger-actions">
                         {/* ✏️ РУЧНОЕ РЕДАКТИРОВАНИЕ СЕТКИ - ТОЛЬКО ДЛЯ СОЗДАТЕЛЯ */}
@@ -749,13 +749,13 @@ const TournamentAdminPanel = ({
                                 disabled={isLoading}
                                 title="Удалить турнир полностью (только для создателя)"
                             >
-                                🗑️ Удалить турнир
+                                Удалить турнир
                             </button>
                         )}
                         
                         {tournament?.created_by !== user?.id && (
                             <div className="creator-only-warning">
-                                <p>⚠️ Критические действия доступны только создателю турнира</p>
+                                <p>Критические действия доступны только создателю турнира</p>
                             </div>
                         )}
                     </div>

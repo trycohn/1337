@@ -298,7 +298,7 @@ const BracketManagementPanel = ({
 
         // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
         if (isMixTournament && !mixTournamentStatus.ready) {
-            alert(`❌ Нельзя создать сетку: ${mixTournamentStatus.reason}`);
+            alert(`Нельзя создать сетку: ${mixTournamentStatus.reason}`);
             return;
         }
 
@@ -357,11 +357,11 @@ const BracketManagementPanel = ({
 
         // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
         if (isMixTournament && !mixTournamentStatus.ready) {
-            alert(`❌ Нельзя регенерировать сетку: ${mixTournamentStatus.reason}`);
+            alert(`Нельзя регенерировать сетку: ${mixTournamentStatus.reason}`);
             return;
         }
 
-        const confirmMessage = `🔄 Вы собираетесь регенерировать турнирную сетку.\n\n` +
+        const confirmMessage = `Вы собираетесь регенерировать турнирную сетку.\n\n` +
             `ВНИМАНИЕ:\n` +
             `• Все результаты матчей будут удалены\n` +
             `• Сетка будет создана заново\n` +
@@ -427,7 +427,7 @@ const BracketManagementPanel = ({
 
         // 🆕 ПРОВЕРКА ДЛЯ МИКС ТУРНИРОВ
         if (isMixTournament && !mixTournamentStatus.ready) {
-            alert(`❌ Нельзя показать предварительный просмотр: ${mixTournamentStatus.reason}`);
+            alert(`Нельзя показать предварительный просмотр: ${mixTournamentStatus.reason}`);
             return;
         }
 
@@ -447,7 +447,7 @@ const BracketManagementPanel = ({
             if (response.data.success) {
                 const preview = response.data.data;
                 
-                let message = `🎲 Предварительный просмотр распределения:\n\n`;
+                let message = `Предварительный просмотр распределения:\n\n`;
                 
                 if (isMixTournament) {
                     message += `Команд в сетке: ${preview.participants.length}\n`;
@@ -491,7 +491,7 @@ const BracketManagementPanel = ({
             if (response.data.success) {
                 const stats = response.data.data;
                 
-                let message = `📊 Статистика турнирной сетки:\n\n`;
+                let message = `Статистика турнирной сетки:\n\n`;
                 message += `Всего матчей: ${stats.totalMatches}\n`;
                 message += `Завершено: ${stats.completedMatches}\n`;
                 message += `Прогресс: ${stats.completionPercentage}%\n`;
@@ -544,7 +544,7 @@ const BracketManagementPanel = ({
                             Сейчас зарегистрировано: {participantsCount}
                             {participantsCount >= teamSize && participantsCount < teamSize * 2 && (
                                 <div style={{ marginTop: '10px', color: '#ffa500' }}>
-                                    💡 При {participantsCount} участниках будет создана 1 команда из {teamSize} игроков. 
+                                    При {participantsCount} участниках будет создана 1 команда из {teamSize} игроков. 
                                     {participantsCount % teamSize > 0 && ` ${participantsCount % teamSize} участников останется вне команды.`}
                                 </div>
                             )}
@@ -819,11 +819,11 @@ const BracketManagementPanel = ({
                             // Раздел управления существующей сеткой
                             <div className="management-section">
                                 <div className="bracket-info">
-                                    <p>📊 Статистика турнирной сетки</p>
+                                    <p>Статистика турнирной сетки</p>
                                     <ul>
-                                        <li>🏗️ Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
+                                        <li>Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
                                         {hasThirdPlaceMatch && (
-                                            <li>🥉 Матч за 3-е место: включен</li>
+                                            <li>Матч за 3-е место: включен</li>
                                         )}
                                         <li>Всего матчей: {bracketStatistics?.totalMatches}</li>
                                         <li>Завершено: {bracketStatistics?.completedMatches}</li>
@@ -845,7 +845,7 @@ const BracketManagementPanel = ({
                                         onClick={handleGetStatistics}
                                         disabled={loading}
                                     >
-                                        📊 Подробная статистика
+                                        Подробная статистика
                                     </button>
                                     
                                     <button 
@@ -853,13 +853,13 @@ const BracketManagementPanel = ({
                                         onClick={() => setShowSeedingOptions(!showSeedingOptions)}
                                         disabled={loading}
                                     >
-                                        {showSeedingOptions ? '🔽 Скрыть настройки' : '🔄 Настроить регенерацию'}
+                                        {showSeedingOptions ? 'Скрыть настройки' : 'Настроить регенерацию'}
                                     </button>
                                 </div>
 
                                 {showSeedingOptions && (
                                     <div className="seeding-options">
-                                        <h4>🔄 Регенерация турнирной сетки</h4>
+                                        <h4>Регенерация турнирной сетки</h4>
                                         
                                         <div className="warning">
                                             Регенерация удалит все результаты матчей и создаст сетку заново с новым распределением {isMixTournament ? 'команд' : 'участников'}.
