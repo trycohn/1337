@@ -109,7 +109,7 @@ function TournamentRulesPage() {
                     </>
                 ) : (
                     <>
-                        <SafeRichTextDisplay htmlContent={description} />
+                        <SafeRichTextDisplay content={description} />
                         <div style={{ marginTop: 12 }}>
                             <button className="btn btn-secondary" onClick={() => setEditingDescription(true)}>Редактировать</button>
                         </div>
@@ -131,7 +131,7 @@ function TournamentRulesPage() {
                     </>
                 ) : (
                     <>
-                        <SafeRichTextDisplay htmlContent={rules} />
+                        <SafeRichTextDisplay content={rules} />
                         <div style={{ marginTop: 12 }}>
                             <button className="btn btn-secondary" onClick={() => setEditingRules(true)}>Редактировать</button>
                         </div>
