@@ -493,13 +493,22 @@ class AchievementSystem {
         try {
             const result = await pool.query(`
                 SELECT 
-                    a.id, a.name, a.description, a.icon, a.category, a.rarity, a.points,
-                    ua.progress, ua.max_progress, ua.unlocked_at
+                    a.id,
+                    a.name,
+                    a.description,
+                    a.icon,
+                    ac.name AS category_name,
+                    a.rarity,
+                    a.xp_reward AS points,
+                    ua.progress,
+                    ua.unlocked_at
                 FROM achievements a
+                LEFT JOIN achievement_categories ac ON a.category_id = ac.id
                 LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = $1
+                WHERE a.is_active = true
                 ORDER BY 
                     CASE WHEN ua.unlocked_at IS NOT NULL THEN 0 ELSE 1 END,
-                    a.rarity DESC, a.points DESC
+                    a.rarity DESC, a.xp_reward DESC
             `, [userId]);
 
             const achievements = result.rows.map(row => ({
@@ -507,14 +516,15 @@ class AchievementSystem {
                 name: row.name,
                 description: row.description,
                 icon: row.icon,
-                category: row.category,
+                category: row.category_name || null,
                 rarity: row.rarity,
                 points: row.points,
-                progress: row.progress || 0,
-                maxProgress: row.max_progress || 1,
+                // В текущей схеме progress хранится как JSONB; для совместимости отдаем числовой прогресс по умолчанию
+                progress: 0,
+                maxProgress: 1,
                 isUnlocked: !!row.unlocked_at,
                 unlockedAt: row.unlocked_at,
-                progressPercentage: row.max_progress > 0 ? Math.round((row.progress || 0) / row.max_progress * 100) : 0
+                progressPercentage: 0
             }));
 
             // Подсчитываем общие очки
@@ -547,7 +557,7 @@ class AchievementSystem {
                     SELECT 
                         ua.user_id,
                         u.username,
-                        COALESCE(SUM(a.points), 0) as total_points
+                        COALESCE(SUM(a.xp_reward), 0) AS total_points
                     FROM users u
                     LEFT JOIN user_achievements ua ON u.id = ua.user_id AND ua.unlocked_at IS NOT NULL
                     LEFT JOIN achievements a ON ua.achievement_id = a.id
@@ -556,7 +566,7 @@ class AchievementSystem {
                 ranked_users AS (
                     SELECT 
                         user_id, username, total_points,
-                        ROW_NUMBER() OVER (ORDER BY total_points DESC) as rank
+                        ROW_NUMBER() OVER (ORDER BY total_points DESC) AS rank
                     FROM user_points
                     WHERE total_points > 0
                 )
@@ -587,15 +597,15 @@ class AchievementSystem {
                         ua.user_id,
                         u.username,
                         u.avatar_url,
-                        COALESCE(SUM(a.points), 0) as total_points,
-                        COUNT(CASE WHEN ua.unlocked_at IS NOT NULL THEN 1 END) as unlocked_count
+                        COALESCE(SUM(a.xp_reward), 0) AS total_points,
+                        COUNT(CASE WHEN ua.unlocked_at IS NOT NULL THEN 1 END) AS unlocked_count
                     FROM users u
                     LEFT JOIN user_achievements ua ON u.id = ua.user_id
                     LEFT JOIN achievements a ON ua.achievement_id = a.id AND ua.unlocked_at IS NOT NULL
                     GROUP BY ua.user_id, u.username, u.avatar_url
                 )
                 SELECT 
-                    ROW_NUMBER() OVER (ORDER BY total_points DESC) as rank,
+                    ROW_NUMBER() OVER (ORDER BY total_points DESC) AS rank,
                     user_id, username, avatar_url, total_points, unlocked_count
                 FROM user_points
                 WHERE total_points > 0
@@ -617,6 +627,41 @@ class AchievementSystem {
         }
     }
 
+    async getAllAchievements() {
+        try {
+            const result = await pool.query(`
+                SELECT 
+                    a.id,
+                    a.name,
+                    a.description,
+                    a.icon,
+                    ac.name AS category_name,
+                    a.rarity,
+                    a.xp_reward AS points,
+                    a.is_active,
+                    a.is_hidden
+                FROM achievements a
+                LEFT JOIN achievement_categories ac ON a.category_id = ac.id
+                WHERE a.is_active = true
+                ORDER BY a.rarity DESC, a.name
+            `);
+
+            return result.rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                description: row.description,
+                icon: row.icon,
+                category: row.category_name || null,
+                rarity: row.rarity,
+                points: row.points,
+                isHidden: row.is_hidden === true
+            }));
+        } catch (error) {
+            console.error('❌ Ошибка получения списка достижений:', error);
+            return [];
+        }
+    }
+ 
     // Метод для принудительной проверки достижений (например, после завершения турнира)
     async triggerAchievementCheck(userId, eventType, eventData = {}) {
         if (!this.initialized) return [];
