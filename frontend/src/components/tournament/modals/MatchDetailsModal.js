@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useMatchDetailsModal } from '../../../hooks/useModalSystem';
-import MatchShareModal from './MatchShareModal';
 import '../../../styles/modal-system.css';
 
 /**
@@ -19,18 +18,16 @@ const MatchDetailsModal = ({
     onEdit,
     tournament = null
 }) => {
-    const [activeTab, setActiveTab] = useState('overview');
+    // По умолчанию показываем карты
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     // Используем унифицированный хук модальной системы
     const modalSystem = useMatchDetailsModal({
         onClose: () => {
             setShowTeam1Tooltip(false);
             setShowTeam2Tooltip(false);
-            setActiveTab('overview');
-            setIsShareModalOpen(false);
+            
             onClose();
         }
     });
@@ -48,43 +45,17 @@ const MatchDetailsModal = ({
 
     if (!isOpen || !selectedMatch) return null;
 
-    // 🎯 РАСЧЕТ СТАТИСТИКИ ПО КАРТАМ
-    const getMapStatistics = () => {
-        const mapsData = selectedMatch.maps_data || [];
-        if (mapsData.length === 0) return null;
-        
-        let team1Wins = 0;
-        let team2Wins = 0;
-        let team1TotalScore = 0;
-        let team2TotalScore = 0;
-        let draws = 0;
-        
-        mapsData.forEach(map => {
-            const score1 = parseInt(map.score1) || 0;
-            const score2 = parseInt(map.score2) || 0;
-            
-            team1TotalScore += score1;
-            team2TotalScore += score2;
-            
-            if (score1 > score2) {
-                team1Wins++;
-            } else if (score2 > score1) {
-                team2Wins++;
-            } else {
-                draws++;
-            }
-        });
-        
-        return {
-            mapsCount: mapsData.length,
-            team1Wins,
-            team2Wins,
-            draws,
-            team1TotalScore,
-            team2TotalScore,
-            scoreDifference: Math.abs(team1TotalScore - team2TotalScore)
-        };
-    };
+    // 🎯 Карты для отображения: только выбранные в лобби
+    function normalizeMapName(map) {
+        return map?.map_name || map?.map || map?.name || '';
+    }
+    const pickedMaps = (() => {
+        const md = Array.isArray(selectedMatch.maps_data) ? selectedMatch.maps_data : [];
+        if (md.length > 0) return md; // считаем maps_data источником выбранных карт
+        const selections = Array.isArray(selectedMatch.selections) ? selectedMatch.selections : [];
+        const picks = selections.filter(s => s.action_type === 'pick' && s.map_name);
+        return picks.map((p, idx) => ({ map: p.map_name, score1: null, score2: null, index: idx }));
+    })();
 
     // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ
     const TeamTooltip = ({ team, composition, show, onClose }) => {
@@ -125,7 +96,28 @@ const MatchDetailsModal = ({
 
     const handleEdit = () => {
         if (onEdit && canEdit) {
-            onEdit(selectedMatch);
+            const isLobbyEnabled = !!tournament?.lobby_enabled;
+            if (!isLobbyEnabled) {
+                // Лобби в турнире отключено → разрешаем выбор из полного маппула
+                onEdit(selectedMatch);
+                return;
+            }
+            // Лобби включено, но выбранных карт нет → спросить подтверждение у администратора
+            if (!pickedMaps || pickedMaps.length === 0) {
+                const confirmBypassLobby = window.confirm('Действительно корректируем матч без учета лобби?');
+                if (confirmBypassLobby) {
+                    onEdit(selectedMatch);
+                }
+                return;
+            }
+            // Лобби включено → редактируем только выбранные в лобби карты
+            const trimmed = { ...selectedMatch };
+            trimmed.maps_data = (pickedMaps || []).map(m => ({
+                map: normalizeMapName(m),
+                score1: m.score1 ?? null,
+                score2: m.score2 ?? null,
+            }));
+            onEdit(trimmed);
         }
     };
 
@@ -143,9 +135,7 @@ const MatchDetailsModal = ({
 
     const isCS2 = tournament?.game === 'Counter-Strike 2' || 
                   tournament?.game === 'CS2' ||
-                  (selectedMatch.maps_data && selectedMatch.maps_data.length > 0);
-
-    const mapStats = getMapStatistics();
+                  (pickedMaps && pickedMaps.length > 0);
 
     return (
         <div className="modal-system-overlay" onClick={handleClose}>
@@ -291,131 +281,14 @@ const MatchDetailsModal = ({
 
                     <div className="modal-system-divider"></div>
 
-                    {/* Навигация по вкладкам */}
-                    {isMatchCompleted && (
-                        <div className="modal-system-flex-center modal-system-mb-20">
-                            <button 
-                                className="btn btn-secondary"
-                                onClick={() => setActiveTab('overview')}
-                            >
-                                📋 Обзор
-                            </button>
-                            {isCS2 && mapStats && (
-                                <button 
-                                    className="btn btn-secondary"
-                                    onClick={() => setActiveTab('maps')}
-                                >
-                                    🗺️ Карты ({mapStats.mapsCount})
-                                </button>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Контент вкладок */}
+                    {/* Контент: только карты, выбранные в лобби */}
                     <div className="modal-system-section">
-                        {/* Вкладка "Обзор" */}
-                        {activeTab === 'overview' && (
-                            <div>
-                                {isMatchCompleted ? (
-                                    <>
-                                        {/* Краткая статистика */}
-                                        <div className="modal-system-section">
-                                            <h3 className="modal-system-section-title">📊 Статистика матча</h3>
-                                            <div className="modal-system-grid-3">
-                                                <div className="modal-system-info">
-                                                    <div className="modal-system-text-center">
-                                                        <div className="modal-system-bold">Общий счет</div>
-                                                        <div style={{ fontSize: '24px', margin: '10px 0' }}>
-                                                            {selectedMatch.score1 || 0} : {selectedMatch.score2 || 0}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {mapStats && (
-                                                    <>
-                                                        <div className="modal-system-info">
-                                                            <div className="modal-system-text-center">
-                                                                <div className="modal-system-bold">Карт сыграно</div>
-                                                                <div style={{ fontSize: '24px', margin: '10px 0' }}>
-                                                                    {mapStats.mapsCount}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="modal-system-info">
-                                                            <div className="modal-system-text-center">
-                                                                <div className="modal-system-bold">Счет</div>
-                                                                <div style={{ fontSize: '18px', margin: '10px 0' }}>
-                                                                    {mapStats.team1TotalScore} : {mapStats.team2TotalScore}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Расширенная статистика */}
-                                        {mapStats && (
-                                            <div className="modal-system-section">
-                                                <h3 className="modal-system-section-title">📈 Детальная статистика</h3>
-                                                <div className="modal-system-grid-2">
-                                                    <div className="modal-system-info">
-                                                        <h4 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h4>
-                                                        <div className="modal-system-flex-column">
-                                                            <span>
-                                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике MatchDetailsModal */}
-                                                                {selectedMatch.team1_name || 
-                                                                 (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}: {mapStats.team1Wins}
-                                                            </span>
-                                                            <span>
-                                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике MatchDetailsModal */}
-                                                                {selectedMatch.team2_name || 
-                                                                 (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}: {mapStats.team2Wins}
-                                                            </span>
-                                                            {mapStats.draws > 0 && <span>Ничьи: {mapStats.draws}</span>}
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="modal-system-info">
-                                                        <h4 className="modal-system-bold modal-system-mb-10">🎯 Производительность</h4>
-                                                        <div className="modal-system-flex-column">
-                                                            <span>Разность фрагов: ±{mapStats.scoreDifference}</span>
-                                                            <span>Общее количество раундов: {mapStats.team1TotalScore + mapStats.team2TotalScore}</span>
-                                                            {mapStats.mapsCount >= 3 && <span>Формат: BO{mapStats.mapsCount}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="modal-system-text-center">
-                                        <div style={{ fontSize: '48px', margin: '20px 0' }}>⏳</div>
-                                        <h4 className="modal-system-bold">Матч еще не сыгран</h4>
-                                        <p className="modal-system-mb-20">Результаты появятся после завершения игры между командами.</p>
-                                        <div className="modal-system-flex-center">
-                                            <span className="modal-system-bold">
-                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ для несыгранного матча */}
-                                                {selectedMatch.team1_name || 
-                                                 (tournament?.participant_type === 'solo' ? 'Участник 1' : 'Команда 1')}
-                                            </span>
-                                            <span className="modal-system-badge">VS</span>
-                                            <span className="modal-system-bold">
-                                                {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ для несыгранного матча */}
-                                                {selectedMatch.team2_name || 
-                                                 (tournament?.participant_type === 'solo' ? 'Участник 2' : 'Команда 2')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Вкладка "Карты" */}
-                        {activeTab === 'maps' && isCS2 && selectedMatch.maps_data && (
+                        {isCS2 && pickedMaps && pickedMaps.length > 0 ? (
                             <div>
                                 <h3 className="modal-system-section-title">🗺️ Результаты по картам</h3>
                                 <div className="modal-system-flex-column">
-                                    {selectedMatch.maps_data.map((map, index) => {
+                                    {pickedMaps.map((map, index) => {
+                                        const mapName = normalizeMapName(map);
                                         const score1 = parseInt(map.score1) || 0;
                                         const score2 = parseInt(map.score2) || 0;
                                         const team1Won = score1 > score2;
@@ -425,7 +298,7 @@ const MatchDetailsModal = ({
                                         return (
                                             <div key={index} className="modal-system-info">
                                                 <div className="modal-system-flex-between modal-system-mb-10">
-                                                    <h4 className="modal-system-bold">Карта {index + 1}: {map.map || 'Неизвестно'}</h4>
+                                                    <h4 className="modal-system-bold">Карта {index + 1}: {mapName || 'Неизвестно'}</h4>
                                                     <span className={`modal-system-badge ${team1Won ? 'modal-system-badge-success' : team2Won ? 'modal-system-badge-success' : isDraw ? 'modal-system-badge-warning' : ''}`}>
                                                         {team1Won ? `🏆 ${selectedMatch.team1_name}` :
                                                          team2Won ? `🏆 ${selectedMatch.team2_name}` :
@@ -458,10 +331,7 @@ const MatchDetailsModal = ({
                                     })}
                                 </div>
                             </div>
-                        )}
-
-                        {/* Сообщение о отсутствии карт */}
-                        {activeTab === 'maps' && (!selectedMatch.maps_data || selectedMatch.maps_data.length === 0) && (
+                        ) : (
                             <div className="modal-system-text-center">
                                 <div style={{ fontSize: '48px', margin: '20px 0' }}>🗺️</div>
                                 <h4 className="modal-system-bold">Карты не добавлены</h4>
