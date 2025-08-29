@@ -1516,12 +1516,19 @@ class TournamentService {
             const matches = await MatchRepository.getByTournamentId(tournamentId);
             // Получаем администраторов
             admins = await TournamentRepository.getAdmins(tournamentId);
+            // Получаем организаторов
+            const organizers = await TournamentRepository.getOrganizers(tournamentId);
+            const organizerName = organizers && organizers.length > 0 ? organizers[0].name : null;
+            const organizerSlug = organizers && organizers.length > 0 ? organizers[0].slug : null;
 
             // Добавляем CS2-специфичную информацию
             const enhancedTournament = this._enhanceWithCS2Info(tournament);
 
             return {
                 ...enhancedTournament,
+                organizer_name: organizerName,
+                organizer_slug: organizerSlug,
+                organizers,
                 participants,
                 teams,
                 matches,
