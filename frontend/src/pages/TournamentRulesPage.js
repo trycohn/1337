@@ -16,7 +16,7 @@ function TournamentRulesPage() {
 
     useEffect(() => {
         let cancelled = false;
-        (async function load() {
+        async function loadTournament() {
             try {
                 const { data } = await api.get(`/api/tournaments/${id}`);
                 if (!cancelled) {
@@ -25,9 +25,10 @@ function TournamentRulesPage() {
                     setRules(data?.rules || '');
                 }
             } catch (e) {
-                setError('Не удалось загрузить турнир');
+                setError(e?.response?.data?.message || 'Не удалось загрузить турнир');
             }
-        })();
+        }
+        loadTournament();
         return () => { cancelled = true; };
     }, [id]);
 
@@ -35,14 +36,25 @@ function TournamentRulesPage() {
         if (!tournament?.id) return;
         setSaving(true);
         try {
-            const { data } = await api.put(`/api/tournaments/${tournament.id}/description`, { description });
+            const token = localStorage.getItem('token');
+            const { data } = await api.put(
+                `/api/tournaments/${tournament.id}/description`, 
+                { description },
+                token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+            );
             if (data?.tournament) {
                 setTournament(data.tournament);
                 setDescription(data.tournament.description || '');
             }
             setEditingDescription(false);
+            // Перезагружаем свежие данные с сервера для уверенности
+            try {
+                const refreshed = await api.get(`/api/tournaments/${tournament.id}`);
+                setTournament(refreshed.data);
+                setDescription(refreshed.data?.description || '');
+            } catch (_) {}
         } catch (e) {
-            setError('Ошибка сохранения описания');
+            setError(e?.response?.data?.message || 'Ошибка сохранения описания');
         } finally {
             setSaving(false);
         }
@@ -52,14 +64,25 @@ function TournamentRulesPage() {
         if (!tournament?.id) return;
         setSaving(true);
         try {
-            const { data } = await api.put(`/api/tournaments/${tournament.id}/rules`, { rules });
+            const token = localStorage.getItem('token');
+            const { data } = await api.put(
+                `/api/tournaments/${tournament.id}/rules`, 
+                { rules },
+                token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+            );
             if (data?.tournament) {
                 setTournament(data.tournament);
                 setRules(data.tournament.rules || '');
             }
             setEditingRules(false);
+            // Перезагружаем свежие данные с сервера
+            try {
+                const refreshed = await api.get(`/api/tournaments/${tournament.id}`);
+                setTournament(refreshed.data);
+                setRules(refreshed.data?.rules || '');
+            } catch (_) {}
         } catch (e) {
-            setError('Ошибка сохранения регламента');
+            setError(e?.response?.data?.message || 'Ошибка сохранения регламента');
         } finally {
             setSaving(false);
         }
