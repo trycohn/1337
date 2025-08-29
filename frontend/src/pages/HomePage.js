@@ -424,7 +424,9 @@ function WinnersSteamCarousel({ winners }) {
     return () => clearInterval(t);
   }, [shuffled.length]);
 
-  const getGameImage = (w) => {
+  const getWinnerImage = (w) => {
+    const src = w.winner_avatar_url || null;
+    if (src && typeof src === 'string' && src.trim().length > 0) return src;
     const g = String(w.game || w.tournament_game || '').toLowerCase();
     if (g.includes('counter') || g.includes('cs')) return '/images/games/counter%20strike%202.jpg';
     return '/images/1337%20black%20logo.svg';
@@ -455,7 +457,7 @@ function WinnersSteamCarousel({ winners }) {
                       <h3 className="winner-name-fit" title={w.winner_name}>{w.winner_name}</h3>
                     </div>
                     <div className="steam-art-wrap">
-                      <img className="steam-game-art" src={getGameImage(w)} alt="game" onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                      <img className="steam-game-art" src={getWinnerImage(w)} alt="winner" onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
                     </div>
                     <div className="winner-tournament-bottom" title={w.tournament_name}>{w.tournament_name}</div>
                   </div>

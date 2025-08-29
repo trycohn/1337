@@ -1729,7 +1729,27 @@ class TournamentService {
                         WHEN u.id IS NOT NULL THEN u.id
                         ELSE NULL
                     END AS winner_id,
-                    ('$' || COALESCE(t.prize_pool, '50000')) AS prize
+                    ('$' || COALESCE(t.prize_pool, '50000')) AS prize,
+                    -- URL аватара/логотипа победителя
+                    (
+                        CASE 
+                            WHEN tt.id IS NOT NULL THEN 
+                                -- Приоритет: логотип команды, иначе аватар капитана или первого участника
+                                COALESCE(
+                                    tt.logo_url,
+                                    (
+                                        SELECT u2.avatar_url
+                                        FROM tournament_team_members ttm2
+                                        LEFT JOIN users u2 ON ttm2.user_id = u2.id
+                                        WHERE ttm2.team_id = tt.id
+                                        ORDER BY ttm2.is_captain DESC, ttm2.id ASC
+                                        LIMIT 1
+                                    )
+                                )
+                            WHEN u.id IS NOT NULL THEN u.avatar_url
+                            ELSE NULL
+                        END
+                    ) AS winner_avatar_url
                 FROM winners w
                 JOIN tournaments t ON t.id = w.tournament_id
                 LEFT JOIN tournament_teams tt ON tt.id = w.winner_ref_id
