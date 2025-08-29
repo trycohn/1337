@@ -113,21 +113,39 @@
 
 .header-stats .stat-item.stat-prize { 
     grid-area: prize;
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-item.stat-start { 
     grid-area: start;
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-item.stat-status { 
     grid-area: status;
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-item.stat-format { 
     grid-area: format;
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-item.stat-participants { 
     grid-area: participants; 
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-item.stat-team-size { 
     grid-area: team-size;
+    display: flex;
+    flex-direction: row;
+    height: 44px;
 }
 .header-stats .stat-label {
     color: #aaaaaa;
@@ -1421,7 +1439,7 @@ div.score-container input {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
+    padding: 10px 14px;
     flex-direction: row;
 }
 .stat-label {
