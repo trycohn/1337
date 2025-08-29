@@ -32,6 +32,13 @@
 }
 
 /* 🆕 CS2 hero header (400px full-width top image) */
+.tournament-main .tournament-header {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+}
+
 .cs2-hero-header {
     width: 100vw;
     height: 400px;
@@ -47,7 +54,10 @@
     gap: 16px;
     align-items: flex-start;
     flex-direction: column;
+    gap: 6px;
 }
+
+
 
 .tournament-header-tournamentdetails .with-cs2-hero {
     width: 90%;
