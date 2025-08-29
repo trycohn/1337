@@ -175,10 +175,6 @@
   gap: 20px;
   margin-bottom: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-  border-radius: 12px;
-  border: 1px solid #374151;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -705,9 +701,6 @@
 .participants-group {
     margin-bottom: 24px;
     padding: 16px;
-    border-radius: 12px;
-    border: 1px solid #374151;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
 }
 /* Р—Р°РіРѕР»РѕРІРєРё РіСЂСѓРїРї СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
 .participants-group-title {

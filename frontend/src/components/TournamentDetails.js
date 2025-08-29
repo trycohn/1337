@@ -2480,7 +2480,11 @@ function TournamentDetails() {
                                     </div>
                                 </div>
                                 <div className="header-actions">
-                                    {tournament?.access_type === 'closed' ? (
+                                    {isParticipating ? (
+                                        <button className="btn btn-secondary" disabled aria-disabled="true">
+                                            Вы участвуете
+                                        </button>
+                                    ) : tournament?.access_type === 'closed' ? (
                                         <span className="invite-only">🔒 Invite only</span>
                                     ) : (
                                         <button 
