@@ -37,6 +37,11 @@ class TournamentService {
             const admins = await TournamentRepository.getAdmins(tournamentId);
             console.log(`👥 [getTournamentById] Турнир ${tournamentId}: найдено ${admins.length} администраторов`);
 
+            // Получаем организаторов
+            const organizers = await TournamentRepository.getOrganizers(tournamentId);
+            const organizerName = organizers.length > 0 ? organizers[0].name : null;
+            const organizerSlug = organizers.length > 0 ? organizers[0].slug : null;
+
             // Получаем участников
             const participants = await ParticipantRepository.getByTournamentId(tournamentId);
             console.log(`🎯 [getTournamentById] Турнир ${tournamentId}: найдено ${participants.length} участников`);
@@ -89,6 +94,9 @@ class TournamentService {
                 ...tournament,
                 creator_name: tournament.creator_username,
                 creator_avatar_url: tournament.creator_avatar_url,
+                organizer_name: organizerName,
+                organizer_slug: organizerSlug,
+                organizers,
                 participants: participants,
                 participant_count: participants.length,
                 matches: matches,

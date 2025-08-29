@@ -52,6 +52,25 @@ class TournamentRepository {
     }
 
     /**
+     * Получить организаторов турнира
+     */
+    static async getOrganizers(tournamentId) {
+        try {
+            const result = await pool.query(`
+                SELECT o.id, o.name, o.slug
+                FROM tournament_organizers to2
+                JOIN organizers o ON o.id = to2.organizer_id
+                WHERE to2.tournament_id = $1
+                ORDER BY o.name
+            `, [tournamentId]);
+            return result.rows || [];
+        } catch (error) {
+            console.warn(`⚠️ Ошибка получения организаторов турнира ${tournamentId}:`, error.message);
+            return [];
+        }
+    }
+
+    /**
      * Создание нового турнира
      */
     static async create(tournamentData) {
