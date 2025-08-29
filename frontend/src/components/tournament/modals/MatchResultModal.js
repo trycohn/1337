@@ -691,6 +691,9 @@ const MatchResultModal = ({
         shouldShowMapsSection: isCS2 && availableMaps.length > 0
     });
 
+    // Вспомогательный хелпер для названия карты
+    const getMapDisplayName = (m) => (m?.map_name || m?.map || m?.name || 'Неизвестно');
+
     // Рендер секции карт
     const renderMapsSection = () => {
         // Упрощенный режим: только ввод счёта по уже выбранным картам
@@ -702,7 +705,7 @@ const MatchResultModal = ({
                     <div className="maps-score-grid">
                         {mapsData.map((m, idx) => (
                             <div key={idx} className="map-score-row">
-                                <div className="map-name">{m.map_name}</div>
+                                <div className="map-name">{getMapDisplayName(m)}</div>
                                 <input
                                     type="number"
                                     min="0"

@@ -175,14 +175,18 @@ function TournamentDetails() {
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
     
-    // Проверяем URL параметр tab при загрузке
+    // Проверяем URL параметр tab при загрузке; для CS2 по умолчанию открываем "participants"
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
         if (tabParam && ['info', 'bracket', 'participants', 'results', 'management'].includes(tabParam)) {
             setActiveTab(tabParam);
+            return;
         }
-    }, []);
+        // Если вкладка не задана, и это CS2 — переключаем на участников
+        const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+        if (cs2) setActiveTab('participants');
+    }, [tournament?.game]);
     
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
@@ -962,6 +966,8 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData]);
 
+    const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -988,9 +994,9 @@ function TournamentDetails() {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'info':
+                if (isCS2) return null;
                 return (
                     <div className="tab-content-info">
-                        {/* Информационная секция */}
                         <TournamentInfoSection 
                             tournament={tournament}
                             user={user}
@@ -998,92 +1004,9 @@ function TournamentDetails() {
                             isAdminOrCreator={isAdminOrCreator}
                             onParticipationUpdate={fetchTournamentData}
                             userTeams={teams}
+                            isVisible={true}
                             matches={matches}
                         />
-
-                        {/* 🏆 ПОДИУМ С ПРИЗЕРАМИ для завершенных турниров */}
-                        {tournament?.status === 'completed' && games.length > 0 && (
-                            <PodiumSection tournament={tournament} matches={matches} />
-                        )}
-
-                        {/* 🆕 ПРОГРЕСС-БАР ТУРНИРА */}
-                        {tournament && (
-                            <div className="bracket-stage-wrapper bracket-full-bleed">
-                                <TournamentProgressBar 
-                                    matches={matches}
-                                    tournamentStatus={tournament?.status}
-                                    tournament={tournament}
-                                />
-                            </div>
-                        )}
-
-                        {/* Турнирная сетка */}
-                        {games.length > 0 && (
-                            <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
-                                <h3 className="bracket-section-title">🏆 Турнирная сетка</h3>
-                                <TournamentErrorBoundary>
-                                    <Suspense fallback={
-                                        <div className="bracket-loading" data-testid="bracket-loading">
-                                            🔄 Загрузка турнирной сетки...
-                                        </div>
-                                    }>
-                                        <LazyBracketRenderer
-                                            games={games}
-                                            tournament={tournament}
-                                            canEditMatches={false}
-                                            readOnly
-                                            selectedMatch={selectedMatch}
-                                            setSelectedMatch={(match) => {
-                                                if (match === null || match === undefined) {
-                                                    setSelectedMatch(null);
-            return;
-        }
-        
-                                                const matchId = typeof match === 'object' && match !== null ? match.id : match;
-                                                
-                                                if (matchId) {
-                                                    const fullMatch = matches.find(m => m.id === parseInt(matchId));
-                                                    if (fullMatch && false) {
-                                                        setSelectedMatch(fullMatch);
-                                                        setMatchResultData({
-                                                            score1: fullMatch.score1 || 0,
-                                                            score2: fullMatch.score2 || 0,
-                                                            maps_data: fullMatch.maps_data || []
-                                                        });
-                                                        openModal('matchResult');
-                                                    } else {
-                                                        setSelectedMatch(matchId);
-                                                    }
-                                                } else {
-                                                    setSelectedMatch(null);
-                                                }
-                                            }}
-                                            handleTeamClick={() => {}}
-                                            format={tournament.format}
-                                            isAdminOrCreator={isAdminOrCreator}
-                                            onMatchClick={(match) => {
-                                                if (match && match.id) {
-                                                    // Для завершенных турниров — всегда открываем страницу матча вместо модалки
-                                                    if (tournament?.status === 'completed') {
-                                                        window.location.href = `/tournaments/${tournament.id}/match/${match.id}`;
-                                                        return;
-                                                    }
-                                                    const originalMatch = matches.find(m => m.id === parseInt(match.id));
-                                                    if (originalMatch) {
-                                                        const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
-                                                        setSelectedMatchForDetails(enrichedMatch);
-                                                        openModal('matchDetails');
-                                                    }
-                                                }
-                                            }}
-                                        />
-                                    </Suspense>
-                                </TournamentErrorBoundary>
-                            </div>
-                        )}
-
-                        {/* Призеры турнира */}
-                        <TournamentWinners tournament={tournament} />
                     </div>
                 );
 
@@ -2524,15 +2447,9 @@ function TournamentDetails() {
                                     <button 
                                         className="btn btn-secondary"
                                         onClick={() => {
-                                            setActiveTab('info');
-                                            requestAnimationFrame(() => {
-                                                setTimeout(() => {
-                                                    const el = document.querySelector('.rules-block');
-                                                    if (el && typeof el.scrollIntoView === 'function') {
-                                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                                    }
-                                                }, 50);
-                                            });
+                                            if (tournament?.id) {
+                                                window.open(`/tournaments/${tournament.id}/rules`, '_blank', 'noopener,noreferrer');
+                                            }
                                         }}
                                     >
                                         Регламент
@@ -2588,13 +2505,15 @@ function TournamentDetails() {
                         </div>
 
                         {/* 🆕 Навигация по вкладкам */}
-                        <div className={`tabs-navigation-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'offset-from-hero' : ''}`}>
-                            <button 
-                                className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
-                                onClick={() => switchTab('info')}
-                            >
-                                <span className="tab-label-tournamentdetails">📋 Главная</span>
-                            </button>
+                        <div className={`tabs-navigation-tournamentdetails ${isCS2 ? 'offset-from-hero' : ''}`}>
+                            {!isCS2 && (
+                                <button 
+                                    className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
+                                    onClick={() => switchTab('info')}
+                                >
+                                    <span className="tab-label-tournamentdetails">📋 Главная</span>
+                                </button>
+                            )}
                             
                             {shouldShowParticipantsTab && (
                                 <button 

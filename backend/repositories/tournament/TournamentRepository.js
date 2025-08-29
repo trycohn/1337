@@ -41,6 +41,15 @@ class TournamentRepository {
         const result = await pool.query(`
             SELECT 
                 t.*,
+                CASE 
+                  WHEN t.participant_type = 'solo' THEN (
+                    SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id
+                  )
+                  WHEN t.participant_type = 'team' THEN (
+                    SELECT COUNT(*) FROM tournament_teams tt WHERE tt.tournament_id = t.id
+                  )
+                  ELSE 0
+                END AS participant_count,
                 u.username as creator_username,
                 u.avatar_url as creator_avatar_url
             FROM tournaments t
