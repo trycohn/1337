@@ -118,7 +118,7 @@
     height: 44px;
     gap: 12px;
     align-items: center;
-    padding: 8px 16px;
+    padding: 8px 32px;
     background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(167, 125, 42, 0) 0deg, #A77D2A 180deg, rgba(65, 49, 16, 0) 360deg);
 }
 .infoblock-stats .infoblock-item.infoblock-start { 
@@ -128,7 +128,7 @@
     height: 44px;
     gap: 12px;
     align-items: center;
-    padding: 16px 16px 8px 16px;
+    padding: 16px 32px 8px 32px;
 }
 .infoblock-stats .infoblock-item.infoblock-status { 
     grid-area: status;
@@ -137,7 +137,7 @@
     height: 44px;
     gap: 12px;
     align-items: center;
-    padding: 8px 16px;
+    padding: 8px 32px;
     justify-content: flex-end;
 
 }
@@ -148,7 +148,7 @@
     height: 44px;
     gap: 12px;
     align-items: center;
-    padding: 8px 16px 16px 16px;
+    padding: 8px 32px 8px 32px;
 }
 .infoblock-stats .infoblock-item.infoblock-participants { 
     grid-area: participants; 
@@ -156,8 +156,8 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
-    padding: 8px 16px;
+    align-items: baseline;
+    padding: 8px 32px;
 }
 .infoblock-stats .infoblock-item.infoblock-team-size { 
     grid-area: team-size;
@@ -165,8 +165,8 @@
     flex-direction: row;
     height: 44px;
     gap: 12px;
-    align-items: center;
-    padding: 8px 16px;
+    align-items: baseline;
+    padding: 8px 32px;
     justify-content: flex-end;
 }
 .infoblock-stats .infoblock-label {
