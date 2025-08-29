@@ -15,7 +15,8 @@ const SafeRichTextEditor = ({
     disabled = false,
     maxLength = 5000,
     className = '',
-    id
+    id,
+    forceSimpleEditor = false
 }) => {
     const [useSimpleEditor, setUseSimpleEditor] = useState(false);
     const [editorError, setEditorError] = useState(null);
@@ -142,7 +143,7 @@ const SafeRichTextEditor = ({
     }, [value, purifyConfig]);
 
     // Если нужно использовать простой редактор
-    if (useSimpleEditor || editorError) {
+    if (forceSimpleEditor || useSimpleEditor || editorError) {
         return (
             <div className={`safe-rich-editor-fallback ${className}`}>
                 {editorError && (

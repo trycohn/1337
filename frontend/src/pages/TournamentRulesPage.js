@@ -99,7 +99,7 @@ function TournamentRulesPage() {
                 <h3>Описание</h3>
                 {editingDescription ? (
                     <>
-                        <SafeRichTextEditor value={description} onChange={setDescription} />
+                        <SafeRichTextEditor value={description} onChange={setDescription} forceSimpleEditor={true} />
                         <div style={{ marginTop: 12 }}>
                             <button className="btn btn-primary" onClick={saveDescription} disabled={saving}>
                                 {saving ? 'Сохранение...' : 'Сохранить'}
@@ -121,7 +121,7 @@ function TournamentRulesPage() {
                 <h3>Регламент</h3>
                 {editingRules ? (
                     <>
-                        <SafeRichTextEditor value={rules} onChange={setRules} />
+                        <SafeRichTextEditor value={rules} onChange={setRules} forceSimpleEditor={true} />
                         <div style={{ marginTop: 12 }}>
                             <button className="btn btn-primary" onClick={saveRules} disabled={saving}>
                                 {saving ? 'Сохранение...' : 'Сохранить'}
