@@ -269,20 +269,20 @@ export class DoubleEliminationFormat extends TournamentFormat {
    */
   getMatchLabel(match, context) {
     if (match.bracket_type === 'grand_final') {
-      return '🏆 Матч за 1-е место'; // 🆕 Изменено с "🏁 Grand Final"
+      return 'Матч за 1-е место'; // 🆕 Изменено с "🏁 Grand Final"
     }
     
     if (match.bracket_type === 'grand_final_reset') {
-      return '🔄 Grand Final Triumph'; // Переименовано: более торжественное название
+      return 'Grand Final Triumph'; // Переименовано: более торжественное название
     }
     
     // Можно добавить специальные метки для финалов winners/losers
     if (match.bracket_position) {
       if (match.bracket_position.includes('WB') && match.bracket_position.includes('R' + context.totalWinnersRounds)) {
-        return '🏆 Winners Final';
+        return 'Winners Final';
       }
       if (match.bracket_position.includes('LB') && match.bracket_position.includes('R' + context.totalLosersRounds)) {
-        return '💔 Losers Final';
+        return 'Losers Final';
       }
     }
     

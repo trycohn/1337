@@ -266,6 +266,7 @@
     display: flex;
     gap: 12px;
     margin-top: 14px;
+    align-items: baseline;
 }
 .invite-only {
     color: #ffb84d;
