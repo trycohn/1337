@@ -70,8 +70,6 @@
 
 /* Компактная версия */
 .tournament-progress-bar.compact {
-    padding: 12px;
-    margin-bottom: 16px;
     background: #00000000;
 }
 

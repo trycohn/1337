@@ -2551,7 +2551,17 @@ function TournamentDetails() {
                                     <div className="infoblock-grid infoblock-bottom">
                                         <div className="infoblock-item infoblock-format">
                                             <div className="infoblock-label">Формат</div>
-                                            <div className="infoblock-value">{tournament?.format === 'mix' ? 'Микс' : (tournament?.participant_type === 'team' ? 'Командный' : 'Соло')}</div>
+                                            <div className="infoblock-value">
+                                                {tournament?.format === 'mix' 
+                                                    ? (() => {
+                                                        const type = (tournament?.mix_rating_type || 'faceit').toString().toLowerCase();
+                                                        const map = { faceit: 'FACEIT', premier: 'CS Premier', mixed: 'Full random', random: 'Full random' };
+                                                        const suffix = map[type] || 'FACEIT';
+                                                        return `Микс (${suffix})`;
+                                                    })()
+                                                    : (tournament?.participant_type === 'team' ? 'Командный' : 'Соло')
+                                                }
+                                            </div>
                                         </div>
                                         <div className="infoblock-item infoblock-participants">
                                             <div className="infoblock-label">Участники</div>
