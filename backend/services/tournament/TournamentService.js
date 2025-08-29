@@ -1695,25 +1695,27 @@ class TournamentService {
                         r.game,
                         COALESCE(r.completed_at, r.end_date, r.updated_at, r.created_at) AS date,
                         COALESCE(
+                            -- Предпочитаем победителя финального завершённого матча (без матча за 3 место)
                             (
-                                SELECT m.winner_team_id FROM matches m
+                                SELECT m.winner_team_id
+                                FROM matches m
                                 WHERE m.tournament_id = r.id
-                                  AND m.bracket_type = 'grand_final_reset'
+                                  AND m.status = 'completed'
+                                  AND (m.is_third_place_match IS DISTINCT FROM TRUE)
                                   AND m.winner_team_id IS NOT NULL
-                                ORDER BY m.id DESC LIMIT 1
+                                  AND (m.next_match_id IS NULL)
+                                ORDER BY COALESCE(m.round, 0) DESC, COALESCE(m.match_number, 0) DESC, m.id DESC
+                                LIMIT 1
                             ),
+                            -- Резерв: самый поздний завершённый матч с winner_team_id
                             (
-                                SELECT m.winner_team_id FROM matches m
+                                SELECT m.winner_team_id
+                                FROM matches m
                                 WHERE m.tournament_id = r.id
-                                  AND m.bracket_type IN ('grand_final','final')
+                                  AND m.status = 'completed'
                                   AND m.winner_team_id IS NOT NULL
-                                ORDER BY m.id DESC LIMIT 1
-                            ),
-                            (
-                                SELECT m.winner_team_id FROM matches m
-                                WHERE m.tournament_id = r.id
-                                  AND m.winner_team_id IS NOT NULL
-                                ORDER BY m.id DESC LIMIT 1
+                                ORDER BY COALESCE(m.round, 0) DESC, COALESCE(m.match_number, 0) DESC, m.id DESC
+                                LIMIT 1
                             )
                         ) AS winner_ref_id
                     FROM recent r
