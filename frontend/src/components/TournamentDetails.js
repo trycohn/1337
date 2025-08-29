@@ -2683,9 +2683,15 @@ function TournamentDetails() {
                         onClose={() => closeModal('matchDetails')}
                         selectedMatch={selectedMatchForDetails}
                         canEdit={canEditMatches}
-                        onEdit={() => {
+                        onEdit={(editedMatch) => {
                             closeModal('matchDetails');
-                            setSelectedMatch(selectedMatchForDetails);
+                            const matchObj = editedMatch || selectedMatchForDetails;
+                            setSelectedMatch(matchObj);
+                            setMatchResultData({
+                                score1: matchObj.score1 || 0,
+                                score2: matchObj.score2 || 0,
+                                maps_data: Array.isArray(matchObj.maps_data) ? matchObj.maps_data : []
+                            });
                             openModal('matchResult');
                         }}
                         tournament={tournament}

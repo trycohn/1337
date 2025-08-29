@@ -14,6 +14,16 @@ class TournamentController {
         res.json(tournaments);
     });
 
+    // 🆕 Получение турниров пользователя (создатель или администратор)
+    static getMyTournaments = asyncHandler(async (req, res) => {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Неавторизован' });
+        }
+        const items = await TournamentService.getMyTournaments(userId);
+        res.json(items);
+    });
+
     // 🎯 Получение конкретного турнира
     static getTournamentById = asyncHandler(async (req, res) => {
         const { id } = req.params;

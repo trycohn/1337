@@ -23,6 +23,7 @@ import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; 
 import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
 import TeamProfile from './components/tournament/TeamProfile';
 import ReferralLanding from './pages/ReferralLanding';
+import MyTournaments from './pages/MyTournaments';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -79,6 +80,7 @@ function App() {
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
                                 <Route path="/lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
+                                <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
                             </Route>
                         </Routes>
                     </Router>

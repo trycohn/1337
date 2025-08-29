@@ -54,6 +54,9 @@ router.get('/winners', TournamentController.getWinners);
 // Получение всех турниров
 router.get('/', TournamentController.getAllTournaments);
 
+// 🆕 Мои турниры (создатель или администратор)
+router.get('/my', authenticateToken, TournamentController.getMyTournaments);
+
 // Получение турнира по ID
 router.get('/:id', TournamentController.getTournamentById);
 
