@@ -18,6 +18,19 @@ class TournamentService {
         return await TournamentRepository.getAllWithParticipantCount();
     }
 
+    // 🆕 Турниры пользователя: где он создатель или администратор
+    static async getMyTournaments(userId) {
+        const sql = `
+            SELECT DISTINCT t.*
+            FROM tournaments t
+            LEFT JOIN tournament_admins ta ON ta.tournament_id = t.id
+            WHERE t.created_by = $1 OR ta.user_id = $1
+            ORDER BY t.start_date DESC NULLS LAST, t.created_at DESC
+        `;
+        const result = await pool.query(sql, [userId]);
+        return result.rows;
+    }
+
     /**
      * Получение турнира по ID с полной информацией
      */

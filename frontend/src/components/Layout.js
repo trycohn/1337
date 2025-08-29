@@ -18,6 +18,7 @@ function Layout() {
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
+    const [hasMyTournaments, setHasMyTournaments] = useState(false);
 
     // Ref для защиты от частых запросов
     const lastFetchTime = useRef(0);
@@ -25,6 +26,25 @@ function Layout() {
 
     // Создаем стабильную ссылку на функцию
     const fetchUnreadCountRef = useRef();
+    // 🆕 Проверка наличия "Моих турниров" (создатель или админ)
+    useEffect(() => {
+        let cancelled = false;
+        async function checkMyTournaments() {
+            if (!user) {
+                setHasMyTournaments(false);
+                return;
+            }
+            try {
+                const { data } = await api.get('/api/tournaments/my');
+                if (!cancelled) setHasMyTournaments(Array.isArray(data) && data.length > 0);
+            } catch (e) {
+                if (!cancelled) setHasMyTournaments(false);
+            }
+        }
+        checkMyTournaments();
+        return () => { cancelled = true; };
+    }, [user]);
+
 
     // Функция для получения количества непрочитанных сообщений с защитой от частых запросов
     const fetchUnreadCount = useCallback(async () => {
@@ -302,6 +322,14 @@ function Layout() {
                                             </span>
                                         )}
                                     </Link>
+                                    <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
+                                        Мои турниры
+                                    </Link>
+                                    {hasMyTournaments && (
+                                        <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
+                                            Мои турниры
+                                        </Link>
+                                    )}
                                     <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                                     {user.role === 'admin' && (
                                         <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
