@@ -446,7 +446,7 @@ const BracketRenderer = ({
                             >
                                 {!isMobile && (
                                     <div className="bracket-render-section-header">
-                                        <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка турнира</div>
+                                        <div className="bracket-render-section-subtitle bracket-render-winners-subtitle">Верхняя сетка</div>
                                     </div>
                                 )}
                                 <div className="bracket-rounds-container bracket-render-winners-container">
