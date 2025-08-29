@@ -168,7 +168,6 @@
     justify-content: center;
     align-items: center;
     gap: 24px;
-    padding-top: 30px;
 }
 
 .bracket-third-place-section {
@@ -878,7 +877,7 @@
 .bracket-grand-final-section {
     border-color: transparent;
     box-shadow: none;
-    margin-top: 60px;
+    margin-top: 14px;
     position: relative;
 }
 
@@ -983,7 +982,7 @@
     justify-content: center;
 }
 
-.bracket-render-grand-final-title {
+.bracket-render-section-header .bracket-render-grand-final-title {
     color: #ffffffb3;
     font-size: 14px;
     font-weight: 600;
@@ -1018,7 +1017,6 @@
 
 .bracket-render-section-header {
     text-align: center;
-    margin-bottom: 30px;
 }
 
 @media (max-width: 768px) {
