@@ -62,7 +62,6 @@ function App() {
                                 <Route index element={<HomePage />} /> {/* Заменяем Home на HomePage */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
-                                <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
                                 <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
                                 <Route path="/register" element={<RegisterRedirect />} />
                                 <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}
@@ -84,6 +83,8 @@ function App() {
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
                             </Route>
+                            {/* Страница шеринга сетки без Layout (без хедера) */}
+                            <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
                         </Routes>
                     </Router>
                 </UserProvider>
