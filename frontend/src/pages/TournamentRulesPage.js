@@ -35,7 +35,11 @@ function TournamentRulesPage() {
         if (!tournament?.id) return;
         setSaving(true);
         try {
-            await api.put(`/api/tournaments/${tournament.id}/description`, { description });
+            const { data } = await api.put(`/api/tournaments/${tournament.id}/description`, { description });
+            if (data?.tournament) {
+                setTournament(data.tournament);
+                setDescription(data.tournament.description || '');
+            }
             setEditingDescription(false);
         } catch (e) {
             setError('Ошибка сохранения описания');
@@ -48,7 +52,11 @@ function TournamentRulesPage() {
         if (!tournament?.id) return;
         setSaving(true);
         try {
-            await api.put(`/api/tournaments/${tournament.id}/rules`, { rules });
+            const { data } = await api.put(`/api/tournaments/${tournament.id}/rules`, { rules });
+            if (data?.tournament) {
+                setTournament(data.tournament);
+                setRules(data.tournament.rules || '');
+            }
             setEditingRules(false);
         } catch (e) {
             setError('Ошибка сохранения регламента');
@@ -70,7 +78,9 @@ function TournamentRulesPage() {
                     <>
                         <SafeRichTextEditor value={description} onChange={setDescription} />
                         <div style={{ marginTop: 12 }}>
-                            <button className="btn btn-primary" onClick={saveDescription} disabled={saving}>Сохранить</button>
+                            <button className="btn btn-primary" onClick={saveDescription} disabled={saving}>
+                                {saving ? 'Сохранение...' : 'Сохранить'}
+                            </button>
                             <button className="btn btn-secondary" onClick={() => setEditingDescription(false)} disabled={saving}>Отмена</button>
                         </div>
                     </>
@@ -90,7 +100,9 @@ function TournamentRulesPage() {
                     <>
                         <SafeRichTextEditor value={rules} onChange={setRules} />
                         <div style={{ marginTop: 12 }}>
-                            <button className="btn btn-primary" onClick={saveRules} disabled={saving}>Сохранить</button>
+                            <button className="btn btn-primary" onClick={saveRules} disabled={saving}>
+                                {saving ? 'Сохранение...' : 'Сохранить'}
+                            </button>
                             <button className="btn btn-secondary" onClick={() => setEditingRules(false)} disabled={saving}>Отмена</button>
                         </div>
                     </>

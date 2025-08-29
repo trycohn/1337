@@ -175,14 +175,18 @@ function TournamentDetails() {
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
     
-    // Проверяем URL параметр tab при загрузке
+    // Проверяем URL параметр tab при загрузке; для CS2 по умолчанию открываем "participants"
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
         if (tabParam && ['info', 'bracket', 'participants', 'results', 'management'].includes(tabParam)) {
             setActiveTab(tabParam);
+            return;
         }
-    }, []);
+        // Если вкладка не задана, и это CS2 — переключаем на участников
+        const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+        if (cs2) setActiveTab('participants');
+    }, [tournament?.game]);
     
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
