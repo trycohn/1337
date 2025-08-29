@@ -102,7 +102,7 @@ function BracketSharePage() {
   }, [focusMatchId, viewMode]);
 
   return (
-    <div className="2.0-bracket-share-page">
+    <div className="2.0-bracket-share-page" style={{ background: '#000', minHeight: '100vh' }}>
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
@@ -111,69 +111,7 @@ function BracketSharePage() {
         <meta property="og:url" content={pageUrl} />
         <meta property="og:type" content="website" />
       </Helmet>
-
-      {/* Хедер с меню уже рендерится в Layout */}
-      <div className="2.0-bracket-share-header">
-        {/* 1-2. Верхние две части (липкий глобальный хедер рендерится в Layout), здесь — страничный тулбар + блок инфо на одном фоне */}
-        <div
-          className="2.0-bracket-share-hero"
-          style={{
-            background: `#000 url(${process.env.PUBLIC_URL || ''}/images/figma/hero-bg-585a9d.png) center/cover no-repeat`
-          }}
-        >
-          <div className="2.0-bracket-share-hero-inner">
-            <div className="2.0-bracket-share-toolbar">
-              <Link to={`/tournaments/${id}`} className="2.0-bracket-share-link">К турниру</Link>
-              <button onClick={handleShare} className="2.0-bracket-share-button">Поделиться</button>
-              <div className="2.0-bracket-share-segment" role="tablist" aria-label="Переключатель вида">
-                <button
-                  role="tab"
-                  aria-selected={viewMode === 'classic'}
-                  onClick={() => {
-                    const params = new URLSearchParams(location.search);
-                    if (focusMatchId) params.set('match', focusMatchId);
-                    params.set('view', 'classic');
-                    navigate({ pathname: `/tournaments/${id}/bracket`, search: `?${params.toString()}` }, { replace: true });
-                  }}
-                  className={viewMode === 'classic' ? 'active' : ''}
-                >
-                  Классический
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={viewMode === 'compact'}
-                  onClick={() => {
-                    const params = new URLSearchParams(location.search);
-                    if (focusMatchId) params.set('match', focusMatchId);
-                    params.set('view', 'compact');
-                    navigate({ pathname: `/tournaments/${id}/bracket`, search: `?${params.toString()}` }, { replace: true });
-                  }}
-                  className={viewMode === 'compact' ? 'active' : ''}
-                >
-                  Компактный
-                </button>
-              </div>
-              <span className="2.0-bracket-share-url">{pageUrl}</span>
-            </div>
-            {tournament && (
-              <div className="2.0-bracket-share-info">
-                <div className="2.0-bracket-share-title">{tournament.name}</div>
-                {tournament.start_date && <div>Старт: {new Date(tournament.start_date).toLocaleString()}</div>}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Нижний локальный хедер страницы турнира */}
-        <div className="2.0-bracket-local-nav">
-          <div className="2.0-bracket-local-nav-inner">
-            <a href={`#/tournaments/${id}`} className="2.0-local-nav-link">Обзор</a>
-            <a href={`#/tournaments/${id}/bracket`} className="2.0-local-nav-link active">Сетка</a>
-            <a href={`#/tournaments/${id}/matches`} className="2.0-local-nav-link">Матчи</a>
-            <a href={`#/tournaments/${id}/participants`} className="2.0-local-nav-link">Участники</a>
-          </div>
-        </div>
-      </div>
+      {/* Чистый режим: убраны все локальные хедеры/герои/навигация */}
 
       <div className="2.0-bracket-share-content">
         {loading && (
