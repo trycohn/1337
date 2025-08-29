@@ -59,9 +59,9 @@ const LazyBracketRenderer = React.lazy(() =>
         return { 
             default: () => (
                 <div className="bracket-error" data-testid="bracket-load-error">
-                    <h3>⚠️ Ошибка загрузки турнирной сетки</h3>
+                    <h3>Ошибка загрузки турнирной сетки</h3>
                     <p>Не удалось загрузить компонент турнирной сетки. Пожалуйста, обновите страницу.</p>
-                    <button onClick={() => window.location.reload()}>🔄 Обновить страницу</button>
+                    <button onClick={() => window.location.reload()}>Обновить страницу</button>
                 </div>
             ) 
         };
@@ -88,7 +88,7 @@ class TournamentErrorBoundary extends React.Component {
         if (this.state.hasError) {
             return (
                 <div className="tournament-error-boundary" data-testid="tournament-error">
-                    <h2>⚠️ Произошла ошибка</h2>
+                    <h2>Ошибка</h2>
                     <p>Произошла ошибка при отображении турнира. Пожалуйста, обновите страницу или попробуйте позже.</p>
                     <details style={{ marginTop: '20px' }}>
                         <summary>Техническая информация</summary>
@@ -96,7 +96,7 @@ class TournamentErrorBoundary extends React.Component {
                             {this.state.errorInfo?.componentStack}
                         </pre>
                     </details>
-                    <button onClick={() => window.location.reload()}>🔄 Обновить страницу</button>
+                    <button onClick={() => window.location.reload()}>Обновить страницу</button>
                 </div>
             );
         }
@@ -240,7 +240,7 @@ function TournamentDetails() {
 
     // Обертка для логирования изменений selectedMatchForDetails
     const setSelectedMatchForDetails = useCallback((match) => {
-        console.log('🔄 setSelectedMatchForDetails вызван:', {
+        console.log('setSelectedMatchForDetails вызван:', {
             oldMatchId: selectedMatchForDetails?.id,
             newMatchId: match?.id,
             newMatchData: match,
@@ -355,7 +355,7 @@ function TournamentDetails() {
             return;
         }
 
-        console.log('🔄 [Hybrid] Начинаем загрузку данных турнира', {
+        console.log('[Hybrid] Начинаем загрузку данных турнира', {
             id,
             forceRefresh,
             operation,
@@ -395,7 +395,7 @@ function TournamentDetails() {
                             const validation = validateTournamentData(parsedTournament);
                             
                             if (validation.isValid) {
-                                console.log(`✅ [Hybrid] Данные загружены из кеша (${adaptiveCacheTime/1000}s TTL)`);
+                                console.log(`[Hybrid] Данные загружены из кеша (${adaptiveCacheTime/1000}s TTL)`);
                                 setTournament(parsedTournament);
                                 setOriginalParticipants(parsedTournament.participants || []);
                                 setMatches(parsedTournament.matches || []);
@@ -412,7 +412,7 @@ function TournamentDetails() {
                                 return;
                             }
                         } catch (parseError) {
-                            console.warn('⚠️ [Hybrid] Поврежденный кеш, загружаем с сервера');
+                            console.warn('[Hybrid] Поврежденный кеш, загружаем с сервера');
                             localStorage.removeItem(cacheKey);
                             localStorage.removeItem(cacheTimestampKey);
                         }
@@ -434,7 +434,7 @@ function TournamentDetails() {
                             throw new Error(`Некорректные данные турнира: ${validation.error}`);
                         }
 
-                        console.log(`✅ [Hybrid] Данные загружены с сервера (попытка ${retryCount + 1})`);
+                        console.log(`[Hybrid] Данные загружены с сервера (попытка ${retryCount + 1})`);
                         
                         // Сохраняем в кеш
                         localStorage.setItem(cacheKey, JSON.stringify(response.data));
@@ -452,7 +452,7 @@ function TournamentDetails() {
                     }
                 } catch (apiError) {
                     retryCount++;
-                    console.warn(`⚠️ [Hybrid] Ошибка загрузки (попытка ${retryCount}/${maxRetries + 1}):`, apiError.message);
+                    console.warn(`[Hybrid] Ошибка загрузки (попытка ${retryCount}/${maxRetries + 1}):`, apiError.message);
                     
                     if (retryCount > maxRetries) {
                         throw apiError; // Исчерпаны попытки
@@ -522,7 +522,7 @@ function TournamentDetails() {
                 if (!isNaN(timestamp) && (now - timestamp) < MAPS_CACHE_VALIDITY_PERIOD) {
                     const parsedMaps = JSON.parse(cachedMaps);
                     if (Array.isArray(parsedMaps)) {
-                        console.log(`✅ Используем кешированные карты для игры ${gameName}`);
+                        console.log(`Используем кешированные карты для игры ${gameName}`);
                         setAvailableMaps(prev => ({
                             ...prev,
                             [gameName]: parsedMaps,
@@ -643,7 +643,7 @@ function TournamentDetails() {
             return [];
         }
 
-        console.log('🎮 Генерация данных для BracketRenderer с', matches.length, 'матчами');
+        console.log('Генерация данных для BracketRenderer с', matches.length, 'матчами');
 
         // Создаем карты участников и команд
         const participantsMap = {};
@@ -690,7 +690,7 @@ function TournamentDetails() {
             .map(match => {
                 // 🔧 ИСПРАВЛЕНО: Дополнительная проверка что match действительно объект
                 if (typeof match !== 'object' || match === null) {
-                    console.warn('⚠️ Пропускаем невалидный матч:', match);
+                    console.warn('Пропускаем невалидный матч:', match);
                     return null;
                 }
 
@@ -741,7 +741,7 @@ function TournamentDetails() {
             })
             .filter(game => game !== null); // Удаляем null значения после map
 
-        console.log('✅ Безопасные игры для BracketRenderer созданы:', safeGames.length);
+        console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
         return safeGames;
     }, [matches, tournament]);
 
@@ -780,7 +780,7 @@ function TournamentDetails() {
             // Если уже есть winner_team_id в resultData, используем его
             if (resultData.winner_team_id) {
                 winner_team_id = resultData.winner_team_id;
-                console.log('✅ Используем переданный winner_team_id:', winner_team_id);
+                console.log('Используем переданный winner_team_id:', winner_team_id);
             } 
             // Если есть winner ('team1' или 'team2'), преобразуем его в ID
             else if (resultData.winner && selectedMatch) {
@@ -807,7 +807,7 @@ function TournamentDetails() {
                         entity_type: entityType
                     });
             } else {
-                    console.warn('⚠️ Не удалось найти team1_id/team2_id в данных матча:', matchData);
+                    console.warn('Не удалось найти team1_id/team2_id в данных матча:', matchData);
                 }
             }
 
@@ -824,7 +824,7 @@ function TournamentDetails() {
                 }
                 
                 if (!isValidWinner) {
-                    console.warn('⚠️ winner_team_id не найден среди участников турнира:', {
+                    console.warn('winner_team_id не найден среди участников турнира:', {
                         winner_team_id,
                         participant_type: tournament.participant_type,
                         available_participants: tournament.participants?.length || 0,
@@ -833,7 +833,7 @@ function TournamentDetails() {
                 }
             }
 
-            console.log('🎯 Итоговые данные для отправки (универсальные):', {
+            console.log('Итоговые данные для отправки (универсальные):', {
                 score1: parseInt(resultData.score1) || 0,
                 score2: parseInt(resultData.score2) || 0,
                 maps_data: resultData.maps_data || [],
@@ -855,7 +855,7 @@ function TournamentDetails() {
                 }
             });
 
-            console.log('✅ Результат матча успешно сохранен через API v2.0:', response.data);
+            console.log('Результат матча успешно сохранен через API v2.0:', response.data);
 
             // Очищаем кеш турнира
             const cacheKey = `tournament_cache_${id}`;
@@ -870,7 +870,7 @@ function TournamentDetails() {
 
             // Обновляем данные турнира
                 await fetchTournamentData();
-            setMessage('✅ Результат матча успешно сохранен!');
+            setMessage('Результат матча успешно сохранен!');
             setTimeout(() => setMessage(''), 3000);
 
         } catch (error) {
@@ -897,7 +897,7 @@ function TournamentDetails() {
 
     // 🔧 ОБНОВЛЕННАЯ ФУНКЦИЯ СБРОСА РЕЗУЛЬТАТОВ (API v2.0)
     const resetMatchResults = useCallback(async () => {
-        const confirmMessage = `⚠️ ВНИМАНИЕ!\n\n` +
+        const confirmMessage = `ВНИМАНИЕ!\n\n` +
             `Вы собираетесь очистить результаты всех матчей турнира.\n\n` +
             `Это действие:\n` +
             `• Очистит результаты всех матчей (счет, карты)\n` +
@@ -918,7 +918,7 @@ function TournamentDetails() {
                 throw new Error('Отсутствует токен авторизации');
             }
 
-            console.log('🔄 Начинаем сброс результатов через API v2.0 для турнира', id);
+            console.log('Начинаем сброс результатов через API v2.0 для турнира', id);
 
             // 🔧 ИСПРАВЛЕНО: Используем новый API endpoint
             const response = await api.post(`/api/tournaments/${id}/clear-match-results`, {}, {
@@ -928,7 +928,7 @@ function TournamentDetails() {
                 }
             });
 
-            console.log('✅ Результаты матчей успешно сброшены через API v2.0:', response.data);
+            console.log('Результаты матчей успешно сброшены через API v2.0:', response.data);
 
             // Очищаем кеш турнира
             const cacheKey = `tournament_cache_${id}`;
@@ -939,7 +939,7 @@ function TournamentDetails() {
             // Обновляем данные турнира
             await fetchTournamentData();
 
-            setMessage('✅ Результаты матчей успешно очищены! Турнир возвращен к начальному состоянию и готов к повторному проведению.');
+            setMessage('Результаты матчей успешно очищены! Турнир возвращен к начальному состоянию и готов к повторному проведению.');
             setTimeout(() => setMessage(''), 5000);
 
         } catch (error) {
@@ -971,7 +971,7 @@ function TournamentDetails() {
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
-        console.log('🔄 Переключение на вкладку:', tabName);
+        console.log('Переключение на вкладку:', tabName);
     }, []);
 
     // 🆕 Проверка, нужно ли показывать вкладку участников
@@ -986,7 +986,7 @@ function TournamentDetails() {
         if (!shouldShowParticipantsTab && activeTab === 'participants') {
             // Если вкладка участников недоступна, переключаемся на главную
             setActiveTab('info');
-            console.log('🔄 Автоматическое переключение с вкладки "Участники" на "Главная"');
+            console.log('Автоматическое переключение с вкладки "Участники" на "Главная"');
         }
     }, [shouldShowParticipantsTab, activeTab]);
 
@@ -2520,7 +2520,7 @@ function TournamentDetails() {
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
                                 onClick={() => switchTab('bracket')}
                             >
-                                <span className="tab-label-tournamentdetails">🏆 Сетка</span>
+                                <span className="tab-label-tournamentdetails">Сетка</span>
                             </button>
                             
                             <button 

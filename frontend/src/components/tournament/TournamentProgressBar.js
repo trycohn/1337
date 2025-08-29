@@ -60,7 +60,7 @@ const calculateTournamentProgress = (matches = [], tournamentStatus, tournament 
     const completed = completedMatches.length;
     
     // 🔧 ОТЛАДКА: логируем данные для проверки
-    console.log('🏆 TournamentProgressBar Debug:', {
+    console.log('TournamentProgressBar Debug:', {
         tournamentStatus,
         bracketType,
         isDoubleElimination,
@@ -124,7 +124,7 @@ const TournamentProgressBar = ({
         return (
             <div className={`tournament-progress-bar compact`}>
                 <div className="progress-inline">
-                    <span className="progress-title">Прогресс</span>
+                    <span className="progress-title">Прогресс турнира</span>
                     <div className="progress-bar-container inline">
                         <div className="progress-bar-background">
                             <div className="progress-bar-fill" style={{ width: `${percentage}%` }} />
@@ -139,7 +139,7 @@ const TournamentProgressBar = ({
     return (
         <div className={`tournament-progress-bar`}>
             <div className="progress-header">
-                <span className="progress-title">🏆 Прогресс турнира</span>
+                <span className="progress-title">Прогресс турнира</span>
                 <span className="progress-percentage">{percentage}%</span>
             </div>
             <div className="progress-bar-container">

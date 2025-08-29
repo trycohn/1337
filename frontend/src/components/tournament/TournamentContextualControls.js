@@ -29,8 +29,8 @@ const TournamentContextualControls = ({
         return (
             <div className="contextual-controls participants-context">
                 <div className="controls-header">
-                    <h4>⚙️ Управление участниками</h4>
-                    <span className="context-badge">👥 {participantsCount} участников</span>
+                    <h4>Управление участниками</h4>
+                    <span className="context-badge">{participantsCount} участников</span>
                 </div>
                 
                 <div className="controls-actions">
@@ -40,7 +40,7 @@ const TournamentContextualControls = ({
                         disabled={isLoading}
                         title="Найти зарегистрированного участника"
                     >
-                        <span className="btn-icon">🔍</span>
+                        <span className="btn-icon"></span>
                         Найти участника
                     </button>
                     
@@ -50,7 +50,7 @@ const TournamentContextualControls = ({
                         disabled={isLoading}
                         title="Добавить незарегистрированного участника"
                     >
-                        <span className="btn-icon">👤</span>
+                        <span className="btn-icon"></span>
                         Добавить гостя
                     </button>
                     
@@ -61,7 +61,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Создать турнирную сетку"
                         >
-                            <span className="btn-icon">⚡</span>
+                            <span className="btn-icon"></span>
                             Создать сетку
                         </button>
                     )}
@@ -69,7 +69,7 @@ const TournamentContextualControls = ({
                 
                 {participantsCount < 2 && (
                     <div className="context-warning">
-                        ⚠️ Добавьте минимум 2 участника для создания турнирной сетки
+                        Добавьте минимум 2 участника для создания турнирной сетки
                     </div>
                 )}
             </div>
@@ -80,13 +80,13 @@ const TournamentContextualControls = ({
         return (
             <div className="contextual-controls bracket-context">
                 <div className="controls-header">
-                    <h4>🏆 Управление сеткой</h4>
+                    <h4>Управление сеткой</h4>
                     <div className="context-badges">
-                        <span className="context-badge">📊 {matches?.length || 0} матчей</span>
+                        <span className="context-badge">{matches?.length || 0} матчей</span>
                         <span className={`status-badge status-${tournament?.status}`}>
-                            {tournament?.status === 'active' && '🎮 Активный'}
-                            {tournament?.status === 'in_progress' && '⚔️ В процессе'}
-                            {tournament?.status === 'completed' && '🏆 Завершен'}
+                            {tournament?.status === 'active' && 'Активный'}
+                            {tournament?.status === 'in_progress' && 'В процессе'}
+                            {tournament?.status === 'completed' && 'Завершен'}
                         </span>
                     </div>
                 </div>
@@ -100,7 +100,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Создать турнирную сетку"
                         >
-                            <span className="btn-icon">⚡</span>
+                            <span className="btn-icon"></span>
                             Сгенерировать сетку
                         </button>
                     )}
@@ -113,7 +113,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Пересоздать турнирную сетку"
                         >
-                            <span className="btn-icon">🔄</span>
+                            <span className="btn-icon"></span>
                             Перегенерировать сетку
                         </button>
                     )}
@@ -126,7 +126,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Запустить турнир"
                         >
-                            <span className="btn-icon">🚀</span>
+                            <span className="btn-icon"></span>
                             Начать турнир
                         </button>
                     )}
@@ -139,7 +139,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Завершить турнир"
                         >
-                            <span className="btn-icon">🏁</span>
+                            <span className="btn-icon"></span>
                             Завершить турнир
                         </button>
                     )}
@@ -148,13 +148,13 @@ const TournamentContextualControls = ({
                 {/* Информационные сообщения */}
                 {tournament?.status === 'active' && !hasMatches && participantsCount < 2 && (
                     <div className="context-warning">
-                        ⚠️ Добавьте участников во вкладке "Участники" для создания сетки
+                        Добавьте участников во вкладке "Участники" для создания сетки
                     </div>
                 )}
                 
                 {tournament?.status === 'completed' && (
                     <div className="context-success">
-                        ✅ Турнир завершен. Сетка заблокирована для изменений.
+                        Турнир завершен. Сетка заблокирована для изменений.
                     </div>
                 )}
             </div>
@@ -169,10 +169,10 @@ const TournamentContextualControls = ({
         return (
             <div className="contextual-controls results-context">
                 <div className="controls-header">
-                    <h4>📊 Управление результатами</h4>
+                    <h4>Управление результатами</h4>
                     <div className="context-badges">
-                        <span className="context-badge">✅ {completedMatches.length} завершено</span>
-                        <span className="context-badge">⏳ {(matches?.length || 0) - completedMatches.length} в процессе</span>
+                        <span className="context-badge">{completedMatches.length} завершено</span>
+                        <span className="context-badge">{(matches?.length || 0) - completedMatches.length} в процессе</span>
                     </div>
                 </div>
                 
@@ -184,7 +184,7 @@ const TournamentContextualControls = ({
                             disabled={isLoading}
                             title="Очистить все результаты матчей"
                         >
-                            <span className="btn-icon">🗑️</span>
+                            <span className="btn-icon"></span>
                             Очистить результаты
                         </button>
                     )}
@@ -202,7 +202,7 @@ const TournamentContextualControls = ({
                 
                 {completedMatches.length === 0 && (
                     <div className="context-info">
-                        ℹ️ Результаты матчей появятся после их завершения
+                        Результаты матчей появятся после их завершения
                     </div>
                 )}
             </div>

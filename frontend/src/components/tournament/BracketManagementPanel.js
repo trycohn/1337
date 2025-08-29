@@ -120,12 +120,12 @@ const BracketManagementPanel = ({
 
             if (response.data && Array.isArray(response.data)) {
                 setMixTeams(response.data);
-                console.log(`🎮 Загружено ${response.data.length} команд для микс турнира`);
+                console.log(`Загружено ${response.data.length} команд для микс турнира`);
             } else {
                 setMixTeams([]);
             }
         } catch (error) {
-            console.error('❌ Ошибка загрузки команд микс турнира:', error);
+            console.error('Ошибка загрузки команд микс турнира:', error);
             setMixTeams([]);
         } finally {
             setMixTeamsLoading(false);
@@ -180,7 +180,7 @@ const BracketManagementPanel = ({
             setLoading(true);
             const token = localStorage.getItem('token');
 
-            console.log('🎯 Формирование команд для микс турнира:', tournament.id);
+            console.log('Формирование команд для микс турнира:', tournament.id);
 
             const response = await api.post(`/api/tournaments/${tournament.id}/mix-generate-teams`, {
                 ratingType: tournament.mix_rating_type || 'faceit',
@@ -190,7 +190,7 @@ const BracketManagementPanel = ({
             });
 
             if (response.data.success) {
-                console.log('✅ Команды успешно сформированы:', response.data);
+                console.log('Команды успешно сформированы:', response.data);
                 
                 // Перезагружаем команды
                 await loadMixTeams();
@@ -209,8 +209,8 @@ const BracketManagementPanel = ({
             }
 
         } catch (error) {
-            console.error('❌ Ошибка формирования команд:', error);
-            alert(`❌ Ошибка формирования команд: ${error.response?.data?.error || error.message}`);
+            console.error('Ошибка формирования команд:', error);
+            alert(`Ошибка формирования команд: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -252,7 +252,7 @@ const BracketManagementPanel = ({
                     setAvailableSeedingTypes(response.data.data.seedingTypes || []);
                 }
             } catch (error) {
-                console.error('❌ Ошибка загрузки типов распределения:', error);
+                console.error('Ошибка загрузки типов распределения:', error);
                 // Fallback для обратной совместимости
                 setAvailableSeedingTypes([
                     { value: 'random', displayName: 'Случайное распределение', description: 'Участники распределяются случайно' },
@@ -275,7 +275,7 @@ const BracketManagementPanel = ({
             setSelectedSeedingType(currentType);
             setSeedingConfig(currentConfig);
             
-            console.log('🔧 Инициализация настроек для турнира:', {
+            console.log('Инициализация настроек для турнира:', {
                 tournamentId: tournament.id,
                 seedingType: currentType,
                 seedingConfig: currentConfig,
@@ -306,7 +306,7 @@ const BracketManagementPanel = ({
             setLoading(true);
             const token = localStorage.getItem('token');
 
-            console.log('🚀 Генерация сетки через новую систему:', {
+            console.log('Генерация сетки через новую систему:', {
                 tournamentId: tournament.id,
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
@@ -328,7 +328,7 @@ const BracketManagementPanel = ({
             });
 
             if (response.data.success) {
-                console.log('✅ Сетка успешно сгенерирована:', response.data);
+                console.log('Сетка успешно сгенерирована:', response.data);
                 
                 if (onBracketUpdate) {
                     onBracketUpdate({
@@ -344,8 +344,8 @@ const BracketManagementPanel = ({
             }
 
         } catch (error) {
-            console.error('❌ Ошибка генерации сетки:', error);
-            alert(`❌ Ошибка генерации сетки: ${error.response?.data?.error || error.message}`);
+            console.error('Ошибка генерации сетки:', error);
+            alert(`Ошибка генерации сетки: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -376,7 +376,7 @@ const BracketManagementPanel = ({
             setLoading(true);
             const token = localStorage.getItem('token');
 
-            console.log('🔄 Регенерация сетки через новую систему:', {
+            console.log('Регенерация сетки через новую систему:', {
                 tournamentId: tournament.id,
                 seedingType: selectedSeedingType,
                 thirdPlaceMatch,
@@ -398,7 +398,7 @@ const BracketManagementPanel = ({
             });
 
             if (response.data.success) {
-                console.log('✅ Сетка успешно регенерирована:', response.data);
+                console.log('Сетка успешно регенерирована:', response.data);
                 
                 if (onBracketUpdate) {
                     onBracketUpdate({
@@ -414,8 +414,8 @@ const BracketManagementPanel = ({
             }
 
         } catch (error) {
-            console.error('❌ Ошибка регенерации сетки:', error);
-            alert(`❌ Ошибка регенерации сетки: ${error.response?.data?.error || error.message}`);
+            console.error('Ошибка регенерации сетки:', error);
+            alert(`Ошибка регенерации сетки: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -469,8 +469,8 @@ const BracketManagementPanel = ({
             }
 
         } catch (error) {
-            console.error('❌ Ошибка предварительного просмотра:', error);
-            alert(`❌ Ошибка: ${error.response?.data?.error || error.message}`);
+            console.error('Ошибка предварительного просмотра:', error);
+            alert(`Ошибка: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -512,8 +512,8 @@ const BracketManagementPanel = ({
             }
 
         } catch (error) {
-            console.error('❌ Ошибка получения статистики:', error);
-            alert(`❌ Ошибка: ${error.response?.data?.error || error.message}`);
+            console.error('Ошибка получения статистики:', error);
+            alert(`Ошибка: ${error.response?.data?.error || error.message}`);
         } finally {
             setLoading(false);
         }
@@ -533,14 +533,14 @@ const BracketManagementPanel = ({
             return (
                 <div className="bracket-management-panel">
                     <div className="panel-header">
-                        <h3>⚙️ Управление турнирной сеткой (Микс турнир)</h3>
+                        <h3>Управление турнирной сеткой (Микс турнир)</h3>
                         <div className="bracket-status">
                             <span className="status-none">Недостаточно участников</span>
                         </div>
                     </div>
                     <div className="panel-content">
                         <div className="warning">
-                            ⚠️ Для микс турнира с командами по {teamSize} игроков необходимо минимум {minParticipants} участников для создания хотя бы одной команды. 
+                            Для микс турнира с командами по {teamSize} игроков необходимо минимум {minParticipants} участников для создания хотя бы одной команды. 
                             Сейчас зарегистрировано: {participantsCount}
                             {participantsCount >= teamSize && participantsCount < teamSize * 2 && (
                                 <div style={{ marginTop: '10px', color: '#ffa500' }}>
@@ -563,14 +563,14 @@ const BracketManagementPanel = ({
             return (
                 <div className="bracket-management-panel">
                     <div className="panel-header">
-                        <h3>⚙️ Управление турнирной сеткой</h3>
+                        <h3>Управление турнирной сеткой</h3>
                         <div className="bracket-status">
                             <span className="status-none">Недостаточно участников</span>
                         </div>
                     </div>
                     <div className="panel-content">
                         <div className="warning">
-                            ⚠️ Для создания турнирной сетки необходимо минимум 2 участника. 
+                            Для создания турнирной сетки необходимо минимум 2 участника. 
                             Сейчас зарегистрировано: {participantsCount}
                         </div>
                     </div>
@@ -582,15 +582,15 @@ const BracketManagementPanel = ({
     return (
         <div className="bracket-management-panel">
             <div className="panel-header">
-                <h3>⚙️ Управление турнирной сеткой {isMixTournament && '(Микс турнир)'}</h3>
+                <h3>Управление турнирной сеткой {isMixTournament && '(Микс турнир)'}</h3>
                 <div className="bracket-status">
                     {hasBracket ? (
                         <span className="status-exists">
-                            ✅ Сетка создана ({bracketStatistics?.totalMatches} матчей)
+                            Сетка создана ({bracketStatistics?.totalMatches} матчей)
                         </span>
                     ) : (
                         <span className="status-none">
-                            📋 Сетка не создана
+                            Сетка не создана
                         </span>
                     )}
                 </div>
@@ -601,16 +601,16 @@ const BracketManagementPanel = ({
                 {isMixTournament && (
                     <div className="mix-tournament-section">
                         <div className="bracket-info">
-                            <p>🎮 Микс турнир: команды формируются из соло участников</p>
+                            <p>Микс турнир: команды формируются из соло участников</p>
                             <ul>
-                                <li>🏗️ Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
+                                <li>Формат сетки: {getBracketTypeDisplayName(tournament?.bracket_type)}</li>
                                 {(hasThirdPlaceMatch || tournament?.bracket_type === 'double_elimination') && (
-                                    <li>🥉 Матч за 3-е место: включен</li>
+                                    <li>Матч за 3-е место: включен</li>
                                 )}
                                 <li>Соло участников: {tournament?.participants?.length || 0}</li>
                                 <li>Размер команды: {tournament?.team_size || 5}</li>
                                 <li>Команд сформировано: {mixTeamsLoading ? 'Загрузка...' : mixTeams.length}</li>
-                                <li>Статус: {mixTournamentStatus.ready ? '✅ Готов к созданию сетки' : `❌ ${mixTournamentStatus.reason}`}</li>
+                                <li>Статус: {mixTournamentStatus.ready ? 'Готов к созданию сетки' : `${mixTournamentStatus.reason}`}</li>
                                 {mixTournamentStatus.info && <li>Инфо: {mixTournamentStatus.info}</li>}
                             </ul>
                         </div>
@@ -623,7 +623,7 @@ const BracketManagementPanel = ({
                                     onClick={handleFormMixTeams}
                                     disabled={loading || mixTeamsLoading}
                                 >
-                                    {loading ? '⏳ Формирование...' : '🎯 Сформировать команды'}
+                                    {loading ? 'Формирование...' : 'Сформировать команды'}
                                 </button>
                                 
                                 <button 
@@ -631,7 +631,7 @@ const BracketManagementPanel = ({
                                     onClick={() => setShowTeamFormation(!showTeamFormation)}
                                     disabled={loading}
                                 >
-                                    {showTeamFormation ? '🔽 Скрыть настройки' : '⚙️ Настройки формирования'}
+                                    {showTeamFormation ? 'Скрыть настройки' : 'Настройки формирования'}
                                 </button>
                             </div>
                         )}
@@ -663,11 +663,11 @@ const BracketManagementPanel = ({
                             // Раздел генерации новой сетки
                             <div className="generation-section">
                                 <div className="bracket-info">
-                                    <p>🎯 Создание турнирной сетки</p>
+                                    <p>Создание турнирной сетки</p>
                                     <ul>
-                                        <li>🏗️ Формат сетки: {getBracketTypeDisplayName(selectedBracketType)}</li>
+                                        <li>Формат сетки: {getBracketTypeDisplayName(selectedBracketType)}</li>
                                         {(thirdPlaceMatch || selectedBracketType === 'double_elimination') && (
-                                            <li>🥉 Матч за 3-е место: включен</li>
+                                            <li>Матч за 3-е место: включен</li>
                                         )}
                                         {isMixTournament ? (
                                             <>
@@ -690,7 +690,7 @@ const BracketManagementPanel = ({
                                         onClick={() => setShowSeedingOptions(!showSeedingOptions)}
                                         disabled={loading}
                                     >
-                                        {showSeedingOptions ? '🔽 Скрыть настройки' : '🎯 Настроить и создать сетку'}
+                                        {showSeedingOptions ? 'Скрыть настройки' : 'Настроить и создать сетку'}
                                     </button>
                                     
                                     <button 
@@ -698,13 +698,13 @@ const BracketManagementPanel = ({
                                         onClick={handlePreviewSeeding}
                                         disabled={loading}
                                     >
-                                        🎲 Предварительный просмотр
+                                        Предварительный просмотр
                                     </button>
                                 </div>
 
                                 {showSeedingOptions && (
                                     <div className="seeding-options">
-                                        <h4>🔧 Настройки распределения {isMixTournament ? 'команд' : 'участников'}</h4>
+                                        <h4>Настройки распределения {isMixTournament ? 'команд' : 'участников'}</h4>
                                         
                                         <div className="option-group">
                                             <label>Тип распределения:</label>
@@ -757,7 +757,7 @@ const BracketManagementPanel = ({
 
                                         {isMixTournament && selectedSeedingType === 'ranking' && (
                                             <div className="option-group">
-                                                <small>ℹ️ Для микс турниров рейтинг команд рассчитывается автоматически на основе участников команды</small>
+                                                <small>Для микс турниров рейтинг команд рассчитывается автоматически на основе участников команды</small>
                                             </div>
                                         )}
 
@@ -786,7 +786,7 @@ const BracketManagementPanel = ({
                                                         onChange={(e) => setFullDoubleElimination(e.target.checked)}
                                                         disabled={loading}
                                                     />
-                                                    🏆 Включить Full Double Elimination?
+                                                    Включить Full Double Elimination?
                                                 </label>
                                                 <small>
                                                     <strong>Full Double Elimination:</strong> Если участник из нижней сетки (Losers Bracket) выиграет Гранд Финал, то будет проведен дополнительный матч "Grand Final Triumph" для определения чемпиона. Преимущество по умолчанию принадлежит участнику из Winners Bracket.
@@ -798,7 +798,7 @@ const BracketManagementPanel = ({
                                         {selectedBracketType === 'double_elimination' && (
                                             <div className="option-group">
                                                 <div className="info-message">
-                                                    <span>ℹ️ В Double Elimination формате матч за 3-е место включен по умолчанию</span>
+                                                    <span>В Double Elimination формате матч за 3-е место включен по умолчанию</span>
                                                 </div>
                                             </div>
                                         )}
@@ -809,7 +809,7 @@ const BracketManagementPanel = ({
                                                 onClick={handleGenerateBracket}
                                                 disabled={loading}
                                             >
-                                                {loading ? '⏳ Создание...' : '🚀 Создать турнирную сетку'}
+                                                {loading ? 'Создание...' : 'Создать турнирную сетку'}
                                             </button>
                                         </div>
                                     </div>
@@ -862,7 +862,7 @@ const BracketManagementPanel = ({
                                         <h4>🔄 Регенерация турнирной сетки</h4>
                                         
                                         <div className="warning">
-                                            ⚠️ Регенерация удалит все результаты матчей и создаст сетку заново с новым распределением {isMixTournament ? 'команд' : 'участников'}.
+                                            Регенерация удалит все результаты матчей и создаст сетку заново с новым распределением {isMixTournament ? 'команд' : 'участников'}.
                                             {isMixTournament && ' Команды останутся прежними.'}
                                         </div>
                                         
@@ -956,7 +956,7 @@ const BracketManagementPanel = ({
                                         {selectedBracketType === 'double_elimination' && (
                                             <div className="option-group">
                                                 <div className="info-message">
-                                                    <span>ℹ️ В Double Elimination формате матч за 3-е место включен по умолчанию</span>
+                                                    <span>В Double Elimination формате матч за 3-е место включен по умолчанию</span>
                                                 </div>
                                             </div>
                                         )}
@@ -967,7 +967,7 @@ const BracketManagementPanel = ({
                                                 onClick={handleRegenerateBracket}
                                                 disabled={loading}
                                             >
-                                                {loading ? '⏳ Регенерация...' : '🔄 Регенерировать сетку'}
+                                                {loading ? 'Регенерация...' : 'Регенерировать сетку'}
                                             </button>
                                         </div>
                                     </div>

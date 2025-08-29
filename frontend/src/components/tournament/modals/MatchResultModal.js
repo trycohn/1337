@@ -5,7 +5,7 @@ import '../../../styles/modal-system.css';
 import './MatchResultModal.css';
 
 /**
- * 🎯 MatchResultModal v5.0 - Унифицированная модальная система
+ * MatchResultModal v5.0 - Унифицированная модальная система
  * Создано опытным UI/UX разработчиком
  * Использует единую дизайн-систему модальных окон
  * 
@@ -28,7 +28,7 @@ const MatchResultModal = ({
     const [selectedWinner, setSelectedWinner] = useState(null); // null, 'team1', 'team2'
     const [autoCalculateScore, setAutoCalculateScore] = useState(true); // 🆕 Автоматический расчет
     
-    // 🎯 СОСТОЯНИЯ ДЛЯ ТУЛТИПОВ
+    // СОСТОЯНИЯ ДЛЯ ТУЛТИПОВ
     const [showTeam1Tooltip, setShowTeam1Tooltip] = useState(false);
     const [showTeam2Tooltip, setShowTeam2Tooltip] = useState(false);
 
@@ -49,9 +49,9 @@ const MatchResultModal = ({
         }
     });
 
-    // 🎯 УЛУЧШЕННОЕ: Определение игры турнира
+    // УЛУЧШЕННОЕ: Определение игры турнира
     const getTournamentGame = useCallback(() => {
-        console.log('🎮 Определяем игру турнира для карт...');
+        console.log('Определяем игру турнира для карт...');
         
         // Приоритет 1: Прямо переданный турнир
         if (tournament?.game) {
@@ -83,9 +83,9 @@ const MatchResultModal = ({
         try {
             const pathMatch = window.location.pathname.match(/\/tournaments\/(\d+)/);
             if (pathMatch) {
-                console.log('🔍 Определяем игру по URL для турнира:', pathMatch[1]);
+                console.log('Определяем игру по URL для турнира:', pathMatch[1]);
                 // Для демонстрации считаем CS2 по умолчанию
-                console.log('✅ Принимаем Counter-Strike 2 как игру по умолчанию');
+                console.log('Принимаем Counter-Strike 2 как игру по умолчанию');
                 return 'Counter-Strike 2';
             }
         } catch (error) {
