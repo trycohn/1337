@@ -487,7 +487,7 @@ const TournamentAdminPanel = ({
 
                 {/* 🎯 УПРАВЛЕНИЕ ТУРНИРНОЙ СЕТКОЙ */}
                 <div className="bracket-section-v2">
-                    <h4>🏆 Управление сеткой</h4>
+                    <h4>Управление сеткой</h4>
                     <div className="bracket-actions">
                         {/* Генерация сетки */}
                         {tournament?.status === 'active' && !hasBracket && participants?.length >= 2 && (

@@ -102,7 +102,7 @@ const TournamentResults = ({ tournament }) => {
     if (!tournament) {
         return (
             <div className="results-error">
-                <div>❌ Нет данных о турнире</div>
+                <div>Нет данных о турнире</div>
             </div>
         );
     }
@@ -111,7 +111,6 @@ const TournamentResults = ({ tournament }) => {
         return (
             <div className="results-empty-state">
                 <div className="results-empty-content">
-                    <span className="results-empty-icon">📊</span>
                     <h3>Результаты пока недоступны</h3>
                     <p>Результаты появятся после завершения первых матчей</p>
                     <div className="results-debug-info">
@@ -132,7 +131,7 @@ const TournamentResults = ({ tournament }) => {
             {tournament.status === 'completed' && (
                 <div className="results-winners-section">
                     <div className="results-section-header">
-                        <h3>🏆 Призовые места</h3>
+                        <h3>Призовые места</h3>
                         <div className="results-tournament-info">
                             <span className="results-format">{getFormatDisplayName(tournament.format || tournament.bracket_type)}</span>
                         </div>
@@ -147,7 +146,7 @@ const TournamentResults = ({ tournament }) => {
             {tournamentResults.completedMatches.length > 0 && (
                 <div className="results-match-history-section">
                     <div className="results-section-header">
-                        <h3>📋 История матчей</h3>
+                        <h3>История матчей</h3>
                         <div className="results-history-stats">
                             <span className="results-matches-count">{tournamentResults.completedMatches.length} завершенных матчей</span>
                         </div>
@@ -273,7 +272,6 @@ function renderWinners(winners) {
         <div className="results-winners-list">
             {/* 1-е место */}
             <div className="results-winner-card results-place-1">
-                <div className="results-place-medal">🥇</div>
                     {/* номер убран, есть медаль */}
                 <div className="results-winner-info">
                     <div className="results-winner-avatar">
@@ -298,7 +296,6 @@ function renderWinners(winners) {
 
             {/* 2-е место */}
             <div className="results-winner-card results-place-2">
-                <div className="results-place-medal">🥈</div>
                     {/* номер убран, есть медаль */}
                 <div className="results-winner-info">
                     <div className="results-winner-avatar">
@@ -324,7 +321,6 @@ function renderWinners(winners) {
             {/* 3-е место */}
             {winners.third && (
                 <div className="results-winner-card results-place-3">
-                    <div className="results-place-medal">🥉</div>
                     {/* номер убран, есть медаль */}
                     <div className="results-winner-info">
                         <div className="results-winner-avatar">
@@ -392,7 +388,6 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
                                 />
                             </div>
                             <span className="results-participant-name">{winner?.name || 'Winner'}</span>
-                            <span className="results-winner-badge">👑</span>
                         </div>
                         
                         <div className="results-score">

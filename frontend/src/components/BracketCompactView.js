@@ -84,8 +84,8 @@ export function BracketCompactView({ games = [], tournament, focusMatchId = null
 
   return (
     <div className="bcv-container">
-      {hasWinners && renderSection('Winners Bracket', 'Верхняя сетка турнира', groups.winners)}
-      {hasLosers && renderSection('Losers Bracket', 'Нижняя сетка на выбывание', groups.losers)}
+      {hasWinners && renderSection('Верхняя сетка турнира', groups.winners)}
+      {hasLosers && renderSection('Нижняя сетка на выбывание', groups.losers)}
       {hasGF && (
         <div className="bcv-section">
           <div className="bcv-section-header">
