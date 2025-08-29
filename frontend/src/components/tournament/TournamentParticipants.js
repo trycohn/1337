@@ -403,8 +403,8 @@ const TournamentParticipants = ({
                 </div>
             )}
 
-            {/* 🔗 КНОПКА ПРИГЛАШЕНИЯ ДРУЗЕЙ - доступна всем авторизованным пользователям */}
-            {user && tournament?.status === 'active' && (
+            {/* 🔗 КНОПКА ПРИГЛАШЕНИЯ ДРУЗЕЙ - скрыта для закрытых и финальных турниров */}
+            {user && tournament?.status === 'active' && tournament?.access_type !== 'closed' && !tournament?.is_series_final && (
                 <div className="referral-invite-panel">
                     <h4>👥 Пригласить друзей</h4>
                     <div className="referral-actions">
