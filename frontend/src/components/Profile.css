@@ -1601,6 +1601,66 @@
     margin-bottom: var(--spacing-xl);
 }
 
+/* =========================
+   ORGANIZATIONS — NEW GRID DESIGN (orgs-*)
+   ========================= */
+.orgs-wrap {
+    /* локальные переменные темы для организаций */
+    --bg:#0F0F10;
+    --panel:#1B1B1D;
+    --panel-2:#232325;
+    --line:#2E2E31;
+    --txt:#FFFFFF;
+    --txt-2:#C8C8C8;
+    --txt-3:#9A9A9A;
+    --red:#E53935;
+    --red-2:#B71C1C;
+    --yellow:#FFB300;
+    --green:#4CAF50;
+    --radius:8px;
+    --radius-sm:6px;
+
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: transparent;
+    color: var(--txt);
+    padding: 24px 0 0 0;
+}
+
+.orgs-section { max-width: 1100px; margin: 0 auto; }
+.orgs-title { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0 0 14px; }
+
+.orgs-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+@media (max-width:1100px){ .orgs-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width:720px){ .orgs-grid{ grid-template-columns: 1fr; } }
+
+.org-card {
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px;
+    transition: border-color .15s ease, background .15s ease, transform .06s ease;
+}
+.org-card:hover { border-color: var(--red); background: #222224; }
+
+.org-head { display:flex; align-items:center; gap:12px; }
+.org-avatar { width:48px; height:48px; border-radius:999px; overflow:hidden; border:1px solid var(--line); flex:0 0 48px; }
+.org-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+.org-name { font-size:16px; font-weight:700; line-height:1.2; }
+.org-role { font-size:12px; color:var(--txt-2); text-transform:uppercase; letter-spacing:.02em; }
+
+.org-meta { display:flex; align-items:center; gap:12px; color:var(--txt-3); font-size:13px; }
+.org-badge { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px; border-radius:6px; background:var(--panel-2); border:1px solid var(--line); font-size:12px; }
+.org-desc { font-size:13px; color:var(--txt-2); line-height:1.35; }
+
+.org-actions { margin-top:auto; display:flex; gap:10px; flex-wrap:wrap; }
+.org-btn { height:34px; padding:0 14px; border-radius:6px; font-size:12px; font-weight:600; border:1px solid var(--line); background:var(--panel-2); color:var(--txt); cursor:pointer; transition:border-color .15s ease, background .15s ease, filter .15s ease; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.org-btn.primary { background:var(--red); border-color:var(--red-2); }
+.org-btn:hover { border-color:var(--red); }
+.org-btn.primary:hover { filter:brightness(1.05); }
+
+.org-footer { margin-top:20px; background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; font-size:13px; color:var(--txt-2); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.org-footer .link { font-weight:600; color:var(--txt); text-decoration:none; }
+.org-footer .link:hover { color:var(--red); }
+
 .friend-request-card {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);

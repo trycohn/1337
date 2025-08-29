@@ -234,6 +234,7 @@ function Profile() {
     const [editOrgLogoFile, setEditOrgLogoFile] = useState(null);
     const editOrgFileInputRef = useRef(null);
     const [loadingOrganizations, setLoadingOrganizations] = useState(false);
+    const [showOrgRequestForm, setShowOrgRequestForm] = useState(false);
     
     // Состояния для статуса заявки на организацию
     const [organizationRequest, setOrganizationRequest] = useState(null);
@@ -3159,138 +3160,57 @@ function Profile() {
                                 <div className="content-header">
                                     <h2 className="content-title">Организации</h2>
                                 </div>
-                                
+
                                 {loadingOrganizations || loadingRequest ? (
                                     <div className="loading-spinner">
                                         <p>Загрузка информации об организациях...</p>
                                     </div>
-                                ) : userOrganizations && userOrganizations.length > 0 ? (
-                                    <div className="user-organizations">
-                                        <div className="content-card">
-                                            <div className="card-header">
-                                                <h3 className="card-title">Мои организации</h3>
-                                            </div>
-                                            <div className="card-content">
-                                                <div className="organizations-list">
-                                                    {userOrganizations.map(org => (
-                                                        <div key={org.id} className="organization-card">
-                                                            <div className="org-card-header">
-                                                                <div className="org-logo-container">
-                                                                    <img 
-                                                                        src={ensureHttps(org.logo_url) || '/default-org-logo.png'}
-                                                                        alt={org.name}
-                                                                        className="org-card-logo"
-                                                                    />
+                                ) : (
+                                    <>
+                                        <div className="orgs-wrap">
+                                            <div className="orgs-section">
+                                                <h2 className="orgs-title">Мои организации</h2>
+                                                <div className="orgs-grid">
+                                                    {(userOrganizations || []).map((org) => (
+                                                        <div key={org.id} className="org-card">
+                                                            <div className="org-head">
+                                                                <div className="org-avatar">
+                                                                    <img src={ensureHttps(org.logo_url) || '/default-org-logo.png'} alt={org.name} />
                                                                 </div>
-                                                                <div className="org-card-info">
-                                                                    <h4>
-                                                                        <a 
-                                                                            href={`/organizer/${org.slug}`} 
-                                                                            className="org-name-link"
-                                                                            target="_blank" 
-                                                                            rel="noopener noreferrer"
-                                                                        >
-                                                                            {org.name}
-                                                                        </a>
-                                                                    </h4>
-                                                                    <div className="org-role">
-                                                                        {org.role === 'manager' ? 'Менеджер' : 
-                                                                         org.role === 'admin' ? 'Администратор' : 'Участник'}
-                                                                    </div>
-                                                                    <div className="org-joined">
-                                                                        Состою с {new Date(org.joined_at).toLocaleDateString('ru-RU')}
-                                                                    </div>
+                                                                <div>
+                                                                    <div className="org-name">{org.name}</div>
+                                                                    <div className="org-role">{org.role === 'manager' ? 'Менеджер' : org.role === 'admin' ? 'Администратор' : 'Участник'}</div>
                                                                 </div>
                                                             </div>
-                                                            
-                                                            <div className="org-stats">
-                                                                <div className="org-stat-item">
-                                                                    <span className="org-stat-value">{org.tournaments_count}</span>
-                                                                    <span className="org-stat-label">Турниров</span>
-                                                                </div>
+
+                                                            <div className="org-meta">
+                                                                <span className="org-badge">{org.tournaments_count || 0} турниров</span>
                                                             </div>
-                                                            
-                                                            {org.description && (
-                                                                <div className="org-description">
-                                                                    <p>{org.description}</p>
-                                                                </div>
-                                                            )}
 
-                                                            {(org.role === 'manager' || (user && user.role === 'admin')) && (
-                                                                <div className="org-actions" style={{ marginTop: '12px' }}>
-                                                                    {editingOrgSlug === org.slug ? (
-                                                                        <div className="org-edit-form">
-                                                                            <div className="form-group">
-                                                                                <label>Название</label>
-                                                                                <input value={editOrgData.name} onChange={(e)=>setEditOrgData({...editOrgData, name: e.target.value})} />
-                                                                            </div>
-                                                                            <div className="form-group">
-                                                                                <label>Описание</label>
-                                                                                <textarea rows="3" value={editOrgData.description||''} onChange={(e)=>setEditOrgData({...editOrgData, description: e.target.value})} />
-                                                                            </div>
-                                                                            <div className="form-row">
-                                                                                <div className="form-group">
-                                                                                    <label>Сайт</label>
-                                                                                    <input value={editOrgData.website_url||''} onChange={(e)=>setEditOrgData({...editOrgData, website_url: e.target.value})} />
-                                                                                </div>
-                                                                                <div className="form-group">
-                                                                                    <label>VK</label>
-                                                                                    <input value={editOrgData.vk_url||''} onChange={(e)=>setEditOrgData({...editOrgData, vk_url: e.target.value})} />
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="form-row">
-                                                                                <div className="form-group">
-                                                                                    <label>Telegram</label>
-                                                                                    <input value={editOrgData.telegram_url||''} onChange={(e)=>setEditOrgData({...editOrgData, telegram_url: e.target.value})} />
-                                                                                </div>
-                                                                                <div className="form-group">
-                                                                                    <label>Email</label>
-                                                                                    <input value={editOrgData.contact_email||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_email: e.target.value})} />
-                                                                                </div>
-                                                                                <div className="form-group">
-                                                                                    <label>Телефон</label>
-                                                                                    <input value={editOrgData.contact_phone||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_phone: e.target.value})} />
-                                                                                </div>
-                                                                            </div>
+                                                            {org.description && <div className="org-desc">{org.description}</div>}
 
-                                                                            <div className="form-group">
-                                                                                <label>Логотип</label>
-                                                                                <div>
-                                                                                    <input type="file" ref={editOrgFileInputRef} accept="image/*" style={{display:'none'}} onChange={(e)=>{
-                                                                                        const f = e.target.files && e.target.files[0];
-                                                                                        if (!f) return;
-                                                                                        if (f.size > 10*1024*1024) return;
-                                                                                        setEditOrgLogoFile(f);
-                                                                                    }} />
-                                                                                    <button type="button" onClick={()=>editOrgFileInputRef.current && editOrgFileInputRef.current.click()} className="btn btn-secondary">Загрузить логотип</button>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div className="form-actions">
-                                                                                <button className="btn btn-primary" onClick={async()=>{
-                                                                                    try {
-                                                                                        const token = localStorage.getItem('token');
-                                                                                        // 1) если выбран новый файл логотипа — загрузим и получим URL
-                                                                                        let logoUrl = editOrgData.logo_url || '';
-                                                                                        if (editOrgLogoFile) {
-                                                                                            const fd = new FormData();
-                                                                                            fd.append('logo', editOrgLogoFile);
-                                                                                            const uploadRes = await api.post(`/api/organizers/${org.slug}/logo`, fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }});
-                                                                                            if (uploadRes.data && uploadRes.data.success) logoUrl = uploadRes.data.url;
-                                                                                        }
-                                                                                        // 2) обновим организацию
-                                                                                        const body = { ...editOrgData, logo_url: logoUrl };
-                                                                                        await api.put(`/api/organizers/${org.slug}`, body, { headers: { Authorization: `Bearer ${token}` }});
-                                                                                        setEditingOrgSlug(null);
-                                                                                        setEditOrgLogoFile(null);
-                                                                                        await fetchUserOrganizations();
-                                                                                    } catch (e) {}
-                                                                                }}>Сохранить</button>
-                                                                                <button className="btn btn-secondary" onClick={()=>{ setEditingOrgSlug(null); setEditOrgLogoFile(null); }}>Отмена</button>
-                                                                            </div>
-                                                                        </div>
+                                                            <div className="org-actions">
+                                                                {(org.role === 'manager' || (user && user.role === 'admin')) && (
+                                                                    editingOrgSlug === org.slug ? (
+                                                                        <button className="org-btn primary" onClick={async()=>{
+                                                                            try {
+                                                                                const token = localStorage.getItem('token');
+                                                                                let logoUrl = editOrgData.logo_url || '';
+                                                                                if (editOrgLogoFile) {
+                                                                                    const fd = new FormData();
+                                                                                    fd.append('logo', editOrgLogoFile);
+                                                                                    const uploadRes = await api.post(`/api/organizers/${org.slug}/logo`, fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }});
+                                                                                    if (uploadRes.data && uploadRes.data.success) logoUrl = uploadRes.data.url;
+                                                                                }
+                                                                                const body = { ...editOrgData, logo_url: logoUrl };
+                                                                                await api.put(`/api/organizers/${org.slug}`, body, { headers: { Authorization: `Bearer ${token}` }});
+                                                                                setEditingOrgSlug(null);
+                                                                                setEditOrgLogoFile(null);
+                                                                                await fetchUserOrganizations();
+                                                                            } catch (e) {}
+                                                                        }}>Сохранить</button>
                                                                     ) : (
-                                                                        <button className="btn btn-secondary" onClick={()=>{
+                                                                        <button className="org-btn primary" onClick={()=>{
                                                                             setEditingOrgSlug(org.slug);
                                                                             setEditOrgData({
                                                                                 name: org.name||'',
@@ -3303,236 +3223,210 @@ function Profile() {
                                                                                 logo_url: org.logo_url||''
                                                                             });
                                                                         }}>Редактировать</button>
-                                                                    )}
+                                                                    )
+                                                                )}
+                                                                <a className="org-btn" href={`/organizer/${org.slug}`} target="_blank" rel="noopener noreferrer">Перейти</a>
+                                                            </div>
+
+                                                            {editingOrgSlug === org.slug && (
+                                                                <div className="org-edit-form" style={{marginTop:12}}>
+                                                                    <div className="form-group">
+                                                                        <label>Название</label>
+                                                                        <input value={editOrgData.name} onChange={(e)=>setEditOrgData({...editOrgData, name: e.target.value})} />
+                                                                    </div>
+                                                                    <div className="form-group">
+                                                                        <label>Описание</label>
+                                                                        <textarea rows="3" value={editOrgData.description||''} onChange={(e)=>setEditOrgData({...editOrgData, description: e.target.value})} />
+                                                                    </div>
+                                                                    <div className="form-row">
+                                                                        <div className="form-group">
+                                                                            <label>Сайт</label>
+                                                                            <input value={editOrgData.website_url||''} onChange={(e)=>setEditOrgData({...editOrgData, website_url: e.target.value})} />
+                                                                        </div>
+                                                                        <div className="form-group">
+                                                                            <label>VK</label>
+                                                                            <input value={editOrgData.vk_url||''} onChange={(e)=>setEditOrgData({...editOrgData, vk_url: e.target.value})} />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="form-row">
+                                                                        <div className="form-group">
+                                                                            <label>Telegram</label>
+                                                                            <input value={editOrgData.telegram_url||''} onChange={(e)=>setEditOrgData({...editOrgData, telegram_url: e.target.value})} />
+                                                                        </div>
+                                                                        <div className="form-group">
+                                                                            <label>Email</label>
+                                                                            <input value={editOrgData.contact_email||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_email: e.target.value})} />
+                                                                        </div>
+                                                                        <div className="form-group">
+                                                                            <label>Телефон</label>
+                                                                            <input value={editOrgData.contact_phone||''} onChange={(e)=>setEditOrgData({...editOrgData, contact_phone: e.target.value})} />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="form-group">
+                                                                        <label>Логотип</label>
+                                                                        <div>
+                                                                            <input type="file" ref={editOrgFileInputRef} accept="image/*" style={{display:'none'}} onChange={(e)=>{
+                                                                                const f = e.target.files && e.target.files[0];
+                                                                                if (!f) return;
+                                                                                if (f.size > 10*1024*1024) return;
+                                                                                setEditOrgLogoFile(f);
+                                                                            }} />
+                                                                            <button type="button" onClick={()=>editOrgFileInputRef.current && editOrgFileInputRef.current.click()} className="btn btn-secondary">Загрузить логотип</button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="form-actions">
+                                                                        <button className="btn btn-secondary" onClick={()=>{ setEditingOrgSlug(null); setEditOrgLogoFile(null); }}>Отмена</button>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     ))}
-                                                </div>
-                                                
-                                                <div className="add-organization-note">
-                                                    <p>Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : organizationRequest ? (
-                                    <div className="organization-request-status">
-                                        <div className="content-card">
-                                            <div className="card-header">
-                                                <h3 className="card-title">Статус заявки на создание организации</h3>
-                                            </div>
-                                            <div className="card-content">
-                                                <div className="request-status-card">
-                                                    <div className="status-header">
-                                                        <h4>{organizationRequest.organization_name}</h4>
-                                                        <span className={`status-badge status-${organizationRequest.status}`}>
-                                                            {organizationRequest.status === 'pending' && 'На рассмотрении'}
-                                                            {organizationRequest.status === 'approved' && 'Одобрена'}
-                                                            {organizationRequest.status === 'rejected' && 'Отклонена'}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    <div className="request-details">
-                                                        <p><strong>Описание:</strong> {organizationRequest.description}</p>
-                                                        <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
-                                                        
-                                                        {organizationRequest.reviewed_at && (
-                                                            <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
-                                                        )}
-                                                        
-                                                        {organizationRequest.admin_comment && (
-                                                            <div className="admin-comment">
-                                                                <p><strong>Комментарий администратора:</strong></p>
-                                                                <div className="comment-text">{organizationRequest.admin_comment}</div>
+
+                                                    {/* Плейсхолдер-плитка для создания новой организации */}
+                                                    {!organizationRequest && (
+                                                        <div className="org-card" style={{justifyContent:'center', alignItems:'center', textAlign:'center', gap:'10px'}}>
+                                                            <div className="org-name">Создать организацию</div>
+                                                            <div className="org-desc">Подайте заявку администратору для создания новой организации.</div>
+                                                            <div className="org-actions" style={{justifyContent:'center'}}>
+                                                                <button className="org-btn primary" onClick={()=>{
+                                                                    if (!user.email) { openAddEmailModal(); return; }
+                                                                    if (user.email && !user.is_verified) { openEmailVerificationModal(); return; }
+                                                                    setShowOrgRequestForm(true);
+                                                                }}>Оставить заявку</button>
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="org-footer">
+                                                    <span>Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.</span>
+                                                    {!organizationRequest && (
+                                                        <button type="button" className="link" onClick={(e)=>{ if (!user.email) { openAddEmailModal(); return; } if (!user.is_verified) { openEmailVerificationModal(); return; } setShowOrgRequestForm(true); }}>Оставить заявку</button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="organization-tab">
-                                        <div className="content-card">
-                                            <div className="card-header">
-                                                <h3 className="card-title">Заявка на создание аккаунта организации</h3>
-                                            </div>
-                                            <div className="card-content">
-                                                <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
 
-                                                {/* Email Requirements */}
-                                                {!user.email && (
-                                                    <div className="organization-requirement-alert">
-                                                        <h4>❌ Требования не выполнены</h4>
-                                                        <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
-                                                        <button onClick={openAddEmailModal}>Привязать email</button>
+                                        {/* Статус заявки, если есть */}
+                                        {organizationRequest && (
+                                            <div className="organization-request-status">
+                                                <div className="content-card">
+                                                    <div className="card-header">
+                                                        <h3 className="card-title">Статус заявки на создание организации</h3>
                                                     </div>
-                                                )}
-
-                                                {user.email && !user.is_verified && (
-                                                    <div className="organization-requirement-alert">
-                                                        <h4>❌ Требования не выполнены</h4>
-                                                        <p>Для подачи заявки необходимо подтвердить email.</p>
-                                                        <button onClick={openEmailVerificationModal}>Подтвердить email</button>
-                                                    </div>
-                                                )}
-
-                                                {/* Form */}
-                                                {user.email && user.is_verified && (
-                                                    <form onSubmit={submitOrganizationRequest} className="organization-form">
-                                                        {organizationError && (
-                                                            <div className="organization-error">
-                                                                {organizationError}
+                                                    <div className="card-content">
+                                                        <div className="request-status-card">
+                                                            <div className="status-header">
+                                                                <h4>{organizationRequest.organization_name}</h4>
+                                                                <span className={`status-badge status-${organizationRequest.status}`}>
+                                                                    {organizationRequest.status === 'pending' && 'На рассмотрении'}
+                                                                    {organizationRequest.status === 'approved' && 'Одобрена'}
+                                                                    {organizationRequest.status === 'rejected' && 'Отклонена'}
+                                                                </span>
                                                             </div>
-                                                        )}
-
-                                                        {organizationSuccess && (
-                                                            <div className="organization-success">
-                                                                {organizationSuccess}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="form-group">
-                                                            <label htmlFor="organizationName">
-                                                                Название организации <span className="required">*</span>
-                                                            </label>
-                                                            <input
-                                                                type="text"
-                                                                id="organizationName"
-                                                                name="organizationName"
-                                                                value={organizationData.organizationName}
-                                                                onChange={handleOrganizationInputChange}
-                                                                placeholder="Введите название вашей организации"
-                                                                required
-                                                            />
-                                                        </div>
-
-                                                        <div className="form-group">
-                                                            <label htmlFor="description">
-                                                                Краткое описание организации <span className="required">*</span>
-                                                            </label>
-                                                            <textarea
-                                                                id="description"
-                                                                name="description"
-                                                                value={organizationData.description}
-                                                                onChange={handleOrganizationInputChange}
-                                                                placeholder="Расскажите о вашей организации, её деятельности и целях..."
-                                                                rows="4"
-                                                                required
-                                                            />
-                                                        </div>
-
-                                                        <div className="form-group">
-                                                            <label htmlFor="websiteUrl">Сайт организации</label>
-                                                            <input
-                                                                type="url"
-                                                                id="websiteUrl"
-                                                                name="websiteUrl"
-                                                                value={organizationData.websiteUrl}
-                                                                onChange={handleOrganizationInputChange}
-                                                                placeholder="https://example.com"
-                                                            />
-                                                        </div>
-
-                                                        <div className="form-group">
-                                                            <label htmlFor="vkUrl">Ссылка на VK</label>
-                                                            <input
-                                                                type="url"
-                                                                id="vkUrl"
-                                                                name="vkUrl"
-                                                                value={organizationData.vkUrl}
-                                                                onChange={handleOrganizationInputChange}
-                                                                placeholder="https://vk.com/your_organization"
-                                                            />
-                                                        </div>
-
-                                                        <div className="form-group">
-                                                            <label htmlFor="telegramUrl">Ссылка на Telegram</label>
-                                                            <input
-                                                                type="url"
-                                                                id="telegramUrl"
-                                                                name="telegramUrl"
-                                                                value={organizationData.telegramUrl}
-                                                                onChange={handleOrganizationInputChange}
-                                                                placeholder="https://t.me/your_organization"
-                                                            />
-                                                        </div>
-
-                                                        <div className="form-group">
-                                                            <label>Логотип организации</label>
-                                                            <div className="logo-upload-section">
-                                                                <input 
-                                                                    type="file" 
-                                                                    ref={organizationFileInputRef}
-                                                                    onChange={handleOrganizationLogoChange}
-                                                                    accept="image/*"
-                                                                    style={{ display: 'none' }}
-                                                                />
-                                                                
-                                                                {organizationLogoPreview ? (
-                                                                    <div className="logo-preview">
-                                                                        <img 
-                                                                            src={organizationLogoPreview} 
-                                                                            alt="Предпросмотр логотипа" 
-                                                                            className="organization-logo-preview"
-                                                                        />
-                                                                        <div className="logo-actions">
-                                                                            <button 
-                                                                                type="button" 
-                                                                                onClick={triggerOrganizationFileInput}
-                                                                                className="change-logo-btn"
-                                                                            >
-                                                                                Изменить
-                                                                            </button>
-                                                                            <button 
-                                                                                type="button" 
-                                                                                onClick={removeOrganizationLogo}
-                                                                                className="remove-logo-btn"
-                                                                            >
-                                                                                Удалить
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="logo-upload-placeholder">
-                                                                        <button 
-                                                                            type="button" 
-                                                                            onClick={triggerOrganizationFileInput}
-                                                                            className="upload-logo-btn"
-                                                                        >
-                                                                            📁 Выбрать файл логотипа
-                                                                        </button>
-                                                                        <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
+                                                            <div className="request-details">
+                                                                <p><strong>Описание:</strong> {organizationRequest.description}</p>
+                                                                <p><strong>Дата подачи:</strong> {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</p>
+                                                                {organizationRequest.reviewed_at && (
+                                                                    <p><strong>Дата рассмотрения:</strong> {new Date(organizationRequest.reviewed_at).toLocaleDateString('ru-RU')}</p>
+                                                                )}
+                                                                {organizationRequest.admin_comment && (
+                                                                    <div className="admin-comment">
+                                                                        <p><strong>Комментарий администратора:</strong></p>
+                                                                        <div className="comment-text">{organizationRequest.admin_comment}</div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </div>
-
-                                                        <div className="form-group submit-group">
-                                                            <button 
-                                                                type="submit" 
-                                                                className="submit-organization-btn"
-                                                                disabled={isSubmittingOrganization}
-                                                            >
-                                                                {isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}
-                                                            </button>
-                                                        </div>
-
-                                                        <div className="organization-info">
-                                                            <h4>Информация о процессе:</h4>
-                                                            <ul>
-                                                                <li>Заявки рассматриваются в течение 1-3 рабочих дней</li>
-                                                                <li>После одобрения с вами свяжется администрация для уточнения деталей</li>
-                                                                <li>Все поля, отмеченные звездочкой (*), обязательны для заполнения</li>
-                                                                <li>Логотип должен быть в формате изображения (PNG, JPG) размером до 5MB</li>
-                                                            </ul>
-                                                        </div>
-                                                    </form>
-                                                )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        )}
+
+                                        {/* Форма заявки (новый макет рендерим ниже грида) */}
+                                        {showOrgRequestForm && (
+                                            <div className="organization-tab">
+                                                <div className="content-card">
+                                                    <div className="card-header">
+                                                        <h3 className="card-title">Заявка на создание аккаунта организации</h3>
+                                                    </div>
+                                                    <div className="card-content">
+                                                        <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
+
+                                                        {!user.email && (
+                                                            <div className="organization-requirement-alert">
+                                                                <h4>❌ Требования не выполнены</h4>
+                                                                <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
+                                                                <button onClick={openAddEmailModal}>Привязать email</button>
+                                                            </div>
+                                                        )}
+
+                                                        {user.email && !user.is_verified && (
+                                                            <div className="organization-requirement-alert">
+                                                                <h4>❌ Требования не выполнены</h4>
+                                                                <p>Для подачи заявки необходимо подтвердить email.</p>
+                                                                <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                                                            </div>
+                                                        )}
+
+                                                        {user.email && user.is_verified && (
+                                                            <form onSubmit={submitOrganizationRequest} className="organization-form">
+                                                                {organizationError && (
+                                                                    <div className="organization-error">{organizationError}</div>
+                                                                )}
+                                                                {organizationSuccess && (
+                                                                    <div className="organization-success">{organizationSuccess}</div>
+                                                                )}
+                                                                <div className="form-group">
+                                                                    <label htmlFor="organizationName">Название организации <span className="required">*</span></label>
+                                                                    <input type="text" id="organizationName" name="organizationName" value={organizationData.organizationName} onChange={handleOrganizationInputChange} placeholder="Введите название вашей организации" required />
+                                                                </div>
+                                                                <div className="form-group">
+                                                                    <label htmlFor="description">Краткое описание организации <span className="required">*</span></label>
+                                                                    <textarea id="description" name="description" value={organizationData.description} onChange={handleOrganizationInputChange} placeholder="Расскажите о вашей организации, её деятельности и целях..." rows="4" required />
+                                                                </div>
+                                                                <div className="form-group">
+                                                                    <label htmlFor="websiteUrl">Сайт организации</label>
+                                                                    <input type="url" id="websiteUrl" name="websiteUrl" value={organizationData.websiteUrl} onChange={handleOrganizationInputChange} placeholder="https://example.com" />
+                                                                </div>
+                                                                <div className="form-group">
+                                                                    <label htmlFor="vkUrl">Ссылка на VK</label>
+                                                                    <input type="url" id="vkUrl" name="vkUrl" value={organizationData.vkUrl} onChange={handleOrganizationInputChange} placeholder="https://vk.com/your_organization" />
+                                                                </div>
+                                                                <div className="form-group">
+                                                                    <label htmlFor="telegramUrl">Ссылка на Telegram</label>
+                                                                    <input type="url" id="telegramUrl" name="telegramUrl" value={organizationData.telegramUrl} onChange={handleOrganizationInputChange} placeholder="https://t.me/your_organization" />
+                                                                </div>
+                                                                <div className="form-group">
+                                                                    <label>Логотип организации</label>
+                                                                    <div className="logo-upload-section">
+                                                                        <input type="file" ref={organizationFileInputRef} onChange={handleOrganizationLogoChange} accept="image/*" style={{ display: 'none' }} />
+                                                                        {organizationLogoPreview ? (
+                                                                            <div className="logo-preview">
+                                                                                <img src={organizationLogoPreview} alt="Предпросмотр логотипа" className="organization-logo-preview" />
+                                                                                <div className="logo-actions">
+                                                                                    <button type="button" onClick={triggerOrganizationFileInput} className="change-logo-btn">Изменить</button>
+                                                                                    <button type="button" onClick={removeOrganizationLogo} className="remove-logo-btn">Удалить</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="logo-upload-placeholder">
+                                                                                <button type="button" onClick={triggerOrganizationFileInput} className="upload-logo-btn">📁 Выбрать файл логотипа</button>
+                                                                                <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="form-group submit-group">
+                                                                    <button type="submit" className="submit-organization-btn" disabled={isSubmittingOrganization}>{isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}</button>
+                                                                </div>
+                                                            </form>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}
