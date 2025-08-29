@@ -1686,6 +1686,18 @@ class TournamentService {
                     SELECT t.*
                     FROM tournaments t
                     WHERE t.status = 'completed'
+                      AND (
+                        t.completed_at IS NOT NULL OR t.end_date IS NOT NULL
+                      )
+                      AND EXISTS (
+                        SELECT 1
+                        FROM matches m
+                        WHERE m.tournament_id = t.id
+                          AND m.status = 'completed'
+                          AND m.winner_team_id IS NOT NULL
+                          AND (m.is_third_place_match IS DISTINCT FROM TRUE)
+                          AND m.next_match_id IS NULL
+                      )
                     ORDER BY COALESCE(t.completed_at, t.end_date, t.updated_at, t.created_at) DESC, t.id DESC
                     LIMIT $1
                 ), winners AS (
