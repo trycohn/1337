@@ -358,61 +358,36 @@ class MatchLobbyService {
             
             const lobby = result.rows[0];
 
-            // Если обе команды готовы, проверяем наличие отдельного администратора.
-            // Если нет админа, не являющегося участником команд, автоматически выбираем первого ходящего и стартуем пик/бан.
+            // Если обе команды готовы, сразу запускаем стадию пиков/банов с случайным первым ходом — без ожидания администратора
             if (lobby.team1_ready && lobby.team2_ready && lobby.status === 'waiting') {
-                // Получаем команды и турнир
-                const teamsAndTournamentRes = await client.query(
-                    `SELECT m.team1_id, m.team2_id, l.tournament_id
+                const teamsRes = await client.query(
+                    `SELECT m.team1_id, m.team2_id
                      FROM match_lobbies l
                      JOIN matches m ON l.match_id = m.id
                      WHERE l.id = $1`,
                     [lobbyId]
                 );
-                const { team1_id, team2_id, tournament_id } = teamsAndTournamentRes.rows[0];
-
-                // Список админов турнира (создатель + приглашённые админы)
-                const adminsRes = await client.query(
-                    `SELECT created_by AS user_id FROM tournaments WHERE id = $1
-                     UNION ALL
-                     SELECT user_id FROM tournament_admins WHERE tournament_id = $1`,
-                    [tournament_id]
+                const { team1_id, team2_id } = teamsRes.rows[0];
+                const firstPicker = Math.random() < 0.5 ? team1_id : team2_id;
+                await client.query(
+                    `UPDATE match_lobbies 
+                     SET status = 'picking', first_picker_team_id = $1, current_turn_team_id = $1
+                     WHERE id = $2`,
+                    [firstPicker, lobbyId]
                 );
-                const adminUserIds = new Set(adminsRes.rows.map(r => r.user_id));
-
-                // Список участников обеих команд
-                const participantsRes = await client.query(
-                    `SELECT user_id FROM tournament_team_members WHERE team_id = ANY($1::int[])`,
-                    [[team1_id, team2_id]]
-                );
-                const participantUserIds = new Set(participantsRes.rows.map(r => r.user_id));
-
-                // Ищем администратора, который не является участником матча
-                let hasSeparateAdmin = false;
-                for (const adminId of adminUserIds) {
-                    if (!participantUserIds.has(adminId)) { hasSeparateAdmin = true; break; }
-                }
-
-                if (hasSeparateAdmin) {
-                    // Оставляем статус 'ready' — отдельный админ сможет назначить первого выбирающего
-                    await client.query(
-                        `UPDATE match_lobbies SET status = 'ready' WHERE id = $1`,
-                        [lobbyId]
-                    );
-                } else {
-                    // Автоматически выбираем первую команду случайно и запускаем стадию 'picking'
-                    const firstPicker = Math.random() < 0.5 ? team1_id : team2_id;
-                    await client.query(
-                        `UPDATE match_lobbies 
-                         SET status = 'picking', first_picker_team_id = $1, current_turn_team_id = $1
-                         WHERE id = $2`,
-                        [firstPicker, lobbyId]
-                    );
-                }
             }
             
             await client.query('COMMIT');
-            
+
+            // Live-обновление состояния лобби после изменения готовности/старта пиков
+            try {
+                const app = global.app;
+                const io = app?.get('io');
+                if (io) {
+                    await this.broadcastLobbyUpdate(io, lobbyId);
+                }
+            } catch (_) {}
+
             return lobby;
         } catch (error) {
             await client.query('ROLLBACK');
