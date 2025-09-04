@@ -14,7 +14,7 @@ import AuthPage from './pages/AuthPage'; // Добавляем импорт но
 import ForgotPasswordPage from './pages/ForgotPasswordPage'; // Импорт страницы восстановления пароля
 import ResetPasswordPage from './pages/ResetPasswordPage'; // Импорт страницы сброса пароля
 import { LoaderProvider } from './context/LoaderContext';
-import { AuthProvider } from './context/AuthContext'; // Импортируем AuthProvider
+import { AuthProvider, useAuth } from './context/AuthContext'; // Импортируем AuthProvider и useAuth
 import { UserProvider } from './context/UserContext'; // Импортируем UserProvider
 import { PrivateRoute } from './utils/PrivateRoute';
 import Messenger from './components/Messenger';
@@ -51,6 +51,22 @@ function AuthCallback() {
     return <div>Авторизация...</div>;
 }
 
+// Ворота для главной страницы: скрываем для авторизованных не-админов
+function HomeGate() {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+        return null;
+    }
+
+    // Гости и авторизованные не-админы идут на список турниров
+    if (!user || (user && user.role !== 'admin')) {
+        return <Navigate to="/tournaments" replace />;
+    }
+
+    return <HomePage />;
+}
+
 function App() {
     return (
         <LoaderProvider>
@@ -59,7 +75,7 @@ function App() {
                     <Router>
                         <Routes>
                             <Route path="/" element={<Layout />}>
-                                <Route index element={<HomePage />} /> {/* Заменяем Home на HomePage */}
+                                <Route index element={<HomeGate />} /> {/* Главная доступна только админам, остальные -> /tournaments */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
                                 <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
