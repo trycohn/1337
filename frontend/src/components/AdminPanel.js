@@ -125,6 +125,110 @@ function AdminPanel() {
         admin_comment: ''
     });
 
+    // Управление аккаунтами
+    const [accountSearchId, setAccountSearchId] = useState('');
+    const [accountUser, setAccountUser] = useState(null);
+    const [accountLoading, setAccountLoading] = useState(false);
+    const [accountError, setAccountError] = useState('');
+    const [newUsername, setNewUsername] = useState('');
+    const [passwordResetValue, setPasswordResetValue] = useState('');
+    const [deleteConfirm, setDeleteConfirm] = useState('');
+
+    async function adminFetchUserById() {
+        if (!accountSearchId) return;
+        try {
+            setAccountLoading(true);
+            setAccountError('');
+            setPasswordResetValue('');
+            const response = await api.get(`/api/admin/users/${accountSearchId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setAccountUser(response.data);
+            setNewUsername(response.data.username || '');
+        } catch (err) {
+            console.error('Ошибка получения пользователя:', err);
+            setAccountUser(null);
+            setAccountError(err?.response?.data?.error || 'Пользователь не найден');
+        } finally {
+            setAccountLoading(false);
+        }
+    }
+
+    async function adminUpdateUsername() {
+        if (!accountUser || !newUsername || newUsername === accountUser.username) return;
+        try {
+            setAccountLoading(true);
+            setAccountError('');
+            await api.post(`/api/admin/users/${accountUser.id}/username`, { username: newUsername }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            await adminFetchUserById();
+        } catch (err) {
+            console.error('Ошибка смены ника:', err);
+            setAccountError(err?.response?.data?.error || 'Не удалось обновить ник');
+        } finally {
+            setAccountLoading(false);
+        }
+    }
+
+    async function adminResetEmail() {
+        if (!accountUser) return;
+        try {
+            setAccountLoading(true);
+            setAccountError('');
+            await api.post(`/api/admin/users/${accountUser.id}/reset-email`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            await adminFetchUserById();
+        } catch (err) {
+            console.error('Ошибка сброса email:', err);
+            setAccountError(err?.response?.data?.error || 'Не удалось сбросить email');
+        } finally {
+            setAccountLoading(false);
+        }
+    }
+
+    async function adminResetPassword() {
+        if (!accountUser) return;
+        try {
+            setAccountLoading(true);
+            setAccountError('');
+            const res = await api.post(`/api/admin/users/${accountUser.id}/reset-password`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setPasswordResetValue(res.data?.newPassword || '');
+        } catch (err) {
+            console.error('Ошибка сброса пароля:', err);
+            setAccountError(err?.response?.data?.error || 'Не удалось сбросить пароль');
+        } finally {
+            setAccountLoading(false);
+        }
+    }
+
+    async function adminDeleteAccount() {
+        if (!accountUser) return;
+        if (deleteConfirm !== `${accountUser.id}`) {
+            setAccountError('Для подтверждения введите ID пользователя.');
+            return;
+        }
+        try {
+            setAccountLoading(true);
+            setAccountError('');
+            await api.delete(`/api/admin/users/${accountUser.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setAccountUser(null);
+            setAccountSearchId('');
+            setNewUsername('');
+            setDeleteConfirm('');
+        } catch (err) {
+            console.error('Ошибка удаления аккаунта:', err);
+            setAccountError(err?.response?.data?.error || 'Не удалось удалить аккаунт');
+        } finally {
+            setAccountLoading(false);
+        }
+    }
+
     const checkAdminAccess = useCallback(async () => {
         try {
             // Используем пользователя из AuthContext вместо запроса к API
@@ -457,6 +561,12 @@ function AdminPanel() {
                     Заявки на организации
                 </button>
                 <button 
+                    className={`nav-tab ${activeTab === 'accounts' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('accounts')}
+                >
+                    Упр. аккаунтами
+                </button>
+                <button 
                     className={`nav-tab ${activeTab === 'mapPool' ? 'active' : ''}`}
                     onClick={() => setActiveTab('mapPool')}
                 >
@@ -471,6 +581,74 @@ function AdminPanel() {
             </div>
 
             {/* Содержимое вкладок */}
+            {activeTab === 'accounts' && (
+                <div className="accounts-tab">
+                    <h2>Управление аккаунтами</h2>
+                    <div className="account-search" style={{display:'flex', gap:8, alignItems:'center', margin:'12px 0'}}>
+                        <input 
+                            type="number" 
+                            min="1"
+                            value={accountSearchId}
+                            onChange={(e)=>setAccountSearchId(e.target.value)}
+                            className="map-input"
+                            placeholder="ID пользователя"
+                        />
+                        <button className="btn" onClick={adminFetchUserById} disabled={accountLoading || !accountSearchId}>Найти</button>
+                    </div>
+                    {accountError && <div className="admin-error" style={{textAlign:'left'}}>{accountError}</div>}
+                    {accountLoading && <div className="admin-loading">Загрузка...</div>}
+
+                    {accountUser && (
+                        <div className="account-card" style={{background:'#111', border:'1px solid #333', padding:16, marginTop:12}}>
+                            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:12}}>
+                                <div><div style={{color:'#aaa'}}>ID</div><div>{accountUser.id}</div></div>
+                                <div><div style={{color:'#aaa'}}>Никнейм</div><div>{accountUser.username || '-'}</div></div>
+                                <div><div style={{color:'#aaa'}}>Email</div><div>{accountUser.email || '-'}</div></div>
+                                <div><div style={{color:'#aaa'}}>Роль</div><div>{accountUser.role}</div></div>
+                                <div><div style={{color:'#aaa'}}>Верифицирован</div><div>{accountUser.is_verified ? 'да' : 'нет'}</div></div>
+                                <div><div style={{color:'#aaa'}}>Steam ID</div><div>{accountUser.steam_id || '-'}</div></div>
+                                <div><div style={{color:'#aaa'}}>FACEIT ID</div><div>{accountUser.faceit_id || '-'}</div></div>
+                                <div><div style={{color:'#aaa'}}>Создан</div><div>{accountUser.created_at ? new Date(accountUser.created_at).toLocaleString() : '-'}</div></div>
+                            </div>
+
+                            <hr style={{borderColor:'#333', margin:'12px 0'}} />
+
+                            <div style={{display:'flex', flexDirection:'column', gap:12}}>
+                                <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                                    <input 
+                                        className="map-input"
+                                        placeholder="Новый ник"
+                                        value={newUsername}
+                                        onChange={(e)=>setNewUsername(e.target.value)}
+                                    />
+                                    <button className="btn" onClick={adminUpdateUsername} disabled={accountLoading || !newUsername || newUsername === accountUser.username}>Сменить ник</button>
+                                </div>
+
+                                <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                                    <button className="btn" onClick={adminResetEmail} disabled={accountLoading}>Сбросить email</button>
+                                </div>
+
+                                <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                                    <button className="btn" onClick={adminResetPassword} disabled={accountLoading}>Сбросить пароль</button>
+                                    {passwordResetValue && (
+                                        <input className="map-input" value={passwordResetValue} readOnly onFocus={(e)=>e.target.select()} />
+                                    )}
+                                </div>
+
+                                <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+                                    <input 
+                                        className="map-input"
+                                        placeholder={`Введите ${accountUser.id} для подтверждения`}
+                                        value={deleteConfirm}
+                                        onChange={(e)=>setDeleteConfirm(e.target.value)}
+                                    />
+                                    <button className="btn-small danger" onClick={adminDeleteAccount} disabled={accountLoading}>Удалить аккаунт</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             {activeTab === 'stats' && (
                 <div className="stats-tab">
                     <h2>Статистика платформы</h2>

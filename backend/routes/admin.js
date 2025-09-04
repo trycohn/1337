@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs');
@@ -180,6 +182,117 @@ router.post('/upload/map-image', authenticateToken, requireAdmin, upload.single(
 //  Загрузка логотипов (1000x1000)
 // =============================
 const logosDir = path.join(__dirname, '../uploads/logos');
+
+// =============================
+//  Управление аккаунтами пользователей (Admin)
+// =============================
+
+// Получить краткую информацию о пользователе по ID
+router.get('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query(
+            `SELECT id, username, email, role, is_verified, created_at, steam_id, faceit_id, avatar_url
+             FROM users WHERE id = $1`,
+            [id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        return res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Ошибка получения пользователя админом:', err);
+        return res.status(500).json({ error: 'Не удалось получить пользователя' });
+    }
+});
+
+// Изменить никнейм пользователя по ID
+router.post('/users/:id/username', authenticateToken, requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { username } = req.body || {};
+    if (!username) return res.status(400).json({ error: 'Ник обязателен' });
+    try {
+        const exists = await pool.query('SELECT 1 FROM users WHERE username = $1 AND id != $2', [username, id]);
+        if (exists.rows.length > 0) return res.status(400).json({ error: 'Ник уже занят' });
+        await pool.query('UPDATE users SET username = $1 WHERE id = $2', [username, id]);
+        return res.json({ message: 'Ник обновлён' });
+    } catch (err) {
+        console.error('Ошибка обновления ника админом:', err);
+        return res.status(500).json({ error: 'Не удалось обновить ник' });
+    }
+});
+
+// Сбросить email пользователя (установить NULL и снять верификацию)
+router.post('/users/:id/reset-email', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('UPDATE users SET email = NULL, is_verified = FALSE WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        return res.json({ message: 'Email сброшен' });
+    } catch (err) {
+        console.error('Ошибка сброса email админом:', err);
+        return res.status(500).json({ error: 'Не удалось сбросить email' });
+    }
+});
+
+// Сбросить пароль пользователя на случайный. Возвращает новый пароль администратору
+router.post('/users/:id/reset-password', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Генерируем 12-символьный безопасный пароль [a-zA-Z0-9]
+        const raw = crypto.randomBytes(18).toString('base64');
+        const newPassword = raw.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) || crypto.randomBytes(8).toString('hex').slice(0, 12);
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+        const result = await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id', [passwordHash, id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Пользователь не найден' });
+        return res.json({ message: 'Пароль сброшен', newPassword });
+    } catch (err) {
+        console.error('Ошибка сброса пароля админом:', err);
+        return res.status(500).json({ error: 'Не удалось сбросить пароль' });
+    }
+});
+
+// Удалить аккаунт пользователя (безопасная анонимизация)
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { id } = req.params;
+        await client.query('BEGIN');
+        const userRes = await client.query('SELECT id, username FROM users WHERE id = $1 FOR UPDATE', [id]);
+        if (userRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        const uniqueSuffix = crypto.randomBytes(3).toString('hex');
+        const anonymizedUsername = `deleted_user_${id}_${uniqueSuffix}`;
+
+        await client.query(
+            `UPDATE users
+             SET username = $1,
+                 email = NULL,
+                 password_hash = $2,
+                 steam_id = NULL,
+                 steam_url = NULL,
+                 steam_nickname = NULL,
+                 faceit_id = NULL,
+                 faceit_elo = NULL,
+                 full_name = NULL,
+                 birth_date = NULL,
+                 avatar_url = '/uploads/avatars/preloaded/circle-user.svg',
+                 is_verified = FALSE
+             WHERE id = $3`,
+            [anonymizedUsername, await bcrypt.hash(crypto.randomBytes(12).toString('hex'), 10), id]
+        );
+
+        await client.query('COMMIT');
+        return res.json({ message: 'Аккаунт удалён (анонимизирован)', username: anonymizedUsername });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка удаления аккаунта админом:', err);
+        return res.status(500).json({ error: 'Не удалось удалить аккаунт' });
+    } finally {
+        client.release();
+    }
+});
 fs.mkdirSync(logosDir, { recursive: true });
 
 router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo'), async (req, res) => {
