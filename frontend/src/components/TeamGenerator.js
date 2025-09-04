@@ -5,6 +5,8 @@ import './TeamGenerator.css';
 import TeamCard from './TeamCard';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
 import { connectWithAuth, joinTournament, on as socketOn, off as socketOff } from '../services/socket';
+import ReferralInviteModal from './tournament/modals/ReferralInviteModal';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Компонент для генерации команд в турнире
@@ -29,6 +31,7 @@ const TeamGenerator = ({
     hideMixSettings = false,
     renderOnlySettings = false
 }) => {
+    const { user } = useAuth();
     // Убираем старые состояния для селекторов
     const [isFormingTeams, setIsFormingTeams] = useState(false);
     const [teams, setTeams] = useState([]);
@@ -245,6 +248,7 @@ const TeamGenerator = ({
 
     // 🆕 СОСТОЯНИЕ ДЛЯ ОТСЛЕЖИВАНИЯ ПРОЦЕССА ПЕРЕФОРМИРОВАНИЯ
     const [isReforming, setIsReforming] = useState(false);
+    const [showReferralModal, setShowReferralModal] = useState(false);
 
     // 🎯 УЛУЧШЕННАЯ ЛОГИКА УСТАНОВКИ КОМАНД ИЗ ТУРНИРА
     useEffect(() => {
@@ -635,6 +639,22 @@ const TeamGenerator = ({
                                 </div>
                             );
                         })}
+                    </div>
+
+                    {/* CTA: Пригласить друга (рефералка) */}
+                    <div className="referral-invite-card-participants2.0">
+                        <div className="referral-invite-content-participants2.0">
+                            <div className="referral-invite-text-participants2.0">
+                                <div className="referral-title-participants2.0">ПРИГЛАСИТЬ ДРУГА</div>
+                                <div className="referral-subtitle-participants2.0">Поделись ссылкой — пусть друзья подключаются к турниру</div>
+                            </div>
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={() => setShowReferralModal(true)}
+                            >
+                                Получить ссылку
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
@@ -1136,6 +1156,14 @@ const TeamGenerator = ({
                     </div>
                 </div>
             )}
+
+            {/* 🆕 МОДАЛКА РЕФЕРАЛКИ */}
+            <ReferralInviteModal 
+                isOpen={showReferralModal}
+                onClose={() => setShowReferralModal(false)}
+                tournament={tournament}
+                user={user}
+            />
         </div>
     );
 };
