@@ -996,14 +996,17 @@
 /* Хедер списка участников: две колонки */
 .original-participants-section-header {
   margin-bottom: 10px;
+  display: flex;
+  height: 67px;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #1D1D1D;
 }
 .participants-header-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #374151;
 }
 .participants-header-col {
   color: #ffffff;
