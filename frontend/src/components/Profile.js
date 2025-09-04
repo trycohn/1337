@@ -2331,19 +2331,6 @@ function Profile() {
                             <div className="meta-item">
                                 <span>ID: {user.id}</span>
                             </div>
-                            <div className={`meta-item ${user.email ? (user.is_verified ? 'ok' : 'warn') : 'muted'}`}>
-                                <span>✉ {user.email ? (user.is_verified ? 'Подтвержден' : 'Не подтвержден') : 'Нет'}</span>
-                                </div>
-                            {user.steam_url && (
-                                <div className="meta-item ok">
-                                    <span>🎮 Steam</span>
-                                </div>
-                            )}
-                            {user.faceit_id && (
-                                <div className="meta-item ok">
-                                    <span>⚡ FACEIT</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                     
