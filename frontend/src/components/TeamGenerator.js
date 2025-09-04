@@ -514,134 +514,55 @@ const TeamGenerator = ({
     const renderTeamsList = () => {
         // Если команды есть, отображаем их
         if (teamsToShow.length > 0) {
+            const getTeamStatus = (team) => {
+                const rawStatus = (team?.status || '').toString().trim().toLowerCase();
+                const isWinner = team?.is_winner || team?.winner || rawStatus === 'winner';
+                const isEliminated = team?.is_eliminated || team?.eliminated || rawStatus === 'eliminated' || rawStatus === 'out';
+                if (isWinner) return { text: 'Победитель', cls: 'winner' };
+                if (isEliminated) return { text: 'Выбыла', cls: 'eliminated' };
+                return { text: 'Участвует', cls: 'active' };
+            };
+
             return (
-                <div className="teams-display">
-                    {/* 🎯 ЗАГОЛОВОК С УЛУЧШЕННОЙ СТАТИСТИКОЙ */}
-                    <div className="teams-header">
-                        <h4>🏆 Сформированные команды ({teamsToShow.length})</h4>
-                        
-                        {/* ПАНЕЛЬ СТАТИСТИКИ */}
-                        <div className="teams-stats">
-                            <div className="team-stat">
-                                <div className="stat-value">{teamsToShow.length}</div>
-                                <div className="stat-label">👥 Команд</div>
+                <div className="teams-display-participants2.0">
+                    <div className="teams-section-header-participants2.0">
+                        <div className="teams-header-row-participants2.0">
+                            <div className="teams-header-col-participants2.0 teams-header-col--left-participants2.0">
+                                <strong>Сформированные команды: {teamsToShow.length}</strong>
                             </div>
-                            <div className="team-stat">
-                                <div className="stat-value">
-                                    {teamsToShow.reduce((total, team) => total + (team.members?.length || 0), 0)}
-                                </div>
-                                <div className="stat-label">🎮 Игроков</div>
-                            </div>
-                            <div className="team-stat">
-                                <div className="stat-value">
-                                    {teamsToShow.length > 0 
-                                        ? Math.round(teamsToShow.reduce((sum, team) => sum + (team.averageRating || 0), 0) / teamsToShow.length)
-                                        : 0
-                                    }
-                                </div>
-                                <div className="stat-label">⭐ Средний рейтинг</div>
-                            </div>
-                            <div className="team-stat">
-                                <div className="stat-value">
-                                    {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}
-                                </div>
-                                <div className="stat-label">🎯 Тип рейтинга</div>
+                            <div className="teams-header-col-participants2.0 teams-header-col--right-participants2.0">
+                                <strong>Статус</strong>
                             </div>
                         </div>
                     </div>
 
-                    {/* 🎯 УЛУЧШЕННАЯ СЕТКА КОМАНД */}
-                    <div className="mixed-teams-grid">
-                        {teamsToShow.map((team, index) => (
-                            <div key={team.id || index} className="enhanced-team-card">
-                                {/* ЗАГОЛОВОК КОМАНДЫ */}
-                                <div className="team-card-header">
-                                    <div className="team-title">
-                                        <h4>{team.name || `Команда ${index + 1}`}</h4>
-                                        <div className="team-members-count">
-                                            👥 {team.members?.length || 0} игрок{team.members?.length === 1 ? '' : team.members?.length > 4 ? 'ов' : 'а'}
+                    <div className="teams-list-participants2.0">
+                        {teamsToShow.map((team, index) => {
+                            const status = getTeamStatus(team);
+                            return (
+                                <div key={team.id || index} className={`team-row-participants2.0 ${status.cls}`}>
+                                    <div className="team-row-left-participants2.0">
+                                        <div className="team-avatar-participants2.0">
+                                            <img
+                                                src={ensureHttps(team.logo_url || team.avatar_url) || '/default-avatar.png'}
+                                                alt={`${team.name || `Команда ${index + 1}`} logo`}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                                            />
                                         </div>
-                                    </div>
-                                    
-                                    <div className="team-rating-display">
-                                        <div className="rating-label">
-                                            {ratingType === 'faceit' ? 'FACEIT' : 'Premier'}
-                                        </div>
-                                        <div className="rating-value">
-                                            {team.averageRating || '—'}
-                                            <span className="rating-suffix">
-                                                {ratingType === 'faceit' ? ' ELO' : ' Ранг'}
+                                        <div className="team-main-participants2.0">
+                                            <span className="team-name-participants2.0">{team.name || `Команда ${index + 1}`}</span>
+                                            <span className="team-rating-participants2.0">
+                                                {ratingType === 'faceit' ? 'FACEIT: ' : 'Premier: '}
+                                                {team.averageRating || '—'}
                                             </span>
                                         </div>
                                     </div>
+                                    <div className="team-row-right-participants2.0">
+                                        <span className="team-status-participants2.0">{status.text}</span>
+                                    </div>
                                 </div>
-                                
-                                {/* СОСТАВ КОМАНДЫ */}
-                                <div className="team-composition">
-                                    <h5>👥 Состав</h5>
-                                    {team.members && team.members.length > 0 ? (
-                                        <div className="team-members-list">
-                                            {team.members.map((member, memberIndex) => {
-                                                const memberName = member.name || member.username;
-                                                const formattedName = formatMemberName(memberName);
-                                                
-                                                return (
-                                                    <div key={memberIndex} className="team-member-row">
-                                                        <div className="member-avatar">
-                                                            <img 
-                                                                src={member.avatar_url || '/default-avatar.png'} 
-                                                                alt={memberName}
-                                                                onError={(e) => {
-                                                                    e.target.onerror = null;
-                                                                    e.target.src = '/default-avatar.png';
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <div className="member-info">
-                                                            <div 
-                                                                className={`member-name ${formattedName.isLongName ? 'member-name-long' : ''} ${member.is_captain ? 'captain-name' : ''}`}
-                                                                title={formattedName.isTruncated ? formattedName.originalName : undefined}
-                                                            >
-                                                                {member.is_captain && <span className="captain-crown">👑 </span>}
-                                                                {member.user_id ? (
-                                                                    <a href={`/user/${member.user_id}`} className="member-profile-link">
-                                                                        {formattedName.displayName}
-                                                                    </a>
-                                                                ) : (
-                                                                    formattedName.displayName
-                                                                )}
-                                                            </div>
-                                                            <div className="member-rating">
-                                                                {(() => {
-                                                                    // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
-                                                                    const ratingInfo = getParticipantRatingInfo(member);
-                                                                    
-                                                                    return (
-                                                                        <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
-                                                                            {ratingType === 'faceit' 
-                                                                                ? `${ratingInfo.rating} ELO`
-                                                                                : `${ratingInfo.rating} Ранг`
-                                                                            }
-                                                                            {ratingInfo.isManualRating && (
-                                                                                <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
-                                                                            )}
-                                                                        </span>
-                                                                    );
-                                                                })()}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <div className="no-members">
-                                            🚫 Состав команды не определен
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -779,31 +700,31 @@ const TeamGenerator = ({
         });
 
         return (
-            <div className="original-participants-section">
-                <div className="original-participants-section-header">
-                    <div className="participants-header-row">
-                        <div className="participants-header-col participants-header-col--left">
+            <div className="original-participants-section-participants2.0">
+                <div className="original-participants-section-header-participants2.0">
+                    <div className="participants-header-row-participants2.0">
+                        <div className="participants-header-col-participants2.0 participants-header-col--left-participants2.0">
                             <strong>Участники: {participants.length}</strong>
                         </div>
-                        <div className="participants-header-col participants-header-col--right">
+                        <div className="participants-header-col-participants2.0 participants-header-col--right-participants2.0">
                             <strong>Статус</strong>
                         </div>
                     </div>
                 </div>
 
                 {loadingParticipants ? (
-                    <p className="loading-participants">Загрузка участников...</p>
+                    <p className="loading-participants-participants2.0">Загрузка участников...</p>
                 ) : participants.length === 0 ? (
-                    <p className="no-participants">Нет зарегистрированных игроков</p>
+                    <p className="no-participants-participants2.0">Нет зарегистрированных игроков</p>
                 ) : (
-                    <div className="participants-list">
+                    <div className="participants-list-participants2.0">
                         {sortedParticipants.map((participant) => {
                             const ratingInfo = getParticipantRatingInfo(participant);
                             const hasRating = ratingInfo && ratingInfo.rating !== undefined && ratingInfo.rating !== null && `${ratingInfo.rating}` !== '';
                             return (
-                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row${participant.in_team ? ' in-team' : ' not-in-team'}`}>
-                                    <div className="participant-row-left">
-                                        <div className="participant-avatar">
+                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row-participants2.0${participant.in_team ? ' in-team' : ' not-in-team'}`}>
+                                    <div className="participant-row-left-participants2.0">
+                                        <div className="participant-avatar-participants2.0">
                                             <img
                                                 src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
                                                 alt={`${participant.name} avatar`}
@@ -813,10 +734,10 @@ const TeamGenerator = ({
                                                 }}
                                             />
                                         </div>
-                                        <div className="participant-main">
-                                            <span className="participant-name">{participant.name}</span>
+                                        <div className="participant-main-participants2.0">
+                                            <span className="participant-name-participants2.0">{participant.name}</span>
                                             {hasRating && (
-                                                <span className="participant-rating" title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                <span className="participant-rating-participants2.0" title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
                                                     {ratingType === 'faceit' ? `FACEIT: ${ratingInfo.rating}` : `Premier: ${ratingInfo.rating}`}
                                                     {ratingInfo.isManualRating && (
                                                         <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
@@ -825,11 +746,11 @@ const TeamGenerator = ({
                                             )}
                                         </div>
                                     </div>
-                                    <div className="participant-row-right">
-                                        <span className="participant-status">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
+                                    <div className="participant-row-right-participants2.0">
+                                        <span className="participant-status-participants2.0">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
                                     </div>
                                     {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                        <button className="remove-participant" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
+                                        <button className="remove-participant-participants2.0" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
                                     )}
                                 </div>
                             );
