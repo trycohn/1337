@@ -484,6 +484,12 @@ function TournamentsList() {
                             )}
                         </th>
                         <th>
+                            Призовой фонд{' '}
+                            <span className="sort-icon" onClick={() => handleSort('prize_pool')}>
+                                {sort.field === 'prize_pool' && sort.direction === 'asc' ? '▲' : '▼'}
+                            </span>
+                        </th>
+                        <th>
                             Участники{' '}
                             <span className="sort-icon" onClick={() => handleSort('participant_count')}>
                                 {sort.field === 'participant_count' && sort.direction === 'asc' ? '▲' : '▼'}
@@ -677,6 +683,9 @@ function TournamentsList() {
                             </td>
                             <td data-label="Название" title={tournament.name}>
                                 <Link to={`/tournaments/${tournament.id}`}>{tournament.name}</Link>
+                            </td>
+                            <td data-label="Призовой фонд">
+                                {tournament?.prize_pool ? tournament.prize_pool : '—'}
                             </td>
                             <td data-label="Участники">
                                 {(() => {
