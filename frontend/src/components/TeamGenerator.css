@@ -408,7 +408,8 @@
   justify-content: space-evenly;
 }
 /* РљР°СЂС‚РѕС‡РєРё РєРѕРјР°РЅРґ */
-.enhanced-team-card {
+.enhanced-team-card,
+.enhanced-team-card-mexteams {
   min-height: 416px;
   border-radius: 8px;
   opacity: 1;
@@ -419,7 +420,8 @@
 }
 
 /* Р—Р°РіРѕР»РѕРІРѕРє РєР°СЂС‚РѕС‡РєРё РєРѕРјР°РЅРґС‹ */
-.team-card-header {
+.team-card-header,
+.team-card-header-mexteams {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -434,15 +436,22 @@
   font-size: 1.25rem;
   font-weight: 600;
 }
-.team-header-left { display: flex; align-items: center; gap: 12px; }
-.team-avatar-lg { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
+.team-header-left,
+.team-header-left-mexteams { display: flex; align-items: center; gap: 12px; }
+.team-avatar-lg,
+.team-avatar-lg-mexteams { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
 .team-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
-.team-header-center { position: relative; height: 40px; }
-.member-avatars-stack { position: relative; height: 40px; width: 200px; }
-.stack-avatar { position: absolute; top: 0; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid #000; }
+.team-header-center,
+.team-header-center-mexteams { position: relative; height: 40px; }
+.member-avatars-stack,
+.member-avatars-stack-mexteams { position: relative; height: 40px; width: 200px; }
+.stack-avatar,
+.stack-avatar-mexteams { position: absolute; top: 0; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid #000; }
 .stack-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.team-header-right { display: flex; justify-content: flex-end; }
-.team-rating-badge { background:#111; color:#fff; border:1px solid #374151; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
+.team-header-right,
+.team-header-right-mexteams { display: flex; justify-content: flex-end; }
+.team-rating-badge,
+.team-rating-badge-mexteams { background:#111; color:#fff; border:1px solid #374151; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
 .team-members-count {
   font-size: 0.875rem;
   color: #9ca3af;
@@ -487,13 +496,15 @@
   align-items: center;
   gap: 8px;
 }
-.team-members-list {
+.team-members-list,
+.team-members-list-mexteams {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 /* РЎС‚РѕСЂРєР° СѓС‡Р°СЃС‚РЅРёРєР° РєРѕРјР°РЅРґС‹ */
-.team-member-row {
+.team-member-row,
+.team-member-row-mexteams {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -527,7 +538,8 @@
   opacity: 1;
 }
 /* РђРІР°С‚Р°СЂ СѓС‡Р°СЃС‚РЅРёРєР° */
-.member-avatar {
+.member-avatar,
+.member-avatar-mexteams {
   width: 36px;
   height: 36px;
   border-radius: 50% !important;
@@ -545,7 +557,8 @@
 }
 /* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СѓС‡Р°СЃС‚РЅРёРєРµ */
 
-.member-name {
+.member-name,
+.member-name-mexteams {
   font-weight: 600;
   color: #ffffff;
 }
@@ -555,7 +568,8 @@
   font-weight: 700 !important;
 }
 
-.member-profile-link {
+.member-profile-link,
+.member-profile-link-mexteams {
   color: #10b981;
   text-decoration: none;
   transition: color 0.2s ease;
@@ -570,7 +584,8 @@
   font-weight: 500;
 }
 /* РЎРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС‚СЃСўС‚СЃС‚РІРёРё СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
-.no-members {
+.no-members,
+.no-members-mexteams {
   color: #6b7280;
   font-style: italic;
   text-align: center;
@@ -1416,3 +1431,5 @@ color: #ffffff;
      height: 32px; 
   }
 }
+
+/* removed empty -mexteams placeholders to satisfy linter */
