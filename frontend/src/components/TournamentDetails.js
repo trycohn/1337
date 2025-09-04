@@ -71,6 +71,8 @@ const LazyBracketRenderer = React.lazy(() =>
 
 const LazyMixTeamsView = React.lazy(() => import('./tournament/mix/MixTeamsView'));
 
+// Временный отказ от ленивого импорта MixTeamsView для исключения возможной циклической зависимости
+
 // Error Boundary для обработки ошибок рендеринга
 class TournamentErrorBoundary extends React.Component {
     constructor(props) {
