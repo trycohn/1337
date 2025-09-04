@@ -165,9 +165,13 @@ function TournamentDetails() {
     const [tournament, setTournament] = useState(null);
     const [user, setUser] = useState(null);
     const [teams, setTeams] = useState([]);
+    // 🆕 Активная вкладка должна быть объявлена до использования ниже
+    const [activeTab, setActiveTab] = useState('info');
+    const isMixTournament = useMemo(() => (tournament?.format || '').toLowerCase() === 'mix', [tournament?.format]);
+    const mixTabEnabled = isMixTournament && activeTab === 'mix_teams';
     const { teams: mixTeams, isLoading: mixTeamsLoading, refetch: refetchMixTeams } = useMixTeams(
         tournament?.id,
-        (tournament?.format || '').toLowerCase() === 'mix' && activeTab === 'mix_teams'
+        mixTabEnabled
     );
     const [message, setMessage] = useState('');
     const [isParticipating, setIsParticipating] = useState(false);
@@ -182,8 +186,6 @@ function TournamentDetails() {
     const [isAdminOrCreator, setIsAdminOrCreator] = useState(false);
 
     // 🆕 Состояние активной вкладки
-    const [activeTab, setActiveTab] = useState('info');
-    const isMixTournament = useMemo(() => (tournament?.format || '').toLowerCase() === 'mix', [tournament?.format]);
     
     // Проверяем URL параметр tab при загрузке; для CS2 по умолчанию открываем "participants"
     useEffect(() => {
