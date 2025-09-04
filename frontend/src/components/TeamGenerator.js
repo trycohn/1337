@@ -4,6 +4,7 @@ import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
 import TeamCard from './TeamCard';
 import { useLoaderAutomatic } from '../hooks/useLoaderAutomaticHook';
+import { connectWithAuth, joinTournament, on as socketOn, off as socketOff } from '../services/socket';
 
 /**
  * Компонент для генерации команд в турнире
@@ -392,6 +393,67 @@ const TeamGenerator = ({
             fetchTeams();
         }
     }, [fetchTeams, tournament?.id, tournament?.teams]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
+
+    // 🧩 РЕАЛТАЙМ-ОБНОВЛЕНИЕ СТАТУСОВ КОМАНД ПО СОБЫТИЯМ SOCKET.IO
+    useEffect(() => {
+        if (!tournament?.id) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        connectWithAuth(token);
+
+        const handleConnect = () => {
+            try {
+                joinTournament(tournament.id);
+            } catch (e) {
+                console.warn('⚠️ joinTournament error:', e);
+            }
+        };
+
+        const handleTournamentEvent = (payload) => {
+            try {
+                const tid = parseInt(tournament.id);
+                const incomingId = parseInt(payload?.tournamentId || payload?.id);
+                if (!incomingId || incomingId !== tid) return;
+
+                const updateType = payload?._metadata?.updateType;
+                if (updateType === 'matches_update' || updateType === 'teams_update' || payload?.matches || payload?.teams || payload?.mixed_teams) {
+                    // Перезагружаем команды для актуализации статусов (вылет/победа)
+                    fetchTeams();
+                }
+            } catch (e) {
+                console.warn('⚠️ handleTournamentEvent error:', e);
+            }
+        };
+
+        socketOn('connect', handleConnect);
+        socketOn('tournament_update', handleTournamentEvent);
+        socketOn('tournament_updated', handleTournamentEvent);
+
+        return () => {
+            socketOff('connect', handleConnect);
+            socketOff('tournament_update', handleTournamentEvent);
+            socketOff('tournament_updated', handleTournamentEvent);
+        };
+    }, [tournament?.id, fetchTeams]);
+
+    // ⏱️ РЕЗЕРВНЫЙ ПОЛЛИНГ ДЛЯ АКТИВНЫХ ТУРНИРОВ
+    useEffect(() => {
+        const status = (tournament?.status || '').toString().trim().toLowerCase();
+        if (!(status === 'in_progress' || status === 'active')) return;
+        if (!tournament?.id) return;
+
+        const intervalId = setInterval(() => {
+            try {
+                if (typeof document !== 'undefined' && document.hidden) return;
+                fetchTeams();
+            } catch (e) {
+                console.warn('⚠️ polling fetchTeams error:', e);
+            }
+        }, 15000);
+
+        return () => clearInterval(intervalId);
+    }, [tournament?.id, tournament?.status, fetchTeams]);
 
     // 🔧 ОТДЕЛЬНЫЙ ЭФФЕКТ ДЛЯ ЗАГРУЗКИ УЧАСТНИКОВ
     useEffect(() => {

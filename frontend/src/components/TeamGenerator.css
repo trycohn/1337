@@ -1283,11 +1283,11 @@ color: #ffffff;
   background-color: #0a0a0a;
   padding: 16px 32px;
   border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D);
-  width: 588;
-  height: 64;
+  height: 64px;
   gap: 8px;
   opacity: 1;
   border-bottom-width: 1px;
+  width: 100%;
 }
 .participant-row-left-participants2\.0 {
   display: flex;
