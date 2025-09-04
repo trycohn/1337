@@ -1098,6 +1098,7 @@
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  width: 100%;
 }
 .teams-header-col-participants2\.0 {
   color: #ffffff;
@@ -1211,6 +1212,7 @@
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  width: 100%;
 }
 .participants-header-col-participants2\.0 { color: #ffffff; font-size: 0.95rem; }
 .participants-header-col--left-participants2\.0 { text-align: left; }
