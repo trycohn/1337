@@ -322,9 +322,6 @@ function Layout() {
                                             </span>
                                         )}
                                     </Link>
-                                    <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
-                                        Мои турниры
-                                    </Link>
                                     {hasMyTournaments && (
                                         <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
                                             Мои турниры
