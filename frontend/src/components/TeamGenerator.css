@@ -1092,6 +1092,8 @@
   padding: 16px 32px;
   background-color: #1D1D1D;
   width: 100%;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 .teams-header-row-participants2\.0 {
   display: grid;
@@ -1229,6 +1231,8 @@
   padding: 16px 32px;
   background-color: #1D1D1D;
   width: 100%;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 .participants-header-row-participants2\.0 {
   display: grid;
