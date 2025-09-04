@@ -1105,8 +1105,32 @@
   color: #ffffff;
   font-size: 0.95rem;
 }
-.teams-header-col--left-participants2\.0 { text-align: left; }
-.teams-header-col--right-participants2\.0 { text-align: right; }
+.teams-header-col--left-participants2\.0 {
+   text-align: left; 
+  }
+
+  .teams-header-col--left-participants2\.0 strong {
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 8%;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
+.teams-header-col--right-participants2\.0 {
+   text-align: right; 
+  }
+  
+  .teams-header-col--right-participants2\.0 strong {
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 8%;
+    text-transform: uppercase;
+    color: #ffffff;
+  }
 
 .teams-list-participants2\.0 {
   display: flex;
@@ -1152,38 +1176,39 @@
 }
 .team-name-participants2\.0 {
   color: #ffffff;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 700;
+  font-style: Bold;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 8%;
+  
 }
 .team-rating-participants2\.0 {
-  font-size: 0.8rem;
-  color: #9ca3af;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 8%;
+  color: #949494;
 }
 .team-row-right-participants2\.0 { text-align: right; }
 .team-status-participants2\.0 {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-  border: 1px solid transparent;
+  font-family: Play;
+  font-weight: 700;
+  font-style: Bold;
+  font-size: 10px;
+  leading-trim: NONE;
+  line-height: 100%;
+  letter-spacing: 8%;
+  text-transform: uppercase;
+  color: #FF3838;
 }
-.team-row-participants2\.0.active .team-status-participants2\.0 {
-  background-color: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border-color: rgba(16, 185, 129, 0.3);
-}
+
 .team-row-participants2\.0.eliminated .team-status-participants2\.0 {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.3);
+  color: #757575;
 }
 .team-row-participants2\.0.winner .team-status-participants2\.0 {
-  background-color: rgba(234, 179, 8, 0.2);
-  color: #fde68a;
-  border-color: rgba(234, 179, 8, 0.3);
+  color: #A77D2A;
 }
 
 @media (max-width: 640px) {
@@ -1215,8 +1240,34 @@
   width: 100%;
 }
 .participants-header-col-participants2\.0 { color: #ffffff; font-size: 0.95rem; }
-.participants-header-col--left-participants2\.0 { text-align: left; }
-.participants-header-col--right-participants2\.0 { text-align: right; }
+.participants-header-col--left-participants2\.0 {
+   text-align: left; 
+  }
+
+  .participants-header-col--left-participants2\.0 strong {
+font-weight: 400;
+font-style: Regular;
+font-size: 16px;
+line-height: 100%;
+letter-spacing: 8%;
+text-transform: uppercase;
+color: #ffffff;
+  }
+
+.participants-header-col--right-participants2\.0 { 
+  text-align: right; 
+}
+
+.participants-header-col--right-participants2\.0 strong {
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 8%;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
 .loading-participants-participants2\.0 { color: #9ca3af; text-align: center; padding: 15px; }
 .no-participants-participants2\.0 { color: #9ca3af; text-align: center; padding: 20px; }
 
@@ -1254,12 +1305,43 @@
 .participant-avatar-participants2\.0 img { width: 100% !important; height: 100% !important; object-fit: cover; }
 .participant-main-participants2\.0 { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .participant-name-participants2\.0 { color: #ffffff; font-weight: 500; display: block; margin-bottom: 4px; }
-.participant-main-participants2\.0 .participant-name-participants2\.0 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.participant-rating-participants2\.0 { font-size: 0.8rem; color: #9ca3af; }
+.participant-main-participants2\.0 .participant-name-participants2\.0 {
+   white-space: nowrap; 
+   overflow: hidden; 
+   text-overflow: ellipsis; 
+   font-weight: 700;
+   font-style: Bold;
+   font-size: 12px;
+   line-height: 100%;
+   letter-spacing: 8%;
+   color: #ffffff;
+  }
+
+
+.participant-rating-participants2\.0 {
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 12px;
+  leading-trim: NONE;
+  line-height: 100%;
+  letter-spacing: 8%;
+  color: #949494;
+}
 .participant-row-right-participants2\.0 { text-align: right; }
-.participant-status-participants2\.0 { font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
-.participant-row-participants2\.0.not-in-team .participant-status-participants2\.0 { background-color: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
-.participant-row-participants2\.0.in-team .participant-status-participants2\.0 { background-color: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.participant-status-participants2\.0 {
+  font-weight: 700;
+  font-style: Bold;
+  font-size: 10px;
+  line-height: 100%;
+  letter-spacing: 8%;
+  text-transform: uppercase;
+  color: #757575;  
+}
+
+.participant-row-participants2\.0.not-in-team .participant-status-participants2\.0 {
+  color: #FF3838; 
+  }
+
 .remove-participant-participants2\.0 {
   position: absolute;
   top: 5px;
