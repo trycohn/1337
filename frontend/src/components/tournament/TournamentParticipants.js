@@ -234,6 +234,8 @@ const TournamentParticipants = ({
         return true;
     }, [tournament]);
 
+    const isActive = tournament?.status === 'active';
+
     return (
         <div className="tournament-participants">
             {message && (
@@ -254,6 +256,7 @@ const TournamentParticipants = ({
                         onTeamsUpdated={onTournamentUpdate}
                         onRemoveParticipant={removeParticipant}
                         isAdminOrCreator={isAdminOrCreator}
+                        hideMixSettings={!isActive}
                     />
                 </div>
             )}
@@ -363,7 +366,7 @@ const TournamentParticipants = ({
                                             </div>
                                         </div>
                                     </div>
-                                    {isAdminOrCreator && (
+                                    {isActive && isAdminOrCreator && (
                                         <button 
                                             className="remove-participant-btn-participants"
                                             onClick={() => removeParticipant(
@@ -382,8 +385,8 @@ const TournamentParticipants = ({
                 </>
             )}
 
-            {/* Панель управления участниками для администраторов */}
-            {isAdminOrCreator && (
+            {/* Панель управления участниками для администраторов — скрыта если турнир идёт или завершён */}
+            {isActive && isAdminOrCreator && (
                 <div className="participants-admin-panel">
                     <h4>⚙️ Управление участниками</h4>
                     <div className="admin-actions">
