@@ -41,7 +41,7 @@ export function MixTeamCard({ team }) {
             </div>
 
             <div className="team-composition">
-                <h5>👥 Состав</h5>
+                
                 {members.length > 0 ? (
                     <div className="team-members-list">
                         {members.map((member, idx) => (
@@ -76,7 +76,7 @@ export function MixTeamCard({ team }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="no-members">🚫 Состав команды не определен</div>
+                    <div className="no-members">Состав команды не определен</div>
                 )}
             </div>
         </div>
