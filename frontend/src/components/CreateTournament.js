@@ -689,170 +689,88 @@ function CreateTournament() {
           </div>
         )}
 
-        {/* Настройки распределения участников */}
-        <div className="form-section">
-          <h3 className="section-title">Распределение участников</h3>
-          <div className="form-grid">
-            <div className="form-group full-width">
-              <label>Тип распределения</label>
-              <select
-                name="seeding_type"
-                value={formData.seeding_type}
-                onChange={handleSeedingTypeChange}
-                disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
-                required
-              >
-                <option value="random">Случайное распределение</option>
-                <option value="ranking">По рейтингу</option>
-                <option value="balanced">Сбалансированное</option>
-                <option value="manual">Ручное (настраивается позже)</option>
-              </select>
+        {/* Настройки лобби матча для CS2 */}
+        {isCS2Game(formData.game) && (
+          <div className="form-section lobby-settings">
+            <h3 className="section-title">🎮 Настройки лобби матча</h3>
+            
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="lobby_enabled"
+                  checked={formData.lobby_enabled}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    lobby_enabled: e.target.checked,
+                    selected_maps: e.target.checked ? cs2Maps.map(m => m.name) : []
+                  }))}
+                  disabled={!verificationStatus.canCreate}
+                />
+                <span>Включить лобби матча для выбора карт</span>
+              </label>
               <small className="form-hint">
-                {formData.seeding_type === 'random' && '🎲 Участники будут распределены случайным образом'}
-                {formData.seeding_type === 'ranking' && '🏆 Участники будут распределены по рейтингу (FACEIT ELO / CS2 Premier)'}
-                {formData.seeding_type === 'balanced' && '⚖️ Участники будут распределены для максимального баланса матчей'}
-                {formData.seeding_type === 'manual' && '✏️ Администратор сможет настроить распределение вручную при генерации сетки'}
+                Участники смогут выбирать и банить карты перед началом матча
               </small>
             </div>
-            
-            {/* Дополнительные настройки для распределения по рейтингу */}
-            {formData.seeding_type === 'ranking' && (
-              <div className="form-group">
-                <label>Тип рейтинга</label>
-                <select
-                  value={formData.seeding_config.ratingType || 'faceit_elo'}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    seeding_config: {
-                      ...prev.seeding_config,
-                      ratingType: e.target.value
-                    }
-                  }))}
-                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
-                >
-                  <option value="faceit_elo">FACEIT ELO</option>
-                  <option value="cs2_premier_rank">CS2 Premier Rank</option>
-                </select>
-              </div>
-            )}
-            
-            {formData.seeding_type === 'ranking' && (
-              <div className="form-group">
-                <label>Направление сортировки</label>
-                <select
-                  value={formData.seeding_config.direction || 'desc'}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    seeding_config: {
-                      ...prev.seeding_config,
-                      direction: e.target.value
-                    }
-                  }))}
-                  disabled={!verificationStatus.canCreate} // 🆕 Отключаем для неверифицированных
-                >
-                  <option value="desc">От высшего к низшему</option>
-                  <option value="asc">От низшего к высшему</option>
-                </select>
-                <small className="form-hint">
-                  Определяет, как будут расставлены сильные и слабые игроки в первом раунде
-                </small>
-              </div>
-            )}
-          </div>
-          
-          <div className="seeding-info-box">
-            <h4>💡 Информация о типах распределения:</h4>
-            <ul>
-              <li><strong>Случайное:</strong> Подходит для дружеских турниров, где важна непредсказуемость</li>
-              <li><strong>По рейтингу:</strong> Классическое спортивное распределение, сильные против слабых в начале</li>
-              <li><strong>Сбалансированное:</strong> Максимально интересные матчи на всех этапах турнира</li>
-              <li><strong>Ручное:</strong> Полный контроль администратора над распределением</li>
-            </ul>
-          </div>
 
-          {/* Настройки лобби матча для CS2 */}
-          {isCS2Game(formData.game) && (
-            <div className="form-section lobby-settings">
-              <h3 className="section-title">🎮 Настройки лобби матча</h3>
-              
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="lobby_enabled"
-                    checked={formData.lobby_enabled}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      lobby_enabled: e.target.checked,
-                      selected_maps: e.target.checked ? cs2Maps.map(m => m.name) : []
+            {formData.lobby_enabled && (
+              <>
+                <div className="form-group">
+                  <label>Формат матчей по умолчанию</label>
+                  <select
+                    name="lobby_match_format"
+                    value={formData.lobby_match_format || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      lobby_match_format: e.target.value || null
                     }))}
                     disabled={!verificationStatus.canCreate}
-                  />
-                  <span>Включить лобби матча для выбора карт</span>
-                </label>
-                <small className="form-hint">
-                  Участники смогут выбирать и банить карты перед началом матча
-                </small>
-              </div>
+                  >
+                    <option value="">Выбор в лобби</option>
+                    <option value="bo1">Best of 1</option>
+                    <option value="bo3">Best of 3</option>
+                    <option value="bo5">Best of 5</option>
+                  </select>
+                  <small className="form-hint">
+                    Оставьте пустым, чтобы участники выбирали формат в лобби
+                  </small>
+                </div>
 
-              {formData.lobby_enabled && (
-                <>
-                  <div className="form-group">
-                    <label>Формат матчей по умолчанию</label>
-                    <select
-                      name="lobby_match_format"
-                      value={formData.lobby_match_format || ''}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        lobby_match_format: e.target.value || null
-                      }))}
-                      disabled={!verificationStatus.canCreate}
-                    >
-                      <option value="">Выбор в лобби</option>
-                      <option value="bo1">Best of 1</option>
-                      <option value="bo3">Best of 3</option>
-                      <option value="bo5">Best of 5</option>
-                    </select>
-                    <small className="form-hint">
-                      Оставьте пустым, чтобы участники выбирали формат в лобби
+                <div className="form-group">
+                  <label>Карты турнира (выберите 7 карт)</label>
+                  <div className="maps-selection">
+                    {cs2Maps.map(map => (
+                      <label key={map.id} className="map-checkbox">
+                        <input
+                          type="checkbox"
+                          value={map.name}
+                          checked={formData.selected_maps.includes(map.name)}
+                          onChange={(e) => {
+                            const mapName = e.target.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              selected_maps: e.target.checked
+                                ? [...prev.selected_maps, mapName]
+                                : prev.selected_maps.filter(m => m !== mapName)
+                            }));
+                          }}
+                          disabled={!verificationStatus.canCreate}
+                        />
+                        <span>{map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {formData.lobby_enabled && formData.selected_maps.length !== 7 && (
+                    <small className="form-error">
+                      Необходимо выбрать ровно 7 карт (выбрано: {formData.selected_maps.length})
                     </small>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Карты турнира (выберите 7 карт)</label>
-                    <div className="maps-selection">
-                      {cs2Maps.map(map => (
-                        <label key={map.id} className="map-checkbox">
-                          <input
-                            type="checkbox"
-                            value={map.name}
-                            checked={formData.selected_maps.includes(map.name)}
-                            onChange={(e) => {
-                              const mapName = e.target.value;
-                              setFormData(prev => ({
-                                ...prev,
-                                selected_maps: e.target.checked
-                                  ? [...prev.selected_maps, mapName]
-                                  : prev.selected_maps.filter(m => m !== mapName)
-                              }));
-                            }}
-                            disabled={!verificationStatus.canCreate}
-                          />
-                          <span>{map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {formData.lobby_enabled && formData.selected_maps.length !== 7 && (
-                      <small className="form-error">
-                        Необходимо выбрать ровно 7 карт (выбрано: {formData.selected_maps.length})
-                      </small>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="form-buttons">
           <button 
