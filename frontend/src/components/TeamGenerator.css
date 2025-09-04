@@ -481,7 +481,7 @@
   margin-bottom: 4px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 .rating-value {
   font-size: 1.5rem;
@@ -1116,7 +1116,7 @@
     font-style: Regular;
     font-size: 16px;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #ffffff;
   }
@@ -1129,7 +1129,7 @@
     font-style: Regular;
     font-size: 16px;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #ffffff;
   }
@@ -1181,7 +1181,7 @@
   font-style: Bold;
   font-size: 12px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   
 }
 .team-rating-participants2\.0 {
@@ -1189,7 +1189,7 @@
   font-style: Regular;
   font-size: 12px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   color: #949494;
 }
 .team-row-right-participants2\.0 { text-align: right; }
@@ -1199,7 +1199,7 @@
   font-style: Bold;
   font-size: 10px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #FF3838;
 }
@@ -1219,7 +1219,7 @@
 
 /* ================= Participants 2.0 (микс-турнир) ================= */
 .referral-invite-card-participants2\.0 {
-  margin-top: 16px;
+  margin-top: 24px;
   width: 100%;
   background-color: #1D1D1D;
   border: 1px solid #1D1D1D;
@@ -1247,7 +1247,7 @@
   font-style: Bold;
   font-size: 32px;
   line-height: 100%;
-  letter-spacing: 0%;
+  letter-spacing: normal;
   text-transform: uppercase;
   color: #ffffff;
   
@@ -1257,7 +1257,7 @@
   font-style: Regular;
   font-size: 16px;
   line-height: 100%;
-  letter-spacing: 2%;
+  letter-spacing: 0.02em;
   color: #ffffff;
 }
 
@@ -1294,7 +1294,7 @@ font-weight: 400;
 font-style: Regular;
 font-size: 16px;
 line-height: 100%;
-letter-spacing: 8%;
+letter-spacing: 0.08em;
 text-transform: uppercase;
 color: #ffffff;
   }
@@ -1308,7 +1308,7 @@ color: #ffffff;
   font-style: Regular;
   font-size: 16px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #ffffff;
 }
@@ -1366,7 +1366,7 @@ color: #ffffff;
    font-style: Bold;
    font-size: 12px;
    line-height: 100%;
-   letter-spacing: 8%;
+   letter-spacing: 0.08em;
    color: #ffffff;
   }
 
@@ -1376,7 +1376,7 @@ color: #ffffff;
   font-style: Regular;
   font-size: 12px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   color: #949494;
 }
 .participant-row-right-participants2\.0 { text-align: right; }
@@ -1385,7 +1385,7 @@ color: #ffffff;
   font-style: Bold;
   font-size: 10px;
   line-height: 100%;
-  letter-spacing: 8%;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #757575;  
 }

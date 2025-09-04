@@ -296,11 +296,12 @@ class TournamentRepository {
         try {
             // 🆕 СНАЧАЛА ПОЛУЧАЕМ ИНФОРМАЦИЮ О ТУРНИРЕ для определения типа рейтинга
             const tournamentResult = await pool.query(
-                'SELECT mix_rating_type FROM tournaments WHERE id = $1',
+                'SELECT mix_rating_type, status FROM tournaments WHERE id = $1',
                 [tournamentId]
             );
             
             const ratingType = tournamentResult.rows[0]?.mix_rating_type || 'faceit';
+            const tournamentStatus = (tournamentResult.rows[0]?.status || '').toString().trim().toLowerCase();
             console.log(`📊 [getTeamsWithMembers] Турнир ${tournamentId}: тип рейтинга = ${ratingType}`);
 
             // Получаем все команды турнира
@@ -426,6 +427,69 @@ class TournamentRepository {
                 const captain = members.find(m => m.is_captain) || members[0];
                 const captainAvatar = captain?.avatar_url || null;
 
+                // 🆕 ОПРЕДЕЛЕНИЕ СТАТУСА КОМАНДЫ (winner | eliminated | active)
+                let isWinner = false;
+                let isEliminated = false;
+                let teamStatus = 'active';
+
+                try {
+                    // Есть ли незавершенные матчи для команды (значит ещё участвует)
+                    const pendingRes = await pool.query(
+                        `SELECT COUNT(*) AS cnt
+                         FROM matches
+                         WHERE tournament_id = $1
+                           AND (team1_id = $2 OR team2_id = $2)
+                           AND winner_team_id IS NULL`,
+                        [tournamentId, team.id]
+                    );
+                    const pendingCnt = parseInt(pendingRes.rows[0]?.cnt || '0', 10);
+
+                    // Последний завершённый матч с участием команды
+                    const lastCompletedRes = await pool.query(
+                        `SELECT winner_team_id
+                         FROM matches
+                         WHERE tournament_id = $1
+                           AND (team1_id = $2 OR team2_id = $2)
+                           AND winner_team_id IS NOT NULL
+                         ORDER BY id DESC
+                         LIMIT 1`,
+                        [tournamentId, team.id]
+                    );
+                    const lastWinnerId = lastCompletedRes.rows[0]?.winner_team_id || null;
+
+                    if (tournamentStatus === 'completed') {
+                        // В завершённых турнирах все, кроме последнего победителя, считаем выбывшими,
+                        // если нет незавершённых матчей (их и не должно быть)
+                        if (pendingCnt === 0 && lastWinnerId === team.id) {
+                            isWinner = true;
+                            teamStatus = 'winner';
+                        } else {
+                            isEliminated = true;
+                            teamStatus = 'eliminated';
+                        }
+                    } else {
+                        // Во время турнира: если есть незавершённые матчи — команда ещё участвует
+                        if (pendingCnt > 0) {
+                            isEliminated = false;
+                            isWinner = false;
+                            teamStatus = 'active';
+                        } else if (lastWinnerId != null) {
+                            // Нет будущих матчей: если последний матч не выигран — команда выбыла
+                            if (lastWinnerId !== team.id) {
+                                isEliminated = true;
+                                teamStatus = 'eliminated';
+                            } else {
+                                // Последний матч выигран и при этом нет будущих матчей — временно активна/ожидает,
+                                // но если это был финал, статус станет winner при завершении турнира
+                                isWinner = false;
+                                teamStatus = 'active';
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`⚠️ [getTeamsWithMembers] Не удалось определить статус команды ${team.id}:`, e.message);
+                }
+
                 return {
                     ...team,
                     members: members,
@@ -434,7 +498,11 @@ class TournamentRepository {
                     averageRating: averageRating,
                     ratingType: ratingType,
                     avatar_url: captainAvatar,
-                    logo_url: team.logo_url || captainAvatar
+                    logo_url: team.logo_url || captainAvatar,
+                    // 🆕 Возвращаем вычисленные статусы
+                    is_winner: isWinner,
+                    is_eliminated: isEliminated,
+                    status: teamStatus
                 };
             }));
 
