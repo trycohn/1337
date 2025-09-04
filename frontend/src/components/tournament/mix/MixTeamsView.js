@@ -16,9 +16,6 @@ function MixTeamsView({ teams = [], isLoading = false }) {
 
     return (
         <div className="teams-display">
-            <div className="teams-header">
-                <h4>🏆 Сформированные команды ({teams.length})</h4>
-            </div>
             <div className="mixed-teams-grid">
                 {teams.map((team, idx) => (
                     <MixTeamCard key={team.id || idx} team={team} />

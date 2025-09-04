@@ -1780,6 +1780,7 @@ div.score-container input {
 
 .rules-section-block .rules-block {
     text-align: start;
+    padding: 0;
 }
 
 /* =========================
