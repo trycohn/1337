@@ -6,6 +6,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './Home.css';
 import TournamentFilterModal from './TournamentFilterModal'; // 🆕 Импорт нового фильтра
+import { GameIcon } from '../utils/game-icons';
 
 function TournamentsList() {
     const [tournaments, setTournaments] = useState([]);
@@ -671,7 +672,9 @@ function TournamentsList() {
                 <tbody>
                     {filteredAndSortedTournaments.map((tournament) => (
                         <tr key={tournament.id}>
-                            <td data-label="Игра" title={tournament.game}>{tournament.game}</td>
+                            <td data-label="Игра" title={tournament.game}>
+                                <GameIcon game={tournament.game} size={24} className="tournament-game-icon" />
+                            </td>
                             <td data-label="Название" title={tournament.name}>
                                 <Link to={`/tournaments/${tournament.id}`}>{tournament.name}</Link>
                             </td>
@@ -717,7 +720,9 @@ function TournamentsList() {
                     <div className="tournament-details">
                         <div className="tournament-info">
                             <span className="tournament-label">Игра:</span>
-                            <span className="tournament-value">{tournament.game}</span>
+                            <span className="tournament-value" title={tournament.game}>
+                                <GameIcon game={tournament.game} size={20} className="tournament-game-icon" />
+                            </span>
                         </div>
                         <div className="tournament-info">
                             <span className="tournament-label">Участники:</span>

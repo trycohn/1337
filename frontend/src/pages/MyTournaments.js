@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GameIcon } from '../utils/game-icons';
 import api from '../axios';
 
 function MyTournaments() {
@@ -53,7 +54,9 @@ function MyTournaments() {
                     <tbody>
                         {items.map((t) => (
                             <tr key={t.id}>
-                                <td data-label="Игра" title={t.game}>{t.game}</td>
+                                <td data-label="Игра" title={t.game}>
+                                    <GameIcon game={t.game} size={24} className="tournament-game-icon" />
+                                </td>
                                 <td data-label="Название" title={t.name}>
                                     <Link to={`/tournaments/${t.id}`}>{t.name}</Link>
                                 </td>

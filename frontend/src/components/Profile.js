@@ -190,16 +190,22 @@ function Profile() {
     }
 
     function renderGameIcon(game) {
-        const key = getGameKey(game);
-        const title = game || '';
-        const initialsMap = {
-            dota2: 'D2', valorant: 'V', quake: 'Q', lol: 'LoL', wot: 'WoT', hearthstone: 'Hs', cs16: 'CS',
-            eafc25: 'EA', cs2: 'CS2', apex: 'A', fortnite: 'F', pubg: 'P', rocketleague: 'RL', overwatch2: 'OW', r6s: 'R6', game: 'G'
-        };
-        const text = initialsMap[key] || 'G';
-        return (
-            <span className={`game-icon-badge game-${key}`} title={title} aria-label={title}>{text}</span>
-        );
+        // Переход на использование общих иконок из public/images/games_icons
+        try {
+            const { GameIcon } = require('../utils/game-icons');
+            return <GameIcon game={game} size={20} className="tournament-game-icon" />;
+        } catch (e) {
+            const key = getGameKey(game);
+            const title = game || '';
+            const initialsMap = {
+                dota2: 'D2', valorant: 'V', quake: 'Q', lol: 'LoL', wot: 'WoT', hearthstone: 'Hs', cs16: 'CS',
+                eafc25: 'EA', cs2: 'CS2', apex: 'A', fortnite: 'F', pubg: 'P', rocketleague: 'RL', overwatch2: 'OW', r6s: 'R6', game: 'G'
+            };
+            const text = initialsMap[key] || 'G';
+            return (
+                <span className={`game-icon-badge game-${key}`} title={title} aria-label={title}>{text}</span>
+            );
+        }
     }
 
     // Поиск пользователей для добавления
@@ -3677,7 +3683,7 @@ function Profile() {
                                                 <tbody>
                                                     {filteredAndSortedUserTournaments.map((tournament) => (
                                                         <tr key={tournament.id}>
-                                                            <td data-label="Игра" title={tournament.game}>{tournament.game}</td>
+                                                            <td data-label="Игра" title={tournament.game}>{renderGameIcon(tournament.game)}</td>
                                                             <td data-label="Название" title={tournament.name}>
                                                                 <a href={`/tournaments/${tournament.id}`}>{tournament.name}</a>
                                                             </td>
@@ -3735,7 +3741,7 @@ function Profile() {
                                                         <div className="tournament-details">
                                                             <div className="tournament-info">
                                                                 <span className="tournament-label">Игра:</span>
-                                                                <span className="tournament-value">{tournament.game}</span>
+                                                                <span className="tournament-value" title={tournament.game}>{renderGameIcon(tournament.game)}</span>
                                                             </div>
                                                             <div className="tournament-info">
                                                                 <span className="tournament-label">Участники:</span>
