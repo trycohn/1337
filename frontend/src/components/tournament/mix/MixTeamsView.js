@@ -7,7 +7,6 @@ function MixTeamsView({ teams = [], isLoading = false }) {
     if (!Array.isArray(teams) || teams.length === 0) {
         return (
             <div className="no-teams-message">
-                <div className="no-teams-icon">⚽</div>
                 <h4>Команды еще не сформированы</h4>
                 <p>Как только организатор сформирует команды, они появятся здесь.</p>
             </div>

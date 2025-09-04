@@ -391,12 +391,12 @@ const TeamGenerator = ({
         }
     }, [tournament?.id, shouldMakeRequest]);
 
-    // 🔧 ОТДЕЛЬНЫЙ ЭФФЕКТ ДЛЯ ЗАГРУЗКИ КОМАНД
+    // 🔧 ВСЕГДА ПОЛУЧАЕМ АКТУАЛЬНЫЕ КОМАНДЫ (микс-турниры требуют live‑статусы)
     useEffect(() => {
-        if (tournament?.id && (!tournament?.teams || tournament.teams.length === 0)) {
+        if (tournament?.id) {
             fetchTeams();
         }
-    }, [fetchTeams, tournament?.id, tournament?.teams]); // 🔧 УПРОЩАЕМ ЗАВИСИМОСТИ
+    }, [fetchTeams, tournament?.id]);
 
     // 🧩 РЕАЛТАЙМ-ОБНОВЛЕНИЕ СТАТУСОВ КОМАНД ПО СОБЫТИЯМ SOCKET.IO
     useEffect(() => {
@@ -562,9 +562,11 @@ const TeamGenerator = ({
         }
     };
 
-    // Команды из турнира или из локального состояния
+    // Команды: предпочитаем локально загруженные (актуальные), иначе берем из tournament
     const teamsExist = tournament?.teams && tournament.teams.length > 0;
-    const teamsList = teamsExist ? tournament.teams : mixedTeams;
+    const teamsList = (mixedTeams && mixedTeams.length > 0)
+        ? mixedTeams
+        : (teamsExist ? tournament.teams : []);
     
     // 🔧 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Мемоизируем обогащенные команды для предотвращения бесконечного рендера
     const teamsToShow = useMemo(() => {
