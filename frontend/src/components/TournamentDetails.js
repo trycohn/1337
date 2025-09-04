@@ -45,7 +45,6 @@ import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
-import './TeamGenerator.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
