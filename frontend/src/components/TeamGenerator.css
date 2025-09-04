@@ -1188,3 +1188,93 @@
   .team-row { padding: 8px 10px; }
   .team-avatar { width: 36px; height: 36px; }
 }
+
+/* ================= Participants 2.0 (микс-турнир) ================= */
+.original-participants-section-participants2\.0 h3 {
+  color: #ffffff;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+}
+.original-participants-section-header-participants2\.0 {
+  margin-bottom: 10px;
+  display: flex;
+  height: 67px;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #1D1D1D;
+  width: 100%;
+}
+.participants-header-row-participants2\.0 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.participants-header-col-participants2\.0 { color: #ffffff; font-size: 0.95rem; }
+.participants-header-col--left-participants2\.0 { text-align: left; }
+.participants-header-col--right-participants2\.0 { text-align: right; }
+.loading-participants-participants2\.0 { color: #9ca3af; text-align: center; padding: 15px; }
+.no-participants-participants2\.0 { color: #9ca3af; text-align: center; padding: 20px; }
+
+.participants-list-participants2\.0 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.participant-row-participants2\.0 {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  background-color: #000000;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.participant-row-left-participants2\.0 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.participant-avatar-participants2\.0 {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #374151;
+}
+.participant-avatar-participants2\.0 img { width: 100% !important; height: 100% !important; object-fit: cover; }
+.participant-main-participants2\.0 { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.participant-name-participants2\.0 { color: #ffffff; font-weight: 500; display: block; margin-bottom: 4px; }
+.participant-main-participants2\.0 .participant-name-participants2\.0 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.participant-rating-participants2\.0 { font-size: 0.8rem; color: #9ca3af; }
+.participant-row-right-participants2\.0 { text-align: right; }
+.participant-status-participants2\.0 { font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+.participant-row-participants2\.0.not-in-team .participant-status-participants2\.0 { background-color: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.participant-row-participants2\.0.in-team .participant-status-participants2\.0 { background-color: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.remove-participant-participants2\.0 {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.remove-participant-participants2\.0:hover { background-color: #7d7d7d; }
+
+@media (max-width: 640px) {
+  .participants-header-row-participants2\.0 { grid-template-columns: 1fr auto; gap: 8px; padding: 6px 8px; }
+  .participant-row-participants2\.0 { grid-template-columns: 1fr auto; padding: 8px 10px; }
+  .participant-avatar-participants2\.0 { width: 36px; height: 36px; }
+}

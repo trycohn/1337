@@ -700,31 +700,31 @@ const TeamGenerator = ({
         });
 
         return (
-            <div className="original-participants-section">
-                <div className="original-participants-section-header">
-                    <div className="participants-header-row">
-                        <div className="participants-header-col participants-header-col--left">
+            <div className="original-participants-section-participants2.0">
+                <div className="original-participants-section-header-participants2.0">
+                    <div className="participants-header-row-participants2.0">
+                        <div className="participants-header-col-participants2.0 participants-header-col--left-participants2.0">
                             <strong>Участники: {participants.length}</strong>
                         </div>
-                        <div className="participants-header-col participants-header-col--right">
+                        <div className="participants-header-col-participants2.0 participants-header-col--right-participants2.0">
                             <strong>Статус</strong>
                         </div>
                     </div>
                 </div>
 
                 {loadingParticipants ? (
-                    <p className="loading-participants">Загрузка участников...</p>
+                    <p className="loading-participants-participants2.0">Загрузка участников...</p>
                 ) : participants.length === 0 ? (
-                    <p className="no-participants">Нет зарегистрированных игроков</p>
+                    <p className="no-participants-participants2.0">Нет зарегистрированных игроков</p>
                 ) : (
-                    <div className="participants-list">
+                    <div className="participants-list-participants2.0">
                         {sortedParticipants.map((participant) => {
                             const ratingInfo = getParticipantRatingInfo(participant);
                             const hasRating = ratingInfo && ratingInfo.rating !== undefined && ratingInfo.rating !== null && `${ratingInfo.rating}` !== '';
                             return (
-                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row${participant.in_team ? ' in-team' : ' not-in-team'}`}>
-                                    <div className="participant-row-left">
-                                        <div className="participant-avatar">
+                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row-participants2.0${participant.in_team ? ' in-team' : ' not-in-team'}`}>
+                                    <div className="participant-row-left-participants2.0">
+                                        <div className="participant-avatar-participants2.0">
                                             <img
                                                 src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
                                                 alt={`${participant.name} avatar`}
@@ -734,10 +734,10 @@ const TeamGenerator = ({
                                                 }}
                                             />
                                         </div>
-                                        <div className="participant-main">
-                                            <span className="participant-name">{participant.name}</span>
+                                        <div className="participant-main-participants2.0">
+                                            <span className="participant-name-participants2.0">{participant.name}</span>
                                             {hasRating && (
-                                                <span className="participant-rating" title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                <span className="participant-rating-participants2.0" title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
                                                     {ratingType === 'faceit' ? `FACEIT: ${ratingInfo.rating}` : `Premier: ${ratingInfo.rating}`}
                                                     {ratingInfo.isManualRating && (
                                                         <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
@@ -746,11 +746,11 @@ const TeamGenerator = ({
                                             )}
                                         </div>
                                     </div>
-                                    <div className="participant-row-right">
-                                        <span className="participant-status">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
+                                    <div className="participant-row-right-participants2.0">
+                                        <span className="participant-status-participants2.0">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
                                     </div>
                                     {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                        <button className="remove-participant" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
+                                        <button className="remove-participant-participants2.0" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
                                     )}
                                 </div>
                             );
