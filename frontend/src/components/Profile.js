@@ -3165,6 +3165,7 @@ function Profile() {
                         {activeTab === 'teams' && (
                             <>
                                 <MyTeams user={user} />
+                                {(!userOrganizations || userOrganizations.length === 0) && (
                                 <div style={{ marginTop: 12, fontSize: '12px', color: 'var(--text-muted)' }}>
                                     Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.
                                     <div style={{ marginTop: 8 }}>
@@ -3181,6 +3182,7 @@ function Profile() {
                                         </button>
                                     </div>
                                 </div>
+                                )}
                             </>
                         )}
                         
