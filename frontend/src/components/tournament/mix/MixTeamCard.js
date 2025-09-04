@@ -16,54 +16,54 @@ export function MixTeamCard({ team }) {
     }, [team?.averageRating, team?.averageRatingFaceit, team?.averageRatingPremier, team?.ratingType]);
 
     return (
-        <div className="enhanced-team-card">
-            <div className="team-card-header">
-                <div className="team-header-left">
-                    <div className="team-avatar-lg">
+        <div className="enhanced-team-card-mixteams">
+            <div className="team-card-header-mixteams">
+                <div className="team-header-left-mixteams">
+                    <div className="team-avatar-lg-mixteams">
                         <img src={teamAvatar} alt={team?.name || 'Команда'} onError={(e)=>{ e.currentTarget.src='/default-avatar.png'; }} />
                     </div>
-                    <div className="team-title">
+                    <div className="team-title-mixteams">
                         <h4>{team?.name || 'Команда'}</h4>
                     </div>
                 </div>
-                <div className="team-header-center">
-                    <div className="member-avatars-stack">
+                <div className="team-header-center-mixteams">
+                    <div className="member-avatars-stack-mixteams">
                         {members.slice(0, 8).map((m, i) => (
-                            <div key={m.user_id || m.participant_id || i} className="stack-avatar" style={{ left: `${i * 20}%` }}>
+                            <div key={m.user_id || m.participant_id || i} className="stack-avatar-mixteams" style={{ left: `${i * 20}%` }}>
                                 <img src={m.avatar_url || '/default-avatar.png'} alt={m.name || m.username || 'Игрок'} onError={(e)=>{ e.currentTarget.src='/default-avatar.png'; }} />
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="team-header-right">
-                    <div className="team-rating-badge">{ratingLabel}</div>
+                <div className="team-header-right-mixteams">
+                    <div className="team-rating-badge-mixteams">{ratingLabel}</div>
                 </div>
             </div>
 
-            <div className="team-composition">
+            <div className="team-composition-mixteams">
                 
                 {members.length > 0 ? (
-                    <div className="team-members-list">
+                    <div className="team-members-list-mixteams">
                         {members.map((member, idx) => (
-                            <div key={idx} className="team-member-row">
-                                <div className="member-avatar">
+                            <div key={idx} className="team-member-row-mixteams">
+                                <div className="member-avatar-mixteams">
                                     <img 
                                         src={member.avatar_url || '/default-avatar.png'} 
                                         alt={member.name || member.username || 'Игрок'}
                                         onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                                     />
                                 </div>
-                                <div className="member-info">
-                                    <div className={`member-name ${member.is_captain ? 'captain-name' : ''}`}>
+                                <div className="member-info-mixteams">
+                                    <div className={`member-name-mixteams ${member.is_captain ? 'captain-name' : ''}`}>
                                         {member.is_captain && <span className="captain-crown">👑 </span>}
                                         {member.user_id ? (
-                                            <a href={`/user/${member.user_id}`} className="member-profile-link">{member.name || member.username}</a>
+                                            <a href={`/user/${member.user_id}`} className="member-profile-link-mixteams">{member.name || member.username}</a>
                                         ) : (
                                             member.name || member.username || 'Игрок'
                                         )}
                                     </div>
                                 </div>
-                                <div className="member-rating-badge">
+                                <div className="member-rating-badge-mixteams">
                                     {(() => {
                                         const t = (team?.ratingType || '').toString().toLowerCase();
                                         const elo = member.faceit_elo || member.user_faceit_elo || member.faceit_rating || member.user_faceit_rating;
@@ -76,7 +76,7 @@ export function MixTeamCard({ team }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="no-members">Состав команды не определен</div>
+                    <div className="no-members-mixteams">Состав команды не определен</div>
                 )}
             </div>
         </div>
