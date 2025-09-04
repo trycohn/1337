@@ -538,3 +538,88 @@
 }
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
  
+/* ===== Новые стили под макет Организации ===== */
+.organizer-profile {
+    --bg: #0B0B0C;
+    --panel: #141415;
+    --panel-2: #101012;
+    --line: #232329;
+    --line-2: #1E1E24;
+    --text: #ECECEF;
+    --muted: #A9A9B0;
+    --red: #FF3A3A;
+    --red2: #E52A2A;
+    --focus: #F2B733;
+    --green: #37D67A;
+    --radius-xl: 16px;
+    --radius: 12px;
+    --radius-sm: 10px;
+    background: linear-gradient(180deg,#0A0A0B 0%, #0E0E10 60%, #0A0A0B 100%);
+    color: var(--text);
+}
+
+.organizer-profile .wrap { max-width:1200px; margin:0 auto; display:grid; gap:20px; padding:40px 20px 72px }
+
+.organizer-profile .header{ display:grid; grid-template-columns:auto 1fr auto; gap:22px; align-items:center; background:var(--panel); border:1px solid var(--line-2); border-radius:var(--radius-xl); padding:20px 22px; box-shadow:0 12px 30px rgba(0,0,0,.45) }
+.organizer-profile .logo{ position:relative; width:96px; height:96px; border-radius:50%; display:grid; place-items:center; background:#121214 }
+.organizer-profile .logo::before{ content:""; position:absolute; inset:-5px; border-radius:50%; background:conic-gradient(from 0deg,var(--red2),var(--red),var(--red2)); filter:blur(6px); opacity:.45 }
+.organizer-profile .logo img{ width:86px; height:86px; border-radius:50%; object-fit:cover; position:relative; z-index:1; box-shadow:inset 0 0 0 2px #1A1A1F }
+.organizer-profile .head-main{ display:grid; gap:8px }
+.organizer-profile .org-name{ margin:0; font-size:40px; line-height:1.05; font-weight:800; letter-spacing:.01em }
+.organizer-profile .meta{ display:flex; gap:16px; flex-wrap:wrap; color:var(--muted) }
+.organizer-profile .manager{ display:flex; align-items:center; gap:10px }
+.organizer-profile .manager .mini{ width:20px; height:20px; border-radius:50%; object-fit:cover; border:1px solid #2A2A30 }
+.organizer-profile .manager-strong{ color:#fff; font-weight:800; text-decoration:none }
+.organizer-profile .kpis{ display:flex; gap:10px }
+.organizer-profile .kpi{ min-width:180px; height:88px; display:grid; gap:8px; align-content:center; justify-items:center; background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius) }
+.organizer-profile .kpi .val{ font-size:28px; font-weight:800 }
+.organizer-profile .kpi .label{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#CFCFD6 }
+.organizer-profile .actions{ display:flex; gap:10px }
+.organizer-profile .btn{ height:42px; padding:0 16px; border-radius:12px; border:1px solid #2A2A30; background:#161618; color:#F5F5F7; font-weight:800; letter-spacing:.06em; text-transform:uppercase; cursor:pointer }
+.organizer-profile .btn.primary{ background:linear-gradient(180deg,var(--red),var(--red2)); border-color:transparent }
+.organizer-profile .btn:focus{ outline:2px solid var(--focus); outline-offset:2px }
+
+.organizer-profile .tabs{ display:flex; gap:2px; background:#111114; border:1px solid var(--line-2); border-radius:12px; padding:6px; position:sticky; top:0; z-index:10 }
+.organizer-profile .tabs .tab{ flex:1; display:block; text-align:center; padding:12px 8px; border-radius:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#D9D9DE; cursor:pointer; background:transparent; border:none }
+.organizer-profile .tabs .tab.active{ background:#1A1A1E; color:#fff; box-shadow:inset 0 -3px 0 var(--red2) }
+
+.organizer-profile .sections{ display:grid; gap:16px }
+.organizer-profile .section{ display:none }
+.organizer-profile .section.show{ display:grid }
+
+.organizer-profile .card{ background:var(--panel); border:1px solid var(--line-2); border-radius:12px; padding:18px; display:grid; gap:14px }
+.organizer-profile .card-title{ margin:0; font-size:18px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#EDEDEF }
+.organizer-profile .text{ font-size:15px; color:#DCDCE1; line-height:1.6 }
+.organizer-profile .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px }
+.organizer-profile .stat{ background:#101012; border:1px solid var(--line); border-radius:12px; padding:16px; display:grid; gap:6px; align-content:center }
+.organizer-profile .stat .n{ font-size:26px; font-weight:800 }
+.organizer-profile .stat .t{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#CFCFD6 }
+
+.organizer-profile .table-wrap{ overflow:auto; border-radius:10px }
+.organizer-profile table{ border-collapse:separate; border-spacing:0; width:100%; min-width:900px; background:#101012; border:1px solid var(--line); border-radius:10px }
+.organizer-profile thead th{ position:sticky; top:0; background:#1A1A1D; color:#D9D9DF; text-align:left; padding:14px 16px; font-size:13px; letter-spacing:.04em; border-bottom:1px solid var(--line) }
+.organizer-profile tbody td{ padding:16px; border-bottom:1px solid #1F1F24 }
+.organizer-profile tbody tr:hover{ background:#151518 }
+.organizer-profile .badge{ display:inline-grid; place-items:center; height:28px; padding:0 10px; border-radius:8px; border:1px solid #2A2A30; background:#161618; color:#CFCFD6; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase }
+.organizer-profile .badge.live{ border-color:#6A5320; background:#1A150A; color:#F6D27A }
+.organizer-profile .member{ display:flex; align-items:center; gap:12px }
+.organizer-profile .member .ph{ width:28px; height:28px; border-radius:50%; background:#222226; border:1px solid #2A2A30; object-fit:cover }
+.organizer-profile .kontakt{ display:grid; gap:10px }
+.organizer-profile .link{ color:#FF8F8F; text-decoration:none; font-weight:600 }
+.organizer-profile .muted{ color:var(--muted) }
+.organizer-profile .table-link{ color:#fff; text-decoration:none }
+.organizer-profile .table-link:hover{ text-decoration:underline }
+
+.organizer-loading, .organizer-error { text-align:center; padding:24px; font-size:14px; color:var(--muted) }
+.organizer-error { color: var(--red) }
+
+@media (max-width:1024px){
+  .organizer-profile .header{ grid-template-columns:1fr; justify-items:start; gap:14px }
+  .organizer-profile .org-name{ font-size:34px }
+  .organizer-profile .kpis{ flex-wrap:wrap }
+  .organizer-profile .kpi{ min-width:160px }
+}
+@media (max-width:720px){
+  .organizer-profile .grid-4{ grid-template-columns:1fr 1fr }
+  .organizer-profile .org-name{ font-size:28px }
+}

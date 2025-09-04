@@ -55,7 +55,9 @@ function OrganizerProfile() {
     };
 
     const getTournamentStatusClass = (status) => {
-        return `tournament-status tournament-status-${status}`;
+        if (!status) return 'badge';
+        const normalized = String(status).toLowerCase();
+        return normalized === 'active' || normalized === 'registration' ? 'badge live' : 'badge';
     };
 
     const renderWinner = (winner) => {
@@ -122,263 +124,164 @@ function OrganizerProfile() {
 
     return (
         <div className="organizer-profile">
-            {/* Заголовок профиля */}
-            <div className="organizer-header">
-                <div className="organizer-logo">
-                    <img 
-                        src={ensureHttps(organizer.logo_url) || '/default-org-logo.png'}
-                        alt={organizer.name}
-                        className="org-logo"
-                    />
-                </div>
-                <div className="organizer-info">
-                    <h1 className="organizer-name">{organizer.name}</h1>
-                    <div className="organizer-manager">
-                        <span>Менеджер: </span>
-                        <Link to={`/user/${organizer.manager_id}`} className="manager-link">
-                            <img 
-                                src={ensureHttps(organizer.manager_avatar) || '/default-avatar.png'}
-                                alt={organizer.manager_username}
-                                className="manager-avatar"
-                            />
-                            {organizer.manager_username}
-                        </Link>
+            <div className="wrap">
+                <section className="header">
+                    <div className="logo">
+                        <img src={ensureHttps(organizer.logo_url) || '/default-org-logo.png'} alt={organizer.name} />
                     </div>
-                    <div className="organizer-stats-summary">
-                        <div className="stat-item">
-                            <span className="stat-value">{stats.total_tournaments}</span>
-                            <span className="stat-label">Турниров</span>
+                    <div className="head-main">
+                        <h1 className="org-name">{organizer.name}</h1>
+                        <div className="meta">
+                            <div className="manager">
+                                <img className="mini" src={ensureHttps(organizer.manager_avatar) || '/default-avatar.png'} alt={organizer.manager_username} />
+                                <span>Менеджер: <Link to={`/user/${organizer.manager_id}`} className="manager-strong">{organizer.manager_username}</Link></span>
+                            </div>
                         </div>
-                        <div className="stat-item">
-                            <span className="stat-value">{stats.total_members}</span>
-                            <span className="stat-label">Участников</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-value">{formatPrizePool(stats.total_prize_pool)}</span>
-                            <span className="stat-label">Призовой фонд</span>
+                        <div className="kpis">
+                            <div className="kpi"><div className="val">{stats.total_tournaments || 0}</div><div className="label">Турниров</div></div>
+                            <div className="kpi"><div className="val">{stats.total_members || 0}</div><div className="label">Участников</div></div>
+                            <div className="kpi"><div className="val">{formatPrizePool(stats.total_prize_pool)}</div><div className="label">Призовой фонд</div></div>
                         </div>
                     </div>
-                </div>
-            </div>
+                    <div className="actions">
+                        <button type="button" className="btn primary">Пригласить</button>
+                        <button type="button" className="btn">Редактировать</button>
+                    </div>
+                </section>
 
-            {/* Навигация по вкладкам */}
-            <div className="organizer-navigation">
-                <button 
-                    className={`nav-tab ${activeTab === 'about' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('about')}
-                >
-                    О нас
-                </button>
-                <button 
-                    className={`nav-tab ${activeTab === 'tournaments' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('tournaments')}
-                >
-                    Турниры ({tournaments.length})
-                </button>
-                <button 
-                    className={`nav-tab ${activeTab === 'members' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('members')}
-                >
-                    Команда ({members.length})
-                </button>
-                <button 
-                    className={`nav-tab ${activeTab === 'contacts' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('contacts')}
-                >
-                    Контакты
-                </button>
-            </div>
+                <section className="tabs">
+                    <button className={activeTab === 'about' ? 'tab active' : 'tab'} onClick={() => setActiveTab('about')}>О нас</button>
+                    <button className={activeTab === 'tournaments' ? 'tab active' : 'tab'} onClick={() => setActiveTab('tournaments')}>Турниры</button>
+                    <button className={activeTab === 'members' ? 'tab active' : 'tab'} onClick={() => setActiveTab('members')}>Команда</button>
+                    <button className={activeTab === 'contacts' ? 'tab active' : 'tab'} onClick={() => setActiveTab('contacts')}>Контакты</button>
+                </section>
 
-            {/* Содержимое вкладок */}
-            <div className="organizer-content">
-                {/* Вкладка "О нас" */}
-                {activeTab === 'about' && (
-                    <div className="about-tab">
-                        <div className="organizer-description">
-                            <h3>Описание</h3>
-                            <p>{organizer.description || 'Описание не указано'}</p>
-                        </div>
-
-                        <div className="organizer-detailed-stats">
-                            <h3>Статистика</h3>
-                            <div className="stats-grid">
-                                <div className="stat-card">
-                                    <div className="stat-value">{stats.total_tournaments}</div>
-                                    <div className="stat-label">Всего турниров</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-value">{stats.completed_tournaments}</div>
-                                    <div className="stat-label">Завершено</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-value">{stats.active_tournaments}</div>
-                                    <div className="stat-label">Активных</div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-value">{stats.total_members}</div>
-                                    <div className="stat-label">Участников</div>
+                <section className="sections">
+                    {activeTab === 'about' && (
+                        <div id="s1" className="section show">
+                            <div className="card">
+                                <h3 className="card-title">Описание</h3>
+                                <div className="text">{organizer.description || 'Описание не указано'}</div>
+                            </div>
+                            <div className="card">
+                                <h3 className="card-title">Статистика</h3>
+                                <div className="grid-4">
+                                    <div className="stat"><div className="n">{stats.total_tournaments || 0}</div><div className="t">Всего турниров</div></div>
+                                    <div className="stat"><div className="n">{stats.completed_tournaments || 0}</div><div className="t">Завершено</div></div>
+                                    <div className="stat"><div className="n">{stats.active_tournaments || 0}</div><div className="t">Активных</div></div>
+                                    <div className="stat"><div className="n">{stats.total_members || 0}</div><div className="t">Участников</div></div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Вкладка "Турниры" */}
-                {activeTab === 'tournaments' && (
-                    <div className="tournaments-tab">
-                        <h3>Проведенные турниры</h3>
-                        {tournaments.length > 0 ? (
-                            <div className="tournaments-list">
-                                {tournaments.map(tournament => (
-                                    <div key={tournament.id} className="tournament-card">
-                                        <div className="tournament-header">
-                                            <div className="tournament-info">
-                                                <h4>
-                                                    <Link to={`/tournament/${tournament.id}`} className="tournament-link">
-                                                        {tournament.name}
-                                                    </Link>
-                                                </h4>
-                                                <div className="tournament-meta">
-                                                    <span className={getTournamentStatusClass(tournament.status)}>
-                                                        {getTournamentStatusText(tournament.status)}
-                                                    </span>
-                                                    <span className="tournament-discipline">{tournament.discipline}</span>
-                                                    <span className="tournament-date">
-                                                        {formatDate(tournament.start_date)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="tournament-details">
-                                                <div className="detail-item">
-                                                    <span className="detail-label">Участники:</span>
-                                                    <span className="detail-value">
-                                                        {tournament.current_teams}/{tournament.max_teams}
-                                                    </span>
-                                                </div>
-                                                <div className="detail-item">
-                                                    <span className="detail-label">Призовой фонд:</span>
-                                                    <span className="detail-value">
-                                                        {formatPrizePool(tournament.prize_pool)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {tournament.status === 'completed' && tournament.winner && (
-                                            <div className="tournament-winner">
-                                                <h5>🏆 Победитель:</h5>
-                                                {renderWinner(tournament.winner)}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                    {activeTab === 'tournaments' && (
+                        <div id="s2" className="section show">
+                            <div className="card">
+                                <h3 className="card-title">Турниры организации</h3>
+                                <div className="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Название</th>
+                                                <th>Дисциплина</th>
+                                                <th>Участники</th>
+                                                <th>Формат</th>
+                                                <th>Дата</th>
+                                                <th>Статус</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {tournaments && tournaments.length > 0 ? (
+                                                tournaments.map((t) => (
+                                                    <tr key={t.id}>
+                                                        <td>
+                                                            <Link to={`/tournaments/${t.id}`} className="table-link">{t.name}</Link>
+                                                        </td>
+                                                        <td>{t.discipline || '—'}</td>
+                                                        <td>{(t.current_teams ?? t.current_participants ?? 0)}{t.max_teams || t.max_participants ? `/${t.max_teams || t.max_participants}` : ''}</td>
+                                                        <td>{t.format || t.type || '—'}</td>
+                                                        <td>{t.start_date ? formatDate(t.start_date) : '—'}</td>
+                                                        <td>
+                                                            <span className={getTournamentStatusClass(t.status)}>
+                                                                {getTournamentStatusText(t.status)}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={6} className="muted">Турниры не найдены</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="no-tournaments">Турниры не найдены</div>
-                        )}
-                    </div>
-                )}
-
-                {/* Вкладка "Команда" */}
-                {activeTab === 'members' && (
-                    <div className="members-tab">
-                        <h3>Команда организации</h3>
-                        {members.length > 0 ? (
-                            <div className="members-list">
-                                {members.map(member => (
-                                    <div key={member.id} className="member-card">
-                                        <Link to={`/user/${member.id}`} className="member-link">
-                                            <img 
-                                                src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
-                                                alt={member.username}
-                                                className="member-avatar"
-                                            />
-                                            <div className="member-info">
-                                                <div className="member-name">{member.username}</div>
-                                                <div className="member-role">
-                                                    {member.role === 'manager' ? 'Менеджер' : 
-                                                     member.role === 'admin' ? 'Администратор' : 'Участник'}
-                                                </div>
-                                                <div className="member-joined">
-                                                    С {formatDate(member.joined_at)}
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="no-members">Участники не найдены</div>
-                        )}
-                    </div>
-                )}
-
-                {/* Вкладка "Контакты" */}
-                {activeTab === 'contacts' && (
-                    <div className="contacts-tab">
-                        <h3>Контактная информация</h3>
-                        <div className="contacts-grid">
-                            {organizer.contact_email && (
-                                <div className="contact-item">
-                                    <div className="contact-label">📧 Email:</div>
-                                    <div className="contact-value">
-                                        <a href={`mailto:${organizer.contact_email}`}>
-                                            {organizer.contact_email}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {organizer.contact_phone && (
-                                <div className="contact-item">
-                                    <div className="contact-label">📞 Телефон:</div>
-                                    <div className="contact-value">
-                                        <a href={`tel:${organizer.contact_phone}`}>
-                                            {organizer.contact_phone}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {organizer.website_url && (
-                                <div className="contact-item">
-                                    <div className="contact-label">🌐 Сайт:</div>
-                                    <div className="contact-value">
-                                        <a href={ensureHttps(organizer.website_url)} target="_blank" rel="noopener noreferrer">
-                                            {organizer.website_url.replace(/^https?:\/\//, '')}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {organizer.vk_url && (
-                                <div className="contact-item">
-                                    <div className="contact-label">📘 VK:</div>
-                                    <div className="contact-value">
-                                        <a href={ensureHttps(organizer.vk_url)} target="_blank" rel="noopener noreferrer">
-                                            {organizer.vk_url.replace(/^https?:\/\//, '')}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {organizer.telegram_url && (
-                                <div className="contact-item">
-                                    <div className="contact-label">✈️ Telegram:</div>
-                                    <div className="contact-value">
-                                        <a href={ensureHttps(organizer.telegram_url)} target="_blank" rel="noopener noreferrer">
-                                            {organizer.telegram_url.replace(/^https?:\/\//, '')}
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+                    )}
 
-                        {!organizer.contact_email && !organizer.contact_phone && !organizer.website_url && !organizer.vk_url && !organizer.telegram_url && (
-                            <div className="no-contacts">Контактная информация не указана</div>
-                        )}
-                    </div>
-                )}
+                    {activeTab === 'members' && (
+                        <div id="s3" className="section show">
+                            <div className="card">
+                                <h3 className="card-title">Команда</h3>
+                                <div className="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Участник</th>
+                                                <th>Роль</th>
+                                                <th>Статус</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {members && members.length > 0 ? (
+                                                members.map((m) => (
+                                                    <tr key={m.id}>
+                                                        <td>
+                                                            <div className="member">
+                                                                <img className="ph" src={ensureHttps(m.avatar_url) || '/default-avatar.png'} alt={m.username} />
+                                                                <Link to={`/user/${m.id}`} className="table-link">{m.username}</Link>
+                                                            </div>
+                                                        </td>
+                                                        <td className="muted">{m.role === 'manager' ? 'Менеджер' : m.role === 'admin' ? 'Администратор' : 'Игрок'}</td>
+                                                        <td><span className="badge">В штате</span></td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={3} className="muted">Участники не найдены</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'contacts' && (
+                        <div id="s4" className="section show">
+                            <div className="card">
+                                <h3 className="card-title">Контакты</h3>
+                                <div className="kontakt">
+                                    {organizer.contact_email && (
+                                        <div><span className="muted">Email:</span> <a className="link" href={`mailto:${organizer.contact_email}`}>{organizer.contact_email}</a></div>
+                                    )}
+                                    {organizer.telegram_url && (
+                                        <div><span className="muted">Telegram:</span> <a className="link" href={ensureHttps(organizer.telegram_url)} target="_blank" rel="noreferrer">{organizer.telegram_url.replace(/^https?:\/\//, '')}</a></div>
+                                    )}
+                                    {organizer.website_url && (
+                                        <div><span className="muted">Сайт:</span> <a className="link" href={ensureHttps(organizer.website_url)} target="_blank" rel="noreferrer">{organizer.website_url.replace(/^https?:\/\//, '')}</a></div>
+                                    )}
+                                    {!organizer.contact_email && !organizer.telegram_url && !organizer.website_url && (
+                                        <div className="muted">Контактная информация не указана</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );
