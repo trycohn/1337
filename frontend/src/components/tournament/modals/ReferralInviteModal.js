@@ -142,7 +142,7 @@ const ReferralInviteModal = ({
         <div className="modal-overlay referral-modal-overlay" onClick={onClose}>
             <div className="modal-content referral-modal-content" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h3>🔗 Пригласить друга</h3>
+                    <h3>Пригласить друга</h3>
                     <button className="modal-close" onClick={onClose}>✕</button>
                 </div>
 
@@ -158,7 +158,7 @@ const ReferralInviteModal = ({
                         <div className="referral-error">
                             <p>❌ {error}</p>
                             <button onClick={generateReferralLink} className="btn btn-secondary">
-                                🔄 Повторить
+                                Повторить
                             </button>
                         </div>
                     )}
@@ -167,14 +167,14 @@ const ReferralInviteModal = ({
                         <>
                             {/* Информация о турнире */}
                             <div className="referral-tournament-info">
-                                <h4>📋 {tournament.name}</h4>
-                                <p>🎮 Игра: {tournament.game}</p>
-                                <p>🏆 Формат: {tournament.format}</p>
+                                <h4>{tournament.name}</h4>
+                                <p>Игра: {tournament.game}</p>
+                                <p>Формат: {tournament.format}</p>
                             </div>
 
                             {/* Реферальная ссылка */}
                             <div className="referral-link-section">
-                                <label>🔗 Ваша реферальная ссылка:</label>
+                                <label>Ваша реферальная ссылка:</label>
                                 <div className="referral-link-input-group">
                                     <input 
                                         type="text" 
@@ -191,7 +191,7 @@ const ReferralInviteModal = ({
                                     </button>
                                 </div>
                                 {copySuccess && (
-                                    <p className="referral-copy-success">✅ Ссылка скопирована!</p>
+                                    <p className="referral-copy-success">Ссылка скопирована!</p>
                                 )}
                             </div>
 
@@ -199,11 +199,11 @@ const ReferralInviteModal = ({
                             <div className="referral-link-info">
                                 <div className="referral-info-grid">
                                     <div className="referral-info-item">
-                                        <span className="referral-info-label">📅 Истекает:</span>
+                                        <span className="referral-info-label">Истекает:</span>
                                         <span className="referral-info-value">{formatExpirationDate(referralData.expires_at)}</span>
                                     </div>
                                     <div className="referral-info-item">
-                                        <span className="referral-info-label">🔢 Использований:</span>
+                                        <span className="referral-info-label">Использований:</span>
                                         <span className="referral-info-value">{referralData.uses_count} / {referralData.max_uses || 32}</span>
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@ const ReferralInviteModal = ({
 
                             {/* Способы отправки - только иконки Font Awesome */}
                             <div className="referral-share-methods">
-                                <h4>📤 Поделиться:</h4>
+                                <h4>Поделиться:</h4>
                                 <div className="referral-share-icons">
                                     <button 
                                         onClick={() => shareViaMethod('telegram')}
@@ -251,7 +251,7 @@ const ReferralInviteModal = ({
                             {/* Статистика приглашений - компактная */}
                             {stats && (
                                 <div className="referral-stats">
-                                    <h4>📊 Статистика:</h4>
+                                    <h4>Статистика:</h4>
                                     <div className="referral-stats-grid">
                                         <div className="referral-stat-item">
                                             <span className="referral-stat-value">{stats.summary.total_invitations}</span>
@@ -277,13 +277,13 @@ const ReferralInviteModal = ({
                             <div className="referral-instructions">
                                 <h4>💡 Как это работает:</h4>
                                 <ol>
-                                    <li>📤 Отправьте ссылку друзьям</li>
-                                    <li>👤 Друг регистрируется</li>
-                                    <li>🎮 Получает приглашение в турнир</li>
-                                    <li>🏆 Вы получаете бонусы!</li>
+                                    <li>Отправьте ссылку друзьям</li>
+                                    <li>Друг регистрируется</li>
+                                    <li>Получает приглашение в турнир</li>
+                                    <li>Вы получаете бонусы!</li>
                                 </ol>
                                 <p className="note">
-                                    ⏰ Ссылка действует 7 дней, максимум 32 использования
+                                    Ссылка действует 7 дней, максимум 32 использования
                                 </p>
                             </div>
                         </>

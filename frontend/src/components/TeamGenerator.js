@@ -645,14 +645,14 @@ const TeamGenerator = ({
                     <div className="referral-invite-card-participants2.0">
                         <div className="referral-invite-content-participants2.0">
                             <div className="referral-invite-text-participants2.0">
-                                <div className="referral-title-participants2.0">ПРИГЛАСИТЬ ДРУГА</div>
-                                <div className="referral-subtitle-participants2.0">Поделись ссылкой — пусть друзья подключаются к турниру</div>
+                                <div className="referral-title-participants2.0">Зови друзей — делите бонусы</div>
+                                <div className="referral-subtitle-participants2.0">Поделитесь ссылкой с друзьями и получайте бонусы за каждого нового игрока!</div>
                             </div>
                             <button 
                                 className="btn btn-secondary"
                                 onClick={() => setShowReferralModal(true)}
                             >
-                                Получить ссылку
+                                Пригласить друга
                             </button>
                         </div>
                     </div>
