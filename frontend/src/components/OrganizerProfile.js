@@ -60,53 +60,7 @@ function OrganizerProfile() {
         return normalized === 'active' || normalized === 'registration' ? 'badge live' : 'badge';
     };
 
-    const renderWinner = (winner) => {
-        if (!winner) return <span className="no-winner">Не определен</span>;
-
-        if (winner.type === 'user') {
-            return (
-                <Link to={`/user/${winner.id}`} className="winner-link">
-                    <img 
-                        src={ensureHttps(winner.avatar_url) || '/default-avatar.png'} 
-                        alt={winner.username}
-                        className="winner-avatar"
-                    />
-                    <span className="winner-name">{winner.username}</span>
-                </Link>
-            );
-        }
-
-        if (winner.type === 'team') {
-            return (
-                <div className="team-winner">
-                    <Link to={`/team/${winner.id}`} className="winner-link">
-                        <img 
-                            src={ensureHttps(winner.logo_url) || '/default-team-logo.png'} 
-                            alt={winner.name}
-                            className="winner-avatar"
-                        />
-                        <span className="winner-name">{winner.name}</span>
-                    </Link>
-                    {winner.members && (
-                        <div className="team-members">
-                            {winner.members.map(member => (
-                                <Link key={member.id} to={`/user/${member.id}`} className="team-member">
-                                    <img 
-                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
-                                        alt={member.username}
-                                        className="member-avatar"
-                                    />
-                                    <span className="member-name">{member.username}</span>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        return <span className="no-winner">Не определен</span>;
-    };
+    //
 
     if (loading) {
         return <div className="organizer-loading">Загрузка...</div>;
@@ -162,8 +116,7 @@ function OrganizerProfile() {
                             <div className="card">
                                 <h3 className="card-title">Описание</h3>
                                 <div className="text">{organizer.description || 'Описание не указано'}</div>
-                            </div>
-                            <div className="card">
+                                <div className="section-divider" />
                                 <h3 className="card-title">Статистика</h3>
                                 <div className="grid-4">
                                     <div className="stat"><div className="n">{stats.total_tournaments || 0}</div><div className="t">Всего турниров</div></div>

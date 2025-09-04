@@ -590,6 +590,7 @@
 .organizer-profile .card{ background:var(--panel); border:1px solid var(--line-2); border-radius:12px; padding:18px; display:grid; gap:14px }
 .organizer-profile .card-title{ margin:0; font-size:18px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#EDEDEF }
 .organizer-profile .text{ font-size:15px; color:#DCDCE1; line-height:1.6 }
+.organizer-profile .section-divider{ height:1px; background:var(--line); margin:8px 6px }
 .organizer-profile .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px }
 .organizer-profile .stat{ background:#101012; border:1px solid var(--line); border-radius:12px; padding:16px; display:grid; gap:6px; align-content:center }
 .organizer-profile .stat .n{ font-size:26px; font-weight:800 }
