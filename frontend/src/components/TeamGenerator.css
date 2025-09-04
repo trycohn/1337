@@ -1240,7 +1240,7 @@
 .referral-invite-text-participants2\.0 {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 16px;
 }
 .referral-title-participants2\.0 {
   font-weight: 700;
