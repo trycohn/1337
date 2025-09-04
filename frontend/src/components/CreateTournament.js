@@ -35,6 +35,8 @@ function CreateTournament() {
     rules: '',
     bracket_type: 'single_elimination',
     mix_rating_type: 'faceit',
+    // 🆕 Тип микса: classic | full (только для format = 'mix')
+    mix_type: 'classic',
     // 🆕 Требования привязок для MIX
     require_faceit_linked: false,
     require_steam_linked: false,
@@ -139,6 +141,7 @@ function CreateTournament() {
             rules: formData.rules,
             bracket_type: formData.bracket_type, // 🔧 ИСПРАВЛЕНО: передаем bracket_type как есть для всех типов турниров
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
+            mix_type: formData.format === 'mix' ? formData.mix_type : null,
             // 🆕 Передаём флаги требований привязок только для MIX
             require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
             require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,
@@ -599,7 +602,7 @@ function CreateTournament() {
         {/* Настройки Mix турнира */}
         {formData.format === 'mix' && (
           <div className="form-section">
-            <h3 className="section-title">Настройки Mix турнира</h3>
+            <h3 className="section-title">Настройки MIX турнира</h3>
             <div className="form-grid">
               <div className="form-group">
                 <label>Игроков в команде</label>
@@ -615,8 +618,27 @@ function CreateTournament() {
                 />
               </div>
               
+              {/* 🆕 Тип Микса */}
               <div className="form-group">
-                <label>Тип рейтинга для команд</label>
+                <label>Тип Микса</label>
+                <select
+                  name="mix_type"
+                  value={formData.mix_type}
+                  onChange={handleInputChange}
+                  disabled={!verificationStatus.canCreate}
+                  required
+                >
+                  <option value="classic">Классический МИКС (однократно перед стартом)</option>
+                  <option value="full">Фулл МИКС (после каждого тура)</option>
+                </select>
+                <small className="form-hint">
+                  {formData.mix_type === 'classic' && 'Команды формируются один раз перед стартом турнира'}
+                  {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Формирование команд</label>
                 <select
                   name="mix_rating_type"
                   value={formData.mix_rating_type}
@@ -624,14 +646,12 @@ function CreateTournament() {
                   disabled={!verificationStatus.canCreate}
                   required
                 >
-                  <option value="faceit">FACEIT ELO</option>
-                  <option value="premier">CS2 Premier Rank</option>
-                  <option value="mixed">Полный микс (без учета рейтинга)</option>
+                  <option value="faceit">Формирование на основе рейтинга</option>
+                  <option value="mixed">Случайное формирование без учета рейтинга</option>
                 </select>
                 <small className="form-hint">
-                  {formData.mix_rating_type === 'faceit' && 'Команды будут сформированы на основе FACEIT ELO участников'}
-                  {formData.mix_rating_type === 'premier' && 'Команды будут сформированы на основе CS2 Premier ранга участников'}
-                  {formData.mix_rating_type === 'mixed' && 'Участники будут распределены случайно, без учета рейтинга'}
+                  {formData.mix_rating_type === 'faceit' && 'Команды формируются на основе рейтинга участников (FACEIT/Premier)'}
+                  {formData.mix_rating_type === 'mixed' && 'Команды формируются случайно, рейтинг не учитывается'}
                 </small>
               </div>
 
@@ -651,7 +671,7 @@ function CreateTournament() {
                 </div>
               )}
 
-              {formData.mix_rating_type === 'premier' && (
+              {false && formData.mix_rating_type === 'premier' && (
                 <div className="form-group full-width">
                   <label className="checkbox-label">
                     <input
