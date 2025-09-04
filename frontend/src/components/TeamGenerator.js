@@ -601,12 +601,22 @@ const TeamGenerator = ({
                     <div className="teams-list-participants2.0">
                         {teamsToShow.map((team, index) => {
                             const status = getTeamStatus(team);
+                            const captain = Array.isArray(team?.members) ? team.members.find(m => m.is_captain) : null;
+                            const captainAvatar = ensureHttps(
+                                captain?.avatar_url ||
+                                captain?.user_avatar_url ||
+                                captain?.user_avatar ||
+                                captain?.profile_avatar ||
+                                captain?.avatar
+                            );
+                            const explicitTeamAvatar = ensureHttps(team.logo_url || team.avatar_url);
+                            const teamAvatarSrc = explicitTeamAvatar || captainAvatar || '/default-avatar.png';
                             return (
                                 <div key={team.id || index} className={`team-row-participants2.0 ${status.cls}`}>
                                     <div className="team-row-left-participants2.0">
                                         <div className="team-avatar-participants2.0">
                                             <img
-                                                src={ensureHttps(team.logo_url || team.avatar_url) || '/default-avatar.png'}
+                                                src={teamAvatarSrc}
                                                 alt={`${team.name || `Команда ${index + 1}`} logo`}
                                                 onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                                             />
