@@ -2549,7 +2549,7 @@ function Profile() {
                                             <div className="mi-bind-row">
                                                 <div className="mi-bind-left">
                                                     <div className="mi-service-icon" aria-hidden="true">
-                                                        <span>●</span>
+                                                        <i className="fa-brands fa-steam"></i>
                                     </div>
                                                     <div>
                                                         <div>Steam</div>
@@ -2575,7 +2575,7 @@ function Profile() {
                                             <div className="mi-bind-row">
                                                 <div className="mi-bind-left">
                                                     <div className="mi-service-icon" aria-hidden="true">
-                                                        <span>▲</span>
+                                                        <i className="fa-solid fa-bolt"></i>
                                     </div>
                                         <div>
                                                         <div>Faceit</div>
