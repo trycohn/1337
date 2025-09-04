@@ -663,6 +663,8 @@ const TeamGenerator = ({
     // Выделяем отрисовку секции настроек микса в отдельную функцию
     function renderMixSettingsSection() {
         if (!isAdminOrCreator) return null;
+        const statusNormalized = (tournament?.status || '').toString().trim().toLowerCase();
+        if (statusNormalized !== 'active') return null;
         return (
             <div className="mix-settings-section">
                 <h3>⚙️ Настройки микса</h3>

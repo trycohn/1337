@@ -234,7 +234,8 @@ const TournamentParticipants = ({
         return true;
     }, [tournament]);
 
-    const isActive = tournament?.status === 'active';
+    const statusNormalized = (tournament?.status || '').toString().trim().toLowerCase();
+    const isActive = statusNormalized === 'active';
 
     return (
         <div className="tournament-participants">
