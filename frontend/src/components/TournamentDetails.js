@@ -998,23 +998,7 @@ function TournamentDetails() {
         }
     }, [shouldShowParticipantsTab, activeTab]);
 
-    // 🆕 Загрузка микс-команд при необходимости
-    const fetchMixTeams = useCallback(async () => {
-        if (!isMixTournament || !tournament?.id) return;
-        try {
-            setMixTeamsLoading(true);
-            const token = localStorage.getItem('token');
-            const res = await api.get(`/api/tournaments/${tournament.id}/teams`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : undefined
-            });
-            setMixTeams(Array.isArray(res.data) ? res.data : []);
-        } catch (e) {
-            console.error('Ошибка загрузки MIX команд:', e);
-            setMixTeams([]);
-        } finally {
-            setMixTeamsLoading(false);
-        }
-    }, [isMixTournament, tournament?.id]);
+    // Загрузка MIX-команд перенесена в useMixTeams
 
     // 🆕 Рендеринг контента вкладок
     const renderTabContent = () => {
