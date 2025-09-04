@@ -1221,16 +1221,22 @@
 .referral-invite-card-participants2\.0 {
   margin-top: 16px;
   width: 100%;
-  background-color: #0a0a0a;
+  background-color: #1D1D1D;
   border: 1px solid #1D1D1D;
   border-radius: 8px;
+  height: 259px;
+  border-radius: 8px;
+  gap: 32px;
+  opacity: 1;
+  padding: 32px;
 }
 .referral-invite-content-participants2\.0 {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 32px;
   padding: 16px 24px;
+  flex-direction: column; 
 }
 .referral-invite-text-participants2\.0 {
   display: flex;
@@ -1238,19 +1244,22 @@
   gap: 6px;
 }
 .referral-title-participants2\.0 {
+  font-weight: 700;
+  font-style: Bold;
+  font-size: 32px;
+  line-height: 100%;
+  letter-spacing: 0%;
   text-transform: uppercase;
   color: #ffffff;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  line-height: 1;
+  
 }
 .referral-subtitle-participants2\.0 {
-  color: #949494;
   font-weight: 400;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  line-height: 1;
+  font-style: Regular;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 2%;
+  color: #ffffff;
 }
 @media (max-width: 640px) {
   .referral-invite-content-participants2\.0 { padding: 12px 16px; gap: 8px; }
