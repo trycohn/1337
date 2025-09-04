@@ -46,7 +46,7 @@ import BracketManagementPanel from './tournament/BracketManagementPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import './TeamGenerator.css';
-import MixTeamsView from './tournament/mix/MixTeamsView';
+const LazyMixTeamsView = React.lazy(() => import('./tournament/mix/MixTeamsView'));
 import useMixTeams from '../hooks/tournament/useMixTeams';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
@@ -1068,7 +1068,9 @@ function TournamentDetails() {
             case 'mix_teams':
                 return (
                     <div className="tab-content-mix-teams">
-                        <MixTeamsView teams={mixTeams} isLoading={mixTeamsLoading} />
+                        <Suspense fallback={<div className="loading-teams">Загрузка команд...</div>}>
+                            <LazyMixTeamsView teams={mixTeams} isLoading={mixTeamsLoading} />
+                        </Suspense>
                     </div>
                 );
 
