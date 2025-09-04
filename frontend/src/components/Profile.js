@@ -2575,7 +2575,9 @@ function Profile() {
                                             <div className="mi-bind-row">
                                                 <div className="mi-bind-left">
                                                     <div className="mi-service-icon" aria-hidden="true">
-                                                        <i className="fa-solid fa-bolt"></i>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" width="24" height="24" aria-label="FACEIT shard">
+                                                          <polygon fill="#AEB2B7" points="11 28 31 28 40 17 40 39"/>
+                                                        </svg>
                                     </div>
                                         <div>
                                                         <div>Faceit</div>
