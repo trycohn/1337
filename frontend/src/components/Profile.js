@@ -2389,7 +2389,7 @@ function Profile() {
                                 { key: 'friends', label: 'Друзья' },
                                 { key: 'teams', label: 'Мои команды' },
                                 ...(user && user.role === 'admin' ? [{ key: 'achievements', label: 'Достижения' }] : []),
-                                { key: 'organization', label: 'Организация' },
+                                ...((userOrganizations && userOrganizations.length > 0) ? [{ key: 'organization', label: 'Организация' }] : []),
                                 { key: 'tournaments', label: 'Турниры' },
                             ].concat((user && user.role === 'admin') ? [{ key: 'v4analytics', label: 'Аналитика V4' }] : [])}
                         />
@@ -2449,6 +2449,7 @@ function Profile() {
                             </div>
                         </button>
                         )}
+                        {userOrganizations && userOrganizations.length > 0 && (
                         <button 
                             className={`nav-tab-profile ${activeTab === 'organization' ? 'active' : ''}`} 
                             onClick={() => switchTab('organization')}
@@ -2458,6 +2459,7 @@ function Profile() {
                                 <span>Организация</span>
                             </div>
                         </button>
+                        )}
                         <button 
                             className={`nav-tab-profile ${activeTab === 'tournaments' ? 'active' : ''}`} 
                             onClick={() => switchTab('tournaments')}
@@ -3161,7 +3163,25 @@ function Profile() {
                         
                         {/* Teams Tab */}
                         {activeTab === 'teams' && (
-                            <MyTeams user={user} />
+                            <>
+                                <MyTeams user={user} />
+                                <div style={{ marginTop: 12, fontSize: '12px', color: 'var(--text-muted)' }}>
+                                    Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.
+                                    <div style={{ marginTop: 8 }}>
+                                        <button
+                                            className="mi-btn"
+                                            onClick={() => {
+                                                if (!user.email) { openAddEmailModal(); return; }
+                                                if (user.email && !user.is_verified) { openEmailVerificationModal(); return; }
+                                                setShowOrgRequestForm(true);
+                                                switchTab('organization');
+                                            }}
+                                        >
+                                            Оставить заявку
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
                         )}
                         
                         {/* Organization Tab */}
