@@ -1774,6 +1774,14 @@ div.score-container input {
     font-size: 0.875rem;
 }
 
+.rules-section-block {
+    text-align: start;
+}
+
+.rules-section-block .rules-block {
+    text-align: start;
+    padding: 0;
+}
 
 /* =========================
    🧩 Мобильная версия (≤768)
