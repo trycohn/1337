@@ -46,7 +46,6 @@ import BracketManagementPanel from './tournament/BracketManagementPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import './TeamGenerator.css';
-const LazyMixTeamsView = React.lazy(() => import('./tournament/mix/MixTeamsView'));
 import useMixTeams from '../hooks/tournament/useMixTeams';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
@@ -70,6 +69,8 @@ const LazyBracketRenderer = React.lazy(() =>
         };
     })
 );
+
+const LazyMixTeamsView = React.lazy(() => import('./tournament/mix/MixTeamsView'));
 
 // Error Boundary для обработки ошибок рендеринга
 class TournamentErrorBoundary extends React.Component {
