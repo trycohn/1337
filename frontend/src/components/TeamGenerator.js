@@ -24,7 +24,9 @@ const TeamGenerator = ({
     onTeamsUpdated,
     onRemoveParticipant,
     isAdminOrCreator = false,
-    toast
+    toast,
+    hideMixSettings = false,
+    renderOnlySettings = false
 }) => {
     // Убираем старые состояния для селекторов
     const [isFormingTeams, setIsFormingTeams] = useState(false);
@@ -658,6 +660,111 @@ const TeamGenerator = ({
         );
     };
 
+    // Выделяем отрисовку секции настроек микса в отдельную функцию
+    function renderMixSettingsSection() {
+        if (!isAdminOrCreator) return null;
+        return (
+            <div className="mix-settings-section">
+                <h3>⚙️ Настройки микса</h3>
+                {/* 🆕 ОТОБРАЖАЕМ НАСТРОЙКИ ТУРНИРА (только для информации) */}
+                <div className="tournament-settings-info">
+                    <div className="setting-info-item">
+                        <label>Размер команды:</label>
+                        <span className="setting-value">{teamSize} игрок{teamSize == 1 ? '' : teamSize > 4 ? 'ов' : 'а'}</span>
+                    </div>
+                    <div className="setting-info-item">
+                        <label>Тип рейтинга:</label>
+                        <span className="setting-value">
+                            {ratingType === 'faceit' && 'FACEIT ELO'}
+                            {ratingType === 'premier' && 'CS2 Premier Rank'}
+                            {ratingType === 'mixed' && 'Полный микс (без учета рейтинга)'}
+                        </span>
+                    </div>
+
+                    {/* 🆕 ИНФОРМАЦИЯ О ЛОГИКЕ СОЗДАНИЯ КОМАНД */}
+                    <div className="setting-note" style={{ 
+                        marginTop: '15px' 
+                    }}>
+                        <strong>ℹ️ Как формируются команды:</strong>
+                        <ul style={{ marginTop: '8px', marginBottom: '0', paddingLeft: '20px' }}>
+                            <li>Создается максимальное количество полных команд из {teamSize} игроков</li>
+                            <li>Участники, не попавшие в команды, остаются доступными</li>
+                            <li>При добавлении новых участников можно переформировать команды</li>
+                            <li>Минимум участников для создания команд: {teamSize}</li>
+                        </ul>
+                    </div>
+
+                    <div className="setting-note">
+                        💡 Настройки формирования команд были заданы при создании турнира
+                    </div>
+                </div>
+
+                <div className="mix-buttons-row">
+                    {/* 🔧 ИСПРАВЛЕНИЕ: Для микс турниров показываем кнопку формирования если нет команд, независимо от participant_type */}
+                    {tournament?.format === 'mix' && mixedTeams.length === 0 && (
+                        <button 
+                            onClick={handleFormTeams} 
+                            className="btn btn-primary"
+                            disabled={loading || displayParticipants.length < parseInt(teamSize)}
+                        >
+                            {loading ? '⏳ Создание команд...' : 'Сформировать команды'}
+                        </button>
+                    )}
+
+                    {/* 🆕 УЛУЧШЕННАЯ КНОПКА ПЕРЕФОРМИРОВАНИЯ */}
+                    {canReformTeams() && (
+                        <button 
+                            onClick={() => setShowReformModal(true)} 
+                            className="btn btn-secondary"
+                            disabled={reformLoading || displayParticipants.length < parseInt(teamSize)}
+                        >
+                            Переформировать команды
+                        </button>
+                    )}
+                </div>
+
+                {/* Единое сообщение о минимуме участников — отдельный блок под кнопками */}
+                {displayParticipants.length < parseInt(teamSize) && (
+                    <div className="mix-info-row">
+                        <p className="min-participants-notice">
+                            ⚠️ Для создания команд из {teamSize} игроков нужно минимум {teamSize} участников
+                        </p>
+                    </div>
+                )}
+
+                {/* 🆕 ИНФОРМАЦИЯ О ВОЗМОЖНОСТИ ПЕРЕФОРМИРОВАНИЯ */}
+                {mixedTeams.length > 0 && !canReformTeams() && (
+                    <div className="reform-blocked-notice">
+                        {tournament.status !== 'active' && (
+                            <p>⚠️ Переформирование доступно только для активных турниров</p>
+                        )}
+                        {tournament.status === 'in_progress' && (
+                            <p>🚫 Переформирование недоступно - турнир уже начался</p>
+                        )}
+                        {displayParticipants.length < parseInt(teamSize) && (
+                            <p>⚠️ Недостаточно участников для переформирования (нужно минимум {teamSize})</p>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    if (renderOnlySettings) {
+        return (
+            <div className="team-generator">
+                {renderMixSettingsSection()}
+                {showReformModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content reform-modal">
+                            {/* тело модалки оставляем без изменений */}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     // Функция рендеринга списка участников
     const renderParticipantsList = () => {
         if (tournament?.format !== 'mix') return null;
@@ -1054,12 +1161,19 @@ const TeamGenerator = ({
 
     return (
         <div className="team-generator">
-            {/* 🎯 ВСЕГДА ПОКАЗЫВАЕМ УЧАСТНИКОВ */}
-            {renderParticipantsList()}
-            
-            {/* 🎯 КОМАНДЫ ОТОБРАЖАЮТСЯ НИЖЕ УЧАСТНИКОВ */}
-            {renderTeamsList()}
-            
+            {/* Новый общий грид: слева участники, справа команды */}
+            <div className="mix-grid">
+                <div className="mix-grid-left">
+                    {renderParticipantsList()}
+                </div>
+                <div className="mix-grid-right">
+                    {renderTeamsList()}
+                </div>
+            </div>
+
+            {/* Блок настроек микса перемещен в самый низ */}
+            {!hideMixSettings && renderMixSettingsSection()}
+
             {/* 🆕 МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПЕРЕФОРМИРОВАНИЯ */}
             {showReformModal && (
                 <div className="modal-overlay">

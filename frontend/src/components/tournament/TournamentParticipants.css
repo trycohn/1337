@@ -284,6 +284,55 @@
     border-top: 1px solid #333333;
 }
 
+/* Новый общий грид для MIX: участники слева, команды справа */
+.team-generator .mix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.team-generator .mix-grid-left,
+.team-generator .mix-grid-right {
+    min-width: 0;
+}
+
+/* Линейный список участников: одна строка — один участник */
+.team-generator .original-participants-section .participants-grid {
+    display: block;
+}
+
+.team-generator .original-participants-section .participant-card {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+/* Команды строками: одна строка — одна команда */
+.team-generator .mixed-teams-grid {
+    display: block;
+}
+
+.team-generator .enhanced-team-card {
+    border: 1px solid #374151;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+/* Блок настроек вниз */
+.team-generator .mix-settings-section {
+    margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+    .team-generator .mix-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .team-generator-section-participants h4 {
     margin: 0 0 16px 0;
     font-size: 20px;
