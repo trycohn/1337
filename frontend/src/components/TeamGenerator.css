@@ -408,8 +408,7 @@
   justify-content: space-evenly;
 }
 /* РљР°СЂС‚РѕС‡РєРё РєРѕРјР°РЅРґ */
-.enhanced-team-card,
-.enhanced-team-card-mixteams {
+.enhanced-team-card {
   min-height: 416px;
   border-radius: 8px;
   opacity: 1;
@@ -417,6 +416,16 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+.enhanced-team-card-mixteams {
+  flex-direction: column;
+  gap: 0;
+  min-height: 416px;
+  opacity: 1;
+  width: 100%;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 /* Р—Р°РіРѕР»РѕРІРѕРє РєР°СЂС‚РѕС‡РєРё РєРѕРјР°РЅРґС‹ */
@@ -451,8 +460,19 @@
 }
 .team-header-left,
 .team-header-left-mixteams { display: flex; align-items: center; gap: 12px; }
-.team-avatar-lg,
-.team-avatar-lg-mixteams { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; border: 1px solid #374151; }
+.team-avatar-lg { 
+  width: 48px; 
+  height: 48px; 
+  border-radius: 50%; 
+  overflow: hidden; 
+  border: 1px solid #374151; 
+}
+ .team-avatar-lg-mixteams {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+ }
 .team-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
 .team-header-center,
 .team-header-center-mixteams { position: relative; height: 40px; }
@@ -463,8 +483,19 @@
 .stack-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .team-header-right,
 .team-header-right-mixteams { display: flex; justify-content: flex-end; }
-.team-rating-badge,
-.team-rating-badge-mixteams { background:#111; color:#fff; border:1px solid #374151; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
+.team-rating-badge { background:#111; color:#fff; border:1px solid #374151; padding:6px 10px; border-radius:6px; font-weight:600; font-size:12px; }
+
+.team-rating-badge-mixteams {
+font-weight: 700;
+font-style: bold;
+font-size: 12px;
+line-height: 100%;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+color: #ffffff;
+}
+
+
 .team-members-count {
   font-size: 0.875rem;
   color: #9ca3af;
@@ -520,6 +551,7 @@
   flex-direction: column;
   gap: 0;
   width: 100%;
+
 }
 
 /* РЎС‚РѕСЂРєР° СѓС‡Р°СЃС‚РЅРёРєР° РєРѕРјР°РЅРґС‹ */
@@ -544,6 +576,8 @@
   padding: 16px 32px;
   background-color: #0a0a0a;
   border-bottom: 1px solid var(--Neutral-Grey-80, rgba(29, 29, 29, 1));
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
 }
 
 .member-rating-badge { background:#0a0a0a; color:#fff; border:1px solid #374151; padding:4px 8px; border-radius:6px; font-weight:600; font-size:12px; }
@@ -567,8 +601,7 @@
   opacity: 1;
 }
 /* РђРІР°С‚Р°СЂ СѓС‡Р°СЃС‚РЅРёРєР° */
-.member-avatar,
-.member-avatar-mixteams {
+.member-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50% !important;
@@ -579,6 +612,16 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.member-avatar-mixteams {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 12px;
+  border: none;
+}
+
+
 .member-avatar img {
   width: 100% !important;
   height: 100% !important;
@@ -586,9 +629,17 @@
 }
 /* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СѓС‡Р°СЃС‚РЅРёРєРµ */
 
-.member-name,
-.member-name-mixteams {
+.member-name {
   font-weight: 600;
+  color: #ffffff;
+}
+
+.member-name-mixteams {
+  font-weight: 700;
+  font-style: bold;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0.08em;
   color: #ffffff;
 }
 
@@ -611,6 +662,16 @@
   font-size: 0.8rem;
   color: #9ca3af;
   font-weight: 500;
+}
+
+.member-rating-badge-mixteams {
+font-weight: 700;
+font-style: bold;
+font-size: 10px;
+line-height: 100%;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+color: #949494;
 }
 /* РЎРѕРѕР±С‰РµРЅРёРµ РѕР± РѕС‚СЃСўС‚СЃС‚РІРёРё СѓС‡Р°СЃС‚РЅРёРєРѕРІ */
 .no-members,
