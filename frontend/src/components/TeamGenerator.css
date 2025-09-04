@@ -625,6 +625,7 @@ color: #ffffff;
   border-bottom: 1px solid var(--Neutral-Grey-80, rgba(29, 29, 29, 1));
   display: grid;
   grid-template-columns: 32px 1fr auto;
+  align-items: center;
 }
 
 .member-rating-badge { background:#0a0a0a; color:#fff; border:1px solid #374151; padding:4px 8px; border-radius:6px; font-weight:600; font-size:12px; }
@@ -697,12 +698,12 @@ color: #ffffff;
 
 .member-profile-link,
 .member-profile-link-mixteams {
-  color: #10b981;
+  color: #ffffff;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .member-profile-link:hover {
-  color: #34d399;
+  color: #1d1d1d;
   text-decoration: underline;
 }
 .member-rating {
