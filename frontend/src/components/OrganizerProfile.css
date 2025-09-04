@@ -554,7 +554,7 @@
     --radius-xl: 16px;
     --radius: 12px;
     --radius-sm: 10px;
-    background: linear-gradient(180deg,#0A0A0B 0%, #0E0E10 60%, #0A0A0B 100%);
+    background: transparent;
     color: var(--text);
 }
 
