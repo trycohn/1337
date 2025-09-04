@@ -1172,7 +1172,7 @@ const TeamGenerator = ({
             </div>
 
             {/* Блок настроек микса перемещен в самый низ */}
-            {!hideMixSettings && renderMixSettingsSection()}
+            {isAdminOrCreator && !hideMixSettings && renderMixSettingsSection()}
 
             {/* 🆕 МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ПЕРЕФОРМИРОВАНИЯ */}
             {showReformModal && (
