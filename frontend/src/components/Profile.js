@@ -2388,7 +2388,7 @@ function Profile() {
                                 { key: 'stats', label: 'Статистика' },
                                 { key: 'friends', label: 'Друзья' },
                                 { key: 'teams', label: 'Мои команды' },
-                                { key: 'achievements', label: 'Достижения' },
+                                ...(user && user.role === 'admin' ? [{ key: 'achievements', label: 'Достижения' }] : []),
                                 { key: 'organization', label: 'Организация' },
                                 { key: 'tournaments', label: 'Турниры' },
                             ].concat((user && user.role === 'admin') ? [{ key: 'v4analytics', label: 'Аналитика V4' }] : [])}
@@ -2435,6 +2435,7 @@ function Profile() {
                                 <span>Мои команды</span>
                             </div>
                         </button>
+                        {user && user.role === 'admin' && (
                         <button 
                             className={`nav-tab-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
                             onClick={() => switchTab('achievements')}
@@ -2447,6 +2448,7 @@ function Profile() {
                                 )}
                             </div>
                         </button>
+                        )}
                         <button 
                             className={`nav-tab-profile ${activeTab === 'organization' ? 'active' : ''}`} 
                             onClick={() => switchTab('organization')}
@@ -2670,7 +2672,7 @@ function Profile() {
                                             <div className="loading-spinner">Статистика загружается...</div>
                                         )}
                                         
-                                        {renderLastFiveMatches()}
+                                        {(user && user.role === 'admin') && renderLastFiveMatches()}
                                     </div>
                                 </div>
                                 
@@ -2739,7 +2741,7 @@ function Profile() {
                                 )}
                                 
                                 {/* CS2 Stats */}
-                                {user.steam_url && (
+                                {(user && user.role === 'admin' && user.steam_url) && (
                                     <div className="content-card cs2-stats">
                                         <div className="card-header">
                                             <h3 className="card-title">Статистика CS2</h3>
@@ -2784,7 +2786,8 @@ function Profile() {
                                     </div>
                                 )}
 
-                                {/* Dota 2 Stats */}
+                                {/* Dota 2 Stats (admin only) */}
+                                {user && user.role === 'admin' && (
                                 <div className="content-card dota-stats">
                                     <div className="card-header">
                                         <h3 className="card-title">Статистика Dota 2</h3>
@@ -2960,6 +2963,7 @@ function Profile() {
                                         )}
                                     </div>
                                 </div>
+                                )}
 
                                 {/* ✨ V4 ULTIMATE: скрыто для не-админов */}
                                 {user && user.role === 'admin' && (
@@ -3840,8 +3844,8 @@ function Profile() {
                             </>
                         )}
                         
-                        {/* Achievements Tab */}
-                        {activeTab === 'achievements' && (
+                        {/* Achievements Tab (admin only) */}
+                        {user && user.role === 'admin' && activeTab === 'achievements' && (
                             <AchievementsPanel userId={user.id} />
                         )}
                     </div>
