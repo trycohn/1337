@@ -310,7 +310,9 @@ function Layout() {
                                 if (e.target === e.currentTarget) setIsMenuOpen(false);
                             }}
                         >
-                            <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                            {user && user.role === 'admin' && (
+                                <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
+                            )}
                             <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                             {user && (
                                 <>
