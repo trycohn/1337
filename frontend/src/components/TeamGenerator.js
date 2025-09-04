@@ -524,41 +524,41 @@ const TeamGenerator = ({
             };
 
             return (
-                <div className="teams-display">
-                    <div className="teams-section-header">
-                        <div className="teams-header-row">
-                            <div className="teams-header-col teams-header-col--left">
+                <div className="teams-display-participants2.0">
+                    <div className="teams-section-header-participants2.0">
+                        <div className="teams-header-row-participants2.0">
+                            <div className="teams-header-col-participants2.0 teams-header-col--left-participants2.0">
                                 <strong>Сформированные команды: {teamsToShow.length}</strong>
                             </div>
-                            <div className="teams-header-col teams-header-col--right">
+                            <div className="teams-header-col-participants2.0 teams-header-col--right-participants2.0">
                                 <strong>Статус</strong>
                             </div>
                         </div>
                     </div>
 
-                    <div className="teams-list">
+                    <div className="teams-list-participants2.0">
                         {teamsToShow.map((team, index) => {
                             const status = getTeamStatus(team);
                             return (
-                                <div key={team.id || index} className={`team-row ${status.cls}`}>
-                                    <div className="team-row-left">
-                                        <div className="team-avatar">
+                                <div key={team.id || index} className={`team-row-participants2.0 ${status.cls}`}>
+                                    <div className="team-row-left-participants2.0">
+                                        <div className="team-avatar-participants2.0">
                                             <img
                                                 src={ensureHttps(team.logo_url || team.avatar_url) || '/default-avatar.png'}
                                                 alt={`${team.name || `Команда ${index + 1}`} logo`}
                                                 onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                                             />
                                         </div>
-                                        <div className="team-main">
-                                            <span className="team-name">{team.name || `Команда ${index + 1}`}</span>
-                                            <span className="team-rating">
+                                        <div className="team-main-participants2.0">
+                                            <span className="team-name-participants2.0">{team.name || `Команда ${index + 1}`}</span>
+                                            <span className="team-rating-participants2.0">
                                                 {ratingType === 'faceit' ? 'FACEIT: ' : 'Premier: '}
                                                 {team.averageRating || '—'}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="team-row-right">
-                                        <span className="team-status">{status.text}</span>
+                                    <div className="team-row-right-participants2.0">
+                                        <span className="team-status-participants2.0">{status.text}</span>
                                     </div>
                                 </div>
                             );
