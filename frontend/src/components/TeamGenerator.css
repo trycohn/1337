@@ -1089,7 +1089,7 @@
   height: 67px;
   justify-content: space-between;
   padding: 16px;
-  background-color: #1D1D1D;
+  background-color: #00000080;
   width: 100%;
 }
 .teams-header-row-participants2\.0 {
@@ -1198,12 +1198,11 @@
   font-size: 1.25rem;
 }
 .original-participants-section-header-participants2\.0 {
-  margin-bottom: 10px;
   display: flex;
   height: 67px;
   justify-content: space-between;
   padding: 16px;
-  background-color: #1D1D1D;
+  background-color: #00000080;
   width: 100%;
 }
 .participants-header-row-participants2\.0 {
