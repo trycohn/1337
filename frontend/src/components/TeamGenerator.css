@@ -493,31 +493,37 @@ color: #ffffff;
 .team-header-center-mixteams { position: relative; height: 40px; }
 .member-avatars-stack { position: relative; height: 40px; width: 200px; }
 
+/* Контейнер для стека */
 .member-avatars-stack-mixteams {
-  position: relative;
-  height: var(--size, 32px);
-  width: calc(var(--size, 32px) + (var(--size, 32px) * (1 - var(--overlap, .2))) * 7); /* под 8 аватаров */
-  --size: 32px;
-  --overlap: .2;
+  display: flex;
+  align-items: center;
+  --size: 32px;       /* размер аватарки */
+  --overlap: 0.2;     /* 20% перекрытие */
 }
 
-.stack-avatar-mixteams {
-  position: absolute;
-  top: 0;
+/* Кружок-аватар */
+.member-avatars-stack-mixteams .stack-avatar-mixteams {
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
   overflow: hidden;
-  border: none;
-  left: calc(var(--i, 0) * var(--size) * (1 - var(--overlap)));
-  transition: transform .15s ease;
+  border: 2px solid #000; /* разделительная рамка по вашей теме */
+  box-shadow: 0 0 0 1px #000; /* гарантированный разделитель поверх фона */
 }
 
-.stack-avatar-mixteams:hover { 
-  z-index: 2; 
-  transform: translateY(-2px); 
+/* Перекрытие на 20% ширины аватара */
+.member-avatars-stack-mixteams .stack-avatar-mixteams + .stack-avatar-mixteams {
+  margin-left: calc(var(--size) * calc(-1 * var(--overlap)));
 }
 
+/* Опционально: подсветка при наведении и порядок слоёв */
+.member-avatars-stack-mixteams .stack-avatar-mixteams { transition: transform .15s ease; }
+.member-avatars-stack-mixteams .stack-avatar-mixteams:hover { z-index: 2; transform: translateY(-2px); }
+
+/* Адаптив (пример) */
+@media (max-width: 768px) {
+  .member-avatars-stack-mixteams { --size: 28px; }
+}
 
 .stack-avatar,
 .stack-avatar-mixteams { position: absolute; top: 0; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 2px solid #000; }
