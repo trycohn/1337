@@ -1,10 +1,8 @@
 ﻿/* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ */
 .tournament-participants {
     width: 100%;
-    padding: 24px;
     background: #000000;
     color: #ffffff;
-    border-radius: 12px;
     margin-bottom: 24px;
 }
 
@@ -277,13 +275,6 @@
     border-color: rgba(239, 68, 68, 0.5);
 }
 
-/* Р“РµРЅРµСЂР°С‚РѕСЂ РєРѕРјР°РЅРґ */
-.team-generator-section-participants {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid #333333;
-}
-
 /* Новый общий грид для MIX: участники слева, команды справа */
 .team-generator .mix-grid {
     display: grid;
@@ -522,9 +513,6 @@
 
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
-    .tournament-participants {
-        padding: 16px;
-    }
     
     .participants-header {
         flex-direction: column;
