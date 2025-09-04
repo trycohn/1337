@@ -993,3 +993,90 @@
 }
 
 /* СТИЛИ ДЛЯ УЧАСТНИКОВ */ 
+/* Хедер списка участников: две колонки */
+.original-participants-section-header {
+  margin-bottom: 10px;
+}
+.participants-header-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #374151;
+}
+.participants-header-col {
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+.participants-header-col--left {
+  text-align: left;
+}
+.participants-header-col--right {
+  text-align: right;
+}
+
+/* Список участников и строки */
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.participant-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  background-color: #000000;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.participant-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0; /* для обрезки длинных имен */
+}
+.participant-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.participant-main .participant-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.participant-row-right {
+  text-align: right;
+}
+
+/* Статусы для новых строк */
+.participant-row.not-in-team .participant-status {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.participant-row.in-team .participant-status {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+@media (max-width: 640px) {
+  .participants-header-row {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 6px 8px;
+  }
+  .participant-row {
+    grid-template-columns: 1fr auto;
+    padding: 8px 10px;
+  }
+  .participant-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}

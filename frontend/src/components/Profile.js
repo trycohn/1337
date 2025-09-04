@@ -1521,7 +1521,7 @@ function Profile() {
         } catch (uiErr) {
             console.error('Ошибка локального обновления после сохранения email:', uiErr);
         }
-        
+            
         // И наконец, отправляем код верификации (ошибки тут не считаем ошибкой сохранения)
         try {
             await sendVerificationCode();
@@ -1892,7 +1892,7 @@ function Profile() {
                             return (
                                 <div key={index} className="match-row empty">
                                     <div className="match-empty">Нет данных</div>
-                                </div>
+                            </div>
                             );
                         }
                         return (
@@ -1903,8 +1903,8 @@ function Profile() {
                                 <div className="match-status">
                                     <span className="result">{statusLabel}</span>
                                     {(match.is_test || match.test) && <span className="match-badge-test">Тест</span>}
-                                </div>
                             </div>
+                        </div>
                         );
                     })}
                 </div>
@@ -1936,21 +1936,21 @@ function Profile() {
         let statusLabel = 'Не в сети';
         if (statusRaw === 'online') { dotClass = 'online'; statusLabel = 'В сети'; }
         else if (statusRaw === 'ingame' || statusRaw === 'in_game' || statusRaw === 'playing') { dotClass = 'ingame'; statusLabel = 'В игре'; }
-
+        
         return (
             <div key={friend.id} className="card">
                 <div className="avatar">
-                    <img
-                        src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'}
+                    <img 
+                        src={ensureHttps(friend.friend.avatar_url) || '/default-avatar.png'} 
                         alt={username}
                     />
-                </div>
+                        </div>
                 <div className="info">
                     <div className="name" title={username}>{username}</div>
                     <div className="meta">
                         <span className={`dot ${dotClass}`}></span>
                         <span>{statusLabel}</span>
-                    </div>
+                            </div>
                     <div className="toolbar">
                         <a className="btn" href={profileHref}>Профиль</a>
                         <button className="btn primary" onClick={() => openChatWith(friend.friend.id)}>Написать</button>
@@ -2333,7 +2333,7 @@ function Profile() {
                             </div>
                             <div className={`meta-item ${user.email ? (user.is_verified ? 'ok' : 'warn') : 'muted'}`}>
                                 <span>✉ {user.email ? (user.is_verified ? 'Подтвержден' : 'Не подтвержден') : 'Нет'}</span>
-                            </div>
+                                </div>
                             {user.steam_url && (
                                 <div className="meta-item ok">
                                     <span>🎮 Steam</span>
@@ -2466,15 +2466,15 @@ function Profile() {
                             </div>
                         </button>
                         {user && user.role === 'admin' && (
-                            <button 
-                                className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
-                                onClick={() => switchTab('v4analytics')}
-                            >
-                                <div className="nav-tab-content-profile">
-                                    <span className="nav-tab-icon-profile">🔥</span>
-                                    <span>Аналитика V4 ULTIMATE</span>
-                                </div>
-                            </button>
+                        <button 
+                            className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
+                            onClick={() => switchTab('v4analytics')}
+                        >
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">🔥</span>
+                                <span>Аналитика V4 ULTIMATE</span>
+                            </div>
+                        </button>
                         )}
                     </nav>
                 </div>
@@ -2498,18 +2498,18 @@ function Profile() {
                                             {/* Строка: Имя пользователя */}
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Имя пользователя</div>
-                                                <input
+                                            <input
                                                     className="mi-input"
-                                                    type="text"
-                                                    value={newUsername}
-                                                    onChange={(e) => setNewUsername(e.target.value)}
-                                                    placeholder="Новый никнейм"
-                                                />
+                                                type="text"
+                                                value={newUsername}
+                                                onChange={(e) => setNewUsername(e.target.value)}
+                                                placeholder="Новый никнейм"
+                                            />
                                                 <div className="mi-actions">
                                                     <button className="mi-btn" onClick={updateUsername}>Изменить ник</button>
-                                                </div>
                                             </div>
-
+                                        </div>
+                                        
                                             {/* Строка: Email */}
                                             <div className="mi-form-row">
                                                 <div className="mi-label">Email</div>
@@ -2523,9 +2523,9 @@ function Profile() {
                                                         )
                                                     ) : (
                                                         <button className="mi-btn" onClick={openAddEmailModal}>Привязать</button>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
+                                        </div>
 
                                             {/* Строка: Пароль */}
                                             <div className="mi-form-row">
@@ -2533,8 +2533,8 @@ function Profile() {
                                                 <div className="mi-value" style={{justifySelf: 'start', paddingLeft: '13px'}}>••••••••</div>
                                                 <div className="mi-actions">
                                                     <button className="mi-btn" onClick={openChangePasswordModal}>Сменить пароль</button>
-                                                </div>
                                             </div>
+                                        </div>
                                         </section>
 
                                         {/* Макетный стиль: привязки аккаунтов */}
@@ -2546,7 +2546,7 @@ function Profile() {
                                                 <div className="mi-bind-left">
                                                     <div className="mi-service-icon" aria-hidden="true">
                                                         <span>●</span>
-                                                    </div>
+                                    </div>
                                                     <div>
                                                         <div>Steam</div>
                                                         <div className={`mi-status ${user.steam_url ? 'ok' : 'none'}`}>
@@ -2557,23 +2557,23 @@ function Profile() {
                                                                     'Активен'
                                                                 )
                                                             ) : 'Не привязан'}
-                                                        </div>
-                                                    </div>
+                                        </div>
+                                    </div>
                                                 </div>
                                                 {user.steam_url ? (
                                                     <button className="mi-btn mi-btn-danger" onClick={unlinkSteam}>Отвязать</button>
                                                 ) : (
                                                     <button className="mi-btn" onClick={linkSteam}>Привязать</button>
                                                 )}
-                                            </div>
+                                </div>
 
                                             {/* Faceit */}
                                             <div className="mi-bind-row">
                                                 <div className="mi-bind-left">
                                                     <div className="mi-service-icon" aria-hidden="true">
                                                         <span>▲</span>
-                                                    </div>
-                                                    <div>
+                                    </div>
+                                        <div>
                                                         <div>Faceit</div>
                                                         <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
                                                             {user.faceit_id ? (
@@ -2588,8 +2588,8 @@ function Profile() {
                                                     <button className="mi-btn mi-btn-danger" onClick={unlinkFaceit}>Отвязать</button>
                                                 ) : (
                                                     <button className="mi-btn" onClick={linkFaceit}>Привязать</button>
-                                                )}
-                                            </div>
+                                            )}
+                                        </div>
 
                                             <div className="mi-helper">Опасные действия подсвечены красным. Привязка откроется в новом окне сервиса.</div>
                                         </section>
@@ -2653,14 +2653,14 @@ function Profile() {
                                                 </div>
                                                 <div className="stats-card stat-compact stat-winrate">
                                                     <div className="stat-icon" aria-hidden>%</div>
-                                                    {(() => {
-                                                        const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
-                                                        const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
+                                                        {(() => {
+                                                            const totalWins = (stats.solo.wins || 0) + (stats.team.wins || 0);
+                                                            const totalMatches = (stats.solo.wins || 0) + (stats.solo.losses || 0) + (stats.team.wins || 0) + (stats.team.losses || 0);
                                                         const wr = totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
                                                         return (
                                                             <div className="winrate-ring" style={{ '--value': wr }}>
                                                                 <div className="ring-inner">{wr}%</div>
-                                                            </div>
+                                                    </div>
                                                         );
                                                     })()}
                                                     <div className="stats-label subtle">Винрейт</div>
@@ -2963,14 +2963,14 @@ function Profile() {
 
                                 {/* ✨ V4 ULTIMATE: скрыто для не-админов */}
                                 {user && user.role === 'admin' && (
-                                    <V4StatsDashboard
-                                        v4Data={v4Data}
-                                        stats={stats}
-                                        requestEnhancedRecalculation={requestEnhancedRecalculation}
-                                        isRecalculating={isRecalculating}
-                                        recalculationStatus={recalculationStatus}
-                                        recalculationError={recalculationError}
-                                    />
+                                <V4StatsDashboard
+                                    v4Data={v4Data}
+                                    stats={stats}
+                                    requestEnhancedRecalculation={requestEnhancedRecalculation}
+                                    isRecalculating={isRecalculating}
+                                    recalculationStatus={recalculationStatus}
+                                    recalculationError={recalculationError}
+                                />
                                 )}
                             </>
                         )}
@@ -3020,59 +3020,59 @@ function Profile() {
                                         <h2>Поиск друзей</h2>
                                         <div className="search">
                                             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.5 21.5 20l-6-6zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                                            <input
-                                                type="text"
+                                                <input
+                                                    type="text"
                                                 placeholder="Поиск пользователя по нику…"
-                                                value={searchQuery}
-                                                onChange={handleSearchChange}
-                                            />
-                                        </div>
-
-                                        {searchResults.length > 0 && (
-                                            <div className="search-results">
-                                                {searchResults.map(user => (
-                                                    <div key={user.id} className="search-item">
-                                                        <img
-                                                            src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
-                                                            alt={user.username}
-                                                            className="search-avatar"
-                                                        />
-                                                        <a href={`/user/${user.id}`} className="search-username">
-                                                            {user.username}
-                                                        </a>
-                                                        <div>
-                                                            {user.requestSent ? (
-                                                                <button className="btn btn-sm" disabled>
-                                                                    Отправлено
-                                                                </button>
-                                                            ) : (
-                                                                <button onClick={() => sendFriendRequest(user.id)} className="btn btn-sm">
-                                                                    Добавить
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    value={searchQuery}
+                                                    onChange={handleSearchChange}
+                                                />
                                             </div>
-                                        )}
-                                        {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
-                                            <p className="empty-state-description">Пользователи не найдены</p>
-                                        )}
+
+                                            {searchResults.length > 0 && (
+                                                <div className="search-results">
+                                                    {searchResults.map(user => (
+                                                        <div key={user.id} className="search-item">
+                                                            <img
+                                                                src={ensureHttps(user.avatar_url) || '/default-avatar.png'}
+                                                                alt={user.username}
+                                                                className="search-avatar"
+                                                            />
+                                                            <a href={`/user/${user.id}`} className="search-username">
+                                                                {user.username}
+                                                            </a>
+                                                            <div>
+                                                                {user.requestSent ? (
+                                                                    <button className="btn btn-sm" disabled>
+                                                                        Отправлено
+                                                                    </button>
+                                                                ) : (
+                                                                <button onClick={() => sendFriendRequest(user.id)} className="btn btn-sm">
+                                                                        Добавить
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && searchPerformed && (
+                                                <p className="empty-state-description">Пользователи не найдены</p>
+                                            )}
 
                                         <div className="list">
                                             <h2>Мои друзья ({friends.length})</h2>
-                                            {loadingFriends ? (
-                                                <div className="loading-spinner">Загрузка списка друзей...</div>
-                                            ) : friends.length > 0 ? (
+                                        {loadingFriends ? (
+                                            <div className="loading-spinner">Загрузка списка друзей...</div>
+                                        ) : friends.length > 0 ? (
                                                 <div className="grid">
-                                                    {friends.map(friend => renderFriendItem(friend))}
-                                                </div>
-                                            ) : (
-                                                <div className="empty-state">
-                                                    <div className="empty-state-title">У вас пока нет друзей</div>
-                                                    <div className="empty-state-description">Используйте поиск выше, чтобы найти и добавить друзей</div>
-                                                </div>
-                                            )}
+                                                {friends.map(friend => renderFriendItem(friend))}
+                                            </div>
+                                        ) : (
+                                            <div className="empty-state">
+                                                <div className="empty-state-title">У вас пока нет друзей</div>
+                                                <div className="empty-state-description">Используйте поиск выше, чтобы найти и добавить друзей</div>
+                                            </div>
+                                        )}
                                         </div>
                                     </div>
                                 </div>
@@ -3166,7 +3166,7 @@ function Profile() {
                                 <div className="content-header">
                                     <h2 className="content-title">Организации</h2>
                                 </div>
-
+                                
                                 {loadingOrganizations || loadingRequest ? (
                                     <div className="loading-spinner">
                                         <p>Загрузка информации об организациях...</p>
@@ -3182,16 +3182,16 @@ function Profile() {
                                                             <div className="org-head">
                                                                 <div className="org-avatar">
                                                                     <img src={ensureHttps(org.logo_url) || '/default-org-logo.png'} alt={org.name} />
-                                                                </div>
+                                            </div>
                                                                 <div>
                                                                     <div className="org-name">{org.name}</div>
                                                                     <div className="org-role">{org.role === 'manager' ? 'Менеджер' : org.role === 'admin' ? 'Администратор' : 'Участник'}</div>
                                                                 </div>
-                                                            </div>
+                                                                    </div>
 
                                                             <div className="org-meta">
                                                                 <span className="org-badge">{org.tournaments_count || 0} турниров</span>
-                                                            </div>
+                                                                    </div>
 
                                                             {org.description && <div className="org-desc">{org.description}</div>}
 
@@ -3233,17 +3233,17 @@ function Profile() {
                                                                 )}
                                                                 <a className="org-btn" href={`/organizer/${org.slug}`} target="_blank" rel="noopener noreferrer">Перейти</a>
                                                             </div>
-
+                                                            
                                                             {editingOrgSlug === org.slug && (
                                                                 <div className="org-edit-form" style={{marginTop:12}}>
                                                                     <div className="form-group">
                                                                         <label>Название</label>
                                                                         <input value={editOrgData.name} onChange={(e)=>setEditOrgData({...editOrgData, name: e.target.value})} />
-                                                                    </div>
+                                                                </div>
                                                                     <div className="form-group">
                                                                         <label>Описание</label>
                                                                         <textarea rows="3" value={editOrgData.description||''} onChange={(e)=>setEditOrgData({...editOrgData, description: e.target.value})} />
-                                                                    </div>
+                                                            </div>
                                                                     <div className="form-row">
                                                                         <div className="form-group">
                                                                             <label>Сайт</label>
@@ -3303,7 +3303,7 @@ function Profile() {
                                                         </div>
                                                     )}
                                                 </div>
-
+                                                
                                                 <div className="org-footer">
                                                     <span>Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.</span>
                                                     {!organizationRequest && (
@@ -3324,113 +3324,113 @@ function Profile() {
                                                                 <div>
                                                                     <div className="org-name">{organizationRequest.organization_name}</div>
                                                                     <div className="org-role">Заявка на организацию</div>
-                                                                </div>
-                                                            </div>
+                                    </div>
+                                            </div>
                                                             <div className="org-meta">
                                                                 <span className={`org-badge ${organizationRequest.status}`}>
-                                                                    {organizationRequest.status === 'pending' && 'На рассмотрении'}
-                                                                    {organizationRequest.status === 'rejected' && 'Отклонена'}
-                                                                </span>
+                                                            {organizationRequest.status === 'pending' && 'На рассмотрении'}
+                                                            {organizationRequest.status === 'rejected' && 'Отклонена'}
+                                                        </span>
                                                                 <span className="org-badge">от {new Date(organizationRequest.created_at).toLocaleDateString('ru-RU')}</span>
-                                                            </div>
+                                                    </div>
                                                             {organizationRequest.description && (
                                                                 <div className="org-desc">{organizationRequest.description}</div>
                                                             )}
-                                                            {organizationRequest.admin_comment && (
+                                                        {organizationRequest.admin_comment && (
                                                                 <div className="org-desc">Комментарий администратора: {organizationRequest.admin_comment}</div>
-                                                            )}
+                                                        )}
                                                             <div className="org-actions">
                                                                 <button className="org-btn" onClick={()=>fetchOrganizationRequest()}>Обновить статус</button>
                                                                 <button className="org-btn" onClick={()=>setShowOrgRequestForm(true)}>Изменить данные</button>
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
                                         )}
 
                                         {/* Форма заявки (новый макет рендерим ниже грида) */}
                                         {showOrgRequestForm && (
-                                            <div className="organization-tab">
-                                                <div className="content-card">
-                                                    <div className="card-header">
-                                                        <h3 className="card-title">Заявка на создание аккаунта организации</h3>
+                                    <div className="organization-tab">
+                                        <div className="content-card">
+                                            <div className="card-header">
+                                                <h3 className="card-title">Заявка на создание аккаунта организации</h3>
+                                            </div>
+                                            <div className="card-content">
+                                                <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
+
+                                                {!user.email && (
+                                                    <div className="organization-requirement-alert">
+                                                        <h4>❌ Требования не выполнены</h4>
+                                                        <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
+                                                        <button onClick={openAddEmailModal}>Привязать email</button>
                                                     </div>
-                                                    <div className="card-content">
-                                                        <p>Заполните форму ниже, чтобы подать заявку на создание аккаунта организации. Это позволит вам организовывать турниры от имени вашей организации.</p>
+                                                )}
 
-                                                        {!user.email && (
-                                                            <div className="organization-requirement-alert">
-                                                                <h4>❌ Требования не выполнены</h4>
-                                                                <p>Для подачи заявки необходимо привязать email к аккаунту.</p>
-                                                                <button onClick={openAddEmailModal}>Привязать email</button>
-                                                            </div>
-                                                        )}
+                                                {user.email && !user.is_verified && (
+                                                    <div className="organization-requirement-alert">
+                                                        <h4>❌ Требования не выполнены</h4>
+                                                        <p>Для подачи заявки необходимо подтвердить email.</p>
+                                                        <button onClick={openEmailVerificationModal}>Подтвердить email</button>
+                                                    </div>
+                                                )}
 
-                                                        {user.email && !user.is_verified && (
-                                                            <div className="organization-requirement-alert">
-                                                                <h4>❌ Требования не выполнены</h4>
-                                                                <p>Для подачи заявки необходимо подтвердить email.</p>
-                                                                <button onClick={openEmailVerificationModal}>Подтвердить email</button>
-                                                            </div>
-                                                        )}
-
-                                                        {user.email && user.is_verified && (
-                                                            <form onSubmit={submitOrganizationRequest} className="organization-form">
-                                                                {organizationError && (
+                                                {user.email && user.is_verified && (
+                                                    <form onSubmit={submitOrganizationRequest} className="organization-form">
+                                                        {organizationError && (
                                                                     <div className="organization-error">{organizationError}</div>
-                                                                )}
-                                                                {organizationSuccess && (
+                                                        )}
+                                                        {organizationSuccess && (
                                                                     <div className="organization-success">{organizationSuccess}</div>
-                                                                )}
-                                                                <div className="form-group">
+                                                        )}
+                                                        <div className="form-group">
                                                                     <label htmlFor="organizationName">Название организации <span className="required">*</span></label>
                                                                     <input type="text" id="organizationName" name="organizationName" value={organizationData.organizationName} onChange={handleOrganizationInputChange} placeholder="Введите название вашей организации" required />
-                                                                </div>
-                                                                <div className="form-group">
+                                                        </div>
+                                                        <div className="form-group">
                                                                     <label htmlFor="description">Краткое описание организации <span className="required">*</span></label>
                                                                     <textarea id="description" name="description" value={organizationData.description} onChange={handleOrganizationInputChange} placeholder="Расскажите о вашей организации, её деятельности и целях..." rows="4" required />
-                                                                </div>
-                                                                <div className="form-group">
-                                                                    <label htmlFor="websiteUrl">Сайт организации</label>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label htmlFor="websiteUrl">Сайт организации</label>
                                                                     <input type="url" id="websiteUrl" name="websiteUrl" value={organizationData.websiteUrl} onChange={handleOrganizationInputChange} placeholder="https://example.com" />
-                                                                </div>
-                                                                <div className="form-group">
-                                                                    <label htmlFor="vkUrl">Ссылка на VK</label>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label htmlFor="vkUrl">Ссылка на VK</label>
                                                                     <input type="url" id="vkUrl" name="vkUrl" value={organizationData.vkUrl} onChange={handleOrganizationInputChange} placeholder="https://vk.com/your_organization" />
-                                                                </div>
-                                                                <div className="form-group">
-                                                                    <label htmlFor="telegramUrl">Ссылка на Telegram</label>
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label htmlFor="telegramUrl">Ссылка на Telegram</label>
                                                                     <input type="url" id="telegramUrl" name="telegramUrl" value={organizationData.telegramUrl} onChange={handleOrganizationInputChange} placeholder="https://t.me/your_organization" />
-                                                                </div>
-                                                                <div className="form-group">
-                                                                    <label>Логотип организации</label>
-                                                                    <div className="logo-upload-section">
+                                                        </div>
+                                                        <div className="form-group">
+                                                            <label>Логотип организации</label>
+                                                            <div className="logo-upload-section">
                                                                         <input type="file" ref={organizationFileInputRef} onChange={handleOrganizationLogoChange} accept="image/*" style={{ display: 'none' }} />
-                                                                        {organizationLogoPreview ? (
-                                                                            <div className="logo-preview">
+                                                                {organizationLogoPreview ? (
+                                                                    <div className="logo-preview">
                                                                                 <img src={organizationLogoPreview} alt="Предпросмотр логотипа" className="organization-logo-preview" />
-                                                                                <div className="logo-actions">
+                                                                        <div className="logo-actions">
                                                                                     <button type="button" onClick={triggerOrganizationFileInput} className="change-logo-btn">Изменить</button>
                                                                                     <button type="button" onClick={removeOrganizationLogo} className="remove-logo-btn">Удалить</button>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="logo-upload-placeholder">
-                                                                                <button type="button" onClick={triggerOrganizationFileInput} className="upload-logo-btn">📁 Выбрать файл логотипа</button>
-                                                                                <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
-                                                                            </div>
-                                                                        )}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                <div className="form-group submit-group">
+                                                                ) : (
+                                                                    <div className="logo-upload-placeholder">
+                                                                                <button type="button" onClick={triggerOrganizationFileInput} className="upload-logo-btn">📁 Выбрать файл логотипа</button>
+                                                                        <p className="upload-hint">Рекомендуемый размер: 200x200px, формат: PNG, JPG</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="form-group submit-group">
                                                                     <button type="submit" className="submit-organization-btn" disabled={isSubmittingOrganization}>{isSubmittingOrganization ? 'Отправка...' : 'Отправить заявку'}</button>
-                                                                </div>
-                                                            </form>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                        </div>
+                                                    </form>
+                                                )}
                                             </div>
+                                        </div>
+                                    </div>
                                         )}
                                     </>
                                 )}
