@@ -45,6 +45,7 @@ import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
+import './TeamGenerator.css';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
 import PodiumSection from './tournament/PodiumSection';
@@ -160,6 +161,8 @@ function TournamentDetails() {
     const [tournament, setTournament] = useState(null);
     const [user, setUser] = useState(null);
     const [teams, setTeams] = useState([]);
+    const [mixTeams, setMixTeams] = useState([]);
+    const [mixTeamsLoading, setMixTeamsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [isParticipating, setIsParticipating] = useState(false);
     const [adminRequestStatus, setAdminRequestStatus] = useState(null);
@@ -174,6 +177,7 @@ function TournamentDetails() {
 
     // 🆕 Состояние активной вкладки
     const [activeTab, setActiveTab] = useState('info');
+    const isMixTournament = useMemo(() => (tournament?.format || '').toLowerCase() === 'mix', [tournament?.format]);
     
     // Проверяем URL параметр tab при загрузке; для CS2 по умолчанию открываем "participants"
     useEffect(() => {
@@ -990,6 +994,24 @@ function TournamentDetails() {
         }
     }, [shouldShowParticipantsTab, activeTab]);
 
+    // 🆕 Загрузка микс-команд при необходимости
+    const fetchMixTeams = useCallback(async () => {
+        if (!isMixTournament || !tournament?.id) return;
+        try {
+            setMixTeamsLoading(true);
+            const token = localStorage.getItem('token');
+            const res = await api.get(`/api/tournaments/${tournament.id}/teams`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined
+            });
+            setMixTeams(Array.isArray(res.data) ? res.data : []);
+        } catch (e) {
+            console.error('Ошибка загрузки MIX команд:', e);
+            setMixTeams([]);
+        } finally {
+            setMixTeamsLoading(false);
+        }
+    }, [isMixTournament, tournament?.id]);
+
     // 🆕 Рендеринг контента вкладок
     const renderTabContent = () => {
         switch (activeTab) {
@@ -1052,6 +1074,65 @@ function TournamentDetails() {
                                 }
                             }}
                         />
+                    </div>
+                );
+
+            case 'mix_teams':
+                return (
+                    <div className="tab-content-mix-teams">
+                        {mixTeamsLoading ? (
+                            <p className="loading-teams">Загрузка команд...</p>
+                        ) : (Array.isArray(mixTeams) && mixTeams.length > 0) ? (
+                            <div className="teams-display">
+                                <div className="teams-header">
+                                    <h4>🏆 Сформированные команды ({mixTeams.length})</h4>
+                                </div>
+                                <div className="mixed-teams-grid">
+                                    {mixTeams.map((team, index) => (
+                                        <div key={team.id || index} className="enhanced-team-card">
+                                            <div className="team-card-header">
+                                                <div className="team-title">
+                                                    <h4>{team.name || `Команда ${index + 1}`}</h4>
+                                                    <div className="team-members-count">👥 {team.members?.length || 0} игрок{team.members?.length === 1 ? '' : team.members?.length > 4 ? 'ов' : 'а'}</div>
+                                                </div>
+                                            </div>
+                                            <div className="team-composition">
+                                                <h5>👥 Состав</h5>
+                                                {(team.members && team.members.length > 0) ? (
+                                                    <div className="team-members-list">
+                                                        {team.members.map((member, mIdx) => (
+                                                            <div key={mIdx} className="team-member-row">
+                                                                <div className="member-avatar">
+                                                                    <img src={member.avatar_url || '/default-avatar.png'} alt={member.name || member.username} onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+                                                                </div>
+                                                                <div className="member-info">
+                                                                    <div className={`member-name ${member.is_captain ? 'captain-name' : ''}`}>
+                                                                        {member.is_captain && <span className="captain-crown">👑 </span>}
+                                                                        {member.user_id ? (
+                                                                            <a href={`/user/${member.user_id}`} className="member-profile-link">{member.name || member.username}</a>
+                                                                        ) : (
+                                                                            member.name || member.username
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="no-members">🚫 Состав команды не определен</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="no-teams-message">
+                                <div className="no-teams-icon">⚽</div>
+                                <h4>Команды еще не сформированы</h4>
+                                <p>Как только организатор сформирует команды, они появятся здесь.</p>
+                            </div>
+                        )}
                     </div>
                 );
 
@@ -2523,6 +2604,17 @@ function TournamentDetails() {
                                     onClick={() => switchTab('participants')}
                                 >
                                     <span className="tab-label-tournamentdetails">Участники</span>
+                                </button>
+                            )}
+                            {isMixTournament && (
+                                <button 
+                                    className={`tab-button-tournamentdetails ${activeTab === 'mix_teams' ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (activeTab !== 'mix_teams') fetchMixTeams();
+                                        switchTab('mix_teams');
+                                    }}
+                                >
+                                    <span className="tab-label-tournamentdetails">MIX команды</span>
                                 </button>
                             )}
                             
