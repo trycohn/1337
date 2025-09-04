@@ -771,147 +771,41 @@ const TeamGenerator = ({
     const renderParticipantsList = () => {
         if (tournament?.format !== 'mix') return null;
 
-        // 🆕 РАЗДЕЛЯЕМ УЧАСТНИКОВ НА ГРУППЫ
-        const inTeamParticipants = displayParticipants.filter(p => p.in_team);
-        const notInTeamParticipants = displayParticipants.filter(p => !p.in_team);
+        // Единый список участников и сортировка: сначала без команды, затем в команде, далее по имени
+        const participants = Array.isArray(displayParticipants) ? displayParticipants : [];
+        const sortedParticipants = [...participants].sort((a, b) => {
+            if (!!a.in_team === !!b.in_team) return (a.name || '').localeCompare(b.name || '');
+            return a.in_team ? 1 : -1;
+        });
 
         return (
             <div className="original-participants-section">
-                <h3>
-                    🎮 Зарегистрированные игроки ({displayParticipants?.length || 0})
-                    {getParticipantsStatusText()}
-                </h3>
-                
-                {/* 🆕 УЧАСТНИКИ НЕ В КОМАНДЕ (если есть команды) */}
-                {(mixedTeams.length > 0 || tournament.participant_type === 'team') && notInTeamParticipants.length > 0 && (
-                    <div className="participants-group">
-                        <h4 className="participants-group-title">
-                            ⚠️ Не в команде ({notInTeamParticipants.length})
-                        </h4>
-                        
-                        {/* 🆕 ИНФОРМАЦИОННОЕ СООБЩЕНИЕ */}
-                        <div className="info-message" style={{ 
-                            padding: '12px', 
-                            background: 'rgba(255, 165, 0, 0.1)', 
-                            border: '1px solid rgba(255, 165, 0, 0.3)', 
-                            borderRadius: '8px', 
-                            marginBottom: '15px',
-                            color: '#ffa500'
-                        }}>
-                            💡 <strong>Информация:</strong> Эти участники не попали в команды из-за недостаточного количества игроков 
-                            для формирования полной команды из {teamSize} человек. Они останутся доступными и будут автоматически 
-                            включены в новые команды при регистрации дополнительных участников или переформировании команд.
+                <div className="original-participants-section-header">
+                    <div className="participants-header-row">
+                        <div className="participants-header-col participants-header-col--left">
+                            <strong>Участники: {participants.length}</strong>
                         </div>
-                        
-                        <div className="participants-grid">
-                            {notInTeamParticipants.map((participant) => (
-                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card not-in-team">
-                                    <div className="participant-avatar participant-avatar__not-in-team">
-                                        <img 
-                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                            alt={`${participant.name} avatar`}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = '/default-avatar.png';
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="participant-name">{participant.name}</span>
-                                    <div className="participant-info">
-                                        <span className="participant-rating">
-                                            {(() => {
-                                                // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
-                                                const ratingInfo = getParticipantRatingInfo(participant);
-                                                
-                                                return (
-                                                    <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
-                                                        {ratingType === 'faceit' 
-                                                            ? `FACEIT: ${ratingInfo.rating}`
-                                                            : `Premier: ${ratingInfo.rating}`
-                                                        }
-                                                        {ratingInfo.isManualRating && (
-                                                            <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
-                                                        )}
-                                                    </span>
-                                                );
-                                            })()}
-                                        </span>
-                                        <span className="participant-status">Свободен</span>
-                                    </div>
-                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                        <button 
-                                            className="remove-participant"
-                                            onClick={() => onRemoveParticipant(participant.id)}
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                        <div className="participants-header-col participants-header-col--right">
+                            <strong>Статус</strong>
                         </div>
                     </div>
-                )}
+                </div>
 
-                {/* 🆕 УЧАСТНИКИ В КОМАНДАХ (если есть команды) */}
-                {(mixedTeams.length > 0 || tournament.participant_type === 'team') && inTeamParticipants.length > 0 && (
-                    <div className="participants-group">
-                        <h4 className="participants-group-title">
-                            ✅ В командах ({inTeamParticipants.length})
-                        </h4>
-                        <div className="participants-grid">
-                            {inTeamParticipants.map((participant) => (
-                                <div key={participant?.id || `participant-${Math.random()}`} className="participant-card in-team">
-                                    <div className="participant-avatar">
-                                        <img 
-                                            src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
-                                            alt={`${participant.name} avatar`}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = '/default-avatar.png';
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="participant-name">{participant.name}</span>
-                                    <div className="participant-info">
-                                        
-                                        <span className="participant-rating">
-                                            {(() => {
-                                                // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
-                                                const ratingInfo = getParticipantRatingInfo(participant);
-                                                
-                                                return (
-                                                    <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
-                                                        {ratingType === 'faceit' 
-                                                            ? `FACEIT: ${ratingInfo.rating}`
-                                                            : `Premier: ${ratingInfo.rating}`
-                                                        }
-                                                        {ratingInfo.isManualRating && (
-                                                            <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
-                                                        )}
-                                                    </span>
-                                                );
-                                            })()}
-                                        </span>
-                                        <span className="participant-status">В команде</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* 🆕 ВСЕ УЧАСТНИКИ ЕСЛИ НЕТ КОМАНД (изначальный режим) */}
-                {mixedTeams.length === 0 && tournament.participant_type !== 'team' && (
-                    <div className="mix-players-list">
-                        {loadingParticipants ? (
-                            <p className="loading-participants">Загрузка участников...</p>
-                        ) : displayParticipants && displayParticipants.length > 0 ? (
-                            <div className="participants-grid">
-                                {displayParticipants.map((participant) => (
-                                    <div key={participant?.id || `participant-${Math.random()}`} className="participant-card">
+                {loadingParticipants ? (
+                    <p className="loading-participants">Загрузка участников...</p>
+                ) : participants.length === 0 ? (
+                    <p className="no-participants">Нет зарегистрированных игроков</p>
+                ) : (
+                    <div className="participants-list">
+                        {sortedParticipants.map((participant) => {
+                            const ratingInfo = getParticipantRatingInfo(participant);
+                            const hasRating = ratingInfo && ratingInfo.rating !== undefined && ratingInfo.rating !== null && `${ratingInfo.rating}` !== '';
+                            return (
+                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row${participant.in_team ? ' in-team' : ' not-in-team'}`}>
+                                    <div className="participant-row-left">
                                         <div className="participant-avatar">
-                                            <img 
-                                                src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
+                                            <img
+                                                src={ensureHttps(participant.avatar_url) || '/default-avatar.png'}
                                                 alt={`${participant.name} avatar`}
                                                 onError={(e) => {
                                                     e.target.onerror = null;
@@ -919,42 +813,27 @@ const TeamGenerator = ({
                                                 }}
                                             />
                                         </div>
-                                        
-                                        <div className="participant-info">
-                                            <span className="participant-name">{participant.name}</span> 
-                                            <span className="participant-rating">
-                                                {(() => {
-                                                    // 🆕 ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ О РЕЙТИНГЕ
-                                                    const ratingInfo = getParticipantRatingInfo(participant);
-                                                    
-                                                    return (
-                                                        <span title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
-                                                            {ratingType === 'faceit' 
-                                                                ? `FACEIT: ${ratingInfo.rating}`
-                                                                : `Premier: ${ratingInfo.rating}`
-                                                            }
-                                                            {ratingInfo.isManualRating && (
-                                                                <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
-                                                            )}
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </span>
+                                        <div className="participant-main">
+                                            <span className="participant-name">{participant.name}</span>
+                                            {hasRating && (
+                                                <span className="participant-rating" title={`Источник: ${ratingInfo.source}${ratingInfo.isManualRating ? ' (добавлен вручную)' : ''}`}>
+                                                    {ratingType === 'faceit' ? `FACEIT: ${ratingInfo.rating}` : `Premier: ${ratingInfo.rating}`}
+                                                    {ratingInfo.isManualRating && (
+                                                        <span className="manual-rating-indicator" title="Рейтинг добавлен вручную"> ✏️</span>
+                                                    )}
+                                                </span>
+                                            )}
                                         </div>
-                                        {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                            <button 
-                                                className="remove-participant"
-                                                onClick={() => onRemoveParticipant(participant.id)}
-                                            >
-                                                ✕
-                                            </button>
-                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="no-participants">Нет зарегистрированных игроков</p>
-                        )}
+                                    <div className="participant-row-right">
+                                        <span className="participant-status">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
+                                    </div>
+                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
+                                        <button className="remove-participant" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 
