@@ -2,11 +2,11 @@ import React from 'react';
 import MixTeamCard from './MixTeamCard';
 
 function MixTeamsView({ teams = [], isLoading = false }) {
-    if (isLoading) return <p className="loading-teams">Загрузка команд...</p>;
+    if (isLoading) return <p className="loading-teams-mixteams">Загрузка команд...</p>;
 
     if (!Array.isArray(teams) || teams.length === 0) {
         return (
-            <div className="no-teams-message">
+            <div className="no-teams-message-mixteams">
                 <h4>Команды еще не сформированы</h4>
                 <p>Как только организатор сформирует команды, они появятся здесь.</p>
             </div>
@@ -14,8 +14,8 @@ function MixTeamsView({ teams = [], isLoading = false }) {
     }
 
     return (
-        <div className="teams-display">
-            <div className="mixed-teams-grid">
+        <div className="teams-display-mixteams">
+            <div className="mixed-teams-grid-mixteams">
                 {teams.map((team, idx) => (
                     <MixTeamCard key={team.id || idx} team={team} />
                 ))}
