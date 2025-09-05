@@ -1031,23 +1031,6 @@
     font-weight: 300;
 }
 
-/* === Skeleton theme (profile scope) === */
-.profile-content-area .react-loading-skeleton {
-    background-color: #111111 !important;
-    border-radius: 0 !important;
-}
-.profile-content-area .react-loading-skeleton::after {
-    background-image: linear-gradient(90deg, #0f0f0f 40%, #1a1a1a 50%, #0f0f0f 60%) !important;
-}
-.content-card .react-loading-skeleton,
-.mi-card .react-loading-skeleton {
-    background-color: #111111 !important;
-}
-.content-card .react-loading-skeleton::after,
-.mi-card .react-loading-skeleton::after {
-    background-image: linear-gradient(90deg, #0f0f0f 40%, #1a1a1a 50%, #0f0f0f 60%) !important;
-}
-
 /* Verification Alert */
 .verification-alert {
     border: 1px solid var(--accent-warning);
