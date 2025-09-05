@@ -358,20 +358,7 @@
   font-size: var(--font-size-small);
   color: var(--primary-color);
 }
-/* Улучшенные hover эффекты */
-.auth-tab,
-.auth-button,
-.steam-button,
-.faceit-button {
-  position: relative;
-  overflow: hidden;
-}
-.auth-tab:hover,
-.auth-button:hover:not(:disabled),
-.steam-button:hover:not(:disabled),
-.faceit-button:hover:not(:disabled) {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
+/* Отключены усиленные hover-эффекты, чтобы исключить визуальную "тряску" */
 
 /* 🆕 МОДАЛЬНОЕ ПРИВЕТСТВЕННОЕ ОКНО */
 .welcome-modal-overlay {
