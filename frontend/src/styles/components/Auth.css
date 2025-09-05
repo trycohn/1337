@@ -314,7 +314,7 @@
 .auth-page .card-wide-resetpage { width:min(92vw, 520px) !important; }
 
 /* Страница сброса пароля (-resetpage) */
-.card-resetpage { width:min(92vw, 440px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
+.card-resetpage { width:min(92vw, 520px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
 .auth-page .card-resetpage:hover{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.45); }
 .section-resetpage{ padding:28px; }
 .title-resetpage{ margin:0 0 10px; font-size:20px; font-weight:900; letter-spacing:.08em; color:#ff3b3b; text-align:center; text-transform:uppercase }
