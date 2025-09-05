@@ -265,234 +265,177 @@ function AuthPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-tabs">
-          <button
-            className={`auth-tab ${isLogin ? 'active' : ''}`}
+      <div className="card" id="auth">
+        <div className="tabs">
+          <div
+            className="tab"
+            role="tab"
+            aria-selected={isLogin ? 'true' : 'false'}
+            data-tab="login"
             onClick={() => setIsLogin(true)}
           >
             Вход
-          </button>
-          <button
-            className={`auth-tab ${!isLogin ? 'active' : ''}`}
+          </div>
+          <div
+            className="tab"
+            role="tab"
+            aria-selected={!isLogin ? 'true' : 'false'}
+            data-tab="register"
             onClick={() => setIsLogin(false)}
           >
             Регистрация
-          </button>
+          </div>
+          <span
+            className="tab-underline"
+            id="underline"
+            style={{ transform: `translateX(${isLogin ? 0 : 100}%)` }}
+          />
         </div>
-        
-        <div className="auth-form-container">
-          <form 
-            onSubmit={handleLogin} 
-            className={`auth-form ${isLogin ? 'visible' : 'hidden'}`}
-          >
-            <h2>Вход в аккаунт</h2>
-            <div className="form-group">
-              <input
-                type="email"
-                placeholder="Электронная почта"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="password"
-                placeholder="Пароль"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="forgot-password">
-              <a href="/forgot-password">
-                Забыли пароль?
-              </a>
-            </div>
-            <div className="auth-button-container">
-              <button 
-                type="submit" 
-                className={`auth-button ${isLoading ? 'loading' : ''}`}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Вход...' : 'Войти'}
-              </button>
-              
-              {/* 🆕 ТУЛТИП ДЛЯ ВХОДА */}
-              {tooltips.login.show && (
-                <div className={`auth-tooltip ${tooltips.login.type}`}>
-                  <div className="tooltip-content">
-                    <span className="tooltip-icon">
-                      {tooltips.login.type === 'success' ? '✅' : '❌'}
-                    </span>
-                    <span className="tooltip-message">{tooltips.login.message}</span>
-                    <button 
-                      className="tooltip-close"
-                      onClick={() => hideTooltip('login')}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="tooltip-arrow"></div>
-                </div>
-              )}
-            </div>
-            
-            <div className="auth-divider">
-              <span className="auth-divider-text">или</span>
-            </div>
-            
-            <div className="social-login-buttons">
-              <button 
-                type="button" 
-                className="steam-button"
-                onClick={handleSteamLogin}
-              >
+
+        <div className="section" data-panel="login" hidden={!isLogin}>
+          <h2 className="title">Вход в аккаунт</h2>
+          <div className="field">
+            <label>Почта</label>
+            <input
+              className="input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Пароль</label>
+            <input
+              className="input"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <div className="meta"><a href="/forgot-password">Забыли пароль?</a></div>
+          </div>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={(e) => handleLogin(e)} disabled={isLoading}>
+              {isLoading ? 'Вход...' : 'Войти'}
+            </button>
+            <div className="divider">или</div>
+            <div className="social">
+              <button type="button" className="btn btn-steam" onClick={handleSteamLogin}>
+                <span className="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3v18h18V3Zm-6.6 4.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4ZM6.5 14.3l2.9 1.1a2.6 2.6 0 1 0 3.8-2.7 2.6 2.6 0 0 0-2.7.4L7.7 11a2.7 2.7 0 0 0-1.2 3.4Zm6.9-2.5a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"/></svg>
+                </span>
                 Войти через Steam
               </button>
-              <button 
-                type="button" 
-                className="faceit-button"
-                onClick={handleFaceitLogin}
-              >
-                Войти через FACEIT
+              <button type="button" className="btn btn-faceit" onClick={handleFaceitLogin}>
+                <span className="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16.5 20 7l-6.5 10.2L9.7 18 4 16.5Z"/></svg>
+                </span>
+                Войти через Faceit
               </button>
             </div>
-          </form>
-          
-          <form 
-            onSubmit={handleRegister} 
-            className={`auth-form ${!isLogin ? 'visible' : 'hidden'}`}
-          >
-            <h2>Регистрация</h2>
-            <div className="form-group">
-              <input
-                type="text"
-                placeholder="Имя пользователя"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  clearFieldError('username');
-                }}
-                className={validationErrors.username ? 'error' : ''}
-                maxLength="20"
-                required
-              />
-              {validationErrors.username && (
-                <div className="field-error">{validationErrors.username}</div>
-              )}
+          </div>
+
+          {tooltips.login.show && (
+            <div className={`auth-tooltip ${tooltips.login.type}`}>
+              <div className="tooltip-content">
+                <span className="tooltip-icon">
+                  {tooltips.login.type === 'success' ? '✅' : '❌'}
+                </span>
+                <span className="tooltip-message">{tooltips.login.message}</span>
+                <button className="tooltip-close" onClick={() => hideTooltip('login')}>✕</button>
+              </div>
+              <div className="tooltip-arrow"></div>
             </div>
-            <div className="form-group">
-              <input
-                type="email"
-                placeholder="Электронная почта"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  clearFieldError('email');
-                }}
-                className={validationErrors.email ? 'error' : ''}
-                required
-              />
-              {validationErrors.email && (
-                <div className="field-error">{validationErrors.email}</div>
-              )}
-            </div>
-            <div className="form-group">
-              <input
-                type="password"
-                placeholder="Пароль"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  clearFieldError('password');
-                }}
-                className={validationErrors.password ? 'error' : ''}
-                required
-              />
-              {validationErrors.password && (
-                <div className="field-error">{validationErrors.password}</div>
-              )}
-              
-              {/* Индикатор силы пароля */}
-              {password && (
-                <PasswordStrengthIndicator 
-                  password={password}
-                  confirmPassword={confirmPassword}
-                />
-              )}
-            </div>
-            <div className="form-group">
-              <input
-                type="password"
-                placeholder="Подтвердите пароль"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  clearFieldError('confirmPassword');
-                }}
-                className={validationErrors.confirmPassword ? 'error' : ''}
-                required
-              />
-              {validationErrors.confirmPassword && (
-                <div className="field-error">{validationErrors.confirmPassword}</div>
-              )}
-            </div>
-            <div className="auth-button-container">
-              <button 
-                type="submit" 
-                className={`auth-button ${isLoading ? 'loading' : ''}`}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
-              </button>
-              
-              {/* 🆕 ТУЛТИП ДЛЯ РЕГИСТРАЦИИ */}
-              {tooltips.register.show && (
-                <div className={`auth-tooltip ${tooltips.register.type}`}>
-                  <div className="tooltip-content">
-                    <span className="tooltip-icon">
-                      {tooltips.register.type === 'success' ? '✅' : '❌'}
-                    </span>
-                    <span className="tooltip-message">{tooltips.register.message}</span>
-                    <button 
-                      className="tooltip-close"
-                      onClick={() => hideTooltip('register')}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="tooltip-arrow"></div>
-                </div>
-              )}
-            </div>
-            
-            <div className="auth-divider">
-              <span className="auth-divider-text">или</span>
-            </div>
-            
-            <div className="social-login-buttons">
-              <button 
-                type="button" 
-                className="steam-button"
-                onClick={handleSteamLogin}
-              >
+          )}
+        </div>
+
+        <div className="section" data-panel="register" hidden={isLogin}>
+          <h2 className="title">Регистрация</h2>
+          <div className="field">
+            <label>Имя пользователя</label>
+            <input
+              className={`input ${validationErrors.username ? 'error' : ''}`}
+              type="text"
+              placeholder="Никнейм"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); clearFieldError('username'); }}
+              maxLength="20"
+            />
+            {validationErrors.username && <div className="field-error">{validationErrors.username}</div>}
+          </div>
+          <div className="field">
+            <label>Почта</label>
+            <input
+              className={`input ${validationErrors.email ? 'error' : ''}`}
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); clearFieldError('email'); }}
+            />
+            {validationErrors.email && <div className="field-error">{validationErrors.email}</div>}
+          </div>
+          <div className="field">
+            <label>Пароль</label>
+            <input
+              className={`input ${validationErrors.password ? 'error' : ''}`}
+              type="password"
+              placeholder="Не менее 8 символов"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); clearFieldError('password'); }}
+            />
+            {validationErrors.password && <div className="field-error">{validationErrors.password}</div>}
+            {password && (
+              <PasswordStrengthIndicator password={password} confirmPassword={confirmPassword} />
+            )}
+          </div>
+          <div className="field">
+            <label>Подтвердите пароль</label>
+            <input
+              className={`input ${validationErrors.confirmPassword ? 'error' : ''}`}
+              type="password"
+              placeholder="Повторите пароль"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }}
+            />
+            {validationErrors.confirmPassword && <div className="field-error">{validationErrors.confirmPassword}</div>}
+          </div>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={(e) => handleRegister(e)} disabled={isLoading}>
+              {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
+            </button>
+            <div className="divider">или</div>
+            <div className="social">
+              <button type="button" className="btn btn-steam" onClick={handleSteamLogin}>
+                <span className="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3v18h18V3Zm-6.6 4.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4ZM6.5 14.3l2.9 1.1a2.6 2.6 0 1 0 3.8-2.7 2.6 2.6 0 0 0-2.7.4L7.7 11a2.7 2.7 0 0 0-1.2 3.4Zm6.9-2.5a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"/></svg>
+                </span>
                 Войти через Steam
               </button>
-              <button 
-                type="button" 
-                className="faceit-button"
-                onClick={handleFaceitLogin}
-              >
-                Войти через FACEIT
+              <button type="button" className="btn btn-faceit" onClick={handleFaceitLogin}>
+                <span className="ico" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16.5 20 7l-6.5 10.2L9.7 18 4 16.5Z"/></svg>
+                </span>
+                Войти через Faceit
               </button>
             </div>
-          </form>
+          </div>
+
+          {tooltips.register.show && (
+            <div className={`auth-tooltip ${tooltips.register.type}`}>
+              <div className="tooltip-content">
+                <span className="tooltip-icon">
+                  {tooltips.register.type === 'success' ? '✅' : '❌'}
+                </span>
+                <span className="tooltip-message">{tooltips.register.message}</span>
+                <button className="tooltip-close" onClick={() => hideTooltip('register')}>✕</button>
+              </div>
+              <div className="tooltip-arrow"></div>
+            </div>
+          )}
         </div>
       </div>
-      
-      {/* 🆕 МОДАЛЬНОЕ ПРИВЕТСТВЕННОЕ ОКНО */}
+
       {showWelcomeModal && (
         <div className="welcome-modal-overlay">
           <div className="welcome-modal">

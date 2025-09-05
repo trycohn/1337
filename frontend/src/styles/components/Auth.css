@@ -311,19 +311,40 @@
   margin-bottom: 8px;
 }
 
-/* Дополнительные стили для улучшения UX */
-.auth-container {
-  position: relative;
-}
-.auth-container:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary-color), transparent, var(--primary-color));
-}
+/* Новая карточка и табы под макет */
+.auth-page { display: grid; place-items: center; min-height: calc(100vh - var(--header-height)); background:#000; padding: 16px; }
+.card { width:min(92vw, 440px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
+.tabs { display:flex; background:#101113; position:relative; }
+.tab { flex:1; text-align:center; padding:14px 16px; letter-spacing:.08em; font-weight:600; color:#a7a7aa; cursor:pointer; user-select:none; position:relative; }
+.tab[aria-selected="true"]{ color:#e9e9ea; }
+.tab-underline{ position:absolute; bottom:0; height:3px; width:50%; background:#ff3b3b; left:0; transition:transform .28s ease; }
+.section{ padding:28px; }
+.title{ margin:0 0 18px; font-size:18px; font-weight:800; letter-spacing:.08em; color:#ff3b3b; }
+.field{ display:grid; gap:8px; margin-bottom:14px; }
+.field label{ font-size:12px; color:#a7a7aa; letter-spacing:.06em; }
+.input{ height:44px; border-radius:12px; border:1px solid #2a2c31; background:#0f1012; color:#e9e9ea; outline:none; padding:0 14px; transition:border-color .15s ease, box-shadow .15s ease; }
+.input::placeholder{ color:#7d7f84; }
+.input:focus{ border-color:#6e6e73; box-shadow:0 0 0 3px rgba(110,110,115,.25); }
+.input.error{ border-color:#ff3b3b; }
+.row{ display:flex; gap:12px; }
+.actions{ display:grid; gap:18px; margin-top:18px; }
+.btn{ height:46px; border-radius:12px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-weight:800; letter-spacing:.06em; cursor:pointer; transition:filter .15s ease, transform .04s ease; text-transform:uppercase; }
+.btn:active{ transform:translateY(1px); }
+.btn-primary{ background:#ff3b3b; color:#fff; }
+.btn-primary:hover{ filter:brightness(1.05); }
+.btn-outline{ background:transparent; border-color:#303238; color:#a7a7aa; }
+.divider{ display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center; color:#8a8c91; margin-top:6px; }
+.divider:before,.divider:after{ content:""; height:1px; background:#2b2d33; }
+.social{ display:grid; gap:12px; }
+.btn-steam{ background:#232c3d; color:#e8eefc; }
+.btn-faceit{ background:#ff6a00; color:#fff; }
+.btn .ico{ margin-right:10px; display:inline-flex; }
+.meta{ font-size:12px; color:#8c8f95; text-align:right; }
+.meta a{ color:#b1b3b8; text-decoration:none; }
+.meta a:hover{ color:#fff; }
+.strength{ height:6px; border-radius:999px; background:#27292e; overflow:hidden; }
+.strength>i{ display:block; height:100%; width:0%; background:linear-gradient(90deg, #36d66b, #20c05c); transition:width .3s ease; }
+@media (max-width:420px){ .section{ padding:22px } .btn{ height:44px } }
 /* Анимация для полей ввода */
 .form-group {
   position: relative;
