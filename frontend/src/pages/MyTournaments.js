@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import Skeleton from 'react-loading-skeleton';
 import { Link } from 'react-router-dom';
 import { GameIcon } from '../utils/game-icons';
 import api from '../axios';
@@ -13,13 +12,21 @@ function MyTournaments() {
     useEffect(() => {
         let isMounted = true;
         (async function load() {
+            const startedAt = Date.now();
             try {
                 const { data } = await api.get('/api/tournaments/my');
                 if (isMounted) setItems(Array.isArray(data) ? data : []);
             } catch (e) {
                 setError('Не удалось загрузить список ваших турниров');
             } finally {
-                if (isMounted) setLoading(false);
+                const elapsed = Date.now() - startedAt;
+                const minDelay = 1000;
+                const wait = elapsed < minDelay ? (minDelay - elapsed) : 0;
+                if (isMounted) {
+                    setTimeout(() => {
+                        if (isMounted) setLoading(false);
+                    }, wait);
+                }
             }
         })();
         return () => { isMounted = false; };
@@ -28,8 +35,7 @@ function MyTournaments() {
     if (loading) return (
         <section className="tournaments-list">
             <h2>Мои турниры</h2>
-            <SkeletonTheme baseColor="#111111" highlightColor="#1a1a1a">
-                <table>
+            <table>
                     <thead>
                         <tr>
                             <th>Игра</th>
@@ -41,7 +47,7 @@ function MyTournaments() {
                         </tr>
                     </thead>
                     <tbody>
-                        {[...Array(5)].map((_, i) => (
+                        {[...Array(3)].map((_, i) => (
                             <tr key={i}>
                                 <td data-label="Игра">
                                     <Skeleton circle width={24} height={24} />
@@ -65,7 +71,6 @@ function MyTournaments() {
                         ))}
                     </tbody>
                 </table>
-            </SkeletonTheme>
         </section>
     );
     if (error) return <section><p className="error">{error}</p></section>;
