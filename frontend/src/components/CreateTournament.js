@@ -13,6 +13,7 @@ import {
   handleApiError
 } from '../utils/apiUtils';
 import './CreateTournament.css';
+import TournamentProgressBar from './tournament/TournamentProgressBar';
 
 // Регистрируем русскую локаль
 registerLocale('ru', ru);
@@ -484,6 +485,9 @@ function CreateTournament() {
                 <div className="infoblock-label">Статус</div>
                 <div className="infoblock-value">Черновик</div>
               </div>
+            </div>
+            <div className="infoblock-progress">
+              <TournamentProgressBar matches={[]} tournamentStatus={'registration'} tournament={{}} compact={true} />
             </div>
             <div className="infoblock-grid infoblock-bottom">
               <div className="infoblock-item infoblock-format">

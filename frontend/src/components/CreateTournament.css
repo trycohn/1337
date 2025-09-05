@@ -42,6 +42,7 @@
 }
 .create-header-left { min-width: 0; }
 .create-header-right { min-width: 0; }
+.infoblock-progress { margin: 8px 0 8px 0; }
 
 /* Принудительно снимаем возможные зеркальные трансформации у контейнера */
 .create-header-left {
