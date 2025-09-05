@@ -25,6 +25,8 @@ import TeamProfile from './components/tournament/TeamProfile';
 import ReferralLanding from './pages/ReferralLanding';
 import MyTournaments from './pages/MyTournaments';
 import TournamentRulesPage from './pages/TournamentRulesPage';
+import { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -72,6 +74,7 @@ function App() {
         <LoaderProvider>
             <AuthProvider>
                 <UserProvider>
+                    <SkeletonTheme baseColor="#111111" highlightColor="#1a1a1a" duration={1.2}>
                     <Router>
                         <Routes>
                             <Route path="/" element={<Layout />}>
@@ -103,6 +106,7 @@ function App() {
                             <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
                         </Routes>
                     </Router>
+                    </SkeletonTheme>
                 </UserProvider>
             </AuthProvider>
         </LoaderProvider>
