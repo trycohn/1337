@@ -413,6 +413,8 @@ function CreateTournament() {
             className="editable-title"
             contentEditable
             suppressContentEditableWarning
+            dir="ltr"
+            spellCheck={false}
             ref={titleRef}
             data-placeholder="Название турнира"
             onInput={handleTitleInput}

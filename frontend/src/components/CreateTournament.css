@@ -43,6 +43,13 @@
 .create-header-left { min-width: 0; }
 .create-header-right { min-width: 0; }
 
+/* Принудительно снимаем возможные зеркальные трансформации у контейнера */
+.create-header-left {
+    transform: none !important;
+    -webkit-transform: none !important;
+    direction: ltr !important;
+}
+
 .editable-title {
     height: 112px;
     color: #ffffff;
@@ -52,7 +59,9 @@
     text-transform: uppercase;
     text-align: left;
     direction: ltr;
-    unicode-bidi: embed;
+    unicode-bidi: isolate;
+    writing-mode: horizontal-tb;
+    transform: none !important;
     outline: none;
     overflow: hidden;
     padding: 0;
