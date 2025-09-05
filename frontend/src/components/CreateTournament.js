@@ -661,20 +661,7 @@ function CreateTournament() {
                 {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания — можно проиграть один раз'}
               </small>
             </div>
-            {formData.bracket_type === 'double_elimination' && (
-              <div className="form-group full-width">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="full_double_elimination"
-                    checked={formData.full_double_elimination}
-                    onChange={handleInputChange}
-                    disabled={!verificationStatus.canCreate}
-                  />
-                  <span className="checkbox-text">🏆 Включить Full Double Elimination?</span>
-                </label>
-              </div>
-            )}
+            {/* Убрали Full Double Elimination — оставляем только классический Double Elimination */}
 
             {isCS2Game(formData.game) && (
               <div className="form-group full-width">

@@ -247,6 +247,7 @@ letter-spacing: normal;
     display: flex;
     justify-content: flex-start;
     text-transform: none;
+    margin-bottom: 0px;
 }
 .create-tournament .form-group input[type="number"] {
     -webkit-appearance: none;
@@ -823,6 +824,7 @@ letter-spacing: normal;
 
 .map-checkbox input[type=checkbox] {
     width: 24px;
+    height: 24px;
 }
 
 
@@ -890,7 +892,6 @@ letter-spacing: normal;
 .map-checkbox {
     display: flex;
     align-items: center;
-    padding: 10px;
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
