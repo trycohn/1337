@@ -33,9 +33,9 @@ function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <main className="card">
+      <main className="card card-wide">
         <section className="section">
-          <h1 className="title">Восстановление пароля</h1>
+          <h1 className="title title-upper">Восстановление пароля</h1>
           <p className="sub">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
 
           <form onSubmit={handleSubmit}>
