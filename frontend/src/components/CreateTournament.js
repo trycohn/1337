@@ -462,12 +462,12 @@ function CreateTournament() {
             <span className="meta-value">{formData.game ? formData.game : '—'}</span>
           </div>
           <div className="logo-upload-row">
-            <button type="button" className="btn btn-secondary upload-logo-btn" onClick={handleSelectLogoClick}>Загрузить логотип турнира</button>
+            <button type="button" className="btn btn-secondary" onClick={handleSelectLogoClick}>Загрузить логотип турнира</button>
             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoChange} className="hidden-file-input" />
             {logoPreview && (
               <div className="logo-preview"><img src={logoPreview} alt="Логотип турнира" /></div>
             )}
-          </div>
+          </div>  
         </div>
         <div className="create-header-right">
           <div className="infoblock-stats">
