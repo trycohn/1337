@@ -120,22 +120,28 @@
 .create-tournament select,
 .create-tournament textarea {
     width: 100%;
-    padding: var(--ct-spacing-md) var(--ct-spacing-lg);
-    margin-bottom: 0;
-    border: 1px solid var(--ct-border-color);
-    border-radius: 0;
-    background-color: var(--ct-bg-tertiary);
-    color: var(--ct-text-primary);
-    font-weight: 300;
+    padding: 2px 2px 2px 4px;
+    border-radius: 8px;
+    background-color: #F4F4F41F;
+    color: #F4F4F4D9;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: normal;
     transition: var(--ct-transition);
     box-sizing: border-box;
 }
+
+.create-tournament select {
+    height: 48px;
+}
+
 .create-tournament input:focus,
 .create-tournament select:focus,
 .create-tournament textarea:focus {
     outline: none;
-    border-color: var(--ct-border-hover);
-    background-color: var(--ct-bg-primary);
+    border-color: none;
+    background-color: #F4F4F41F;
     transform: translateY(-1px);
 }
 .create-tournament input::placeholder,
@@ -152,7 +158,11 @@
     background-repeat: no-repeat;
     background-position: right var(--ct-spacing-md) center;
     background-size: 16px;
-
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: normal;
+    color: #F4F4F4D9;
 }
 
 /* РЎСµРєС†РёРё С„РѕСЂРјС‹ */
@@ -171,6 +181,7 @@
     color: #FFFFFF;
     display: flex;
     justify-content: flex-start;
+    border: none;
 }
 /* РЎРµС‚РєР° С„РѕСЂРјС‹ */
 .create-tournament .form-grid {
@@ -216,6 +227,7 @@
     color: #F4F4F4D9;
     display: flex;
     justify-content: flex-start;
+    text-transform: none;
 }
 .create-tournament .form-group input[type="number"] {
     -webkit-appearance: none;
@@ -343,22 +355,7 @@
         transform: rotate(360deg);
     }
 }
-/* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
-/* Hover СЌС„С„РµРєС‚С‹ РґР»СЏ СѓР»СѓС‡С€РµРЅРёСЏ UX */
-.create-tournament .form-group:hover label {
-    color: var(--ct-text-primary);
-    transition: var(--ct-transition);
-}
-.create-tournament input:hover,
-.create-tournament select:hover,
-.create-tournament textarea:hover {
-    border-color: var(--ct-border-hover);
-}
-/* РЎС‚РёР»Рё РґР»СЏ С„РѕРєСѓСЃР° РєР»Р°РІРёР°С‚СѓСЂС‹ */
-.create-tournament button:focus-visible {
-    outline: 2px solid var(--ct-text-primary);
-    outline-offset: 2px;
-}
+
 .create-tournament input:focus-visible,
 .create-tournament select:focus-visible,
 .create-tournament textarea:focus-visible {
