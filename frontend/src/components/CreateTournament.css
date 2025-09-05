@@ -325,14 +325,7 @@
 .create-tournament .form-section:nth-child(3) {
     animation-delay: 0.3s;
 }
-/* РЎС‚РёР»Рё РґР»СЏ РІР°Р»РёРґР°С†РёРё */
-.create-tournament input:invalid {
-    border-color: var(--ct-accent-error);
-}
-.create-tournament input:valid {
-    border-color: var(--ct-accent-success);
-}
-/* РРЅРґРёРєР°С‚РѕСЂ Р·Р°РіСЂСѓР·РєРё */
+
 .create-tournament .loading {
     position: relative;
     pointer-events: none;
