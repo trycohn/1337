@@ -156,27 +156,21 @@
 }
 
 /* РЎСµРєС†РёРё С„РѕСЂРјС‹ */
-.create-tournament .form-section {
-    border: 1px solid var(--ct-border-color);
-    border-radius: 0;
-    padding: var(--ct-spacing-xl);
-    margin-bottom: var(--ct-spacing-xl);
-    transition: var(--ct-transition);
-    position: relative;
-    overflow: hidden;
-    animation: fadeIn 0.5s ease-out;
+.form-section {
+    border-radius: 8px;
+    padding: 32px;
+    background-color: #1D1D1D;
 }
 /* Р—Р°РіРѕР»РѕРІРєРё СЃРµРєС†РёР№ */
 .create-tournament .section-title {
-    font-size: 1rem;
-    font-weight: 300;
-    color: var(--ct-text-primary);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0 0 var(--ct-spacing-lg) 0;
-    padding-bottom: var(--ct-spacing-sm);
-    border-bottom: 1px solid var(--ct-border-color);
-    text-align: center;
+    color: #FFFFFF;
+    display: flex;
+    justify-content: flex-start;
 }
 /* РЎРµС‚РєР° С„РѕСЂРјС‹ */
 .create-tournament .form-grid {
@@ -215,13 +209,13 @@
     grid-column: 1 / -1;
 }
 .create-tournament .form-group label {
-    display: block;
-    margin-bottom: var(--ct-spacing-sm);
-    color: var(--ct-text-secondary);
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 0.85rem;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0%;
+    color: #F4F4F4D9;
+    display: flex;
+    justify-content: flex-start;
 }
 .create-tournament .form-group input[type="number"] {
     -webkit-appearance: none;
