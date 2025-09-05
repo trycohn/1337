@@ -643,6 +643,39 @@ function CreateTournament() {
               <small className="form-hint">Открытый — свободное вступление; Закрытый — по приглашению/из отборочных; Финал серии — только победители отборочных.</small>
             </div>
 
+            {/* Тип турнирной сетки (перенесено в Основную информацию) */}
+            <div className="form-group">
+              <label>Тип турнирной сетки</label>
+              <select
+                name="bracket_type"
+                value={formData.bracket_type}
+                onChange={handleInputChange}
+                disabled={!verificationStatus.canCreate}
+                required
+              >
+                <option value="single_elimination">Single Elimination</option>
+                <option value="double_elimination">Double Elimination</option>
+              </select>
+              <small className="form-hint">
+                {formData.bracket_type === 'single_elimination' && 'Классическая система на выбывание — проигравший исключается'}
+                {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания — можно проиграть один раз'}
+              </small>
+            </div>
+            {formData.bracket_type === 'double_elimination' && (
+              <div className="form-group full-width">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="full_double_elimination"
+                    checked={formData.full_double_elimination}
+                    onChange={handleInputChange}
+                    disabled={!verificationStatus.canCreate}
+                  />
+                  <span className="checkbox-text">🏆 Включить Full Double Elimination?</span>
+                </label>
+              </div>
+            )}
+
             {isCS2Game(formData.game) && (
               <div className="form-group full-width">
                 <label className="checkbox-label">
@@ -816,142 +849,9 @@ function CreateTournament() {
           </div>
         </div>
 
-        {/* Настройки турнирной сетки */}
-        <div className="form-section">
-          <h3 className="section-title">Турнирная сетка</h3>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Тип турнирной сетки</label>
-              <select
-                name="bracket_type"
-                value={formData.bracket_type}
-                onChange={handleInputChange}
-                disabled={!verificationStatus.canCreate}
-                required
-              >
-                <option value="single_elimination">Single Elimination</option>
-                <option value="double_elimination">Double Elimination</option>
-              </select>
-              <small className="form-hint">
-                {formData.bracket_type === 'single_elimination' && 'Классическая система на выбывание - проигравший исключается из турнира'}
-                {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания - каждый участник может проиграть один раз'}
-              </small>
-            </div>
+        
 
-            {/* 🆕 НОВОЕ: Опция Full Double Elimination */}
-            {formData.bracket_type === 'double_elimination' && (
-              <div className="form-group full-width">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="full_double_elimination"
-                    checked={formData.full_double_elimination}
-                    onChange={handleInputChange}
-                    disabled={!verificationStatus.canCreate}
-                  />
-                  <span className="checkbox-text">
-                    🏆 Включить Full Double Elimination?
-                  </span>
-                </label>
-                <small className="form-hint">
-                  <strong>Full Double Elimination:</strong> Если участник из нижней сетки (Losers Bracket) выиграет Гранд Финал, то будет проведен дополнительный матч "Grand Final Triumph" для определения чемпиона. Преимущество по умолчанию принадлежит участнику из Winners Bracket.
-                </small>
-              </div>
-            )}
-
-            {/* Убран флажок финала серии — используется выпадающий список "Тип турнира" */}
-          </div>
-        </div>
-
-        {/* Настройки Mix турнира */}
-        {formData.format === 'mix' && (
-          <div className="form-section">
-            <h3 className="section-title">Настройки MIX турнира</h3>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Игроков в команде</label>
-                <input
-                  type="number"
-                  name="team_size"
-                  value={formData.team_size}
-                  onChange={handleInputChange}
-                  min="2"
-                  max="10"
-                  disabled={!verificationStatus.canCreate}
-                  required
-                />
-              </div>
-              
-              {/* 🆕 Тип Микса */}
-              <div className="form-group">
-                <label>Тип Микса</label>
-                <select
-                  name="mix_type"
-                  value={formData.mix_type}
-                  onChange={handleInputChange}
-                  disabled={!verificationStatus.canCreate}
-                  required
-                >
-                  <option value="classic">Классический МИКС (однократно перед стартом)</option>
-                  <option value="full">Фулл МИКС (после каждого тура)</option>
-                </select>
-                <small className="form-hint">
-                  {formData.mix_type === 'classic' && 'Команды формируются один раз перед стартом турнира'}
-                  {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
-                </small>
-              </div>
-
-              <div className="form-group">
-                <label>Формирование команд</label>
-                <select
-                  name="mix_rating_type"
-                  value={formData.mix_rating_type}
-                  onChange={handleInputChange}
-                  disabled={!verificationStatus.canCreate}
-                  required
-                >
-                  <option value="faceit">Формирование на основе рейтинга</option>
-                  <option value="mixed">Случайное формирование без учета рейтинга</option>
-                </select>
-                <small className="form-hint">
-                  {formData.mix_rating_type === 'faceit' && 'Команды формируются на основе рейтинга участников (FACEIT/Premier)'}
-                  {formData.mix_rating_type === 'mixed' && 'Команды формируются случайно, рейтинг не учитывается'}
-                </small>
-              </div>
-
-              {/* 🆕 Требования привязки аккаунтов */}
-              {formData.mix_rating_type === 'faceit' && (
-                <div className="form-group full-width">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="require_faceit_linked"
-                      checked={formData.require_faceit_linked}
-                      onChange={handleInputChange}
-                      disabled={!verificationStatus.canCreate}
-                    />
-                    <span className="checkbox-text">Требовать привязки FACEIT аккаунта</span>
-                  </label>
-                </div>
-              )}
-
-              {false && formData.mix_rating_type === 'premier' && (
-                <div className="form-group full-width">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      name="require_steam_linked"
-                      checked={formData.require_steam_linked}
-                      onChange={handleInputChange}
-                      disabled={!verificationStatus.canCreate}
-                    />
-                    <span className="checkbox-text">Требовать привязки Steam аккаунта</span>
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        
 
         {/* Настройки лобби матча для CS2 */}
         {isCS2Game(formData.game) && (
