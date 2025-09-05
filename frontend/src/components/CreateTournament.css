@@ -136,14 +136,6 @@
     height: 48px;
 }
 
-.create-tournament input:focus,
-.create-tournament select:focus,
-.create-tournament textarea:focus {
-    outline: none;
-    border-color: none;
-    background-color: #F4F4F41F;
-    transform: translateY(-1px);
-}
 .create-tournament input::placeholder,
 .create-tournament textarea::placeholder {
     color: var(--ct-text-disabled);
@@ -266,8 +258,7 @@
 }
 .create-tournament .react-datepicker__input-container input:focus {
     outline: none;
-    border-color: var(--ct-border-hover);
-    background-color: var(--ct-bg-primary);
+
 }
 /* РљРЅРѕРїРєРё С„РѕСЂРјС‹ */
 .create-tournament .form-buttons {
@@ -352,7 +343,6 @@
 .create-tournament input:focus-visible,
 .create-tournament select:focus-visible,
 .create-tournament textarea:focus-visible {
-    outline: 2px solid var(--ct-border-hover);
     outline-offset: 2px;
 }
 /* =========================
@@ -469,9 +459,6 @@
     line-height: 1.4;
     transition: var(--ct-transition);
 }
-.create-tournament .form-group:hover .form-hint {
-    color: var(--ct-text-secondary);
-} 
 
 /* Стили для DatePicker */
 .date-picker-input {
@@ -487,8 +474,6 @@
 
 .date-picker-input:focus {
   outline: none;
-  border-color: #ff0000;
-  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.1);
 }
 
 /* Кастомизация календаря DatePicker */
