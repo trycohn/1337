@@ -728,7 +728,6 @@ header.header {
 }
 .form-group input:focus {
   outline: none;
-  border-color: #4a76a8;
 }
 .auth-button {
   width: 100%;

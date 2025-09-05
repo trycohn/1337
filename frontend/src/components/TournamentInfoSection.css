@@ -570,24 +570,6 @@
     box-sizing: border-box;
 }
 
-.form-group textarea:focus,
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #ffffff;
-    background: #161616;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
-}
-
-.form-group textarea:disabled,
-.form-group input:disabled,
-.form-group select:disabled {
-    background: #0a0a0a;
-    border-color: #1a1a1a;
-    color: #666666;
-    cursor: not-allowed;
-}
-
 .form-group textarea {
     resize: vertical;
     min-height: 100px;
