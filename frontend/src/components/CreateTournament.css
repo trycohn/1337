@@ -99,18 +99,22 @@
 .logo-preview { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--ct-border-color); }
 .logo-preview img { width: 100%; height: 100%; object-fit: cover; }
 /* РћСЃРЅРѕРІРЅР°СЏ С„РѕСЂРјР° */
-.create-tournament form {
-    background-color: #00000000; /* transparent РІ HEX СЃ Р°Р»СЊС„Р°-РєР°РЅР°Р»РѕРј */
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    margin-bottom: var(--ct-spacing-xl);
-    transition: var(--ct-transition);
+
+
+.create-tournament-form {
     display: flex;
-    min-width: 780px;
-    align-items: center;
-    margin: auto;
+    flex-direction: column;
+    gap: 40px;
+    width: 100%;
 }
+
+/* Гарантируем растяжение формы на всю ширину родителя */
+.create-tournament .create-tournament-form {
+    width: 100%;
+    max-width: 100%;
+    align-self: stretch;
+}
+
 /* РћР±С‰РёРµ СЃС‚РёР»Рё РґР»СЏ РїРѕР»РµР№ РІРІРѕРґР° */
 .create-tournament input,
 .create-tournament select,
