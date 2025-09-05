@@ -44,21 +44,23 @@
 .create-header-right { min-width: 0; }
 
 .editable-title {
-    font-size: 48px;
-    line-height: 112px;
     height: 112px;
-    color: var(--ct-text-primary);
+    color: #ffffff;
+    font-weight: 700;
+    font-style: bold;
+    font-size: 48px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: start;
     outline: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    white-space: nowrap;
     overflow: hidden;
+    padding: 0;
     text-overflow: ellipsis;
+    
 }
 .editable-title:empty:before {
     content: attr(data-placeholder);
-    color: var(--ct-text-disabled);
+    color: #949494;
 }
 
 .meta-row {
