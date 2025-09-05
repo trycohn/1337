@@ -519,7 +519,7 @@ function CreateTournament() {
       {/* 🆕 Отображаем предупреждение о верификации */}
       {renderVerificationWarning()}
       
-      <form onSubmit={handleCreateTournament}>
+      <form className="create-tournament-form" onSubmit={handleCreateTournament}>
         {/* 1) Основная информация */}
         <div className="form-section main-section">
           <h3 className="section-title">Основная информация</h3>
