@@ -265,10 +265,10 @@ function AuthPage() {
 
   return (
     <div className="auth-page">
-      <div className="card" id="auth">
-        <div className="tabs">
+      <div className="card-authpage" id="auth">
+        <div className="tabs-authpage">
           <div
-            className="tab"
+            className="tab-authpage"
             role="tab"
             aria-selected={isLogin ? 'true' : 'false'}
             data-tab="login"
@@ -277,7 +277,7 @@ function AuthPage() {
             Вход
           </div>
           <div
-            className="tab"
+            className="tab-authpage"
             role="tab"
             aria-selected={!isLogin ? 'true' : 'false'}
             data-tab="register"
@@ -286,70 +286,70 @@ function AuthPage() {
             Регистрация
           </div>
           <span
-            className="tab-underline"
+            className="tab-underline-authpage"
             id="underline"
             style={{ transform: `translateX(${isLogin ? 0 : 100}%)` }}
           />
         </div>
 
-        <div className="section" data-panel="login" hidden={!isLogin}>
-          <h2 className="title">Вход в аккаунт</h2>
-          <div className="field">
+        <div className="section-authpage" data-panel="login" hidden={!isLogin}>
+          <h2 className="title-authpage">Вход в аккаунт</h2>
+          <div className="field-authpage">
             <label>Почта</label>
             <input
-              className="input"
+              className="input-authpage"
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="field">
+          <div className="field-authpage">
             <label>Пароль</label>
             <input
-              className="input"
+              className="input-authpage"
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <div className="meta"><a href="/forgot-password">Забыли пароль?</a></div>
+            <div className="meta-authpage"><a href="/forgot-password">Забыли пароль?</a></div>
           </div>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={(e) => handleLogin(e)} disabled={isLoading}>
+          <div className="actions-authpage">
+            <button className="btn-authpage btn-primary-authpage" onClick={(e) => handleLogin(e)} disabled={isLoading}>
               {isLoading ? 'Вход...' : 'Войти'}
             </button>
-            <div className="divider">или</div>
-            <div className="social-icons">
-              <button type="button" className="social-icon" onClick={handleSteamLogin} aria-label="Войти через Steam">
+            <div className="divider-authpage">или</div>
+            <div className="social-icons-authpage">
+              <button type="button" className="social-icon-authpage" onClick={handleSteamLogin} aria-label="Войти через Steam">
                 <img src="/images/icons/steam_logo.png" alt="Steam" />
               </button>
-              <button type="button" className="social-icon" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
+              <button type="button" className="social-icon-authpage" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
                 <img src="/images/icons/faceit_logo.png" alt="Faceit" />
               </button>
             </div>
           </div>
 
           {tooltips.login.show && (
-            <div className={`auth-tooltip ${tooltips.login.type}`}>
-              <div className="tooltip-content">
-                <span className="tooltip-icon">
+            <div className={`auth-tooltip-authpage ${tooltips.login.type}`}>
+              <div className="tooltip-content-authpage">
+                <span className="tooltip-icon-authpage">
                   {tooltips.login.type === 'success' ? '✅' : '❌'}
                 </span>
-                <span className="tooltip-message">{tooltips.login.message}</span>
-                <button className="tooltip-close" onClick={() => hideTooltip('login')}>✕</button>
+                <span className="tooltip-message-authpage">{tooltips.login.message}</span>
+                <button className="tooltip-close-authpage" onClick={() => hideTooltip('login')}>✕</button>
               </div>
-              <div className="tooltip-arrow"></div>
+              <div className="tooltip-arrow-authpage"></div>
             </div>
           )}
         </div>
 
-        <div className="section" data-panel="register" hidden={isLogin}>
-          <h2 className="title">Регистрация</h2>
-          <div className="field">
+        <div className="section-authpage" data-panel="register" hidden={isLogin}>
+          <h2 className="title-authpage">Регистрация</h2>
+          <div className="field-authpage">
             <label>Имя пользователя</label>
             <input
-              className={`input ${validationErrors.username ? 'error' : ''}`}
+              className={`input-authpage ${validationErrors.username ? 'error' : ''}`}
               type="text"
               placeholder="Никнейм"
               value={username}
@@ -358,10 +358,10 @@ function AuthPage() {
             />
             {validationErrors.username && <div className="field-error">{validationErrors.username}</div>}
           </div>
-          <div className="field">
+          <div className="field-authpage">
             <label>Почта</label>
             <input
-              className={`input ${validationErrors.email ? 'error' : ''}`}
+              className={`input-authpage ${validationErrors.email ? 'error' : ''}`}
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -369,10 +369,10 @@ function AuthPage() {
             />
             {validationErrors.email && <div className="field-error">{validationErrors.email}</div>}
           </div>
-          <div className="field">
+          <div className="field-authpage">
             <label>Пароль</label>
             <input
-              className={`input ${validationErrors.password ? 'error' : ''}`}
+              className={`input-authpage ${validationErrors.password ? 'error' : ''}`}
               type="password"
               placeholder="Не менее 8 символов"
               value={password}
@@ -383,10 +383,10 @@ function AuthPage() {
               <PasswordStrengthIndicator password={password} confirmPassword={confirmPassword} />
             )}
           </div>
-          <div className="field">
+          <div className="field-authpage">
             <label>Подтвердите пароль</label>
             <input
-              className={`input ${validationErrors.confirmPassword ? 'error' : ''}`}
+              className={`input-authpage ${validationErrors.confirmPassword ? 'error' : ''}`}
               type="password"
               placeholder="Повторите пароль"
               value={confirmPassword}
@@ -394,31 +394,31 @@ function AuthPage() {
             />
             {validationErrors.confirmPassword && <div className="field-error">{validationErrors.confirmPassword}</div>}
           </div>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={(e) => handleRegister(e)} disabled={isLoading}>
+          <div className="actions-authpage">
+            <button className="btn-authpage btn-primary-authpage" onClick={(e) => handleRegister(e)} disabled={isLoading}>
               {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
             </button>
-            <div className="divider">или</div>
-            <div className="social-icons">
-              <button type="button" className="social-icon" onClick={handleSteamLogin} aria-label="Войти через Steam">
+            <div className="divider-authpage">или</div>
+            <div className="social-icons-authpage">
+              <button type="button" className="social-icon-authpage" onClick={handleSteamLogin} aria-label="Войти через Steam">
                 <img src="/images/icons/steam_logo.png" alt="Steam" />
               </button>
-              <button type="button" className="social-icon" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
+              <button type="button" className="social-icon-authpage" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
                 <img src="/images/icons/faceit_logo.png" alt="Faceit" />
               </button>
             </div>
           </div>
 
           {tooltips.register.show && (
-            <div className={`auth-tooltip ${tooltips.register.type}`}>
-              <div className="tooltip-content">
-                <span className="tooltip-icon">
+            <div className={`auth-tooltip-authpage ${tooltips.register.type}`}>
+              <div className="tooltip-content-authpage">
+                <span className="tooltip-icon-authpage">
                   {tooltips.register.type === 'success' ? '✅' : '❌'}
                 </span>
-                <span className="tooltip-message">{tooltips.register.message}</span>
-                <button className="tooltip-close" onClick={() => hideTooltip('register')}>✕</button>
+                <span className="tooltip-message-authpage">{tooltips.register.message}</span>
+                <button className="tooltip-close-authpage" onClick={() => hideTooltip('register')}>✕</button>
               </div>
-              <div className="tooltip-arrow"></div>
+              <div className="tooltip-arrow-authpage"></div>
             </div>
           )}
         </div>

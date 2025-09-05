@@ -33,17 +33,17 @@ function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <main className="card card-wide">
-        <section className="section">
-          <h1 className="title title-upper">Восстановление пароля</h1>
-          <p className="sub">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
+      <main className="card-authpage card-wide-authpage">
+        <section className="section-authpage">
+          <h1 className="title-authpage title-upper-authpage">Восстановление пароля</h1>
+          <p className="sub-authpage">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
 
           <form onSubmit={handleSubmit}>
-            <div className="field">
+            <div className="field-authpage">
               <label htmlFor="email">Электронная почта</label>
               <input
                 id="email"
-                className="input"
+                className="input-authpage"
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -53,13 +53,13 @@ function ForgotPasswordPage() {
               />
             </div>
 
-            <div className="actions">
-              <button type="submit" className="btn btn-primary" disabled={loading || !isValid}>
+            <div className="actions-authpage">
+              <button type="submit" className="btn-authpage btn-primary-authpage" disabled={loading || !isValid}>
                 {loading ? 'Отправка...' : 'Отправить ссылку'}
               </button>
-              <Link className="back" to="/login">← Вернуться к входу</Link>
+              <Link className="back-authpage" to="/login">← Вернуться к входу</Link>
               {(message || error) && (
-                <div id="msg" className={`note ${error ? 'error' : ''}`} style={{ display: 'block' }}>
+                <div id="msg" className={`note-authpage ${error ? 'error' : ''}`} style={{ display: 'block' }}>
                   {error ? error : (message || 'Ссылка для восстановления отправлена, проверьте почту.')}
                 </div>
               )}
