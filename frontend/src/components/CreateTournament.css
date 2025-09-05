@@ -120,7 +120,7 @@
 .create-tournament select,
 .create-tournament textarea {
     width: 100%;
-    padding: 2px 2px 2px 4px;
+    padding: 2px 2px 2px 8px;
     border-radius: 8px;
     background-color: #F4F4F41F;
     color: #F4F4F4D9;
