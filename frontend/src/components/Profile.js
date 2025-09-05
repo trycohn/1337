@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import React, { useState, useEffect, useRef } from 'react';
+import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
@@ -74,7 +75,16 @@ function PreloadedAvatarPicker({ onPicked }) {
             <div className="preloaded-header">
                 <h4>Быстрый выбор</h4>
             </div>
-            {loading && <div className="loading-spinner">Загрузка...</div>}
+            {loading && (
+                <div className="preloaded-skeletons">
+                    <Skeleton height={24} width={180} style={{ marginBottom: 12 }} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 48px)', gap: 12 }}>
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} width={48} height={48} />
+                        ))}
+                    </div>
+                </div>
+            )}
             {errorMsg && <div className="error">{errorMsg}</div>}
             {!loading && !errorMsg && (
                 <div className="preloaded-avatars-grid">
@@ -807,6 +817,7 @@ function Profile() {
         const id = steamId || (user && user.steam_id);
         if (!id) return;
         
+        const startedAt = Date.now();
         setIsLoadingCs2Stats(true);
         try {
             const response = await api.get(`/api/playerStats/${id}`, {
@@ -822,7 +833,9 @@ function Profile() {
         } catch (err) {
             setError('Ошибка получения статистики CS2');
         } finally {
-            setIsLoadingCs2Stats(false);
+            const elapsed = Date.now() - startedAt;
+            const wait = elapsed < 1000 ? (1000 - elapsed) : 0;
+            setTimeout(() => setIsLoadingCs2Stats(false), wait);
         }
     };   
 
@@ -941,6 +954,7 @@ function Profile() {
     const fetchDotaStats = async (steamId) => {
         if (!steamId) return;
         
+        const startedAt = Date.now();
         setIsLoadingDotaStats(true);
         try {
             console.log('🔍 Загружаем статистику Dota 2 через OpenDota API...');
@@ -975,7 +989,9 @@ function Profile() {
             setError(err.response?.data?.details || 'OpenDota API временно недоступен');
             setDotaStats(null);
         } finally {
-            setIsLoadingDotaStats(false);
+            const elapsed = Date.now() - startedAt;
+            const wait = elapsed < 1000 ? (1000 - elapsed) : 0;
+            setTimeout(() => setIsLoadingDotaStats(false), wait);
         }
     };
 
@@ -1391,11 +1407,15 @@ function Profile() {
 
     const fetchSteamNickname = async () => {
         const token = localStorage.getItem('token');
+        const startedAt = Date.now();
         try {
             const response = await api.get('/api/users/steam-nickname', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setSteamNickname(response.data.steamNickname);
+            const nickname = response.data.steamNickname;
+            const elapsed = Date.now() - startedAt;
+            const wait = elapsed < 1000 ? (1000 - elapsed) : 0;
+            setTimeout(() => setSteamNickname(nickname), wait);
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка получения никнейма Steam');
         }
@@ -1403,6 +1423,7 @@ function Profile() {
 
     const fetchFaceitInfo = async () => {
         const token = localStorage.getItem('token');
+        const startedAt = Date.now();
         setIsLoadingFaceitInfo(true);
         try {
             const response = await api.get('/api/users/faceit-info', {
@@ -1413,7 +1434,9 @@ function Profile() {
         } catch (err) {
             setError(err.response?.data?.error || 'Ошибка получения информации FACEit');
         } finally {
-            setIsLoadingFaceitInfo(false);
+            const elapsed = Date.now() - startedAt;
+            const wait = elapsed < 1000 ? (1000 - elapsed) : 0;
+            setTimeout(() => setIsLoadingFaceitInfo(false), wait);
         }
     };
 
@@ -2545,7 +2568,7 @@ function Profile() {
                                                                 steamNickname ? (
                                                                     <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
                                                                 ) : (
-                                                                    'Активен'
+                                                                    <Skeleton width={120} height={16} />
                                                                 )
                                                             ) : 'Не привязан'}
                                         </div>
@@ -2570,9 +2593,13 @@ function Profile() {
                                                         <div>Faceit</div>
                                                         <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
                                                             {user.faceit_id ? (
-                                                                isLoadingFaceitInfo ? 'Загрузка...' : (faceitInfo ? (
-                                                                    <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
-                                                                ) : 'Активен')
+                                                                isLoadingFaceitInfo ? (
+                                                                    <Skeleton width={120} height={16} />
+                                                                ) : (
+                                                                    faceitInfo ? (
+                                                                        <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
+                                                                    ) : 'Активен'
+                                                                )
                                                             ) : 'Не привязан'}
                                                         </div>
                                                     </div>
@@ -2602,23 +2629,9 @@ function Profile() {
                                 <div className="content-card">
                                     <div className="card-header">
                                         <h3 className="card-title">Статистика сайта</h3>
-                                        {(isRecalculating || recalculationStatus || recalculationError) && (
+                                        {isRecalculating && (
                                             <div className="recalculation-status-container">
-                                                {isRecalculating && (
-                                                    <div className="recalculating-notice">
-                                                        🔄 {recalculationStatus || 'Обновление статистики...'}
-                                                    </div>
-                                                )}
-                                                {!isRecalculating && recalculationStatus && (
-                                                    <div className="recalculation-success">
-                                                        ✅ {recalculationStatus}
-                                                    </div>
-                                                )}
-                                                {recalculationError && (
-                                                    <div className="recalculation-error">
-                                                        ⚠️ {recalculationError}
-                                                    </div>
-                                                )}
+                                                <Skeleton width={220} height={16} />
                                             </div>
                                         )}
                                     </div>
@@ -2660,7 +2673,21 @@ function Profile() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="loading-spinner">Статистика загружается...</div>
+                                            <div className="stats-grid stats-grid-compact">
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div key={i} className="stats-card stat-compact">
+                                                        <div className="stat-icon" aria-hidden>
+                                                            <Skeleton circle width={24} height={24} />
+                                                        </div>
+                                                        <div className="stats-value emphasis">
+                                                            <Skeleton width={80} height={24} />
+                                                        </div>
+                                                        <div className="stats-label subtle">
+                                                            <Skeleton width={120} height={14} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         )}
                                         
                                         {(user && user.role === 'admin') && renderLastFiveMatches()}
@@ -2742,7 +2769,7 @@ function Profile() {
                                                     onClick={() => fetchCs2Stats()}
                                                     disabled={isLoadingCs2Stats}
                                                 >
-                                                    {isLoadingCs2Stats ? 'Загрузка...' : 'Обновить'}
+                                                    Обновить
                                                 </button>
                                             )}
                                         </div>
@@ -2788,13 +2815,24 @@ function Profile() {
                                                 onClick={linkDotaSteam}
                                                 disabled={isLoadingDotaStats}
                                             >
-                                                {isLoadingDotaStats ? 'Загрузка...' : 'Загрузить статистику'}
+                                                Загрузить статистику
                                             </button>
                                         )}
                                     </div>
                                     <div className="card-content">
                                         {isLoadingDotaStats ? (
-                                            <div className="loading-spinner">Загрузка статистики Dota 2...</div>
+                                            <div className="dota-stats-skeleton">
+                                                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                                    <Skeleton width={64} height={64} />
+                                                    <div style={{ flex: 1 }}>
+                                                        <Skeleton width={160} height={20} style={{ marginBottom: 8 }} />
+                                                        <Skeleton width={220} height={16} />
+                                                    </div>
+                                                </div>
+                                                <div style={{ marginTop: 16 }}>
+                                                    <Skeleton height={140} />
+                                                </div>
+                                            </div>
                                         ) : dotaStats ? (
                                             <div className="dota-player-stats">
                                                 {/* Профиль игрока */}
@@ -4047,7 +4085,19 @@ function Profile() {
                         <h3>История матчей</h3>
                         
                         {loadingMatchHistory ? (
-                            <p>Загрузка истории матчей...</p>
+                            <div className="match-history-skeleton">
+                                <Skeleton width={180} height={20} style={{ marginBottom: 12 }} />
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 1fr 80px 120px 120px', gap: 12, marginBottom: 10 }}>
+                                        <Skeleton height={18} />
+                                        <Skeleton height={18} />
+                                        <Skeleton height={18} />
+                                        <Skeleton height={18} />
+                                        <Skeleton height={18} />
+                                        <Skeleton height={18} />
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div className="full-match-history">
                                 {matchHistory.length > 0 ? (
