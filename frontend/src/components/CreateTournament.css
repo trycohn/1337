@@ -62,6 +62,7 @@
     unicode-bidi: isolate;
     writing-mode: horizontal-tb;
     transform: none !important;
+    white-space: nowrap;
     outline: none;
     overflow: hidden;
     padding: 0;

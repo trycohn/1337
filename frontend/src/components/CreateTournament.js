@@ -283,6 +283,25 @@ function CreateTournament() {
   const handleTitleInput = useCallback((e) => {
     const text = e.currentTarget.textContent || '';
     setFormData(prev => ({ ...prev, name: text }));
+    // Переносим каретку в конец текста, чтобы избежать "зависания" в начале
+    try {
+      const sel = window.getSelection();
+      if (!sel) return;
+      const range = document.createRange();
+      const node = titleRef.current;
+      if (!node) return;
+      // Если есть текстовый узел внутри, ставим в его конец, иначе — в конец контейнера
+      const lastChild = node.lastChild;
+      if (lastChild && lastChild.nodeType === Node.TEXT_NODE) {
+        range.setStart(lastChild, lastChild.textContent.length);
+        range.collapse(true);
+      } else {
+        range.selectNodeContents(node);
+        range.collapse(false);
+      }
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (_) {}
   }, []);
 
   const handleTitleKeyDown = useCallback((e) => {
@@ -309,6 +328,15 @@ function CreateTournament() {
     setLogoFile(file);
     const url = URL.createObjectURL(file);
     setLogoPreview(url);
+  }, []);
+
+  // Инициализируем значение в contentEditable один раз при монтировании,
+  // чтобы не ломать каретку на каждом ререндере
+  useEffect(() => {
+    if (titleRef.current && (formData.name || '')) {
+      titleRef.current.textContent = formData.name;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 🆕 Функция для рендера предупреждения о верификации
@@ -425,7 +453,7 @@ function CreateTournament() {
             onInput={handleTitleInput}
             onKeyDown={handleTitleKeyDown}
             onBlur={handleTitleBlur}
-          >{formData.name || ''}</div>
+          ></div>
           <div className="meta-row">
             <span className="meta-label">Организатор:</span>
             <span className="meta-value">{user?.username || user?.name || '—'}</span>
