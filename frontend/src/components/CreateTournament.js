@@ -661,20 +661,7 @@ function CreateTournament() {
                 {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания — можно проиграть один раз'}
               </small>
             </div>
-            {formData.bracket_type === 'double_elimination' && (
-              <div className="form-group full-width">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="full_double_elimination"
-                    checked={formData.full_double_elimination}
-                    onChange={handleInputChange}
-                    disabled={!verificationStatus.canCreate}
-                  />
-                  <span className="checkbox-text">🏆 Включить Full Double Elimination?</span>
-                </label>
-              </div>
-            )}
+            {/* Убрали Full Double Elimination — оставляем только классический Double Elimination */}
 
             {isCS2Game(formData.game) && (
               <div className="form-group full-width">
@@ -853,88 +840,7 @@ function CreateTournament() {
 
         
 
-        {/* Настройки лобби матча для CS2 */}
-        {isCS2Game(formData.game) && (
-          <div className="form-section lobby-settings">
-            <h3 className="section-title">🎮 Настройки лобби матча</h3>
-            
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="lobby_enabled"
-                  checked={formData.lobby_enabled}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    lobby_enabled: e.target.checked,
-                    selected_maps: e.target.checked ? cs2Maps.map(m => m.name) : []
-                  }))}
-                  disabled={!verificationStatus.canCreate}
-                />
-                <span>Включить лобби матча для выбора карт</span>
-              </label>
-              <small className="form-hint">
-                Участники смогут выбирать и банить карты перед началом матча
-              </small>
-            </div>
-
-            {formData.lobby_enabled && (
-              <>
-                <div className="form-group">
-                  <label>Формат матчей по умолчанию</label>
-                  <select
-                    name="lobby_match_format"
-                    value={formData.lobby_match_format || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      lobby_match_format: e.target.value || null
-                    }))}
-                    disabled={!verificationStatus.canCreate}
-                  >
-                    <option value="">Выбор в лобби</option>
-                    <option value="bo1">Best of 1</option>
-                    <option value="bo3">Best of 3</option>
-                    <option value="bo5">Best of 5</option>
-                  </select>
-                  <small className="form-hint">
-                    Оставьте пустым, чтобы участники выбирали формат в лобби
-                  </small>
-                </div>
-
-                <div className="form-group">
-                  <label>Карты турнира (выберите 7 карт)</label>
-                  <div className="maps-selection">
-                    {cs2Maps.map(map => (
-                      <label key={map.id} className="map-checkbox">
-                        <input
-                          type="checkbox"
-                          value={map.name}
-                          checked={formData.selected_maps.includes(map.name)}
-                          onChange={(e) => {
-                            const mapName = e.target.value;
-                            setFormData(prev => ({
-                              ...prev,
-                              selected_maps: e.target.checked
-                                ? [...prev.selected_maps, mapName]
-                                : prev.selected_maps.filter(m => m !== mapName)
-                            }));
-                          }}
-                          disabled={!verificationStatus.canCreate}
-                        />
-                        <span>{map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {formData.lobby_enabled && formData.selected_maps.length !== 7 && (
-                    <small className="form-error">
-                      Необходимо выбрать ровно 7 карт (выбрано: {formData.selected_maps.length})
-                    </small>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        
 
         <div className="form-buttons">
           <button 

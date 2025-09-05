@@ -247,6 +247,7 @@ letter-spacing: normal;
     display: flex;
     justify-content: flex-start;
     text-transform: none;
+    margin-bottom: 0px;
 }
 .create-tournament .form-group input[type="number"] {
     -webkit-appearance: none;
@@ -821,6 +822,12 @@ letter-spacing: normal;
     pointer-events: none;
 }
 
+.map-checkbox input[type=checkbox] {
+    width: 24px;
+    height: 24px;
+}
+
+
 /* 🆕 Адаптивность для предупреждений */
 @media (max-width: 768px) {
     .create-tournament .verification-warning {
@@ -878,24 +885,16 @@ letter-spacing: normal;
 .maps-selection {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
+    gap: 12px;
     margin-top: 15px;
 }
 
 .map-checkbox {
     display: flex;
     align-items: center;
-    padding: 10px;
-    background-color: #000;
-    border: 1px solid #333;
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
-}
-
-.map-checkbox:hover {
-    border-color: #ff0000;
-    background-color: #111;
 }
 
 .map-checkbox input[type="checkbox"] {
