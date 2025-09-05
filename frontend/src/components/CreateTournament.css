@@ -48,6 +48,9 @@
     transform: none !important;
     -webkit-transform: none !important;
     direction: ltr !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .editable-title {
@@ -83,7 +86,11 @@
 }
 .meta-label { color: var(--ct-text-muted); text-transform: uppercase; font-size: 12px; letter-spacing: .06em; }
 .meta-value { color: var(--ct-text-primary); font-weight: 500; }
-.meta-sep { color: var(--ct-text-muted); }
+.meta-sep {
+     color: var(--ct-text-muted); 
+     margin-left: 12px;
+     margin-right: 12px;
+    }
 
 .logo-upload-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .hidden-file-input { display: none; }

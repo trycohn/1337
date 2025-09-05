@@ -457,7 +457,7 @@ function CreateTournament() {
           <div className="meta-row">
             <span className="meta-label">Организатор:</span>
             <span className="meta-value">{user?.username || user?.name || '—'}</span>
-            <span className="meta-sep">•</span>
+            <span className="meta-sep"> </span>
             <span className="meta-label">Дисциплина:</span>
             <span className="meta-value">{formData.game ? formData.game : '—'}</span>
           </div>
