@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import { Link } from 'react-router-dom';
 import { GameIcon } from '../utils/game-icons';
 import api from '../axios';
@@ -23,7 +25,49 @@ function MyTournaments() {
         return () => { isMounted = false; };
     }, []);
 
-    if (loading) return <section><p>Загрузка...</p></section>;
+    if (loading) return (
+        <section className="tournaments-list">
+            <h2>Мои турниры</h2>
+            <SkeletonTheme baseColor="#111111" highlightColor="#1a1a1a">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Игра</th>
+                            <th>Название</th>
+                            <th>Участники</th>
+                            <th>Формат</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[...Array(5)].map((_, i) => (
+                            <tr key={i}>
+                                <td data-label="Игра">
+                                    <Skeleton circle width={24} height={24} />
+                                </td>
+                                <td data-label="Название">
+                                    <Skeleton width="60%" />
+                                </td>
+                                <td data-label="Участники">
+                                    <Skeleton width="40%" />
+                                </td>
+                                <td data-label="Формат">
+                                    <Skeleton width="40%" />
+                                </td>
+                                <td data-label="Дата">
+                                    <Skeleton width="50%" />
+                                </td>
+                                <td data-label="Статус">
+                                    <Skeleton width="50%" />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </SkeletonTheme>
+        </section>
+    );
     if (error) return <section><p className="error">{error}</p></section>;
 
     const renderParticipantsCell = (t) => {
