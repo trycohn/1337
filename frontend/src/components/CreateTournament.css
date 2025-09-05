@@ -230,6 +230,12 @@
     -webkit-appearance: none;
     margin: 0;
 }
+
+.create-tournament .form-group input {
+    background-color: #F4F4F41F;
+    border-radius: 8px;
+    padding: 2px 2px 2px 8px;
+}
 /* Textarea СЃС‚РёР»Рё */
 .create-tournament textarea {
     resize: vertical;
@@ -245,16 +251,18 @@
 }
 .create-tournament .react-datepicker__input-container input {
     width: 100%;
-    padding: var(--ct-spacing-md) var(--ct-spacing-lg);
-    border: 1px solid var(--ct-border-color);
-    border-radius: 0;
-    background-color: var(--ct-bg-tertiary);
+    padding: 2px 2px 2px 8px;
+    border-radius: 8px;
+    background-color: #F4F4F41F;
     color: var(--ct-text-primary);
-    font-size: 1rem;
-    font-weight: 300;
     transition: var(--ct-transition);
     cursor: pointer;
     margin: 0;
+font-weight: 400;
+font-size: 14px;
+line-height: 24px;
+letter-spacing: normal;
+
 }
 .create-tournament .react-datepicker__input-container input:focus {
     outline: none;
