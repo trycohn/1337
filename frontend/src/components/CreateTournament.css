@@ -159,8 +159,11 @@ color: #FFF;
 
 .create-tournament input::placeholder,
 .create-tournament textarea::placeholder {
-    color: var(--ct-text-disabled);
-    font-weight: 300;
+    color: #949494;
+font-weight: 400;
+font-size: 14px;
+line-height: 24px;
+letter-spacing: normal;
 }
 /* РЎС‚РёР»Рё РґР»СЏ select */
 .create-tournament select {
@@ -176,6 +179,7 @@ color: #FFF;
     line-height: 24px;
     letter-spacing: normal;
     color: #F4F4F4D9;
+    background-color: #F4F4F41F;
 }
 
 /* РЎСµРєС†РёРё С„РѕСЂРјС‹ */
@@ -294,33 +298,6 @@ letter-spacing: normal;
     transition: var(--ct-transition);
 }
 
-.create-tournament button {
-    padding: var(--ct-spacing-md) var(--ct-spacing-xl);
-    border: 1px solid #ff0000;
-    border-radius: 0;
-    background-color: #000000;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: var(--ct-transition);
-    min-width: 180px;
-    position: relative;
-    overflow: hidden;
-}
-.create-tournament button:hover {
-    background-color: #555555;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px #FFFFFF1A; /* rgba(255, 255, 255, 0.1) РІ HEX */
-}
-.create-tournament button:active {
-    transform: translateY(0);
-}
-
-
 /* РђРЅРёРјР°С†РёРё Рё СЌС„С„РµРєС‚С‹ */
 @keyframes fadeIn {
     from {
@@ -357,12 +334,6 @@ letter-spacing: normal;
     to {
         transform: rotate(360deg);
     }
-}
-
-.create-tournament input:focus-visible,
-.create-tournament select:focus-visible,
-.create-tournament textarea:focus-visible {
-    outline-offset: 2px;
 }
 /* =========================
    REACT-DATEPICKER РўР•РњРќРђРЇ РўР•РњРђ
@@ -477,6 +448,7 @@ letter-spacing: normal;
     font-weight: 300;
     line-height: 1.4;
     transition: var(--ct-transition);
+    text-align: start;
 }
 
 /* Стили для DatePicker */
@@ -774,7 +746,7 @@ letter-spacing: normal;
 }
 
 .create-tournament input[disabled]::placeholder {
-    color: #444444 !important;
+    color: #949494 !important;
 }
 
 /* 🆕 Отключенная кнопка создания турнира */
