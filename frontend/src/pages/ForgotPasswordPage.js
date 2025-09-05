@@ -33,17 +33,17 @@ function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <main className="card-authpage card-wide-authpage">
-        <section className="section-authpage">
-          <h1 className="title-authpage title-upper-authpage">Восстановление пароля</h1>
-          <p className="sub-authpage">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
+      <main className="card-resetpage card-wide-resetpage">
+        <section className="section-resetpage">
+          <h1 className="title-resetpage">Восстановление пароля</h1>
+          <p className="sub-resetpage">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
 
           <form onSubmit={handleSubmit}>
-            <div className="field-authpage">
+            <div className="field-resetpage">
               <label htmlFor="email">Электронная почта</label>
               <input
                 id="email"
-                className="input-authpage"
+                className="input-resetpage"
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
@@ -53,13 +53,13 @@ function ForgotPasswordPage() {
               />
             </div>
 
-            <div className="actions-authpage">
-              <button type="submit" className="btn-authpage btn-primary-authpage" disabled={loading || !isValid}>
+            <div className="actions-resetpage">
+              <button type="submit" className="btn-resetpage btn-primary-resetpage" disabled={loading || !isValid}>
                 {loading ? 'Отправка...' : 'Отправить ссылку'}
               </button>
-              <Link className="back-authpage" to="/login">← Вернуться к входу</Link>
+              <Link className="back-resetpage" to="/login">← Вернуться к входу</Link>
               {(message || error) && (
-                <div id="msg" className={`note-authpage ${error ? 'error' : ''}`} style={{ display: 'block' }}>
+                <div id="msg" className={`note-resetpage ${error ? 'error' : ''}`} style={{ display: 'block' }}>
                   {error ? error : (message || 'Ссылка для восстановления отправлена, проверьте почту.')}
                 </div>
               )}
