@@ -179,7 +179,13 @@ letter-spacing: normal;
     line-height: 24px;
     letter-spacing: normal;
     color: #F4F4F4D9;
-    background-color: #F4F4F41F;
+    background-color: #373737;
+}
+
+/* Цвет выпадающего списка (поддержка зависит от браузера) */
+.create-tournament select option {
+    background-color: #373737;
+    color: #F4F4F4D9;
 }
 
 /* РЎСµРєС†РёРё С„РѕСЂРјС‹ */
