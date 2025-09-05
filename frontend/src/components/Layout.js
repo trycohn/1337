@@ -225,12 +225,9 @@ function Layout() {
         };
     }, [user]);
 
+    // Отключаем глобальный экран загрузки при навигации, чтобы избежать вспышек
     useEffect(() => {
-        setLoading(true);
-        const timer = setTimeout(() => {
-            setLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
+        setLoading(false);
     }, [location.pathname, setLoading]);
 
     const handleLogout = () => {
@@ -290,7 +287,8 @@ function Layout() {
 
     return (
         <div className="home-container">
-            {loading && <Loader />}
+            {/* Убираем оверлей загрузки, чтобы исключить белые вспышки при смене вкладок */}
+            {false && loading && <Loader />}
             <header className="header">
                     <div className="nav-container">
                         <Link to="/" className="site-logo" aria-label="1337 Home">

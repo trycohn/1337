@@ -10,6 +10,12 @@ body {
   color: #ffffff;
   font-size: 20px;
 }
+/* Гарантируем тёмный фон корня для всех состояний */
+#root, #app {
+  background-color: #000;
+  color: #ffffff;
+  min-height: 100vh;
+}
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
