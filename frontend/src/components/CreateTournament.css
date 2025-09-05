@@ -235,6 +235,7 @@
     background-color: #F4F4F41F;
     border-radius: 8px;
     padding: 2px 2px 2px 8px;
+    height: 48px;
 }
 /* Textarea СЃС‚РёР»Рё */
 .create-tournament textarea {
