@@ -336,9 +336,9 @@
 .divider{ display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:center; color:#8a8c91; margin-top:6px; }
 .divider:before,.divider:after{ content:""; height:1px; background:#2b2d33; }
 .social{ display:grid; gap:12px; }
-.social-icons{ display:flex; gap:12px; align-items:center; }
-.social-icon{ width:44px; height:44px; border-radius:999px; overflow:hidden; border:1px solid #303238; padding:0; background:#0f1012; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
-.social-icon img{ width:100%; height:100%; object-fit:cover; border-radius:999px; display:block; }
+.social-icons{ display:flex; gap:16px; align-items:center; justify-content:center; margin-top:6px; }
+.social-icon{ width:52px; height:52px; border-radius:999px; overflow:hidden; border:1px solid #404248; padding:6px; background:#0f1012; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.social-icon img{ width:100%; height:100%; object-fit:contain; border-radius:999px; display:block; }
 .btn-steam{ background:#232c3d; color:#e8eefc; }
 .btn-faceit{ background:#ff6a00; color:#fff; }
 .btn .ico{ margin-right:10px; display:inline-flex; }
