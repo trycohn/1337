@@ -145,7 +145,7 @@ color: #FFF;
     box-sizing: border-box;
 }
 
-.form-group textarea {
+.form-grid.single-column .form-group textarea {
     background-color: #F4F4F41F;
     border-radius: 8px;
     padding: 2px 2px 2px 8px;
