@@ -415,6 +415,11 @@ function CreateTournament() {
             suppressContentEditableWarning
             dir="ltr"
             spellCheck={false}
+            lang="ru"
+            inputMode="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            style={{ direction: 'ltr', unicodeBidi: 'plaintext', writingMode: 'horizontal-tb' }}
             ref={titleRef}
             data-placeholder="Название турнира"
             onInput={handleTitleInput}
