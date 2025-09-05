@@ -47,11 +47,12 @@
     height: 112px;
     color: #ffffff;
     font-weight: 700;
-    font-style: bold;
     font-size: 48px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    text-align: start;
+    text-align: left;
+    direction: ltr;
+    unicode-bidi: embed;
     outline: none;
     overflow: hidden;
     padding: 0;
