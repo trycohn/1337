@@ -315,6 +315,7 @@
 .auth-page { display: grid; place-items: center; min-height: calc(100vh - var(--header-height)); background:#000; padding: 16px; }
 .card-authpage { width:min(92vw, 440px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
 .card-wide-authpage { width:min(92vw, 520px) !important; }
+.auth-page .card-wide-authpage { width:min(92vw, 520px) !important; }
 .auth-page .card-authpage:hover{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.45); }
 .tabs-authpage { display:flex; background:#101113; position:relative; }
 .tab-authpage { flex:1; text-align:center; padding:14px 16px; letter-spacing:.08em; font-weight:600; color:#a7a7aa; cursor:pointer; user-select:none; position:relative; }
