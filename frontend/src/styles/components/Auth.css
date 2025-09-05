@@ -321,6 +321,11 @@
 .tab-underline{ position:absolute; bottom:0; height:3px; width:50%; background:#ff3b3b; left:0; transition:transform .28s ease; }
 .section{ padding:28px; }
 .title{ margin:0 0 18px; font-size:18px; font-weight:800; letter-spacing:.08em; color:#ff3b3b; }
+.sub{ margin:0 0 22px; color:#a7a7aa; line-height:1.55; font-size:14px; text-align:left }
+.back{ margin-top:6px; display:inline-flex; align-items:center; gap:8px; color:#b1b3b8; text-decoration:none; font-size:14px }
+.back:hover{ color:#fff }
+.note{ display:none; margin-top:10px; padding:12px 14px; border:1px solid #2b2d33; border-radius:12px; background:#121314; color:#cde7d6; font-size:14px }
+.note.error{ color:#ffd6d6 }
 .field{ display:grid; gap:8px; margin-bottom:14px; }
 .field label{ font-size:12px; color:#a7a7aa; letter-spacing:.06em; }
 .input{ height:44px; border-radius:12px; border:1px solid #2a2c31; background:#0f1012; color:#e9e9ea; outline:none; padding:0 14px; transition:border-color .15s ease, box-shadow .15s ease; }

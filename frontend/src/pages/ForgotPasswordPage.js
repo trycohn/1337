@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import '../components/Home.css';
+import '../styles/components/Auth.css';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -29,51 +29,44 @@ function ForgotPasswordPage() {
     }
   };
 
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   return (
     <div className="auth-page">
-      <div className="auth-container">
-        <div className="auth-form-container">
-          <form onSubmit={handleSubmit} className="auth-form visible">
-            <h2>Восстановление пароля</h2>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
-              Введите адрес электронной почты, связанный с вашим аккаунтом, и мы отправим вам ссылку для восстановления пароля.
-            </p>
-            
-            <div className="form-group">
+      <main className="card">
+        <section className="section">
+          <h1 className="title">Восстановление пароля</h1>
+          <p className="sub">Введите адрес электронной почты, связанный с вашим аккаунтом. Мы отправим ссылку для восстановления пароля.</p>
+
+          <form onSubmit={handleSubmit}>
+            <div className="field">
+              <label htmlFor="email">Электронная почта</label>
               <input
+                id="email"
+                className="input"
                 type="email"
-                placeholder="Электронная почта"
+                placeholder="you@example.com"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 disabled={loading}
               />
             </div>
-            
-            <button 
-              type="submit" 
-              className="btn btn-secondary" 
-              disabled={loading}
-            >
-              {loading ? 'Отправка...' : 'Отправить ссылку'}
-            </button>
-            
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <Link to="/login" style={{ color: '#666', fontSize: '14px', textDecoration: 'none' }}>
-                ← Вернуться к входу
-              </Link>
+
+            <div className="actions">
+              <button type="submit" className="btn btn-primary" disabled={loading || !isValid}>
+                {loading ? 'Отправка...' : 'Отправить ссылку'}
+              </button>
+              <Link className="back" to="/login">← Вернуться к входу</Link>
+              {(message || error) && (
+                <div id="msg" className={`note ${error ? 'error' : ''}`} style={{ display: 'block' }}>
+                  {error ? error : (message || 'Ссылка для восстановления отправлена, проверьте почту.')}
+                </div>
+              )}
             </div>
           </form>
-          
-          {error && <p className="error-message">{error}</p>}
-          {message && (
-            <div className="success-message">
-              <strong>Письмо отправлено!</strong><br />
-              {message}
-            </div>
-          )}
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
