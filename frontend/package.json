@@ -27,6 +27,7 @@
     "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^19.1.0",
     "react-helmet": "^6.1.0",
+    "react-loading-skeleton": "^3.5.0",
     "react-quill": "^2.0.0",
     "react-router-dom": "^7.4.1",
     "socket.io-client": "^4.8.1",
