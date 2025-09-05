@@ -297,33 +297,6 @@ letter-spacing: normal;
     transition: var(--ct-transition);
 }
 
-.create-tournament button {
-    padding: var(--ct-spacing-md) var(--ct-spacing-xl);
-    border: 1px solid #ff0000;
-    border-radius: 0;
-    background-color: #000000;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: var(--ct-transition);
-    min-width: 180px;
-    position: relative;
-    overflow: hidden;
-}
-.create-tournament button:hover {
-    background-color: #555555;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px #FFFFFF1A; /* rgba(255, 255, 255, 0.1) РІ HEX */
-}
-.create-tournament button:active {
-    transform: translateY(0);
-}
-
-
 /* РђРЅРёРјР°С†РёРё Рё СЌС„С„РµРєС‚С‹ */
 @keyframes fadeIn {
     from {

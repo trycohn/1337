@@ -510,8 +510,8 @@ class BracketMath {
                             recommendedParticipantCounts.find(rec => rec > participantCount) || maxParticipants :
                             minParticipantsForBracket,
                         message: canFormBracket ? 
-                            `✅ Можно создать турнир с ${teams} командами (${unused} участников останется)` :
-                            `❌ Недостаточно для турнира. Нужно еще ${minParticipantsForBracket - participantCount} участников`
+                            `Можно создать турнир с ${teams} командами (${unused} участников останется)` :
+                            `Недостаточно для турнира. Нужно еще ${minParticipantsForBracket - participantCount} участников`
                     };
                 }
             }
