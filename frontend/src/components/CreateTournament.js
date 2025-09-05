@@ -351,7 +351,6 @@ function CreateTournament() {
     if (verificationStatus.reason === 'not_logged_in') {
       return (
         <div className="verification-warning">
-          <div className="warning-icon">⚠️</div>
           <div className="warning-content">
             <h3>Необходима авторизация</h3>
             <p>Для создания турнира необходимо войти в систему или зарегистрироваться.</p>
@@ -625,7 +624,7 @@ function CreateTournament() {
                 className="date-picker-input"
                 disabled={!verificationStatus.canCreate}
               />
-              <small className="form-hint">📅 Выберите дату и время начала турнира (российское время)</small>
+              <small className="form-hint">Выберите дату и время начала турнира (российское время)</small>
             </div>
 
             <div className="form-group">
