@@ -320,18 +320,12 @@ function AuthPage() {
               {isLoading ? 'Вход...' : 'Войти'}
             </button>
             <div className="divider">или</div>
-            <div className="social">
-              <button type="button" className="btn btn-steam" onClick={handleSteamLogin}>
-                <span className="ico" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3v18h18V3Zm-6.6 4.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4ZM6.5 14.3l2.9 1.1a2.6 2.6 0 1 0 3.8-2.7 2.6 2.6 0 0 0-2.7.4L7.7 11a2.7 2.7 0 0 0-1.2 3.4Zm6.9-2.5a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"/></svg>
-                </span>
-                Войти через Steam
+            <div className="social-icons">
+              <button type="button" className="social-icon" onClick={handleSteamLogin} aria-label="Войти через Steam">
+                <img src="/images/icons/steam_logo.png" alt="Steam" />
               </button>
-              <button type="button" className="btn btn-faceit" onClick={handleFaceitLogin}>
-                <span className="ico" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16.5 20 7l-6.5 10.2L9.7 18 4 16.5Z"/></svg>
-                </span>
-                Войти через Faceit
+              <button type="button" className="social-icon" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
+                <img src="/images/icons/faceit_logo.png" alt="Faceit" />
               </button>
             </div>
           </div>
@@ -405,18 +399,12 @@ function AuthPage() {
               {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
             </button>
             <div className="divider">или</div>
-            <div className="social">
-              <button type="button" className="btn btn-steam" onClick={handleSteamLogin}>
-                <span className="ico" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3v18h18V3Zm-6.6 4.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4ZM6.5 14.3l2.9 1.1a2.6 2.6 0 1 0 3.8-2.7 2.6 2.6 0 0 0-2.7.4L7.7 11a2.7 2.7 0 0 0-1.2 3.4Zm6.9-2.5a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"/></svg>
-                </span>
-                Войти через Steam
+            <div className="social-icons">
+              <button type="button" className="social-icon" onClick={handleSteamLogin} aria-label="Войти через Steam">
+                <img src="/images/icons/steam_logo.png" alt="Steam" />
               </button>
-              <button type="button" className="btn btn-faceit" onClick={handleFaceitLogin}>
-                <span className="ico" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 16.5 20 7l-6.5 10.2L9.7 18 4 16.5Z"/></svg>
-                </span>
-                Войти через Faceit
+              <button type="button" className="social-icon" onClick={handleFaceitLogin} aria-label="Войти через Faceit">
+                <img src="/images/icons/faceit_logo.png" alt="Faceit" />
               </button>
             </div>
           </div>

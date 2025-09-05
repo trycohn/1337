@@ -111,74 +111,7 @@ function PasswordStrengthIndicator({ password, confirmPassword }) {
                         />
                     </div>
 
-                    {/* Текст уровня силы */}
-                    <div 
-                        className="strength-text"
-                        style={{ color: strength.color || '#757575' }}
-                    >
-                        Сила пароля: {strength.level} ({strength.score}%)
-                    </div>
-
-                    {/* Требования к паролю */}
-                    <div className="password-requirements">
-                        <div className={`requirement ${strength.checks.length ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.length ? '✓' : '○'}
-                            </span>
-                            <span>Минимум 8 символов</span>
-                        </div>
-                        <div className={`requirement ${strength.checks.uppercase ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.uppercase ? '✓' : '○'}
-                            </span>
-                            <span>Заглавные буквы (A-Z)</span>
-                        </div>
-                        <div className={`requirement ${strength.checks.lowercase ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.lowercase ? '✓' : '○'}
-                            </span>
-                            <span>Строчные буквы (a-z)</span>
-                        </div>
-                        <div className={`requirement ${strength.checks.numbers ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.numbers ? '✓' : '○'}
-                            </span>
-                            <span>Цифры (0-9)</span>
-                        </div>
-                        <div className={`requirement ${strength.checks.noSpaces ? 'met' : 'unmet'}`}>
-                            <span className="requirement-icon">
-                                {strength.checks.noSpaces ? '✓' : '○'}
-                            </span>
-                            <span>Без пробелов</span>
-                        </div>
-                    </div>
-
-                    {/* Совпадение паролей */}
-                    {confirmPassword && (
-                        <div className={`password-match ${
-                            password === confirmPassword ? 'match' : 'no-match'
-                        }`}>
-                            <span style={{ marginRight: '8px' }}>
-                                {password === confirmPassword ? '✓' : '✗'}
-                            </span>
-                            {password === confirmPassword 
-                                ? 'Пароли совпадают' 
-                                : 'Пароли не совпадают'
-                            }
-                        </div>
-                    )}
-
-                    {/* Обратная связь */}
-                    {strength.feedback.length > 0 && (
-                        <div className="password-feedback">
-                            <div className="feedback-title">💡 Рекомендации:</div>
-                            <ul className="feedback-list">
-                                {strength.feedback.map((tip, index) => (
-                                    <li key={index} className="feedback-item">{tip}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                    {/* Убраны подписи и рекомендации по требованию дизайна */}
                 </>
             )}
         </div>
