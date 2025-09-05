@@ -173,33 +173,8 @@ header.header {
   margin-left: 10px;
   font-size: 0.9em;
 }
-/* РЎС‚РёР»Рё РґР»СЏ С„РѕСЂРјС‹ СЃРѕР·РґР°РЅРёСЏ С‚СѓСЂРЅРёСЂР° */
-.create-tournament form {
-  display: flex;
-  flex-direction: column;
-  max-width: 400px;
-  margin-bottom: 20px;
-}
-.create-tournament input,
-.create-tournament select,
-.create-tournament .react-datepicker-wrapper {
-  margin-bottom: 10px;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-.create-tournament button {
-  padding: 0px 5px;
-  background-color: #ffffff;
-  color: rgb(0, 0, 0);
-  border: none;
-  border-radius: 0px;
-  cursor: pointer;
-}
-.create-tournament button:hover {
-  background-color: #7b7b7b;
-}
-/* РЎС‚РёР»Рё РґР»СЏ СЃРїРёСЃРєР° С‚СѓСЂРЅРёСЂРѕРІ - РјРёРЅРёРјР°Р»РёСЃС‚РёС‡РЅС‹Р№ С‡РµСЂРЅРѕ-Р±РµР»С‹Р№ РґРёР·Р°Р№РЅ */
+
+
 .tournaments-list {
   background-color: #000000;
   color: #ffffff;
