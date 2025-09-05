@@ -26,24 +26,57 @@
 /* РћСЃРЅРѕРІРЅРѕР№ РєРѕРЅС‚РµР№РЅРµСЂ */
 .create-tournament {
     margin: 0 auto;
-    padding: var(--ct-spacing-2xl);
     background-color: var(--ct-bg-primary);
     min-height: 100vh;
     color: var(--ct-text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: Play, Arial, sans-serif;
 }
 /* Р—Р°РіРѕР»РѕРІРѕРє СЃС‚СЂР°РЅРёС†С‹ */
-.create-tournament h2 {
-    font-size: 2.5rem;
-    font-weight: 300;
+/* Новый хедер создания турнира */
+.create-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--ct-spacing-xl);
     margin: 0 0 var(--ct-spacing-2xl) 0;
-    color: var(--ct-text-primary);
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    padding-bottom: var(--ct-spacing-lg);
-    border-bottom: 1px solid var(--ct-border-color);
+    align-items: start;
 }
+.create-header-left { min-width: 0; }
+.create-header-right { min-width: 0; }
+
+.editable-title {
+    font-size: 48px;
+    line-height: 112px;
+    height: 112px;
+    color: var(--ct-text-primary);
+    outline: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.editable-title:empty:before {
+    content: attr(data-placeholder);
+    color: var(--ct-text-disabled);
+}
+
+.meta-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--ct-text-secondary);
+    margin-top: 8px;
+}
+.meta-label { color: var(--ct-text-muted); text-transform: uppercase; font-size: 12px; letter-spacing: .06em; }
+.meta-value { color: var(--ct-text-primary); font-weight: 500; }
+.meta-sep { color: var(--ct-text-muted); }
+
+.logo-upload-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.hidden-file-input { display: none; }
+.upload-logo-btn { border-color: #ff0000; }
+.logo-preview { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--ct-border-color); }
+.logo-preview img { width: 100%; height: 100%; object-fit: cover; }
 /* РћСЃРЅРѕРІРЅР°СЏ С„РѕСЂРјР° */
 .create-tournament form {
     background-color: #00000000; /* transparent РІ HEX СЃ Р°Р»СЊС„Р°-РєР°РЅР°Р»РѕРј */
@@ -89,6 +122,7 @@
 .create-tournament select {
     cursor: pointer;
     appearance: none;
+    -webkit-appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right var(--ct-spacing-md) center;

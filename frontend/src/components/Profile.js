@@ -195,16 +195,16 @@ function Profile() {
             const { GameIcon } = require('../utils/game-icons');
             return <GameIcon game={game} size={20} className="tournament-game-icon" />;
         } catch (e) {
-            const key = getGameKey(game);
-            const title = game || '';
-            const initialsMap = {
-                dota2: 'D2', valorant: 'V', quake: 'Q', lol: 'LoL', wot: 'WoT', hearthstone: 'Hs', cs16: 'CS',
-                eafc25: 'EA', cs2: 'CS2', apex: 'A', fortnite: 'F', pubg: 'P', rocketleague: 'RL', overwatch2: 'OW', r6s: 'R6', game: 'G'
-            };
-            const text = initialsMap[key] || 'G';
-            return (
-                <span className={`game-icon-badge game-${key}`} title={title} aria-label={title}>{text}</span>
-            );
+        const key = getGameKey(game);
+        const title = game || '';
+        const initialsMap = {
+            dota2: 'D2', valorant: 'V', quake: 'Q', lol: 'LoL', wot: 'WoT', hearthstone: 'Hs', cs16: 'CS',
+            eafc25: 'EA', cs2: 'CS2', apex: 'A', fortnite: 'F', pubg: 'P', rocketleague: 'RL', overwatch2: 'OW', r6s: 'R6', game: 'G'
+        };
+        const text = initialsMap[key] || 'G';
+        return (
+            <span className={`game-icon-badge game-${key}`} title={title} aria-label={title}>{text}</span>
+        );
         }
     }
 
@@ -3153,7 +3153,7 @@ function Profile() {
                         {/* Teams Tab */}
                         {activeTab === 'teams' && (
                             <>
-                                <MyTeams user={user} />
+                            <MyTeams user={user} />
                                 {(!userOrganizations || userOrganizations.length === 0) && (
                                 <div style={{ marginTop: 12, fontSize: '12px', color: 'var(--text-muted)' }}>
                                     Хотите создать новую организацию? Свяжитесь с администрацией для подачи заявки.
