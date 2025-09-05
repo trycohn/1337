@@ -88,10 +88,23 @@
 .meta-label { color: var(--ct-text-muted); text-transform: uppercase; font-size: 12px; letter-spacing: .06em; }
 .meta-value { color: var(--ct-text-primary); font-weight: 500; }
 .meta-sep {
-     color: var(--ct-text-muted); 
      margin-left: 12px;
      margin-right: 12px;
     }
+
+.meta-row .meta-value {
+font-weight: 700;
+font-size: 12px;
+line-height: 100%;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+text-decoration: underline;
+text-decoration-style: solid;
+text-decoration-offset: 0%;
+text-decoration-thickness: 0;
+text-decoration-skip-ink: auto;
+color: #FFF;
+}
 
 .logo-upload-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .hidden-file-input { display: none; }
@@ -131,6 +144,14 @@
     transition: var(--ct-transition);
     box-sizing: border-box;
 }
+
+.form-group input, .form-group textarea {
+    background-color: #F4F4F41F;
+    border-radius: 8px;
+    padding: 2px 2px 2px 8px;
+    min-height: 140px;
+}
+
 
 .create-tournament select {
     height: 48px;
@@ -178,12 +199,12 @@
 /* РЎРµС‚РєР° С„РѕСЂРјС‹ */
 .create-tournament .form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--ct-spacing-lg);
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
     align-items: start;
 }
 .create-tournament .form-grid.single-column {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
 }
 /* Р“РѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅР°СЏ РєРѕРјРїРѕРЅРѕРІРєР° РѕСЃРЅРѕРІРЅРѕР№ Рё РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё */
 .create-tournament .form-main-layout {
@@ -198,8 +219,6 @@
     animation-delay: 0.1s;
 }
 .create-tournament .additional-section {
-    min-width: 0; /* РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РїРµСЂРµРїРѕР»РЅРµРЅРёРµ */
-    max-width: 450px; /* РћРіСЂР°РЅРёС‡РёРІР°РµРј РјР°РєСЃРёРјР°Р»СЊРЅСѓСЋ С€РёСЂРёРЅСѓ */
     animation-delay: 0.2s;
 }
 /* Р“СЂСѓРїРїС‹ РїРѕР»РµР№ С„РѕСЂРјС‹ */
@@ -208,9 +227,7 @@
     flex-direction: column;
     position: relative;
 }
-.create-tournament .form-group.full-width {
-    grid-column: 1 / -1;
-}
+
 .create-tournament .form-group label {
     font-weight: 700;
     font-size: 14px;
@@ -272,18 +289,11 @@ letter-spacing: normal;
 /* РљРЅРѕРїРєРё С„РѕСЂРјС‹ */
 .create-tournament .form-buttons {
     display: flex;
-    gap: var(--ct-spacing-md);
-    justify-content: center;
-    margin-top: var(--ct-spacing-xl);
-    padding: var(--ct-spacing-xl);
-    background-color: var(--ct-bg-secondary);
-    border: 1px solid var(--ct-border-color);
-    border-radius: 0;
+    gap: 16px;
+    justify-content: flex-start;
     transition: var(--ct-transition);
 }
-.create-tournament .form-buttons:hover {
-    border-color: var(--ct-border-hover);
-}
+
 .create-tournament button {
     padding: var(--ct-spacing-md) var(--ct-spacing-xl);
     border: 1px solid #ff0000;
