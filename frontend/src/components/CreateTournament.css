@@ -51,7 +51,7 @@
 }
 
 .editable-title {
-    height: 112px;
+    min-height: 112px;
     color: #ffffff;
     font-weight: 700;
     font-size: 48px;
@@ -62,11 +62,11 @@
     unicode-bidi: isolate;
     writing-mode: horizontal-tb;
     transform: none !important;
-    white-space: nowrap;
+    white-space: normal; /* разрешаем перенос строк */
+    word-break: normal; /* перенос по пробелам, не рвём слова */
+    overflow-wrap: break-word; /* рвём только слишком длинные слова при необходимости */
     outline: none;
-    overflow: hidden;
     padding: 0;
-    text-overflow: ellipsis;
     
 }
 .editable-title:empty:before {
