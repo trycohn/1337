@@ -179,6 +179,7 @@ letter-spacing: normal;
     line-height: 24px;
     letter-spacing: normal;
     color: #F4F4F4D9;
+    background-color: #F4F4F41F;
 }
 
 /* РЎСµРєС†РёРё С„РѕСЂРјС‹ */
@@ -333,12 +334,6 @@ letter-spacing: normal;
     to {
         transform: rotate(360deg);
     }
-}
-
-.create-tournament input:focus-visible,
-.create-tournament select:focus-visible,
-.create-tournament textarea:focus-visible {
-    outline-offset: 2px;
 }
 /* =========================
    REACT-DATEPICKER РўР•РњРќРђРЇ РўР•РњРђ
