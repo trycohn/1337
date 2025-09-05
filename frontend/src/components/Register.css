@@ -176,17 +176,6 @@
     box-sizing: border-box;
 }
 
-.form-group input:focus {
-    outline: none;
-    border-color: #667eea;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    transform: translateY(-1px);
-}
-
-.form-group input:hover {
-    border-color: #c1c8cd;
-}
 
 .form-group input.error {
     border-color: #e74c3c;
