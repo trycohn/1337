@@ -310,8 +310,29 @@
 /* Новая карточка и табы под макет */
 .auth-page { display: grid; place-items: center; min-height: calc(100vh - var(--header-height)); background:#000; padding: 16px; }
 .card-authpage { width:min(92vw, 440px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
-.card-wide-authpage { width:min(92vw, 520px) !important; }
-.auth-page .card-wide-authpage { width:min(92vw, 520px) !important; }
+.card-wide-resetpage { width:min(92vw, 520px) !important; }
+.auth-page .card-wide-resetpage { width:min(92vw, 520px) !important; }
+
+/* Страница сброса пароля (-resetpage) */
+.card-resetpage { width:min(92vw, 440px); background:linear-gradient(180deg, #151617, #1b1c1e); border:1px solid #202124; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.45); overflow:hidden; position: relative; }
+.auth-page .card-resetpage:hover{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.45); }
+.section-resetpage{ padding:28px; }
+.title-resetpage{ margin:0 0 10px; font-size:20px; font-weight:900; letter-spacing:.08em; color:#ff3b3b; text-align:center; text-transform:uppercase }
+.sub-resetpage{ margin:0 0 22px; color:#a7a7aa; line-height:1.55; font-size:14px; text-align:left }
+.field-resetpage{ display:grid; gap:8px; margin-bottom:18px; }
+.field-resetpage label{ font-size:12px; color:#a7a7aa; letter-spacing:.06em; text-align:left }
+.input-resetpage{ height:46px; border-radius:12px; border:1px solid #2a2c31; background:#0f1012; color:#e9e9ea; outline:none; padding:0 14px; transition:border-color .15s ease, box-shadow .15s ease; }
+.input-resetpage::placeholder{ color:#7d7f84; }
+.input-resetpage:focus{ border-color:#6e6e73; box-shadow:0 0 0 3px rgba(110,110,115,.25); }
+.input-resetpage.error{ border-color:#ff3b3b; }
+.actions-resetpage{ display:grid; gap:12px; margin-top:12px; }
+.btn-resetpage{ height:46px; border-radius:12px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:.06em; cursor:pointer; transition:filter .15s ease, transform .04s ease; text-transform:uppercase }
+.btn-resetpage:active{ transform:translateY(1px); }
+.btn-primary-resetpage{ background:#ff3b3b; color:#fff }
+.back-resetpage{ margin-top:6px; display:inline-flex; align-items:center; gap:8px; color:#b1b3b8; text-decoration:none; font-size:14px }
+.back-resetpage:hover{ color:#fff }
+.note-resetpage{ display:none; margin-top:10px; padding:12px 14px; border:1px solid #2b2d33; border-radius:12px; background:#121314; color:#cde7d6; font-size:14px }
+.note-resetpage.error{ color:#ffd6d6 }
 .auth-page .card-authpage:hover{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.45); }
 .tabs-authpage { display:flex; background:#101113; position:relative; }
 .tab-authpage { flex:1; text-align:center; padding:14px 16px; letter-spacing:.08em; font-weight:600; color:#a7a7aa; cursor:pointer; user-select:none; position:relative; }
