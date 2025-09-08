@@ -1171,13 +1171,7 @@ function TournamentDetails() {
                                             isAdminOrCreator={isAdminOrCreator}
                                             onMatchClick={(match) => {
                                                 if (match && match.id) {
-                                                    const originalMatch = matches.find(m => m.id === parseInt(match.id));
-                                                    if (originalMatch) {
-                                                        // 🔧 ИСПРАВЛЕНИЕ: Используем утилиту для обогащения данных матча
-                                                        const enrichedMatch = enrichMatchWithParticipantNames(originalMatch, tournament);
-                                                        setSelectedMatchForDetails(enrichedMatch);
-                                                        openModal('matchDetails');
-                                                    }
+                                                    window.location.href = `/tournaments/${id}/match/${match.id}`;
                                                 }
                                             }}
                                             readOnly

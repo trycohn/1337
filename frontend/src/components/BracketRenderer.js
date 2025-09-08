@@ -813,22 +813,11 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         return () => { cancelled = true; };
     }, [api, tournament?.id, match?.id]);
 
-    // Предотвращаем перетаскивание при клике на матч
+    // Клик по карточке всегда ведёт на страницу матча (без модалок)
     const handleMatchClick = (e) => {
         e.stopPropagation();
-        const isMobile = window.innerWidth <= 768;
         const url = tournament?.id && match?.id ? `/tournaments/${tournament.id}/match/${match.id}` : null;
-        // Для завершенных турниров всегда открываем страницу матча вместо модалки
-        if (tournament?.status === 'completed' && url) {
-            window.location.href = url;
-            return;
-        }
-        // Мобильная логика — переход по ссылке вместо модалок
-        if (isMobile && url) {
-            window.location.href = url;
-            return;
-        }
-        if (onMatchClick) onMatchClick(match);
+        if (url) window.location.href = url;
     };
 
     const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
@@ -942,7 +931,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 >
                     <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); onMatchClick && onMatchClick(match); }}
+                        onClick={(e) => { e.stopPropagation(); const url = `/tournaments/${tournament.id}/match/${match.id}`; window.location.href = url; }}
                         style={{
                             background: '#111',
                             color: '#fff',
