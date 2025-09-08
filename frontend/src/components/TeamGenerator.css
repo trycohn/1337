@@ -1558,6 +1558,42 @@ color: #ffffff;
   border-top-right-radius: 8px;
 }
 
+/* Tooltip для кнопки формирования микс-команд */
+.mix-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 280px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #ff0000;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+  pointer-events: none;
+}
+
+.mix-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.mix-tooltip-list {
+  margin: 0 0 6px 16px;
+  padding: 0;
+}
+
+.mix-tooltip-list li {
+  margin: 0 0 4px 0;
+}
+
+.mix-tooltip-footnote {
+  color: #aaa;
+  font-size: 11px;
+}
+
 @media (max-width: 640px) {
   .participants-header-row-participants2\.0 {
      grid-template-columns: 1fr auto; 
