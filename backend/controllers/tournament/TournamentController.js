@@ -760,7 +760,7 @@ class TournamentController {
         const { format } = req.body;
         
         // 🔧 ВАЛИДАЦИЯ ФОРМАТА
-        const validFormats = ['single_elimination', 'double_elimination', 'mix'];
+        const validFormats = ['single_elimination', 'double_elimination', 'mix', 'full_mix'];
         if (!validFormats.includes(format)) {
             return res.status(400).json({ 
                 message: 'Некорректный формат турнира',

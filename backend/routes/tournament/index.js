@@ -34,6 +34,7 @@ const MatchController = require('../../controllers/tournament/MatchController');
 const AdminController = require('../../controllers/tournament/AdminController');
 const ChatController = require('../../controllers/tournament/ChatController');
 const MixTeamController = require('../../controllers/tournament/MixTeamController');
+const FullMixController = require('../../controllers/tournament/FullMixController');
 const { BracketController } = require('../../controllers/tournament/BracketController');
 const MatchLobbyController = require('../../controllers/matchLobby/MatchLobbyController');
 const ShareController = require('../../controllers/tournament/ShareController');
@@ -483,6 +484,17 @@ router.post('/lobby/:lobbyId/set-first-picker', authenticateToken, verifyAdminOr
 
 // 🗺️ Выбор или бан карты
 router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyController.selectMap);
+
+// ===========================================
+// 🆕 FULL MIX (без классической сетки)
+// ===========================================
+router.post('/:id/fullmix/start', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.start);
+router.post('/:id/fullmix/generate-next', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.generateNext);
+router.post('/:id/fullmix/complete-round', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.completeRound);
+router.get('/:id/fullmix/standings', authenticateToken, FullMixController.standings);
+router.get('/:id/fullmix/snapshots', authenticateToken, FullMixController.snapshots);
+router.get('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
+router.put('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 
 // 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
 
