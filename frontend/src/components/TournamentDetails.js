@@ -2404,11 +2404,7 @@ function TournamentDetails() {
 
     // 🆕 Основной рендер с системой вкладок
     // Герой-фон 400px по десктопу (показываем для CS2)
-    const heroImageUrl = useMemo(() => {
-        if (isCS2) return "/images/headers/CS2-header-new.jpg";
-        return null;
-    }, [isCS2]);
-    const hasHero = Boolean(heroImageUrl);
+    // (объявлено выше во избежание дублирования)
 
     return (
         <TournamentErrorBoundary>
