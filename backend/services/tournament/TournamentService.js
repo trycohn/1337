@@ -174,6 +174,7 @@ class TournamentService {
         const {
             name, game, format, participant_type, max_participants,
             start_date, description, bracket_type, team_size, mix_rating_type,
+            mix_type,
             lobby_enabled, lobby_match_format, selected_maps, full_double_elimination,
             require_faceit_linked, require_steam_linked,
             is_series_final,
@@ -193,6 +194,7 @@ class TournamentService {
             bracket_type: bracket_type || 'single_elimination', // 🔧 ИСПРАВЛЕНО: устанавливаем single_elimination по умолчанию
             team_size: team_size || 1,
             mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null,
+            mix_type: (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null),
             lobby_enabled: lobby_enabled || false,
             // 🆕 НОВОЕ: Опция Full Double Elimination
             full_double_elimination: (bracket_type === 'double_elimination' && full_double_elimination) || false,

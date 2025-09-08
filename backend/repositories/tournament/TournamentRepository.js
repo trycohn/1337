@@ -86,6 +86,7 @@ class TournamentRepository {
         const {
             name, game, format, created_by, status, participant_type,
             max_participants, start_date, description, bracket_type, team_size, mix_rating_type,
+            mix_type,
             full_double_elimination,
             require_faceit_linked = false,
             require_steam_linked = false,
@@ -95,9 +96,9 @@ class TournamentRepository {
 
         const result = await pool.query(
             `INSERT INTO tournaments
-             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination, require_faceit_linked, require_steam_linked, is_series_final, access_type)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
-            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open']
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, mix_type, full_double_elimination, require_faceit_linked, require_steam_linked, is_series_final, access_type)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null), full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open']
         );
 
         return result.rows[0];

@@ -69,6 +69,10 @@ class TournamentValidator {
             if (!data.team_size || ![2, 5].includes(parseInt(data.team_size))) {
                 errors.push('Для mix-турниров размер команды должен быть 2 или 5');
             }
+            // 🆕 Валидация mix_type
+            if (data.mix_type && !['classic','full'].includes(data.mix_type)) {
+                errors.push('mix_type должен быть classic или full');
+            }
             // 🆕 Валидация новых флагов требований привязок
             if (data.require_faceit_linked !== undefined && typeof data.require_faceit_linked !== 'boolean') {
                 errors.push('Поле require_faceit_linked должно быть булевым');

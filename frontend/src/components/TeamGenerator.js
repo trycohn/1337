@@ -40,6 +40,13 @@ const TeamGenerator = ({
     // 🆕 Получаем настройки из данных турнира
     const teamSize = tournament?.team_size || 5;
     const ratingType = tournament?.mix_rating_type || 'faceit';
+    const formatNormalized = useMemo(() => (
+        (tournament?.format || '')
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/[-\s]/g, '_')
+    ), [tournament?.format]);
 
     const { runWithLoader } = useLoaderAutomatic();
 
@@ -704,7 +711,7 @@ const TeamGenerator = ({
 
                 <div className="mix-buttons-row">
                     {/* 🔧 ИСПРАВЛЕНИЕ: Для микс турниров показываем кнопку формирования если нет команд, независимо от participant_type */}
-                    {(['mix', 'full_mix'].includes(tournament?.format)) && mixedTeams.length === 0 && (
+                    {(['mix', 'full_mix'].includes(formatNormalized)) && mixedTeams.length === 0 && (
                         <button 
                             onClick={handleFormTeams} 
                             className="btn btn-primary"
@@ -716,7 +723,7 @@ const TeamGenerator = ({
                             onMouseLeave={() => setTooltipVisible(false)}
                             disabled={loading || displayParticipants.length < parseInt(teamSize)}
                         >
-                            {loading ? 'Создание команд...' : (tournament?.format === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды')}
+                            {loading ? 'Создание команд...' : (formatNormalized === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды')}
                         </button>
                     )}
 
@@ -872,7 +879,7 @@ const TeamGenerator = ({
             <div className="generation-interface">
                 <div className="no-teams-message">
                     <h4>Команды еще не сформированы</h4>
-                    <p>Нажмите кнопку "{tournament?.format === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды'}" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
+                    <p>Нажмите кнопку "{formatNormalized === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды'}" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
                 </div>
             </div>
         );

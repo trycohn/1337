@@ -46,4 +46,18 @@ BEGIN
 END
 $$;
 
+-- 🆕 Поле mix_type в tournaments: 'classic' | 'full' (только для format = 'mix')
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'tournaments' AND column_name = 'mix_type'
+    ) THEN
+        ALTER TABLE tournaments ADD COLUMN mix_type VARCHAR(16) CHECK (mix_type IN ('classic','full'));
+        COMMENT ON COLUMN tournaments.mix_type IS 'Тип микс турнира: classic — классический микс, full — full mix по раундам';
+    END IF;
+END
+$$;
+
 
