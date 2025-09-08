@@ -44,7 +44,9 @@
     background-position: center top;
     background-repeat: no-repeat;
     background-size: cover; /* края могут обрезаться */
-    width: 100%;
+    width: 100vw; /* на всю ширину body */
+    margin-left: calc(50% - 50vw); /* full-bleed */
+    margin-right: calc(50% - 50vw);
     overflow: hidden;
 }
 
@@ -55,6 +57,9 @@
         background-position: center center;
         background-repeat: no-repeat;
         background-color: #000; /* фон под пустыми полями по бокам */
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
     }
 }
 
