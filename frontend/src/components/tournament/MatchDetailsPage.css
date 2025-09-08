@@ -20,11 +20,12 @@
 
 .match-details-page {
     min-height: 100vh;
-    background: #000;
+    background: #00000000;
     color: #fff;
     padding: 20px;
     max-width: 1400px;
     margin: 0 auto;
+    margin-top: 320px;
 }
 
 /* ========== ЗАГРУЗКА И ОШИБКИ ========== */
@@ -322,6 +323,12 @@
     opacity: 1;
 }
 
+.map-banned {
+    border-color: #ff4444;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.25);
+    background: linear-gradient(135deg, #000 0%, #220000 100%);
+}
+
 .map-played-overlay {
     position: absolute;
     top: 50%;
@@ -329,6 +336,22 @@
     transform: translate(-50%, -50%);
     font-size: 32px;
     color: #00ff00;
+    background: rgba(0, 0, 0, 0.7);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-banned-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: #ff4444;
     background: rgba(0, 0, 0, 0.7);
     width: 40px;
     height: 40px;
@@ -364,6 +387,15 @@
     align-items: center;
     gap: 8px;
 }
+
+.map-action-label {
+    padding: 6px 8px 0 8px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 11px;
+}
+.map-action-label.ban { color: #ff4444; }
+.map-action-label.pick { color: #00ff00; }
 
 .map-score .score-divider {
     color: #666;
@@ -785,6 +817,13 @@
     font-style: italic;
 }
 
+.match-status-bar-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ========== АДАПТИВНОСТЬ ========== */
 @media (max-width: 1024px) {
     .match-main-header {
@@ -811,11 +850,21 @@
     }
 }
 
+
+
 @media (max-width: 768px) {
     .match-details-page {
         padding: 10px;
+        margin-top: 100px;
     }
     
+    .match-status-bar-buttons {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        text-align: center;
+    }
+
     .match-main-header {
         padding: 20px;
         gap: 20px;
@@ -823,6 +872,10 @@
     
     .map-pool-grid {
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+
+    .pick-ban-timeline-horizontal {
+        flex-direction: column;
     }
     
     .lineups-grid,

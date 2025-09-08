@@ -61,7 +61,7 @@
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 0; /* под всем контентом */
+    z-index: -1; /* под всем контентом */
     background-image: var(--tournament-hero-bg, none);
     pointer-events: none; /* не перехватывать клики */
 }
