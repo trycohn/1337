@@ -103,6 +103,7 @@ function AdminPanel() {
     const [preAvatars, setPreAvatars] = useState([]);
     const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
     const [preAvatarsMsg, setPreAvatarsMsg] = useState('');
+    const [uploadCategory, setUploadCategory] = useState('standard');
     const [defaultAvatarUrl, setDefaultAvatarUrl] = useState(null);
     const [showDefaultConfirm, setShowDefaultConfirm] = useState(false);
     const [candidateDefault, setCandidateDefault] = useState(null);
@@ -383,7 +384,7 @@ function AdminPanel() {
         }
     };
 
-    const uploadPreloadedAvatar = async (file, name) => {
+    const uploadPreloadedAvatar = async (file, name, category) => {
         if (!file) return;
         try {
             setPreAvatarsMsg('');
@@ -395,6 +396,13 @@ function AdminPanel() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (!res.data?.success) throw new Error(res.data?.error || 'Ошибка');
+            // Установим категорию, если не стандартная
+            const createdFilename = res.data?.filename;
+            if (createdFilename && category && category !== 'standard') {
+                await api.patch(`/api/admin/preloaded-avatars/${encodeURIComponent(createdFilename)}/category`, { category }, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+            }
             setPreAvatarsMsg('Загружено');
             await fetchPreloadedAvatars();
         } catch (e) {
@@ -402,6 +410,19 @@ function AdminPanel() {
             setPreAvatarsMsg(`Ошибка: ${msg}`);
         } finally {
             setPreAvatarsLoading(false);
+        }
+    };
+
+    const updateAvatarCategory = async (filename, category) => {
+        if (!filename) return;
+        try {
+            await api.patch(`/api/admin/preloaded-avatars/${encodeURIComponent(filename)}/category`, { category }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            // Обновим локально без полного рефетча
+            setPreAvatars(prev => prev.map(a => a.filename === filename ? { ...a, category } : a));
+        } catch (e) {
+            alert(e?.response?.data?.error || 'Не удалось обновить категорию');
         }
     };
 
@@ -806,11 +827,18 @@ function AdminPanel() {
                     <h2>Предзагруженные аватарки</h2>
                     <div className="avatar-upload-row" style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
                         <input type="text" placeholder="имя (необязательно)" className="map-input" id="pre-avatar-name" />
+                        <select className="status-filter" value={uploadCategory} onChange={(e)=>setUploadCategory(e.target.value)}>
+                            <option value="standard">Стандартные</option>
+                            <option value="rare">Редкие</option>
+                            <option value="special">Специальные</option>
+                            <option value="epic">Эпические</option>
+                            <option value="legendary">Легендарные</option>
+                        </select>
                         <input type="file" accept="image/*" onChange={(e)=>{
                             const file = e.target.files && e.target.files[0];
                             const nameInput = document.getElementById('pre-avatar-name');
                             const name = nameInput ? nameInput.value : '';
-                            uploadPreloadedAvatar(file, name);
+                            uploadPreloadedAvatar(file, name, uploadCategory);
                             e.target.value='';
                         }} />
                         <button className="btn" disabled={preAvatarsLoading}>Загрузить 512x512</button>
@@ -823,11 +851,21 @@ function AdminPanel() {
                             <div key={a.filename} className="pre-avatar-card" style={{background:'#111', border:'1px solid #333', padding:8, display:'flex', flexDirection:'column', gap:6}}>
                                 <div style={{position:'relative'}}>
                                     <img src={a.url} alt={a.filename} style={{width:'100%', aspectRatio:'1/1', objectFit:'cover', border:'1px solid #222'}} />
+                                    <span style={{position:'absolute', top:6, right:6, background:'#000', border:'1px solid #333', padding:'2px 6px', fontSize:12}}>
+                                        {a.category === 'legendary' ? 'Легендарные' : a.category === 'epic' ? 'Эпические' : a.category === 'special' ? 'Специальные' : a.category === 'rare' ? 'Редкие' : 'Стандартные'}
+                                    </span>
                                     {defaultAvatarUrl === a.url && (
                                         <span style={{position:'absolute', top:6, left:6, background:'#222', border:'1px solid #444', padding:'2px 6px', fontSize:12}}>Дефолт</span>
                                     )}
                                 </div>
                                 <div style={{display:'flex', flexDirection:'column', gap:6}}>
+                                    <select className="status-filter" value={a.category || 'standard'} onChange={(e)=>updateAvatarCategory(a.filename, e.target.value)}>
+                                        <option value="standard">Стандартные</option>
+                                        <option value="rare">Редкие</option>
+                                        <option value="special">Специальные</option>
+                                        <option value="epic">Эпические</option>
+                                        <option value="legendary">Легендарные</option>
+                                    </select>
                                     <button className="btn-small danger" onClick={()=>deletePreloadedAvatar(a.filename)}>Удалить</button>
                                     {defaultAvatarUrl !== a.url && (
                                         <button className="btn-small" onClick={()=>confirmSetDefault(a)}>Сделать дефолтом</button>

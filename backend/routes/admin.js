@@ -327,6 +327,39 @@ router.post('/upload/logo', authenticateToken, requireAdmin, upload.single('logo
 // =============================
 const preloadedAvatarsDir = path.join(__dirname, '../uploads/avatars/preloaded');
 fs.mkdirSync(preloadedAvatarsDir, { recursive: true });
+const preloadedMetaFile = path.join(preloadedAvatarsDir, 'meta.json');
+
+function readPreloadedMeta() {
+    try {
+        if (!fs.existsSync(preloadedMetaFile)) return { categories: {} };
+        const raw = fs.readFileSync(preloadedMetaFile, 'utf8');
+        const json = JSON.parse(raw);
+        if (!json || typeof json !== 'object') return { categories: {} };
+        if (!json.categories || typeof json.categories !== 'object') json.categories = {};
+        return json;
+    } catch (e) {
+        return { categories: {} };
+    }
+}
+
+function writePreloadedMeta(meta) {
+    try {
+        const data = { categories: meta.categories || {} };
+        fs.writeFileSync(preloadedMetaFile, JSON.stringify(data, null, 2), 'utf8');
+    } catch (_) {}
+}
+
+function getCategoryFor(filename) {
+    const meta = readPreloadedMeta();
+    return meta.categories && meta.categories[filename] || 'standard';
+}
+
+function setCategoryFor(filename, category) {
+    const meta = readPreloadedMeta();
+    if (!meta.categories) meta.categories = {};
+    meta.categories[filename] = category;
+    writePreloadedMeta(meta);
+}
 
 // =============================
 //  Site settings (key-value)
@@ -368,7 +401,8 @@ router.get('/preloaded-avatars', authenticateToken, requireAdmin, async (req, re
                 filename: name,
                 url: `/uploads/avatars/preloaded/${name}`,
                 size: stat.size,
-                mtime: stat.mtimeMs
+                mtime: stat.mtimeMs,
+                category: getCategoryFor(name)
             };
         }).sort((a, b) => b.mtime - a.mtime);
         return res.json({ success: true, avatars: list });
@@ -531,7 +565,9 @@ router.post('/preloaded-avatars', authenticateToken, requireAdmin, (req, res, ne
                 publicUrl: `/uploads/avatars/preloaded/${filename}`
             });
         } catch (_) {}
-        return res.json({ success: true, url: `/uploads/avatars/preloaded/${filename}`, filename });
+        // Устанавливаем категорию по умолчанию — standard
+        setCategoryFor(filename, 'standard');
+        return res.json({ success: true, url: `/uploads/avatars/preloaded/${filename}`, filename, category: 'standard' });
     } catch (e) {
         console.error('Ошибка загрузки предзагруженной аватарки:', e);
         return res.status(500).json({ success: false, error: 'Не удалось сохранить аватар' });
@@ -546,10 +582,34 @@ router.delete('/preloaded-avatars/:filename', authenticateToken, requireAdmin, a
         const filePath = path.join(preloadedAvatarsDir, filename);
         if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Файл не найден' });
         fs.unlinkSync(filePath);
+        // также удалим запись в метаданных
+        const meta = readPreloadedMeta();
+        if (meta.categories && meta.categories[filename]) {
+            delete meta.categories[filename];
+            writePreloadedMeta(meta);
+        }
         return res.json({ success: true });
     } catch (e) {
         console.error('Ошибка удаления аватарки:', e);
         return res.status(500).json({ success: false, error: 'Не удалось удалить' });
+    }
+});
+
+// Обновление категории предзагруженной аватарки
+router.patch('/preloaded-avatars/:filename/category', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const { category } = req.body || {};
+        const allowed = ['standard', 'rare', 'special', 'epic', 'legendary'];
+        if (!filename || filename.includes('..')) return res.status(400).json({ success: false, error: 'Некорректное имя файла' });
+        if (!allowed.includes(category)) return res.status(400).json({ success: false, error: 'Некорректная категория' });
+        const filePath = path.join(preloadedAvatarsDir, filename);
+        if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'Файл не найден' });
+        setCategoryFor(filename, category);
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка обновления категории аватарки:', e);
+        return res.status(500).json({ success: false, error: 'Не удалось обновить категорию' });
     }
 });
 

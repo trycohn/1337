@@ -1863,8 +1863,23 @@ router.get('/preloaded-avatars', async (req, res) => {
         const dir = path.join(__dirname, '../uploads/avatars/preloaded');
         if (!fs.existsSync(dir)) return res.json({ avatars: [] });
         const files = fs.readdirSync(dir).filter(f => /\.(png|jpe?g|webp)$/i.test(f));
-        // Возвращаем относительные URL, чтобы избежать проблем со схемой
-        const list = files.map(name => ({ filename: name, url: `/uploads/avatars/preloaded/${name}` }));
+        const metaPath = path.join(dir, 'meta.json');
+        let categories = {};
+        try {
+            if (fs.existsSync(metaPath)) {
+                const raw = fs.readFileSync(metaPath, 'utf8');
+                const json = JSON.parse(raw);
+                if (json && typeof json === 'object' && json.categories && typeof json.categories === 'object') {
+                    categories = json.categories;
+                }
+            }
+        } catch (_) {}
+        // Возвращаем относительные URL и категорию (по умолчанию standard)
+        const list = files.map(name => ({
+            filename: name,
+            url: `/uploads/avatars/preloaded/${name}`,
+            category: categories[name] || 'standard'
+        }));
         res.json({ avatars: list });
     } catch (e) {
         console.error('Ошибка получения предзагруженных аватарок:', e);

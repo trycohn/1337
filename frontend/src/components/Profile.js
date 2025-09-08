@@ -88,17 +88,30 @@ function PreloadedAvatarPicker({ onPicked }) {
             {errorMsg && <div className="error">{errorMsg}</div>}
             {!loading && !errorMsg && (
                 <div className="preloaded-avatars-grid">
-                    {items.map((it) => (
-                        <button
-                            key={it.filename}
-                            className="pre-avatar-item"
-                            onClick={() => onPicked && onPicked(it.url)}
-                            title={it.filename}
-                            aria-label={`Выбрать аватар ${it.filename}`}
-                        >
-                            <img src={it.url} alt={it.filename} />
-                        </button>
-                    ))}
+                    {['standard','rare','special','epic','legendary'].map(cat => {
+                        const group = items.filter(i => (i.category || 'standard') === cat);
+                        if (group.length === 0) return null;
+                        return (
+                            <div key={cat} className={`pre-avatar-group group-${cat}`}>
+                                <div className="group-header">
+                                    {cat === 'legendary' ? 'Легендарные' : cat === 'epic' ? 'Эпические' : cat === 'special' ? 'Специальные' : cat === 'rare' ? 'Редкие' : 'Стандартные'}
+                                </div>
+                                <div className="group-grid">
+                                    {group.map((it) => (
+                                        <button
+                                            key={it.filename}
+                                            className={`pre-avatar-item cat-${cat}`}
+                                            onClick={() => onPicked && onPicked(it.url)}
+                                            title={it.filename}
+                                            aria-label={`Выбрать аватар ${it.filename}`}
+                                        >
+                                            <img src={it.url} alt={it.filename} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
                     {items.length === 0 && (
                         <div className="empty-state" style={{padding: '16px'}}>Пока нет предзагруженных аватарок</div>
                     )}
