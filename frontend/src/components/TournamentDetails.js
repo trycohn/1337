@@ -1304,21 +1304,7 @@ function TournamentDetails() {
         }
     }, [tournament?.game, fetchMapsForGame]);
 
-    // 🆕 Root‑фон для CS2 (body.classList + inline backgroundImage с 70% непрозрачностью)
-    useEffect(() => {
-        const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
-        if (isCS2) {
-            document.body.classList.add('cs2-root-bg');
-            document.body.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.3), rgba(0,0,0,0.3)), url('/images/headers/CS2-header-new.jpg')";
-        } else {
-            document.body.classList.remove('cs2-root-bg');
-            document.body.style.backgroundImage = '';
-        }
-        return () => {
-            document.body.classList.remove('cs2-root-bg');
-            document.body.style.backgroundImage = '';
-        };
-    }, [tournament?.game]);
+    // Убрали установку root‑фона на body — используем локальную подложку-герой
 
     // WebSocket соединение
     useEffect(() => {
@@ -2410,14 +2396,27 @@ function TournamentDetails() {
     }
 
     // 🆕 Основной рендер с системой вкладок
+    // Герой-фон 400px по десктопу (показываем для CS2)
+    const heroImageUrl = useMemo(() => {
+        if (isCS2) return "/images/headers/CS2-header-new.jpg";
+        return null;
+    }, [isCS2]);
+    const hasHero = Boolean(heroImageUrl);
+
     return (
         <TournamentErrorBoundary>
             <div
-                className={`tournament-details-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-root-bg' : ''}`}
+                className={`tournament-details-tournamentdetails`}
                 data-testid="tournament-details"
             >
                 <div className="tournament-layout">
                     <div className="tournament-main">
+                        {hasHero && (
+                            <div
+                                className="tournament-hero"
+                                style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${heroImageUrl}')` }}
+                            />
+                        )}
                         {/* Заголовок турнира (CS2: делим на 2 блока в общем флексе) */}
                         <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                             <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
@@ -2530,7 +2529,7 @@ function TournamentDetails() {
                         </div>
 
                         {/* 🆕 Навигация по вкладкам */}
-                        <div className={`tabs-navigation-tournamentdetails ${isCS2 ? 'offset-from-hero' : ''}`}>
+                        <div className={`tabs-navigation-tournamentdetails ${hasHero ? 'offset-from-hero' : ''}`}>
                             {!isCS2 && (
                                 <button 
                                     className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}

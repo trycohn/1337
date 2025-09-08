@@ -39,14 +39,23 @@
     gap: 40px;
 }
 
-.cs2-hero-header {
-    width: 100vw;
+.tournament-hero {
     height: 400px;
-    background-position: top center;
+    background-position: center top;
     background-repeat: no-repeat;
-    background-size: cover;
-    margin-left: calc(50% - 50vw); /* full-bleed */
-    margin-right: calc(50% - 50vw);
+    background-size: cover; /* края могут обрезаться */
+    width: 100%;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .tournament-hero {
+        height: 240px;
+        background-size: contain; /* показываем целиком без обрезки */
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-color: #000; /* фон под пустыми полями по бокам */
+    }
 }
 
 .tournament-header .with-cs2-hero {
