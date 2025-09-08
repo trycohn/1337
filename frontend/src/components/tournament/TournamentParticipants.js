@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import Skeleton from 'react-loading-skeleton';
+import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCrown } from '@fortawesome/free-solid-svg-icons';
 import TeamGenerator from '../TeamGenerator';
@@ -272,6 +272,7 @@ const TournamentParticipants = ({
 
             {/* Условное отображение списков участников для НЕ-микс турниров */}
             {shouldShowParticipantsList() && (
+                <SkeletonTheme baseColor="#2a2a2a" highlightColor="#3a3a3a">
                 <>
                     {/* Список участников для команд */}
                     {tournament?.participant_type === 'team' && (
@@ -423,6 +424,7 @@ const TournamentParticipants = ({
                         </div>
                     )}
                 </>
+                </SkeletonTheme>
             )}
 
             {/* Панель управления участниками для администраторов — скрыта если турнир идёт или завершён */}

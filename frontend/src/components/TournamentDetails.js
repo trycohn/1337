@@ -1082,13 +1082,12 @@ function TournamentDetails() {
                         <Suspense fallback={
                             <div className="loading-teams" style={{ padding: 16 }}>
                                 <div style={{ display: 'grid', gap: 12 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <div className="skeleton-circle" style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a1a1a' }} />
-                                        <div className="skeleton-line" style={{ width: 160, height: 16, background: '#1a1a1a' }} />
-                                    </div>
-                                    <div className="skeleton-line" style={{ width: '100%', height: 14, background: '#1a1a1a' }} />
-                                    <div className="skeleton-line" style={{ width: '100%', height: 14, background: '#1a1a1a' }} />
-                                    <div className="skeleton-line" style={{ width: '100%', height: 14, background: '#1a1a1a' }} />
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2a2a2a' }} />
+                                            <div style={{ width: 160, height: 16, background: '#3a3a3a' }} />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         }>
@@ -1148,8 +1147,8 @@ function TournamentDetails() {
                                             <div style={{ display: 'grid', gap: 12 }}>
                                                 {[...Array(4)].map((_, i) => (
                                                     <div key={i} style={{ display: 'flex', gap: 8 }}>
-                                                        <div style={{ width: 120, height: 16, background: '#1a1a1a' }} />
-                                                        <div style={{ flex: 1, height: 16, background: '#121212' }} />
+                                                        <div style={{ width: 120, height: 16, background: '#2a2a2a' }} />
+                                                        <div style={{ flex: 1, height: 16, background: '#3a3a3a' }} />
                                                     </div>
                                                 ))}
                                             </div>
