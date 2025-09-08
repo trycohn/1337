@@ -193,13 +193,13 @@ async function checkTournamentParticipation(tournamentId, userId) {
 async function sendTournamentEventNotification(tournamentId, eventType, eventData = {}) {
     try {
         const messages = {
-            'tournament_started': `🚀 Турнир "${eventData.tournamentName}" начался!`,
-            'bracket_generated': `🥊 Турнирная сетка сгенерирована! Проверьте своих соперников.`,
-            'match_result_updated': `⚽ Результат матча обновлен: ${eventData.team1} vs ${eventData.team2}`,
-            'participant_joined': `👋 К турниру присоединился новый участник: ${eventData.participantName}`,
-            'participant_left': `👋 Участник покинул турнир: ${eventData.participantName}`,
-            'admin_assigned': `🛡️ Новый администратор назначен: ${eventData.adminName}`,
-            'tournament_completed': `🏆 Турнир завершен! Поздравляем победителей!`
+            'tournament_started': `Турнир "${eventData.tournamentName}" начался!`,
+            'bracket_generated': `Турнирная сетка сгенерирована! Проверьте своих соперников.`,
+            'match_result_updated': `Результат матча обновлен: ${eventData.team1} vs ${eventData.team2}`,
+            'participant_joined': `К турниру присоединился новый участник: ${eventData.participantName}`,
+            'participant_left': `Участник покинул турнир: ${eventData.participantName}`,
+            'admin_assigned': `Новый администратор назначен: ${eventData.adminName}`,
+            'tournament_completed': `Турнир завершен! Поздравляем победителей!`
         };
 
         const message = messages[eventType] || `📢 Событие в турнире: ${eventType}`;

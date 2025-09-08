@@ -851,7 +851,6 @@ const UnifiedParticipantsPanel = ({
                     </div>
                     
                     <div className="no-teams-state-participants-list">
-                        <div className="no-teams-icon-participants-list">⚽</div>
                         <h4>Команды не сформированы</h4>
                         <p>
                             {tournament?.format === 'mix' 

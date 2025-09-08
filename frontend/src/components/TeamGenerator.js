@@ -862,7 +862,6 @@ const TeamGenerator = ({
         return (
             <div className="generation-interface">
                 <div className="no-teams-message">
-                    <div className="no-teams-icon">⚽</div>
                     <h4>Команды еще не сформированы</h4>
                     <p>Нажмите кнопку "Сформировать команды" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
                 </div>
