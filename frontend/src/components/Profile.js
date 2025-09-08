@@ -2595,7 +2595,9 @@ function Profile() {
                                                                 steamNickname ? (
                                                                     <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
                                                                 ) : (
-                                                                    <Skeleton width={120} height={16} />
+                                                                    <span style={{ color: 'var(--primary-color)' }}>
+                                                                        <Skeleton width={120} height={16} baseColor="currentColor" highlightColor="currentColor" />
+                                                                    </span>
                                                                 )
                                                             ) : 'Не привязан'}
                                         </div>
@@ -2621,7 +2623,9 @@ function Profile() {
                                                         <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
                                                             {user.faceit_id ? (
                                                                 isLoadingFaceitInfo ? (
-                                                                    <Skeleton width={120} height={16} />
+                                                                    <span style={{ color: 'var(--primary-color)' }}>
+                                                                        <Skeleton width={120} height={16} baseColor="currentColor" highlightColor="currentColor" />
+                                                                    </span>
                                                                 ) : (
                                                                     faceitInfo ? (
                                                                         <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
