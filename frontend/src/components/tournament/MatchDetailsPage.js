@@ -460,38 +460,95 @@ const MatchDetailsPage = () => {
     }
 
     const renderMapPool = () => {
-        // 1) Согласованный маппул турнира (приоритетный список для сетки)
-        const agreedPool = Array.isArray(match.available_maps)
-            ? match.available_maps.map(m => normalizeMapName(m)).filter(Boolean)
-            : [];
-
-        // 2) Сыгранные карты из результата матча
+        // 1) Сыгранные карты из результата матча (для отображения счётов)
         const mapsDataRaw = match.maps_data;
         const hasMapsDataRaw = Array.isArray(mapsDataRaw) && mapsDataRaw.length > 0;
-        
-        // Создаем Map для быстрого поиска данных о сыгранных картах
+
         const playedMapsData = new Map();
         if (hasMapsDataRaw) {
             mapsDataRaw.forEach(mapInfo => {
-                // Поддерживаем разные форматы полей
                 const mapName = normalizeMapName(mapInfo.map_name || mapInfo.mapName || mapInfo.name || mapInfo.map || '');
                 const team1Score = mapInfo.team1_score !== undefined ? mapInfo.team1_score : (mapInfo.score1 || 0);
                 const team2Score = mapInfo.team2_score !== undefined ? mapInfo.team2_score : (mapInfo.score2 || 0);
-                
                 if (mapName) {
-                    playedMapsData.set(mapName, {
-                        team1_score: team1Score,
-                        team2_score: team2Score
-                    });
+                    playedMapsData.set(mapName, { team1_score: team1Score, team2_score: team2Score });
                 }
             });
         }
 
-        // 3) Итоговый список карт для отображения: берем согласованный, иначе дефолтный пул CS2
+        // 2) Если есть история лобби (selections) — показываем карты в порядке BAN/PICK
+        const selections = Array.isArray(match?.selections) ? match.selections : [];
+        const teamNameById = {
+            [match.team1_id]: match.team1_name || 'Команда 1',
+            [match.team2_id]: match.team2_name || 'Команда 2'
+        };
+
+        if (selections.length > 0) {
+            return (
+                <div className="match-map-pool">
+                    <h3 className="section-title">🗺️ Карты</h3>
+                    <div className="map-pool-grid">
+                        {selections.map((s, idx) => {
+                            const mapKey = normalizeMapName(s.map_name || s.map || s.name);
+                            const isBan = (s.action_type || s.type) === 'ban';
+                            const isPick = (s.action_type || s.type) === 'pick';
+                            const mapData = playedMapsData.get(mapKey);
+                            const teamName = teamNameById[s.team_id] || 'Команда';
+                            const canEdit = isAdminOrCreator && isPick;
+                            return (
+                                <div
+                                    key={`${mapKey}-${idx}`}
+                                    className={`map-card ${isPick ? 'map-played' : ''} ${isBan ? 'map-banned' : ''}`}
+                                    onClick={() => {
+                                        if (!canEdit) return;
+                                        const mapsDataArr = getEditableMapsData();
+                                        const editIdx = mapsDataArr.findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
+                                        if (editIdx >= 0) {
+                                            setEditingMapIndex(editIdx);
+                                            const m = mapsDataArr[editIdx];
+                                            setScore1Input(m.score1 ?? m.team1_score ?? '');
+                                            setScore2Input(m.score2 ?? m.team2_score ?? '');
+                                            setIsScoreModalOpen(true);
+                                        }
+                                    }}
+                                    style={{ cursor: canEdit ? 'pointer' : 'default' }}
+                                >
+                                    <div className="map-image-wrapper">
+                                        <img src={getMapImage(mapKey)} alt={mapKey} className="map-image" />
+                                        {isPick && <div className="map-played-overlay">✓</div>}
+                                        {isBan && <div className="map-banned-overlay">✖</div>}
+                                    </div>
+                                    <div className="map-name">{mapKey.toUpperCase()}</div>
+                                    <div className={`map-action-label ${isBan ? 'ban' : 'pick'}`}>
+                                        {teamName} {isBan ? 'BAN' : 'PICK'}
+                                    </div>
+                                    {isPick && mapData && (
+                                        <div className="map-score">
+                                            <span className={match.winner_team_id === match.team1_id && mapData.team1_score > mapData.team2_score ? 'winner-score' : ''}>
+                                                {mapData.team1_score}
+                                            </span>
+                                            <span className="score-divider">:</span>
+                                            <span className={match.winner_team_id === match.team2_id && mapData.team2_score > mapData.team1_score ? 'winner-score' : ''}>
+                                                {mapData.team2_score}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        // 3) Иначе показываем стандартный пул (как раньше)
+        const agreedPool = Array.isArray(match.available_maps)
+            ? match.available_maps.map(m => normalizeMapName(m)).filter(Boolean)
+            : [];
         const fallbackPool = ['dust2', 'mirage', 'inferno', 'nuke', 'overpass', 'vertigo', 'ancient'];
         const displayPool = (agreedPool.length > 0 ? agreedPool : fallbackPool);
         const pickedBySelections = new Set(getPickedMapsFromSelections());
-        
+
         return (
             <div className="match-map-pool">
                 <h3 className="section-title">🗺️ Карты</h3>
@@ -501,7 +558,6 @@ const MatchDetailsPage = () => {
                         const mapData = playedMapsData.get(mapKey);
                         const isPlayed = playedMapsData.has(mapKey);
                         const isSelected = isPlayed || pickedBySelections.has(mapKey);
-                        
                         return (
                             <div
                                 key={mapKey}
@@ -544,29 +600,7 @@ const MatchDetailsPage = () => {
         );
     };
 
-    const renderPickBanHistory = () => {
-        if (!match.pick_ban_data || !Array.isArray(match.pick_ban_data)) return null;
-        
-        return (
-            <div className="match-pick-ban">
-                <h3 className="section-title">🎯 Pick & Ban</h3>
-                <div className="pick-ban-timeline">
-                    {match.pick_ban_data.map((action, index) => (
-                        <div key={index} className={`pick-ban-item ${action.type}`}>
-                            <div className="pick-ban-order">#{index + 1}</div>
-                            <div className="pick-ban-team">
-                                {action.team_id === match.team1_id ? match.team1_name : match.team2_name}
-                            </div>
-                            <div className={`pick-ban-action ${action.type}`}>
-                                {action.type === 'ban' ? '🚫 BAN' : '✅ PICK'}
-                            </div>
-                            <div className="pick-ban-map">{action.map_name?.toUpperCase()}</div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
+    
 
     const openUserProfile = (userId, isAuthorizedUser) => {
         if (userId) window.open(`/user/${userId}`, '_blank');
@@ -781,7 +815,7 @@ const MatchDetailsPage = () => {
                         {getMatchStatusText(match.status)}
                     </span>
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div className="match-status-bar-buttons">
                         {isAdminOrCreator && (
                             <button className="btn btn-primary" onClick={handleCompleteMatch} title="Завершить матч и зафиксировать результат">
                                 Завершить матч
@@ -926,8 +960,7 @@ const MatchDetailsPage = () => {
                 </div>
             )}
             
-            {/* Pick & Ban */}
-            {renderPickBanHistory()}
+            {/* Pick & Ban — удалено, история интегрирована в маппул */}
             
             {/* Составы команд */}
             {renderTeamLineups()}

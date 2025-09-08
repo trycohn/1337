@@ -3,9 +3,10 @@
 .tournament-details-tournamentdetails {
     padding: 20px;
     margin: auto;
-    background-color: #000000;
+    background-color: rgba(0, 0, 0, 0);
     color: #ffffff;
     min-height: 100vh;
+    position: relative;
 }
 
 /* 🆕 Фоновое изображение для CS2 (верхние 400px занимаются фоном) */
@@ -39,14 +40,53 @@
     gap: 40px;
 }
 
-.cs2-hero-header {
-    width: 100vw;
+.tournament-hero-layer {
     height: 400px;
-    background-position: top center;
+    background-position: center;
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: cover; /* края могут обрезаться */
+    width: 100vw; /* на всю ширину body */
     margin-left: calc(50% - 50vw); /* full-bleed */
     margin-right: calc(50% - 50vw);
+    overflow: hidden;
+}
+
+.tournament-hero {
+    position: absolute;
+}
+
+/* Слой-подложка под всем контентом */
+.tournament-hero-layer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: -1; /* под всем контентом */
+    background-image: var(--tournament-hero-bg, none);
+    pointer-events: none; /* не перехватывать клики */
+}
+
+.tournament-layout,
+.tournament-main,
+.tournament-header,
+.tabs-navigation-tournamentdetails,
+.tournament-content-tournamentdetails {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .tournament-hero,
+    .tournament-hero-layer {
+        height: 240px;
+        background-size: contain; /* показываем целиком без обрезки */
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-color: #000; /* фон под пустыми полями по бокам */
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+    }
 }
 
 .tournament-header .with-cs2-hero {

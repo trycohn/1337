@@ -287,6 +287,15 @@ function Layout() {
 
     return (
         <div className="home-container">
+            {/* Глобальный фон-герой для страниц турнира (под навигацией) */}
+            {location.pathname.startsWith('/tournaments/') && (
+                <div
+                    className="tournament-hero-layer"
+                    style={{
+                        backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('/images/headers/CS2-header-new.jpg')`
+                    }}
+                />
+            )}
             {/* Убираем оверлей загрузки, чтобы исключить белые вспышки при смене вкладок */}
             {false && loading && <Loader />}
             <header className="header">
