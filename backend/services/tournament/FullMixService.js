@@ -158,14 +158,24 @@ class FullMixService {
     }
 
     static async generateRoundSnapshot(tournamentId, roundNumber, ratingMode = 'random', standings = null) {
-        // Получаем пул участников
-        const participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
-        const teamSize = await this.getTeamSize(tournamentId);
-        const teams = this.formTeams(participants, ratingMode, teamSize);
-        const createdTeams = await this.createTeamsForRound(tournamentId, roundNumber, teams, ratingMode);
-        const matches = await this.createRoundMatches(tournamentId, roundNumber, createdTeams);
-        const currentStandings = standings || await this.calculateStandings(tournamentId);
-        return { round: roundNumber, teams: createdTeams, matches, standings: currentStandings };
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            // Получаем пул участников
+            const participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            const teamSize = await this.getTeamSize(tournamentId);
+            const teams = this.formTeams(participants, ratingMode, teamSize);
+            const createdTeams = await this.createTeamsForRound(tournamentId, roundNumber, teams, ratingMode, client);
+            const matches = await this.createRoundMatches(tournamentId, roundNumber, createdTeams, client);
+            await client.query('COMMIT');
+            const currentStandings = standings || await this.calculateStandings(tournamentId);
+            return { round: roundNumber, teams: createdTeams, matches, standings: currentStandings };
+        } catch (e) {
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 
     static async saveSnapshot(tournamentId, roundNumber, snapshot) {
@@ -229,14 +239,14 @@ class FullMixService {
         return teams.map((members, idx) => ({ team_index: idx + 1, members }));
     }
 
-    static async createRoundMatches(tournamentId, roundNumber, createdTeams) {
+    static async createRoundMatches(tournamentId, roundNumber, createdTeams, client = pool) {
         // Создаем матчи по парам команд (используем реальные team_id)
         const matches = [];
         for (let i = 0; i < createdTeams.length; i += 2) {
             const teamA = createdTeams[i];
             const teamB = createdTeams[i + 1];
             if (!teamB) break;
-            const res = await pool.query(
+            const res = await client.query(
                 `INSERT INTO matches (tournament_id, round, team1_id, team2_id, status, created_at)
                  VALUES ($1, $2, $3, $4, 'pending', NOW()) RETURNING id`,
                 [tournamentId, roundNumber, teamA.team_id, teamB.team_id]
@@ -267,11 +277,11 @@ class FullMixService {
         return poolCandidates[Math.floor(Math.random() * poolCandidates.length)];
     }
 
-    static async createTeamsForRound(tournamentId, roundNumber, teams, ratingMode) {
+    static async createTeamsForRound(tournamentId, roundNumber, teams, ratingMode, client = pool) {
         const created = [];
         for (const t of teams) {
             const name = `R${roundNumber}-Team ${t.team_index}`;
-            const teamRes = await pool.query(
+            const teamRes = await client.query(
                 `INSERT INTO tournament_teams (tournament_id, name, creator_id)
                  VALUES ($1, $2, NULL) RETURNING id`,
                 [tournamentId, name]
@@ -281,7 +291,7 @@ class FullMixService {
             const captainUserId = captain?.user_id || null;
             const captainRating = captain?.faceit_elo || null;
             for (const m of t.members) {
-                await pool.query(
+                await client.query(
                     `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
                      VALUES ($1, $2, $3, $4, $5)`,
                     [teamId, m.user_id || null, m.participant_id || null, !!(captainUserId && m.user_id === captainUserId), captainRating]
