@@ -2414,12 +2414,7 @@ function TournamentDetails() {
             >
                 <div className="tournament-layout">
                     <div className="tournament-main">
-                        {hasHero && (
-                            <div
-                                className="tournament-hero"
-                                style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${heroImageUrl}')` }}
-                            />
-                        )}
+                        {/* Локальный фон больше не здесь — перенесён в глобальный слой в Layout */}
                         {/* Заголовок турнира (CS2: делим на 2 блока в общем флексе) */}
                         <div className={`tournament-header ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
                             <div className={`tournament-header-tournamentdetails ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>

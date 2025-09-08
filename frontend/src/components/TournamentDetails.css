@@ -40,7 +40,6 @@
     gap: 40px;
 }
 
-.tournament-hero,
 .tournament-hero-layer {
     height: 400px;
     background-position: center top;
@@ -50,6 +49,10 @@
     margin-left: calc(50% - 50vw); /* full-bleed */
     margin-right: calc(50% - 50vw);
     overflow: hidden;
+}
+
+.tournament-hero {
+    position: absolute;
 }
 
 /* Слой-подложка под всем контентом */
