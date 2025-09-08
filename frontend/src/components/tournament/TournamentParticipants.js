@@ -233,8 +233,8 @@ const TournamentParticipants = ({
     const shouldShowParticipantsList = useCallback(() => {
         if (!tournament) return false;
         
-        // Для микс турниров ВСЕГДА используем TeamGenerator - он содержит всю необходимую логику
-        if (tournament.format === 'mix') {
+        // Для микс и фулл микс турниров ВСЕГДА используем TeamGenerator - он содержит всю необходимую логику
+        if (['mix','full_mix'].includes(tournament.format)) {
             return false; // Не показываем стандартные списки, используем только TeamGenerator
         }
         
@@ -255,8 +255,8 @@ const TournamentParticipants = ({
 
             {/* Удален заголовок вкладки участников как дублирующий информацию */}
 
-            {/* 🆕 Для микс турниров ВСЕГДА показываем TeamGenerator */}
-            {tournament?.format === 'mix' && (
+            {/* 🆕 Для микс и фулл микс турниров ВСЕГДА показываем TeamGenerator */}
+            {(['mix','full_mix'].includes(tournament?.format)) && (
                 <div className="team-generator-section-participants">
                     <TeamGenerator
                         tournament={tournament}
