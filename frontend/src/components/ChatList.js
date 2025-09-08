@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ChatList.css';
+import { getAvatarCategoryClass } from '../utils/avatarCategory';
 import { formatDate } from '../utils/dateHelpers';
 import { ensureHttps } from '../utils/userHelpers';
 
@@ -152,7 +153,7 @@ function ChatList({ chats, activeChat, onChatSelect, unreadCounts, onCreateChat 
                                 <img 
                                     src={ensureHttps(chat.avatar_url) || '/default-avatar.png'} 
                                     alt={chat.name} 
-                                    className="chat-avatar"
+                                    className={`chat-avatar ${getAvatarCategoryClass(chat.avatar_url)}`}
                                 />
                             </div>
                             

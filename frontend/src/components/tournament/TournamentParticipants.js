@@ -6,6 +6,7 @@ import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
+import { getAvatarCategoryClass } from '../../utils/avatarCategory';
 const byPrefixAndName = { fas: { crown: faCrown } };
 
 const TournamentParticipants = ({ 
@@ -300,7 +301,7 @@ const TournamentParticipants = ({
                                                     <img 
                                                         src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
                                                         alt={member.display_name || member.name || member.username}
-                                                        className="member-avatar-participants"
+                                                        className={`member-avatar-participants ${getAvatarCategoryClass(member.avatar_url)}`}
                                                         onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
                                                     />
                                                     <span className="member-name-participants">
@@ -344,7 +345,7 @@ const TournamentParticipants = ({
                                             <img 
                                                 src={participant.avatar_url}
                                                 alt={participant.username || participant.name}
-                                                className="participant-avatar-participants"
+                                                className={`participant-avatar-participants ${getAvatarCategoryClass(participant.avatar_url)}`}
                                             />
                                         )}
                                         <div className="participant-details-participants">

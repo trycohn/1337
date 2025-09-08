@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { getAvatarCategoryClass } from '../../../utils/avatarCategory';
 
 export function MixTeamCard({ team }) {
     const members = Array.isArray(team?.members) ? team.members : [];
@@ -30,7 +31,7 @@ export function MixTeamCard({ team }) {
                     <div className="member-avatars-stack-mixteams">
                         {members.slice(0, 8).map((m, i) => (
                             <div key={m.user_id || m.participant_id || i} className="stack-avatar-mixteams" style={{ left: `${i * 20}%` }}>
-                                <img src={m.avatar_url || '/default-avatar.png'} alt={m.name || m.username || 'Игрок'} onError={(e)=>{ e.currentTarget.src='/default-avatar.png'; }} />
+                                <img className={getAvatarCategoryClass(m.avatar_url)} src={m.avatar_url || '/default-avatar.png'} alt={m.name || m.username || 'Игрок'} onError={(e)=>{ e.currentTarget.src='/default-avatar.png'; }} />
                             </div>
                         ))}
                     </div>
@@ -48,6 +49,7 @@ export function MixTeamCard({ team }) {
                             <div key={idx} className="team-member-row-mixteams">
                                 <div className="member-avatar-mixteams">
                                     <img 
+                                        className={getAvatarCategoryClass(member.avatar_url)}
                                         src={member.avatar_url || '/default-avatar.png'} 
                                         alt={member.name || member.username || 'Игрок'}
                                         onError={(e) => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}

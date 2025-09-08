@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { getAvatarCategoryClass, preloadAvatarCategories } from '../utils/avatarCategory';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './Profile.css';
@@ -112,6 +113,7 @@ function UserProfile() {
 
         fetchUserProfile();
         fetchFriendStatus();
+        preloadAvatarCategories();
         // Подгрузим карту категорий предзагруженных аватаров
         (async () => {
             try {
@@ -124,25 +126,7 @@ function UserProfile() {
         })();
     }, [userId, navigate]);
 
-    function extractPreloadedFilename(avatarUrl) {
-        if (!avatarUrl) return null;
-        try {
-            // поддержка абсолютных и относительных URL
-            const url = avatarUrl.startsWith('http') ? new URL(avatarUrl) : { pathname: avatarUrl };
-            const p = url.pathname || '';
-            if (!p.startsWith('/uploads/avatars/preloaded/')) return null;
-            const parts = p.split('/');
-            return parts[parts.length - 1] || null;
-        } catch (_) {
-            return null;
-        }
-    }
-
-    function getAvatarCategoryByUrl(avatarUrl) {
-        const filename = extractPreloadedFilename(avatarUrl);
-        if (!filename) return null;
-        return avatarCategoryByFile[filename] || 'standard';
-    }
+    // Оставляем локальный кэш как резерв; основной — через утилиту
 
     const renderRankGroups = () => {
         // Если у пользователя нет ранга Premier, показываем сообщение
@@ -356,8 +340,7 @@ function UserProfile() {
                 <div className="profile-header-content">
                     <div className="profile-avatar-section">
                         {(() => {
-                            const cat = getAvatarCategoryByUrl(user.avatar_url);
-                            const catClass = cat ? `avatar-cat-${cat}` : '';
+                            const catClass = getAvatarCategoryClass(user.avatar_url);
                             return (
                                 <img 
                                     src={ensureHttps(user.avatar_url) || '/default-avatar.png'} 
@@ -555,8 +538,7 @@ function UserProfile() {
                                                 <div key={friend.id} className="card">
                                                     <div className="avatar">
                                                         {(() => {
-                                                            const cat = getAvatarCategoryByUrl(friend.avatar_url);
-                                                            const catClass = cat ? `avatar-cat-${cat}` : '';
+                                                            const catClass = getAvatarCategoryClass(friend.avatar_url);
                                                             return (
                                                                 <img className={catClass} src={ensureHttps(friend.avatar_url) || '/default-avatar.png'} alt={friend.username} />
                                                             );
