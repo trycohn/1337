@@ -430,19 +430,19 @@ const TournamentParticipants = ({
             {/* Панель управления участниками для администраторов — скрыта если турнир идёт или завершён */}
             {isActive && isAdminOrCreator && (
                 <div className="participants-admin-panel">
-                    <h4>⚙️ Управление участниками</h4>
+                    <h4>Управление участниками</h4>
                     <div className="admin-actions">
                         <button 
                             className="btn btn-secondary"
                             onClick={() => setParticipantSearchModal(true)}
                         >
-                            👤 Пригласить пользователя
+                            Пригласить пользователя
                         </button>
                         <button 
                             className="btn btn-secondary"
                             onClick={() => setNewParticipantModal(true)}
                         >
-                            ➕ Добавить незарегистрированного
+                            Добавить незарегистрированного
                         </button>
                     </div>
                 </div>
@@ -451,7 +451,7 @@ const TournamentParticipants = ({
             {/* 🔗 КНОПКА ПРИГЛАШЕНИЯ ДРУЗЕЙ - скрыта для закрытых и финальных турниров */}
             {user && tournament?.status === 'active' && tournament?.access_type !== 'closed' && !tournament?.is_series_final && (
                 <div className="referral-invite-panel">
-                    <h4>👥 Пригласить друзей</h4>
+                    <h4>Пригласить друзей</h4>
                     <div className="referral-actions">
                         <button 
                             className="btn btn-secondary"
@@ -492,7 +492,7 @@ const TournamentParticipants = ({
                 <div className="modal-overlay" onClick={() => setNewParticipantModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>➕ Добавить незарегистрированного участника</h3>
+                            <h3>Добавить незарегистрированного участника</h3>
                             <button 
                                 className="modal-close"
                                 onClick={() => setNewParticipantModal(false)}

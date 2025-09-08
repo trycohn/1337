@@ -448,8 +448,8 @@
   min-height: 96px;
   width: 100%;
   background-color: #1D1D1D;
-  broder-top-left-radius: 8px;
-  broder-top-right-radius: 8px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 
 .team-title h4 {
@@ -1460,10 +1460,11 @@ color: #ffffff;
   width: 100%;
 }
 .participant-row-participants2\.0 {
+  position: relative; /* keep absolute remove button inside the row */
   display: grid;
   grid-template-columns: 1fr auto;
   background-color: #0a0a0a;
-  padding: 16px 32px;
+  padding: 16px 48px 16px 32px; /* reserve space on the right for action button */
   border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D);
   height: 64px;
   gap: 8px;
@@ -1534,15 +1535,16 @@ color: #ffffff;
 
 .remove-participant-participants2\.0 {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 24px;
-  height: 24px;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
   background-color: #000000;
   color: #ffffff;
-  border: none;
-  border-radius: 50%;
-  font-size: 12px;
+  border: 1px solid #ff0000;
+  border-radius: 6px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
