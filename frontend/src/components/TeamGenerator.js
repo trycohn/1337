@@ -47,6 +47,15 @@ const TeamGenerator = ({
             .toLowerCase()
             .replace(/[-\s]/g, '_')
     ), [tournament?.format]);
+    const mixTypeNormalized = useMemo(() => (
+        (tournament?.mix_type || '')
+            .toString()
+            .trim()
+            .toLowerCase()
+    ), [tournament?.mix_type]);
+    const isFullMix = useMemo(() => (
+        formatNormalized === 'full_mix' || (formatNormalized === 'mix' && mixTypeNormalized === 'full')
+    ), [formatNormalized, mixTypeNormalized]);
 
     const { runWithLoader } = useLoaderAutomatic();
 
@@ -723,7 +732,7 @@ const TeamGenerator = ({
                             onMouseLeave={() => setTooltipVisible(false)}
                             disabled={loading || displayParticipants.length < parseInt(teamSize)}
                         >
-                            {loading ? 'Создание команд...' : (formatNormalized === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды')}
+                            {loading ? 'Создание команд...' : (isFullMix ? 'Сформировать команды для 1 раунда' : 'Сформировать команды')}
                         </button>
                     )}
 
@@ -879,7 +888,7 @@ const TeamGenerator = ({
             <div className="generation-interface">
                 <div className="no-teams-message">
                     <h4>Команды еще не сформированы</h4>
-                    <p>Нажмите кнопку "{formatNormalized === 'full_mix' ? 'Сформировать команды для 1 раунда' : 'Сформировать команды'}" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
+                    <p>Нажмите кнопку "{isFullMix ? 'Сформировать команды для 1 раунда' : 'Сформировать команды'}" чтобы создать сбалансированные команды на основе рейтинга игроков</p>
                 </div>
             </div>
         );
