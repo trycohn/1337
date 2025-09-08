@@ -537,7 +537,6 @@
 
 /* ===== 🔗 ПАНЕЛЬ РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ ===== */
 .referral-invite-panel {
-    padding: 20px;
     margin-top: 20px;
     border-radius: 4px;
 }
@@ -570,7 +569,6 @@
 /* ===== АДАПТИВНОСТЬ ДЛЯ РЕФЕРАЛЬНОЙ ПАНЕЛИ ===== */
 @media (max-width: 768px) {
     .referral-invite-panel {
-        padding: 15px;
         margin-top: 15px;
     }
 
@@ -586,7 +584,6 @@
 
 @media (max-width: 480px) {
     .referral-invite-panel {
-        padding: 12px;
     }
 
     .referral-invite-panel h4 {

@@ -717,8 +717,8 @@ const UnifiedParticipantsPanel = ({
                     </div>
                 )}
 
-                {/* 🎯 МИКС ТУРНИРЫ: TeamGenerator для формирования и отображения команд */}
-                {tournament?.format === 'mix' && (
+                {/* 🎯 MIX и FULL MIX: TeamGenerator для формирования и отображения команд */}
+                {(['mix', 'full_mix'].includes(tournament?.format)) && (
                     <div className="mix-tournament-section-participants-list">
                         <TeamGenerator
                             tournament={tournament}
