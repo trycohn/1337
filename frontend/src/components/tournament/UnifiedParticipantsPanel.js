@@ -13,6 +13,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import TeamGenerator from '../TeamGenerator';
 import './UnifiedParticipantsPanel.css';
+import { getAvatarCategoryClass } from '../../utils/avatarCategory';
 
 /**
  * 🎯 ГЛАВНЫЙ КОМПОНЕНТ: UnifiedParticipantsPanel v1.1.0
@@ -311,7 +312,7 @@ const UnifiedParticipantsPanel = ({
                                     <img 
                                         src={participant.avatar_url || '/default-avatar.png'} 
                                         alt={participant.name}
-                                        className="smart-avatar-participants-list"
+                                        className={`smart-avatar-participants-list ${getAvatarCategoryClass(participant.avatar_url)}`}
                                     />
                                     <div className={`online-indicator-participants-list ${isOnline ? 'online' : 'offline'}`}></div>
                                     {achievements > 10 && <div className="achievement-crown-participants-list">👑</div>}
@@ -426,7 +427,7 @@ const UnifiedParticipantsPanel = ({
                                             <img 
                                                 src={participant.avatar_url || '/default-avatar.png'} 
                                                 alt={participant.name}
-                                                className="table-avatar-participants-list"
+                                                className={`table-avatar-participants-list ${getAvatarCategoryClass(participant.avatar_url)}`}
                                             />
                                         </td>
                                         <td className="name-cell">
@@ -552,7 +553,7 @@ const UnifiedParticipantsPanel = ({
                                     <img 
                                         src={participant.avatar_url || '/default-avatar.png'} 
                                         alt={participant.name}
-                                        className="gaming-avatar-participants-list"
+                                        className={`gaming-avatar-participants-list ${getAvatarCategoryClass(participant.avatar_url)}`}
                                     />
                                     {isTopPlayer && <div className="crown-effect-participants-list">👑</div>}
                                 </div>
@@ -935,6 +936,7 @@ const UnifiedParticipantsPanel = ({
                                             <div key={memberIndex} className="team-member-participants-list enhanced">
                                                 <div className="member-avatar-participants-list">
                                                     <img 
+                                                        className={getAvatarCategoryClass(member.avatar_url)}
                                                         src={member.avatar_url || '/default-avatar.png'} 
                                                         alt={member.name}
                                                         onError={(e) => {

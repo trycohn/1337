@@ -51,15 +51,7 @@ function PreloadedAvatarPicker({ onPicked }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
-    const [pageByCat, setPageByCat] = useState({});
-
-    function getPage(cat) {
-        return pageByCat[cat] || 0;
-    }
-
-    function setCatPage(cat, next) {
-        setPageByCat(prev => ({ ...prev, [cat]: Math.max(0, next) }));
-    }
+    const [filterCat, setFilterCat] = useState('all');
 
     useEffect(() => {
         let mounted = true;
@@ -97,35 +89,39 @@ function PreloadedAvatarPicker({ onPicked }) {
             {errorMsg && <div className="error">{errorMsg}</div>}
             {!loading && !errorMsg && (
                 <div className="preloaded-avatars-grid">
+                    <div className="preloaded-filter" style={{display:'flex', gap:12, alignItems:'center'}}>
+                        <span style={{color:'#aaa', fontSize:12, textTransform:'uppercase'}}>Фильтр:</span>
+                        <select value={filterCat} onChange={(e)=>setFilterCat(e.target.value)} className="status-filter">
+                            <option value="all">Все</option>
+                            <option value="standard">Стандартные</option>
+                            <option value="rare">Редкие</option>
+                            <option value="special">Специальные</option>
+                            <option value="epic">Эпические</option>
+                            <option value="legendary">Легендарные</option>
+                        </select>
+                    </div>
+
                     {['standard','rare','special','epic','legendary'].map(cat => {
+                        if (filterCat !== 'all' && filterCat !== cat) return null;
                         const group = items.filter(i => (i.category || 'standard') === cat);
                         if (group.length === 0) return null;
-                        const page = getPage(cat);
-                        const pageSize = 5;
-                        const totalPages = Math.max(1, Math.ceil(group.length / pageSize));
-                        const clampedPage = Math.min(page, totalPages - 1);
-                        const view = group.slice(clampedPage * pageSize, clampedPage * pageSize + pageSize);
                         return (
                             <div key={cat} className={`pre-avatar-group group-${cat}`}>
                                 <div className="group-header">
                                     {cat === 'legendary' ? 'Легендарные' : cat === 'epic' ? 'Эпические' : cat === 'special' ? 'Специальные' : cat === 'rare' ? 'Редкие' : 'Стандартные'}
                                 </div>
-                                <div className="group-rail">
-                                    <button className="rail-btn left" aria-label="Листать влево" onClick={() => setCatPage(cat, clampedPage - 1)} disabled={clampedPage <= 0}>◀</button>
-                                    <div className="group-grid">
-                                        {view.map((it) => (
-                                            <button
-                                                key={it.filename}
-                                                className={`pre-avatar-item cat-${cat}`}
-                                                onClick={() => onPicked && onPicked(it.url)}
-                                                title={it.filename}
-                                                aria-label={`Выбрать аватар ${it.filename}`}
-                                            >
-                                                <img src={it.url} alt={it.filename} />
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <button className="rail-btn right" aria-label="Листать вправо" onClick={() => setCatPage(cat, clampedPage + 1)} disabled={clampedPage >= totalPages - 1}>▶</button>
+                                <div className="group-grid">
+                                    {group.map((it) => (
+                                        <button
+                                            key={it.filename}
+                                            className={`pre-avatar-item cat-${cat}`}
+                                            onClick={() => onPicked && onPicked(it.url)}
+                                            title={it.filename}
+                                            aria-label={`Выбрать аватар ${it.filename}`}
+                                        >
+                                            <img src={it.url} alt={it.filename} />
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         );
