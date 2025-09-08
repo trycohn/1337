@@ -6,6 +6,8 @@ const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { broadcastTournamentUpdate } = require('../../notifications');
 const pool = require('../../db');
+const FullMixService = require('./FullMixService');
+const { sendSystemNotification } = require('../../utils/systemNotifications');
 
 class MatchService {
     /**
@@ -390,6 +392,47 @@ class MatchService {
             const duration = Date.now() - startTime;
             console.log(`🎉 [safeUpdateMatchResult] УСПЕШНО ЗАВЕРШЕНО за ${duration}ms`);
             
+            // 🛎️ ПОСЛЕ КОММИТА: Оповещение админов о завершении раунда в FULL MIX
+            try {
+                const roundNumber = matchData.round;
+                const tournamentId = matchData.tournament_id;
+                if (matchData.tournament_format === 'full_mix' && roundNumber) {
+                    const isCompleted = await FullMixService.isRoundCompleted(tournamentId, roundNumber);
+                    if (isCompleted) {
+                        // Получаем админов и создателя
+                        const admins = await TournamentRepository.getAdmins(tournamentId);
+                        const tInfo = await TournamentRepository.getById(tournamentId);
+                        const recipients = new Set();
+                        if (tInfo?.created_by) recipients.add(tInfo.created_by);
+                        (admins || []).forEach(a => a?.user_id && recipients.add(a.user_id));
+
+                        const message = `✅ Раунд ${roundNumber} завершен. Можно начинать следующий раунд.`;
+                        const metadata = {
+                            type: 'fullmix_round_completed',
+                            round_number: roundNumber,
+                            tournament_id: tournamentId,
+                            action: 'generate_next_round'
+                        };
+
+                        // Личные системные уведомления
+                        for (const userId of recipients) {
+                            await sendSystemNotification(userId, message, 'fullmix_round_completed', metadata);
+                        }
+
+                        // Анонс в чат турнира
+                        await sendTournamentChatAnnouncement(
+                            tournamentId,
+                            `✅ Все матчи раунда ${roundNumber} сыграны. Администраторы могут запустить следующий раунд.`
+                        );
+
+                        // Широковещательное обновление
+                        await broadcastTournamentUpdate(tournamentId, { event: 'fullmix_round_completed', round: roundNumber }, 'fullmix');
+                    }
+                }
+            } catch (notifErr) {
+                console.warn('⚠️ [safeUpdateMatchResult] Не удалось отправить оповещение о завершении раунда:', notifErr?.message || notifErr);
+            }
+
             return {
                 success: true,
                 message: matchWasUpdated ? 'Результат матча обновлен успешно' : 'Результат матча не изменился, но продвижение выполнено',
