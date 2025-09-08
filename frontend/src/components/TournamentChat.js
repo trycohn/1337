@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './TournamentChat.css';
 import { ensureHttps } from '../utils/userHelpers';
+import { getAvatarCategoryClass } from '../utils/avatarCategory';
 import api from '../utils/api';
 
 function TournamentChat({ messages, newMessage, onInputChange, onSubmit, onKeyPress, chatEndRef, user, tournamentId }) {
@@ -64,6 +65,7 @@ function TournamentChat({ messages, newMessage, onInputChange, onSubmit, onKeyPr
                                     <div key={participant.user_id} className="participant-item">
                                         <div className="participant-avatar">
                                             <img 
+                                                className={getAvatarCategoryClass(participant.avatar_url)}
                                                 src={ensureHttps(participant.avatar_url) || '/default-avatar.png'} 
                                                 alt={participant.username}
                                                 onError={(e) => {e.target.src = '/default-avatar.png'}}
@@ -94,6 +96,7 @@ function TournamentChat({ messages, newMessage, onInputChange, onSubmit, onKeyPr
                         {message.sender_id !== user?.id && (
                             <div className="message-avatar">
                                 <img 
+                                    className={getAvatarCategoryClass(message.sender_avatar || message.avatar_url)}
                                     src={ensureHttps(message.sender_avatar || message.avatar_url) || '/default-avatar.png'} 
                                     alt={message.sender_username || message.username} 
                                     onError={(e) => {e.target.src = '/default-avatar.png'}}

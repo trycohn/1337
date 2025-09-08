@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { getParticipantInfo } from '../../utils/participantHelpers';
 import { ensureHttps } from '../../utils/userHelpers';
+import { getAvatarCategoryClass } from '../../utils/avatarCategory';
 import './TournamentResults.css';
 
 /**
@@ -90,7 +91,7 @@ const PodiumSection = ({ tournament, matches }) => {
                     <div className="results-place-medal">🥈</div>
                     <div className="results-winner-info">
                         <div className="results-winner-avatar">
-                            <img src={ensureHttps(winners.second.avatar_url) || '/default-avatar.png'} alt={winners.second.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
+                            <img className={getAvatarCategoryClass(winners.second.avatar_url)} src={ensureHttps(winners.second.avatar_url) || '/default-avatar.png'} alt={winners.second.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
                         </div>
                         <div className="results-winner-name">{winners.second.name}</div>
                         {Array.isArray(winners.second.members) && winners.second.members.length > 0 && (
@@ -108,7 +109,7 @@ const PodiumSection = ({ tournament, matches }) => {
                 <div className="results-place-medal">🥇</div>
                 <div className="results-winner-info">
                     <div className="results-winner-avatar">
-                        <img src={ensureHttps(winners.first.avatar_url) || '/default-avatar.png'} alt={winners.first.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
+                        <img className={getAvatarCategoryClass(winners.first.avatar_url)} src={ensureHttps(winners.first.avatar_url) || '/default-avatar.png'} alt={winners.first.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
                     </div>
                     <div className="results-winner-name">{winners.first.name}</div>
                     {Array.isArray(winners.first.members) && winners.first.members.length > 0 && (
@@ -126,7 +127,7 @@ const PodiumSection = ({ tournament, matches }) => {
                     <div className="results-place-medal">🥉</div>
                     <div className="results-winner-info">
                         <div className="results-winner-avatar">
-                            <img src={ensureHttps(winners.third.avatar_url) || '/default-avatar.png'} alt={winners.third.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
+                            <img className={getAvatarCategoryClass(winners.third.avatar_url)} src={ensureHttps(winners.third.avatar_url) || '/default-avatar.png'} alt={winners.third.name} onError={(e)=>{e.target.src='/default-avatar.png';}} />
                         </div>
                         <div className="results-winner-name">{winners.third.name}</div>
                         {Array.isArray(winners.third.members) && winners.third.members.length > 0 && (

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../axios';
 import './OrganizerProfile.css';
 import { ensureHttps } from '../utils/userHelpers';
+import { getAvatarCategoryClass } from '../utils/avatarCategory';
 
 function OrganizerProfile() {
     const { slug } = useParams();
@@ -193,7 +194,7 @@ function OrganizerProfile() {
                                                     <tr key={m.id}>
                                                         <td>
                                                             <div className="member">
-                                                                <img className="ph" src={ensureHttps(m.avatar_url) || '/default-avatar.png'} alt={m.username} />
+                                                                <img className={`ph ${getAvatarCategoryClass(m.avatar_url)}`} src={ensureHttps(m.avatar_url) || '/default-avatar.png'} alt={m.username} />
                                                                 <Link to={`/user/${m.id}`} className="table-link">{m.username}</Link>
                                                             </div>
                                                         </td>

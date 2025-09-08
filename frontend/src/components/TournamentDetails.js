@@ -1079,7 +1079,18 @@ function TournamentDetails() {
             case 'mix_teams':
                 return (
                     <div className="tab-content-mix-teams">
-                        <Suspense fallback={<div className="loading-teams">Загрузка команд...</div>}>
+                        <Suspense fallback={
+                            <div className="loading-teams" style={{ padding: 16 }}>
+                                <div style={{ display: 'grid', gap: 12 }}>
+                                    {[...Array(3)].map((_, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#2a2a2a' }} />
+                                            <div style={{ width: 160, height: 16, background: '#3a3a3a' }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        }>
                             <LazyMixTeamsView teams={mixTeams} isLoading={mixTeamsLoading} />
                         </Suspense>
                     </div>
@@ -1132,8 +1143,15 @@ function TournamentDetails() {
                             {games.length > 0 ? (
                                 <TournamentErrorBoundary>
                                     <Suspense fallback={
-                                        <div className="bracket-loading" data-testid="bracket-loading">
-                                            Загрузка турнирной сетки...
+                                        <div className="bracket-loading" data-testid="bracket-loading" style={{ padding: 16 }}>
+                                            <div style={{ display: 'grid', gap: 12 }}>
+                                                {[...Array(4)].map((_, i) => (
+                                                    <div key={i} style={{ display: 'flex', gap: 8 }}>
+                                                        <div style={{ width: 120, height: 16, background: '#2a2a2a' }} />
+                                                        <div style={{ flex: 1, height: 16, background: '#3a3a3a' }} />
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     }>
                                         <LazyBracketRenderer

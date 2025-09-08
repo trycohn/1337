@@ -51,6 +51,7 @@ function PreloadedAvatarPicker({ onPicked }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [filterCat, setFilterCat] = useState('all');
 
     useEffect(() => {
         let mounted = true;
@@ -88,7 +89,20 @@ function PreloadedAvatarPicker({ onPicked }) {
             {errorMsg && <div className="error">{errorMsg}</div>}
             {!loading && !errorMsg && (
                 <div className="preloaded-avatars-grid">
+                    <div className="preloaded-filter" style={{display:'flex', gap:12, alignItems:'center'}}>
+                        <span style={{color:'#aaa', fontSize:12, textTransform:'uppercase'}}>Фильтр:</span>
+                        <select value={filterCat} onChange={(e)=>setFilterCat(e.target.value)} className="status-filter">
+                            <option value="all">Все</option>
+                            <option value="standard">Стандартные</option>
+                            <option value="rare">Редкие</option>
+                            <option value="special">Специальные</option>
+                            <option value="epic">Эпические</option>
+                            <option value="legendary">Легендарные</option>
+                        </select>
+                    </div>
+
                     {['standard','rare','special','epic','legendary'].map(cat => {
+                        if (filterCat !== 'all' && filterCat !== cat) return null;
                         const group = items.filter(i => (i.category || 'standard') === cat);
                         if (group.length === 0) return null;
                         return (
@@ -2581,7 +2595,7 @@ function Profile() {
                                                                 steamNickname ? (
                                                                     <a href={user.steam_url} target="_blank" rel="noopener noreferrer">{steamNickname}</a>
                                                                 ) : (
-                                                                    <Skeleton width={120} height={16} />
+                                                                    <Skeleton width={120} height={16} baseColor="#2a2a2a" highlightColor="#3a3a3a" />
                                                                 )
                                                             ) : 'Не привязан'}
                                         </div>
@@ -2607,7 +2621,7 @@ function Profile() {
                                                         <div className={`mi-status ${user.faceit_id ? 'ok' : 'none'}`}>
                                                             {user.faceit_id ? (
                                                                 isLoadingFaceitInfo ? (
-                                                                    <Skeleton width={120} height={16} />
+                                                                    <Skeleton width={120} height={16} baseColor="#2a2a2a" highlightColor="#3a3a3a" />
                                                                 ) : (
                                                                     faceitInfo ? (
                                                                         <a href={faceitInfo.faceitUrl} target="_blank" rel="noopener noreferrer">{faceitInfo.faceitNickname}</a>
