@@ -980,6 +980,13 @@ function TournamentDetails() {
 
     const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
 
+    // Определяем URL героя-фона заранее (до любых ранних return), чтобы не нарушать порядок хуков
+    const heroImageUrl = useMemo(() => {
+        if (isCS2) return "/images/headers/CS2-header-new.jpg";
+        return null;
+    }, [isCS2]);
+    const hasHero = Boolean(heroImageUrl);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
