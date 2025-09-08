@@ -600,45 +600,7 @@ const MatchDetailsPage = () => {
         );
     };
 
-    const renderPickBanHistory = () => {
-        // Источник данных — selections из публичного матча (см. backend public route)
-        const selections = Array.isArray(match?.selections) ? match.selections : [];
-        if (selections.length === 0) return null;
-
-        const teamNameById = {
-            [match.team1_id]: match.team1_name || 'Команда 1',
-            [match.team2_id]: match.team2_name || 'Команда 2'
-        };
-
-        return (
-            <div className="match-pick-ban">
-                <h3 className="section-title">🎯 Pick & Ban</h3>
-                <div className="pick-ban-timeline-horizontal">
-                    {selections.map((s, index) => {
-                        const mapKey = normalizeMapName(s.map_name || s.map || s.name);
-                        const isBan = (s.action_type || s.type) === 'ban';
-                        const isPick = (s.action_type || s.type) === 'pick';
-                        const teamName = teamNameById[s.team_id] || 'Команда';
-                        return (
-                            <div key={index} className={`pick-ban-card ${isBan ? 'ban' : isPick ? 'pick' : ''}`}>
-                                <div className="pick-ban-order">{index + 1}</div>
-                                <div className="pick-ban-map-thumb">
-                                    <img src={getMapImage(mapKey)} alt={mapKey} />
-                                    <div className={`pick-ban-badge ${isBan ? 'ban' : 'pick'}`}>
-                                        {isBan ? 'BAN' : 'PICK'}
-                                    </div>
-                                </div>
-                                <div className="pick-ban-meta">
-                                    <div className="pick-ban-team-name">{teamName}</div>
-                                    <div className="pick-ban-map-name">{(s.map_name || s.map || s.name || '').toUpperCase()}</div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        );
-    };
+    
 
     const openUserProfile = (userId, isAuthorizedUser) => {
         if (userId) window.open(`/user/${userId}`, '_blank');
@@ -998,8 +960,7 @@ const MatchDetailsPage = () => {
                 </div>
             )}
             
-            {/* Pick & Ban */}
-            {renderPickBanHistory()}
+            {/* Pick & Ban — удалено, история интегрирована в маппул */}
             
             {/* Составы команд */}
             {renderTeamLineups()}
