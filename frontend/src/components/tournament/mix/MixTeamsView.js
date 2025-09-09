@@ -69,6 +69,11 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
 
     // Команды лежат внутри item.snapshot.teams (JSONB из БД)
     const fullMixTeams = useMemo(() => (snapshot?.snapshot?.teams || snapshot?.teams || []), [snapshot]);
+    const isApprovedTeams = !!(snapshot && snapshot.approved_teams === true);
+    const canSeeTeams = useMemo(() => {
+        if (!isFullMix) return true;
+        return isAdminOrCreator || isApprovedTeams;
+    }, [isFullMix, isAdminOrCreator, isApprovedTeams]);
     const teamsToRender = isFullMix ? fullMixTeams : teams;
 
     const [actionMessage, setActionMessage] = useState('');
@@ -189,7 +194,12 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                 </div>
             )}
 
-            {isFullMix && teamsToRender.length === 0 ? (
+            {isFullMix && !canSeeTeams ? (
+                <div className="no-teams-message-mixteams">
+                    <h4>Составы раунда ожидают подтверждения</h4>
+                    <p>Организатор ещё не подтвердил команды этого раунда.</p>
+                </div>
+            ) : isFullMix && teamsToRender.length === 0 ? (
                 <div className="no-teams-message-mixteams">
                     <h4>Команды еще не сформированы</h4>
                     <p>Нажмите «Сформировать команды для 1 раунда» чтобы начать.</p>
