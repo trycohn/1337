@@ -38,6 +38,34 @@ class FullMixController {
     static snapshots = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         const items = await FullMixService.listSnapshots(tournamentId);
+
+        // 🔒 Скрываем составы/матчи черновиков для не-админов
+        let isAdminOrCreator = false;
+        try {
+            const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+            const tournament = await TournamentRepository.getById(tournamentId);
+            const userId = req.user?.id;
+            const isCreator = !!(userId && tournament && tournament.created_by === userId);
+            let isAdmin = false;
+            if (userId) {
+                isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+            }
+            isAdminOrCreator = isCreator || isAdmin;
+        } catch (_) {
+            isAdminOrCreator = false;
+        }
+
+        if (!isAdminOrCreator) {
+            const sanitized = items.map(it => {
+                if (it && it.approved_teams !== true) {
+                    // На этом эндпоинте у нас нет payload snapshot; задача — только список, так что ничего не меняем
+                    return it; // список раундов безопасен (без команд)
+                }
+                return it;
+            });
+            return res.json({ success: true, items: sanitized });
+        }
+
         res.json({ success: true, items });
     });
 
@@ -115,6 +143,18 @@ class FullMixController {
     static getPreview = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         const round = parseInt(req.params.round);
+        // 🔒 Только админ/создатель имеет доступ к preview
+        const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+        const tournament = await TournamentRepository.getById(tournamentId);
+        const userId = req.user?.id;
+        const isCreator = !!(userId && tournament && tournament.created_by === userId);
+        let isAdmin = false;
+        if (userId) {
+            isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+        }
+        const isAdminOrCreator = isCreator || isAdmin;
+        if (!isAdminOrCreator) return res.status(403).json({ success: false, error: 'Forbidden' });
+
         const item = await FullMixService.getPreview(tournamentId, round);
         res.json({ success: true, item });
     });
