@@ -381,6 +381,13 @@ const TeamGenerator = ({
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
         if (!tournament || !tournament.id || !shouldMakeRequest('original-participants')) return;
+        // Если уже передали участников через props, не дублируем запрос
+        if (Array.isArray(participants) && participants.length > 0) {
+            if (originalParticipants.length === 0) {
+                setOriginalParticipants(participants);
+            }
+            return;
+        }
         
         setLoadingParticipants(true);
         try {
