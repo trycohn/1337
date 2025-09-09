@@ -495,6 +495,7 @@ router.get('/:id/fullmix/standings', authenticateToken, FullMixController.standi
 router.get('/:id/fullmix/snapshots', authenticateToken, FullMixController.snapshots);
 router.get('/:id/fullmix/rounds/:round', authenticateToken, FullMixController.getRound);
 router.post('/:id/fullmix/rounds/:round/approve', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.approve);
+router.post('/:id/fullmix/rounds/:round/reshuffle', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.reshuffle);
 router.get('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 router.put('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 

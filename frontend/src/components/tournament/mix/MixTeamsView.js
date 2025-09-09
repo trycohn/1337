@@ -6,7 +6,9 @@ import { getSocketInstance } from '../../../services/socketClient_v5_simplified'
 
 function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCreator = false }) {
     const tournamentId = tournament?.id;
-    const isFullMix = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
+    const formatNorm = (tournament?.format || '').toString().trim().toLowerCase();
+    const mixTypeNorm = (tournament?.mix_type || '').toString().trim().toLowerCase();
+    const isFullMix = formatNorm === 'full_mix' || (formatNorm === 'mix' && mixTypeNorm === 'full');
     const [rounds, setRounds] = useState([]);
     const [currentRound, setCurrentRound] = useState(1);
     const [snapshot, setSnapshot] = useState(null);
@@ -91,11 +93,11 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         setBusy(true);
         setActionMessage('Переформируем команды...');
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/generate-next`, { forceReshuffle: true, targetRound: currentRound });
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${currentRound}/reshuffle`, {});
             await loadSnapshot(currentRound);
             setActionMessage('Команды переформированы');
-        } catch (_) {
-            setActionMessage('Ошибка переформирования');
+        } catch (e) {
+            setActionMessage(e?.response?.data?.error || 'Ошибка переформирования');
         } finally {
             setBusy(false);
             setTimeout(() => setActionMessage(''), 2500);

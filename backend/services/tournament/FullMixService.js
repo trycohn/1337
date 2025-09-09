@@ -58,7 +58,9 @@ class FullMixService {
         // Проверки доступа/статуса
         const tournament = await TournamentService.getTournament(tournamentId);
         if (!tournament) throw new Error('Турнир не найден');
-        if (tournament.format !== 'full_mix') throw new Error('Неверный формат турнира для Full Mix');
+        const mixType = (tournament.mix_type || '').toString().trim().toLowerCase();
+        const isFullMixFormat = tournament.format === 'full_mix' || (tournament.format === 'mix' && mixType === 'full');
+        if (!isFullMixFormat) throw new Error('Неверный формат турнира для Full Mix');
 
         const settings = await this.upsertSettings(tournamentId, {
             wins_to_win: options.wins_to_win,
@@ -97,6 +99,61 @@ class FullMixService {
         const snapshot = await this.generateRoundSnapshot(tournamentId, nextRound, settings.rating_mode, standings);
         await this.saveSnapshot(tournamentId, nextRound, snapshot);
         return { completed: false, round: nextRound, snapshot };
+    }
+
+    /**
+     * Переформирование команд ТЕКУЩЕГО раунда (если составы ещё не подтверждены)
+     */
+    static async reshuffleRound(tournamentId, roundNumber) {
+        const client = await pool.connect();
+        try {
+            // Проверка существования снапшота и статуса approvals
+            const snap = await this.getSnapshot(tournamentId, roundNumber);
+            if (!snap) throw new Error('Снапшот раунда не найден');
+            if (snap.approved_teams) throw new Error('Составы уже подтверждены и не могут быть переформированы');
+
+            await client.query('BEGIN');
+
+            // Удаляем матчи текущего раунда
+            await client.query(
+                `DELETE FROM matches WHERE tournament_id = $1 AND round = $2`,
+                [tournamentId, roundNumber]
+            );
+
+            // Удаляем созданные команды и их участников по id из снапшота
+            const teamIds = Array.isArray(snap.snapshot?.teams)
+                ? snap.snapshot.teams.map(t => t.team_id).filter(Boolean)
+                : [];
+            if (teamIds.length > 0) {
+                await client.query(`DELETE FROM tournament_team_members WHERE team_id = ANY($1::int[])`, [teamIds]);
+                await client.query(`DELETE FROM tournament_teams WHERE id = ANY($1::int[])`, [teamIds]);
+            }
+
+            // Считаем standings и настройки для повторной генерации
+            const settings = await this.getSettings(tournamentId);
+            const standings = await this.calculateStandings(tournamentId);
+
+            // Генерируем заново текущий раунд
+            const newSnapshot = await this.generateRoundSnapshot(tournamentId, roundNumber, settings?.rating_mode || 'random', standings);
+
+            // Сохраняем снапшот (перезаписываем) и сбрасываем approvals
+            await client.query(
+                `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
+                 VALUES ($1, $2, $3, FALSE, FALSE)
+                 ON CONFLICT (tournament_id, round_number)
+                 DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = FALSE, approved_matches = FALSE`,
+                [tournamentId, roundNumber, newSnapshot]
+            );
+
+            await client.query('COMMIT');
+
+            return { round: roundNumber, snapshot: newSnapshot };
+        } catch (e) {
+            try { await client.query('ROLLBACK'); } catch (_) {}
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 
     static async completeRound(tournamentId, roundNumber) {
