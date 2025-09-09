@@ -475,32 +475,33 @@ class MixTeamController {
         console.log(`🏆 [MixTeamController] Получение команд турнира ${tournamentId}`);
 
         try {
-            // 🔒 Backend‑gate для Full Mix: если есть хотя бы один снапшот или черновик
-            // и последний снапшот не подтверждён — скрываем команды для всех неадмин-эндпоинтов
-            // (этот эндпоинт публичный, поэтому просто скрываем)
-            const snapRes = await pool.query(
-                `SELECT approved_teams
-                 FROM full_mix_snapshots
-                 WHERE tournament_id = $1
-                 ORDER BY round_number DESC
-                 LIMIT 1`,
-                [tournamentId]
-            );
-            const lastApproved = snapRes.rows.length ? !!snapRes.rows[0].approved_teams : null;
-            const previewRes = await pool.query(
-                `SELECT 1 FROM full_mix_previews WHERE tournament_id = $1 LIMIT 1`,
-                [tournamentId]
-            );
-            const hasPreview = previewRes.rows.length > 0;
-            const hasFullMixFlow = snapRes.rows.length > 0 || hasPreview;
-            if (hasFullMixFlow && lastApproved !== true) {
-                console.log(`🛡️ [MixTeamController] Full Mix flow detected, not approved → скрываем команды`);
-                res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-                res.set('Pragma', 'no-cache');
-                res.set('Expires', '0');
-                res.set('Vary', 'Authorization');
-                res.set('ETag', `W/"tm-${tournamentId}-${req.user?.id || 'anon'}-${Date.now()}"`);
-                return res.status(200).json([]);
+            // 🔒 Backend‑gate для Full Mix: скрываем команды до approve
+            // 1) Определяем, что турнир Full Mix
+            const baseTournament = await TournamentService.getTournament(tournamentId);
+            const fmt = (baseTournament?.format || '').toString().trim().toLowerCase();
+            const mixType = (baseTournament?.mix_type || '').toString().trim().toLowerCase();
+            const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+
+            if (isFullMix) {
+                // 2) Берём последний снапшот; если его нет — считаем не подтвержденным
+                const snapRes = await pool.query(
+                    `SELECT approved_teams
+                     FROM full_mix_snapshots
+                     WHERE tournament_id = $1
+                     ORDER BY round_number DESC
+                     LIMIT 1`,
+                    [tournamentId]
+                );
+                const lastApproved = snapRes.rows.length > 0 ? (snapRes.rows[0].approved_teams === true) : false;
+                if (!lastApproved) {
+                    console.log(`🛡️ [MixTeamController] Full Mix not approved → скрываем команды`);
+                    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+                    res.set('Pragma', 'no-cache');
+                    res.set('Expires', '0');
+                    res.set('Vary', 'Authorization');
+                    res.set('ETag', `W/"tm-${tournamentId}-${req.user?.id || 'anon'}-${Date.now()}"`);
+                    return res.status(200).json([]);
+                }
             }
 
             const teams = await TournamentService.getTeams(tournamentId);
