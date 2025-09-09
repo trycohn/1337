@@ -40,7 +40,7 @@ class FullMixService {
 
     static async getSnapshot(tournamentId, roundNumber) {
         const res = await pool.query(
-            'SELECT id, tournament_id, round_number, snapshot, created_at FROM full_mix_snapshots WHERE tournament_id = $1 AND round_number = $2',
+            'SELECT id, tournament_id, round_number, snapshot, approved_teams, approved_matches, created_at FROM full_mix_snapshots WHERE tournament_id = $1 AND round_number = $2',
             [tournamentId, roundNumber]
         );
         return res.rows[0] || null;
@@ -48,7 +48,7 @@ class FullMixService {
 
     static async listSnapshots(tournamentId) {
         const res = await pool.query(
-            'SELECT round_number, snapshot, created_at FROM full_mix_snapshots WHERE tournament_id = $1 ORDER BY round_number ASC',
+            'SELECT round_number, approved_teams, approved_matches, created_at FROM full_mix_snapshots WHERE tournament_id = $1 ORDER BY round_number ASC',
             [tournamentId]
         );
         return res.rows;
@@ -186,6 +186,17 @@ class FullMixService {
              DO UPDATE SET snapshot = EXCLUDED.snapshot`,
             [tournamentId, roundNumber, snapshot]
         );
+    }
+
+    static async approveRound(tournamentId, roundNumber, { approveTeams = false, approveMatches = false } = {}) {
+        const fields = [];
+        if (approveTeams) fields.push('approved_teams = TRUE');
+        if (approveMatches) fields.push('approved_matches = TRUE');
+        if (fields.length === 0) return { round: roundNumber };
+        const sql = `UPDATE full_mix_snapshots SET ${fields.join(', ')} WHERE tournament_id = $1 AND round_number = $2`;
+        await pool.query(sql, [tournamentId, roundNumber]);
+        const res = await pool.query('SELECT round_number, approved_teams, approved_matches FROM full_mix_snapshots WHERE tournament_id = $1 AND round_number = $2', [tournamentId, roundNumber]);
+        return { round: roundNumber, ...res.rows[0] };
     }
 
     static async getEligibleParticipants(tournamentId, ratingMode, standings) {

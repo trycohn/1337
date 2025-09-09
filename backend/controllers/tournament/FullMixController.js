@@ -41,6 +41,14 @@ class FullMixController {
         res.json({ success: true, item });
     });
 
+    static approve = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const round = parseInt(req.params.round);
+        const { approveTeams, approveMatches } = req.body || {};
+        const result = await FullMixService.approveRound(tournamentId, round, { approveTeams, approveMatches });
+        res.json({ success: true, ...result });
+    });
+
     static settings = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         if (req.method === 'GET') {

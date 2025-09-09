@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS full_mix_snapshots (
     tournament_id INTEGER NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     round_number INTEGER NOT NULL CHECK (round_number >= 1),
     snapshot JSONB NOT NULL, -- { teams: [...], matches: [...], standings: [...] }
+    approved_teams BOOLEAN NOT NULL DEFAULT FALSE,
+    approved_matches BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
