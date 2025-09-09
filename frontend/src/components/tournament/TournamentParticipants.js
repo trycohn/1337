@@ -234,10 +234,13 @@ const TournamentParticipants = ({
     const shouldShowParticipantsList = useCallback(() => {
         if (!tournament) return false;
         
-        // Для микс и фулл микс турниров ВСЕГДА используем TeamGenerator - он содержит всю необходимую логику
-        if (['mix','full_mix'].includes(tournament.format)) {
-            return false; // Не показываем стандартные списки, используем только TeamGenerator
+        // МИКС: для Full Mix показываем и стандартные списки участников
+        if (tournament.format === 'mix') {
+            const isFullMix = (tournament?.mix_type || '').toLowerCase() === 'full';
+            return isFullMix ? true : false;
         }
+        // Исторический формат full_mix — оставляем прежнее поведение (без стандартных списков)
+        if (tournament.format === 'full_mix') return false;
         
         // Для всех остальных типов турниров показываем список участников
         return true;
