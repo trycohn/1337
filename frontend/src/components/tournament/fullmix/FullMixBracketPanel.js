@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import api from '../../../utils/api';
+import { getSocketInstance } from '../../../services/socketClient_v5_simplified';
 
 function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
@@ -10,6 +11,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [participantsCount, setParticipantsCount] = useState(null);
     const [loading, setLoading] = useState(false);
     const [approving, setApproving] = useState(false);
+    const [actionMessage, setActionMessage] = useState('');
 
     const loadSettings = useCallback(async () => {
         try {
@@ -56,6 +58,21 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         loadSnapshot(currentRound);
     }, [tournamentId, currentRound, loadSnapshot]);
 
+    // Live updates via Socket.IO
+    useEffect(() => {
+        const socket = getSocketInstance && getSocketInstance();
+        if (!socket || !tournamentId) return;
+        const onRoundCompleted = (payload) => {
+            if (!payload || payload.round == null) return;
+            loadRounds();
+            loadSnapshot(payload.round);
+        };
+        socket.on('fullmix_round_completed', onRoundCompleted);
+        return () => {
+            socket.off && socket.off('fullmix_round_completed', onRoundCompleted);
+        };
+    }, [tournamentId, loadRounds, loadSnapshot]);
+
     const onApprove = useCallback(async (type) => {
         if (!currentRound) return;
         setApproving(true);
@@ -83,6 +100,58 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const placed = teams.reduce((sum, t) => sum + (Array.isArray(t.members) ? t.members.length : 0), 0);
         return Math.max(0, participantsCount - placed);
     }, [participantsCount, teams]);
+
+    // Admin actions
+    const startFirstRound = useCallback(async () => {
+        if (!tournamentId) return;
+        setActionMessage('Стартуем 1 раунд...');
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/start`, {});
+            await loadRounds();
+            const last = rounds[rounds.length - 1]?.round_number || 1;
+            setCurrentRound(last);
+            await loadSnapshot(last);
+            setActionMessage('Раунд 1 создан');
+        } catch (e) {
+            setActionMessage('Ошибка старта раунда');
+        } finally {
+            setTimeout(() => setActionMessage(''), 3000);
+        }
+    }, [tournamentId, rounds, loadRounds, loadSnapshot]);
+
+    const generateNextRound = useCallback(async () => {
+        if (!tournamentId) return;
+        setActionMessage('Генерируем следующий раунд...');
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/generate-next`, {});
+            await loadRounds();
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
+            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+            const last = items.length > 0 ? items[items.length - 1].round_number : 1;
+            setCurrentRound(last);
+            await loadSnapshot(last);
+            setActionMessage(`Раунд ${last} создан`);
+        } catch (e) {
+            setActionMessage('Ошибка генерации раунда');
+        } finally {
+            setTimeout(() => setActionMessage(''), 3000);
+        }
+    }, [tournamentId, loadRounds, loadSnapshot]);
+
+    const completeCurrentRound = useCallback(async () => {
+        if (!tournamentId || !currentRound) return;
+        setActionMessage('Завершаем текущий раунд...');
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: currentRound });
+            await loadRounds();
+            await loadSnapshot(currentRound);
+            setActionMessage('Раунд завершен');
+        } catch (e) {
+            setActionMessage('Ошибка завершения раунда');
+        } finally {
+            setTimeout(() => setActionMessage(''), 3000);
+        }
+    }, [tournamentId, currentRound, loadRounds, loadSnapshot]);
 
     return (
         <div className="fullmix-panel" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
@@ -130,6 +199,22 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         <li>Количество игроков не в командах: {notInTeams ?? '—'}</li>
                     </ul>
                 </div>
+
+                {/* Admin controls */}
+                {isAdminOrCreator && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {rounds.length === 0 && (
+                            <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
+                        )}
+                        {rounds.length > 0 && (
+                            <>
+                                <button className="btn btn-primary" onClick={generateNextRound}>Сгенерировать следующий раунд</button>
+                                <button className="btn btn-secondary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
+                            </>
+                        )}
+                        {actionMessage && <span style={{ color: '#ccc', fontSize: 12 }}>{actionMessage}</span>}
+                    </div>
+                )}
 
                 {/* Переключатель раундов */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
