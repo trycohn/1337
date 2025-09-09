@@ -315,8 +315,8 @@ class FullMixService {
             const teamB = createdTeams[i + 1];
             if (!teamB) break;
             const res = await client.query(
-                `INSERT INTO matches (tournament_id, round, team1_id, team2_id, status, created_at)
-                 VALUES ($1, $2, $3, $4, 'pending', NOW()) RETURNING id`,
+                `INSERT INTO matches (tournament_id, round, team1_id, team2_id, status)
+                 VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
                 [tournamentId, roundNumber, teamA.team_id, teamB.team_id]
             );
             matches.push({ id: res.rows[0].id, team1_id: teamA.team_id, team2_id: teamB.team_id });
