@@ -27,6 +27,7 @@ import MyTournaments from './pages/MyTournaments';
 import TournamentRulesPage from './pages/TournamentRulesPage';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { isChatEnabled } from './config/features';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -92,7 +93,9 @@ function App() {
                                 <Route path="/user/:userId" element={<UserProfile />} /> {/* Публичный профиль пользователя */}
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
                                 <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
-                                <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
+                                {isChatEnabled && (
+                                    <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
+                                )}
                                 <Route path="/admin" element={<PrivateRoute component={AdminPanel} />} /> {/* Добавляем маршрут для админ панели */}
                                 <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
