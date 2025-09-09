@@ -590,8 +590,9 @@ const TeamGenerator = ({
         // Для Full Mix скрываем команды для не-админов до подтверждения,
         // но если команды уже пришли из API (после подтверждения), показываем их сразу,
         // даже если tournament.fullmix.approved_teams еще не обновился в состоянии.
-        const hideByApproval = isFullMix && !isAdminOrCreator && tournament?.fullmix?.approved_teams === false;
-        if (hideByApproval && teamsToShow.length === 0) {
+        // Для не-админов скрываем команды до подтверждения независимо от локального списка
+        const hideByApproval = isFullMix && !isAdminOrCreator && tournament?.fullmix?.approved_teams !== true;
+        if (hideByApproval) {
             return (
                 <div className="teams-display-participants2.0">
                     <div className="no-teams-message">
