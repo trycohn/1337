@@ -43,6 +43,7 @@ import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
 import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
+import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
@@ -1110,33 +1111,27 @@ function TournamentDetails() {
                             )}
                         </div>
                         {/* Новая система управления сеткой */}
-                        <BracketManagementPanel
-                            tournament={tournament}
-                            user={user}
-                            matches={matches}
-                            isAdminOrCreator={isAdminOrCreator}
-                            onBracketUpdate={async (updateData) => {
-                                console.log('🔄 Обновление сетки:', updateData);
-                                
-                                // Очищаем кеш турнира
-                                const cacheKey = `tournament_cache_${id}`;
-                                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-                                localStorage.removeItem(cacheKey);
-                                localStorage.removeItem(cacheTimestampKey);
-                                
-                                // Обновляем данные турнира
-                                await fetchTournamentData();
-                                
-                                // Показываем сообщение об успехе
-                                if (updateData.type === 'generated') {
-                                    setMessage('Турнирная сетка успешно сгенерирована!');
-                                } else if (updateData.type === 'regenerated') {
-                                    setMessage('Турнирная сетка успешно регенерирована!');
-                                }
-                                
-                                setTimeout(() => setMessage(''), 5000);
-                            }}
-                        />
+                        {tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full' ? (
+                            <FullMixBracketPanel tournament={tournament} isAdminOrCreator={isAdminOrCreator} />
+                        ) : (
+                            <BracketManagementPanel
+                                tournament={tournament}
+                                user={user}
+                                matches={matches}
+                                isAdminOrCreator={isAdminOrCreator}
+                                onBracketUpdate={async (updateData) => {
+                                    console.log('🔄 Обновление сетки:', updateData);
+                                    const cacheKey = `tournament_cache_${id}`;
+                                    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                    localStorage.removeItem(cacheKey);
+                                    localStorage.removeItem(cacheTimestampKey);
+                                    await fetchTournamentData();
+                                    if (updateData.type === 'generated') setMessage('Турнирная сетка успешно сгенерирована!');
+                                    else if (updateData.type === 'regenerated') setMessage('Турнирная сетка успешно регенерирована!');
+                                    setTimeout(() => setMessage(''), 5000);
+                                }}
+                            />
+                        )}
 
                         <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
 
