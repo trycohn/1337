@@ -607,6 +607,18 @@ const TeamGenerator = ({
     
     // Функция рендеринга команд (для микс турниров)
     const renderTeamsList = () => {
+        // Для Full Mix скрываем команды для не-админов до подтверждения
+        const shouldHideForFullMix = isFullMix && !isAdminOrCreator && tournament?.fullmix?.approved_teams === false;
+        if (shouldHideForFullMix) {
+            return (
+                <div className="teams-display-participants2.0">
+                    <div className="no-teams-message">
+                        <p>Составы раунда ожидают подтверждения организатором</p>
+                    </div>
+                </div>
+            );
+        }
+
         // Если команды есть, отображаем их
         if (teamsToShow.length > 0) {
             const getTeamStatus = (team) => {
