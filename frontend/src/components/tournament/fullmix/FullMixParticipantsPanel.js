@@ -8,7 +8,6 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
     const [currentRound, setCurrentRound] = useState(1);
     const [snapshot, setSnapshot] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [approving, setApproving] = useState(false);
 
     const loadRounds = useCallback(async () => {
         const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
@@ -54,16 +53,7 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
 
     const teams = useMemo(() => snapshot?.teams || [], [snapshot]);
 
-    const onApproveTeams = useCallback(async () => {
-        if (!currentRound) return;
-        setApproving(true);
-        try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${currentRound}/approve`, { approveTeams: true });
-            await loadSnapshot(currentRound);
-        } finally {
-            setApproving(false);
-        }
-    }, [tournamentId, currentRound, loadSnapshot]);
+    // Управление составами перенесено на вкладку "MIX команды"
 
     return (
         <div className="fullmix-participants-panel" style={{ display: 'grid', gap: 12 }}>
@@ -84,16 +74,7 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
                 </div>
             </div>
 
-            {isAdminOrCreator && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button className="btn btn-primary" onClick={onApproveTeams} disabled={approving}>
-                        Подтвердить составы команд раунда
-                    </button>
-                    <span style={{ color: '#aaa', fontSize: 12 }}>
-                        Статус: {snapshot?.approved_teams ? 'подтверждены' : 'не подтверждены'}
-                    </span>
-                </div>
-            )}
+            {/* Управление составами скрыто на вкладке "Участники" (только информирование) */}
 
             <div style={{ display: 'grid', gap: 10 }}>
                 {loading ? (

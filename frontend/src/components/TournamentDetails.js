@@ -1092,7 +1092,7 @@ function TournamentDetails() {
                                 </div>
                             </div>
                         }>
-                            <LazyMixTeamsView teams={mixTeams} isLoading={mixTeamsLoading} />
+                            <LazyMixTeamsView tournament={tournament} teams={mixTeams} isLoading={mixTeamsLoading} isAdminOrCreator={isAdminOrCreator} />
                         </Suspense>
                     </div>
                 );
