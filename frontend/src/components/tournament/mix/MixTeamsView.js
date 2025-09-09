@@ -67,7 +67,8 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         };
     }, [isFullMix, tournamentId, loadRounds, loadSnapshot]);
 
-    const fullMixTeams = useMemo(() => (snapshot?.teams || []), [snapshot]);
+    // Команды лежат внутри item.snapshot.teams (JSONB из БД)
+    const fullMixTeams = useMemo(() => (snapshot?.snapshot?.teams || snapshot?.teams || []), [snapshot]);
     const teamsToRender = isFullMix ? fullMixTeams : teams;
 
     const [actionMessage, setActionMessage] = useState('');
