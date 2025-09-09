@@ -454,8 +454,23 @@ function TournamentDetails() {
                         localStorage.setItem(cacheKey, JSON.stringify(response.data));
                         localStorage.setItem(cacheTimestampKey, Date.now().toString());
                         
+                        // Дополнительно подтягиваем актуальный снапшот Full Mix для флага approved_teams
+                        let enriched = response.data;
+                        try {
+                            const fmt = (enriched?.format || '').toString().trim().toLowerCase();
+                            const mixType = (enriched?.mix_type || '').toString().trim().toLowerCase();
+                            const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+                            if (isFullMix && enriched?.id) {
+                                const snapsRes = await api.get(`/api/tournaments/${enriched.id}/fullmix/snapshots`);
+                                const items = (snapsRes.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+                                const last = items.length > 0 ? items[items.length - 1] : null;
+                                if (!enriched.fullmix) enriched.fullmix = {};
+                                enriched.fullmix.approved_teams = last ? !!last.approved_teams : false;
+                            }
+                        } catch (_) {}
+
                         // Обновляем состояние
-                        setTournament(response.data);
+                        setTournament(enriched);
                         setOriginalParticipants(response.data.participants || []);
                         setMatches(response.data.matches || []);
                         
