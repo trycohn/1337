@@ -498,6 +498,10 @@ router.post('/:id/fullmix/rounds/:round/approve', authenticateToken, verifyEmail
 router.post('/:id/fullmix/rounds/:round/reshuffle', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.reshuffle);
 router.get('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 router.put('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
+// PREVIEW (черновики раундов): только админы/создатели
+router.post('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.createPreview);
+router.get('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.getPreview);
+router.delete('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.deletePreview);
 
 // 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
 

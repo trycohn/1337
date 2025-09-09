@@ -7,6 +7,37 @@ const MatchService = require('./MatchService');
  * Логика Full Mix (раунды, снапшоты, победитель по числу побед)
  */
 class FullMixService {
+    // ===== PREVIEW API (DB-based cache) =====
+    static async savePreview(tournamentId, roundNumber, preview, createdBy = null) {
+        await pool.query(
+            `INSERT INTO full_mix_previews (tournament_id, round_number, preview, created_by, version, updated_at)
+             VALUES ($1,$2,$3,$4,1,NOW())
+             ON CONFLICT (tournament_id, round_number)
+             DO UPDATE SET preview = EXCLUDED.preview, created_by = EXCLUDED.created_by, version = full_mix_previews.version + 1, updated_at = NOW()`,
+            [tournamentId, roundNumber, preview, createdBy]
+        );
+        const res = await pool.query(
+            `SELECT tournament_id, round_number, preview, version, updated_at
+             FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`,
+            [tournamentId, roundNumber]
+        );
+        return res.rows[0];
+    }
+
+    static async getPreview(tournamentId, roundNumber) {
+        const res = await pool.query(
+            `SELECT tournament_id, round_number, preview, version, updated_at
+             FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`,
+            [tournamentId, roundNumber]
+        );
+        return res.rows[0] || null;
+    }
+
+    static async deletePreview(tournamentId, roundNumber) {
+        await pool.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
+        return true;
+    }
+
     static async getSettings(tournamentId) {
         const res = await pool.query(
             'SELECT tournament_id, wins_to_win, rating_mode FROM tournament_full_mix_settings WHERE tournament_id = $1',

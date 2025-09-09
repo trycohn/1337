@@ -69,6 +69,32 @@ class FullMixController {
         }
         return res.status(405).json({ success: false, error: 'Method not allowed' });
     });
+
+    // ===== PREVIEW endpoints =====
+    static createPreview = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const round = parseInt(req.params.round);
+        const userId = req.user?.id || null;
+        const settings = await FullMixService.getSettings(tournamentId);
+        const standings = await FullMixService.calculateStandings(tournamentId);
+        const snapshot = await FullMixService.generateRoundSnapshot(tournamentId, round, settings?.rating_mode || 'random', standings);
+        const saved = await FullMixService.savePreview(tournamentId, round, snapshot, userId);
+        res.json({ success: true, item: saved });
+    });
+
+    static getPreview = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const round = parseInt(req.params.round);
+        const item = await FullMixService.getPreview(tournamentId, round);
+        res.json({ success: true, item });
+    });
+
+    static deletePreview = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const round = parseInt(req.params.round);
+        await FullMixService.deletePreview(tournamentId, round);
+        res.json({ success: true });
+    });
 }
 
 module.exports = FullMixController;
