@@ -7,7 +7,6 @@ import Loader from './Loader';
 import { useLoader } from '../context/LoaderContext';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../hooks/useSocket';
-import { isChatEnabled } from '../config/features';
 import MatchLobbyNotification from './tournament/MatchLobby/MatchLobbyNotification';
 
 function Layout() {
@@ -50,7 +49,6 @@ function Layout() {
 
     // Функция для получения количества непрочитанных сообщений с защитой от частых запросов
     const fetchUnreadCount = useCallback(async () => {
-        if (!isChatEnabled) return;
         const now = Date.now();
         if (now - lastFetchTime.current < FETCH_COOLDOWN) {
             console.log('📊 [Layout] Пропускаем запрос - слишком частый вызов');
@@ -85,7 +83,6 @@ function Layout() {
 
     // Функция для пометки всех сообщений как увиденных
     const markAllMessagesSeen = useCallback(async () => {
-        if (!isChatEnabled) return;
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
@@ -104,7 +101,7 @@ function Layout() {
 
     // Загрузка счетчика при готовности пользователя (только один раз при загрузке)
     useEffect(() => {
-        if (isChatEnabled && user && fetchUnreadCountRef.current) {
+        if (user && fetchUnreadCountRef.current) {
             console.log('📊 [Layout] Пользователь загружен, получаем счетчик сообщений');
             fetchUnreadCountRef.current();
         }
@@ -160,21 +157,17 @@ function Layout() {
                 }
             };
 
-            // Подписываемся на события сообщений (только если включен чат)
-            if (isChatEnabled) {
-                socket.on('new_message', handleNewMessage);
-                socket.on('read_status', handleReadStatus);
-                socket.on('messages_read', handleMessagesRead);
-            }
+            // Подписываемся на события сообщений
+            socket.on('new_message', handleNewMessage);
+            socket.on('read_status', handleReadStatus);
+            socket.on('messages_read', handleMessagesRead);
 
             // Cleanup
             return () => {
                 console.log('🧹 [Layout] Отписываемся от Socket.IO событий');
-                if (isChatEnabled) {
-                    socket.off('new_message', handleNewMessage);
-                    socket.off('read_status', handleReadStatus);
-                    socket.off('messages_read', handleMessagesRead);
-                }
+                socket.off('new_message', handleNewMessage);
+                socket.off('read_status', handleReadStatus);
+                socket.off('messages_read', handleMessagesRead);
             };
         }
     }, [socket, user]);
@@ -185,10 +178,10 @@ function Layout() {
             console.log('📊 [Layout] Переход на страницу:', location.pathname, 'с предыдущей:', prevPathname);
             
             // Если переходим на страницу чатов, помечаем все сообщения как увиденные
-            if (isChatEnabled && location.pathname === '/messages') {
+            if (location.pathname === '/messages') {
                 console.log('📊 [Layout] Переход на страницу чатов, помечаем все как увиденные');
                 markAllMessagesSeen();
-            } else if (isChatEnabled && prevPathname === '/messages' && fetchUnreadCountRef.current) {
+            } else if (prevPathname === '/messages' && fetchUnreadCountRef.current) {
                 // Если уходим со страницы чатов, обновляем счетчик
                 console.log('📊 [Layout] Уход со страницы чатов, обновляем счетчик');
                 setTimeout(() => fetchUnreadCountRef.current(), 500);
@@ -201,7 +194,7 @@ function Layout() {
 
     // Обновляем счетчик при получении фокуса окна (с ограничением частоты)
     useEffect(() => {
-        if (!isChatEnabled || !user) return;
+        if (!user) return;
 
         let focusTimeout;
 
@@ -260,7 +253,6 @@ function Layout() {
 
     // Обработчик клика на иконку сообщений
     const handleMessagesIconClick = () => {
-        if (!isChatEnabled) return;
         console.log('📊 [Layout] Клик на иконку сообщений, помечаем все сообщения как увиденные');
         markAllMessagesSeen();
     };
@@ -337,16 +329,14 @@ function Layout() {
                                     <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                                     {user && (
                                         <>
-                                            {isChatEnabled && (
-                                                <Link to="/messages" className="nav-link btn-ghost messages-link" onClick={() => setIsMenuOpen(false)}>
-                                                    Чаты
-                                                    {unreadCount > 0 && (
-                                                        <span className="unread-badge" aria-label={`Непрочитанных: ${unreadCount}`}>
-                                                            {unreadCount > 99 ? '99+' : unreadCount}
-                                                        </span>
-                                                    )}
-                                                </Link>
-                                            )}
+                                            <Link to="/messages" className="nav-link btn-ghost messages-link" onClick={() => setIsMenuOpen(false)}>
+                                                Чаты
+                                                {unreadCount > 0 && (
+                                                    <span className="unread-badge" aria-label={`Непрочитанных: ${unreadCount}`}>
+                                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                                    </span>
+                                                )}
+                                            </Link>
                                             {hasMyTournaments && (
                                                 <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
                                                     Мои турниры
@@ -384,7 +374,7 @@ function Layout() {
                 </header>
 
             {(() => {
-                const isMessengerPage = isChatEnabled && isMobile && location.pathname === '/messages';
+                const isMessengerPage = isMobile && location.pathname === '/messages';
                 const isBracketSharePage = /^\/tournaments\/[^/]+\/bracket$/.test(location.pathname);
                 const mainClass = [
                     isMessengerPage ? 'messenger-page' : '',
