@@ -9,6 +9,7 @@ const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { migrateExistingTeamsCaptainsSafe } = require('../../migrate_existing_teams_captains_safe');
+const { pool } = require('../../db');
 
 class MixTeamController {
     /**
@@ -473,6 +474,28 @@ class MixTeamController {
         console.log(`🏆 [MixTeamController] Получение команд турнира ${tournamentId}`);
 
         try {
+            // 🔒 Backend‑gate для Full Mix: до подтверждения составов скрываем команды для всех
+            const tournament = await TournamentService.getTournament(tournamentId);
+            const fmt = (tournament?.format || '').toString().trim().toLowerCase();
+            const mixType = (tournament?.mix_type || '').toString().trim().toLowerCase();
+            const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+
+            if (isFullMix) {
+                const snapRes = await pool.query(
+                    `SELECT approved_teams
+                     FROM full_mix_snapshots
+                     WHERE tournament_id = $1
+                     ORDER BY round_number DESC
+                     LIMIT 1`,
+                    [tournamentId]
+                );
+                const approvedTeams = !!(snapRes.rows[0]?.approved_teams);
+                if (!approvedTeams) {
+                    console.log(`🛡️ [MixTeamController] Full Mix: составы не подтверждены → скрываем команды`);
+                    return res.json([]);
+                }
+            }
+
             const teams = await TournamentService.getTeams(tournamentId);
 
             console.log(`✅ [MixTeamController] Получено команд: ${teams.length}`);
