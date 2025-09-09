@@ -41,12 +41,19 @@ const TournamentParticipants = ({
 
     // Получаем список участников в зависимости от статуса турнира
     const getParticipantsList = useCallback(() => {
-        if (tournament?.format === 'mix' && tournament?.status === 'in_progress') {
-            // Для микс турниров в процессе показываем оригинальных участников
-            console.log('📋 [TournamentParticipants] Используем originalParticipants для микс турнира:', originalParticipants?.length || 0);
+        // Для Full Mix всегда используем оригинальный пул соло‑участников
+        const isFullMixLocal = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
+        if (isFullMixLocal) {
+            console.log('📋 [TournamentParticipants] Full Mix — используем originalParticipants:', originalParticipants?.length || 0);
             return originalParticipants || [];
         }
-        
+
+        // Для классического Mix в статусе in_progress — тоже оригинальные
+        if (tournament?.format === 'mix' && tournament?.status === 'in_progress') {
+            console.log('📋 [TournamentParticipants] Mix in_progress — используем originalParticipants:', originalParticipants?.length || 0);
+            return originalParticipants || [];
+        }
+
         console.log('📋 [TournamentParticipants] Используем tournament.participants:', tournament?.participants?.length || 0);
         return tournament?.participants || [];
     }, [tournament, originalParticipants]);
@@ -429,7 +436,7 @@ const TournamentParticipants = ({
                 <SkeletonTheme baseColor="#2a2a2a" highlightColor="#3a3a3a">
                 <>
                     {/* Список участников для команд */}
-                    {tournament?.participant_type === 'team' && (
+                    {tournament?.participant_type === 'team' && !isFullMix && (
                         <div className="teams-list-participants">
                             {(isLoadingInitial ? [...Array(skeletonRows)] : tournament.teams)?.map((team, index) => (
                                 <div key={team?.id || index} className="team-card-participants">
