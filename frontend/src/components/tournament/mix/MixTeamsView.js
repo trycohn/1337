@@ -14,10 +14,15 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
 
     const loadRounds = useCallback(async () => {
         if (!isFullMix) return;
-        const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
-        const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
-        setRounds(items);
-        if (items.length > 0) setCurrentRound(items[items.length - 1].round_number);
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
+            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+            setRounds(items);
+            if (items.length > 0) setCurrentRound(items[items.length - 1].round_number);
+        } catch (e) {
+            console.warn('[FullMix] Не удалось загрузить список раундов:', e?.message || e);
+            setRounds([]);
+        }
     }, [tournamentId, isFullMix]);
 
     const loadSnapshot = useCallback(async (round) => {
@@ -26,6 +31,9 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}`);
             setSnapshot(res.data?.item || null);
+        } catch (e) {
+            console.warn('[FullMix] Не удалось загрузить снапшот раунда:', e?.message || e);
+            setSnapshot(null);
         } finally {
             setLoading(false);
         }

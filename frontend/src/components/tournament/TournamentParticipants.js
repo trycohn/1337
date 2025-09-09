@@ -41,20 +41,16 @@ const TournamentParticipants = ({
 
     // Получаем список участников в зависимости от статуса турнира
     const getParticipantsList = useCallback(() => {
-        // Для Full Mix всегда используем оригинальный пул соло‑участников
-        const isFullMixLocal = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
-        if (isFullMixLocal) {
-            console.log('📋 [TournamentParticipants] Full Mix — используем originalParticipants:', originalParticipants?.length || 0);
-            return originalParticipants || [];
+        // Для MIX турниров показываем соло‑список из originalParticipants, если он передан; иначе — из tournament.participants
+        if (tournament?.format === 'mix') {
+            const base = Array.isArray(originalParticipants) && originalParticipants.length > 0
+                ? originalParticipants
+                : (tournament?.participants || []);
+            console.log('📋 [TournamentParticipants] MIX — показываем соло список:', base.length);
+            return base;
         }
 
-        // Для классического Mix в статусе in_progress — тоже оригинальные
-        if (tournament?.format === 'mix' && tournament?.status === 'in_progress') {
-            console.log('📋 [TournamentParticipants] Mix in_progress — используем originalParticipants:', originalParticipants?.length || 0);
-            return originalParticipants || [];
-        }
-
-        console.log('📋 [TournamentParticipants] Используем tournament.participants:', tournament?.participants?.length || 0);
+        console.log('📋 [TournamentParticipants] НЕ-MIX — используем tournament.participants:', tournament?.participants?.length || 0);
         return tournament?.participants || [];
     }, [tournament, originalParticipants]);
 
