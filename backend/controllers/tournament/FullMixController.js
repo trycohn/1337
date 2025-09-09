@@ -45,6 +45,36 @@ class FullMixController {
         const tournamentId = parseInt(req.params.id);
         const round = parseInt(req.params.round);
         const item = await FullMixService.getSnapshot(tournamentId, round);
+
+        // 🔒 Скрываем составы/матчи черновика для не-админов до подтверждения
+        if (item && item.approved_teams !== true) {
+            let isAdminOrCreator = false;
+            try {
+                const t = await FullMixService.getSettings(tournamentId) // dummy to keep await chain
+                ;
+            } catch (_) {}
+            try {
+                const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+                const tournament = await TournamentRepository.getById(tournamentId);
+                const userId = req.user?.id;
+                const isCreator = !!(userId && tournament && tournament.created_by === userId);
+                let isAdmin = false;
+                if (userId) {
+                    isAdmin = await TournamentRepository.isAdmin(tournamentId, userId);
+                }
+                isAdminOrCreator = isCreator || isAdmin;
+            } catch (_) {
+                isAdminOrCreator = false;
+            }
+
+            if (!isAdminOrCreator) {
+                const cloned = { ...item };
+                const snap = cloned.snapshot || {};
+                cloned.snapshot = { ...snap, teams: [], matches: [] };
+                return res.json({ success: true, item: cloned });
+            }
+        }
+
         res.json({ success: true, item });
     });
 
