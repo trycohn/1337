@@ -51,7 +51,9 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
         };
     }, [tournamentId, loadRounds, loadSnapshot]);
 
-    const teams = useMemo(() => snapshot?.teams || [], [snapshot]);
+    const teams = useMemo(() => snapshot?.snapshot?.teams || snapshot?.teams || [], [snapshot]);
+    const isApprovedTeams = !!(snapshot && snapshot.approved_teams === true);
+    const canSeeTeams = isAdminOrCreator || isApprovedTeams;
 
     // Управление составами перенесено на вкладку "MIX команды"
 
@@ -79,6 +81,8 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
             <div style={{ display: 'grid', gap: 10 }}>
                 {loading ? (
                     <div style={{ color: '#888' }}>Загрузка команд...</div>
+                ) : !canSeeTeams ? (
+                    <div style={{ color: '#888' }}>Составы раунда ожидают подтверждения организатором</div>
                 ) : teams.length === 0 ? (
                     <div style={{ color: '#888' }}>Команды не сформированы</div>
                 ) : (
