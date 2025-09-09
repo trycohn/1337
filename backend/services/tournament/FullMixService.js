@@ -308,18 +308,45 @@ class FullMixService {
     }
 
     static async createRoundMatches(tournamentId, roundNumber, createdTeams, client = pool) {
-        // Создаем матчи по парам команд (используем реальные team_id)
+        // Создаём матчи по парам команд с корректной нумерацией
         const matches = [];
+
+        // Глобальный сквозной номер матча по турниру
+        const tmRes = await client.query(
+            `SELECT COALESCE(MAX(tournament_match_number), 0) AS max FROM matches WHERE tournament_id = $1`,
+            [tournamentId]
+        );
+        let nextTournamentMatchNumber = parseInt(tmRes.rows[0]?.max || 0, 10) + 1;
+
+        // Номер матча в рамках раунда
+        const mrRes = await client.query(
+            `SELECT COALESCE(MAX(match_number), 0) AS max FROM matches WHERE tournament_id = $1 AND round = $2`,
+            [tournamentId, roundNumber]
+        );
+        let nextMatchNumberInRound = parseInt(mrRes.rows[0]?.max || 0, 10) + 1;
+
         for (let i = 0; i < createdTeams.length; i += 2) {
             const teamA = createdTeams[i];
             const teamB = createdTeams[i + 1];
             if (!teamB) break;
+
             const res = await client.query(
-                `INSERT INTO matches (tournament_id, round, team1_id, team2_id, status)
-                 VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
-                [tournamentId, roundNumber, teamA.team_id, teamB.team_id]
+                `INSERT INTO matches (
+                    tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
+                 ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'winner') RETURNING id`,
+                [
+                    tournamentId,
+                    roundNumber,
+                    nextMatchNumberInRound,
+                    nextTournamentMatchNumber,
+                    teamA.team_id,
+                    teamB.team_id
+                ]
             );
+
             matches.push({ id: res.rows[0].id, team1_id: teamA.team_id, team2_id: teamB.team_id });
+            nextMatchNumberInRound += 1;
+            nextTournamentMatchNumber += 1;
         }
         return matches;
     }
