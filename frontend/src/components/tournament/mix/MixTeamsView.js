@@ -10,7 +10,7 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     const mixTypeNorm = (tournament?.mix_type || '').toString().trim().toLowerCase();
     const isFullMix = formatNorm === 'full_mix' || (formatNorm === 'mix' && mixTypeNorm === 'full');
     const [rounds, setRounds] = useState([]);
-    const [currentRound, setCurrentRound] = useState(1);
+    const [currentRound, setCurrentRound] = useState(null);
     const [snapshot, setSnapshot] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -47,9 +47,10 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     }, [isFullMix, tournamentId, loadRounds]);
 
     useEffect(() => {
-        if (!isFullMix || !tournamentId || !currentRound) return;
+        if (!isFullMix || !tournamentId) return;
+        if (!currentRound || rounds.length === 0) return;
         loadSnapshot(currentRound);
-    }, [isFullMix, tournamentId, currentRound, loadSnapshot]);
+    }, [isFullMix, tournamentId, currentRound, rounds.length, loadSnapshot]);
 
     useEffect(() => {
         if (!isFullMix) return;
@@ -151,7 +152,8 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         );
     }
 
-    if ((!isFullMix && (!Array.isArray(teams) || teams.length === 0)) || (isFullMix && teamsToRender.length === 0)) {
+    // Для Full Mix не делаем ранний return, чтобы показывать панель управления даже без команд
+    if (!isFullMix && (!Array.isArray(teams) || teams.length === 0)) {
         return (
             <div className="no-teams-message-mixteams">
                 <h4>Команды еще не сформированы</h4>
@@ -186,11 +188,18 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                 </div>
             )}
 
-            <div className="mixed-teams-grid-mixteams">
-                {teamsToRender.map((team, idx) => (
-                    <MixTeamCard key={team.id || idx} team={team} />
-                ))}
-            </div>
+            {isFullMix && teamsToRender.length === 0 ? (
+                <div className="no-teams-message-mixteams">
+                    <h4>Команды еще не сформированы</h4>
+                    <p>Нажмите «Сформировать команды для 1 раунда» чтобы начать.</p>
+                </div>
+            ) : (
+                <div className="mixed-teams-grid-mixteams">
+                    {teamsToRender.map((team, idx) => (
+                        <MixTeamCard key={team.id || idx} team={team} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
