@@ -20,7 +20,8 @@ function ChatWindow({
     onDeleteMessage,
     onBackToChats,
     isMobile,
-    onHideChat
+    onHideChat,
+    isLoading
 }) {
     const [showParticipantsModal, setShowParticipantsModal] = useState(false);
     
@@ -84,6 +85,9 @@ function ChatWindow({
             />
             
             <div className="chat-messages">
+                {isLoading && (
+                    <div className="chat-loading">Загрузка сообщений…</div>
+                )}
                 {messageGroups.map((group, groupIndex) => (
                     <div key={groupIndex} className="message-group">
                         <div className="message-date-separator">
