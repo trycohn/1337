@@ -537,45 +537,25 @@ const TeamGenerator = ({
         setLoading(true);
         
         try {
-            const teamSizeNumber = parseInt(teamSize);
-            
-            console.log('🚀 Формируем команды:', {
-                teamSize: teamSizeNumber,
-                participantsCount: displayParticipants.length,
-                ratingType,
-                tournamentId: tournament.id
-            });
-
-            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, {
-                ratingType: ratingType,
-                teamSize: teamSizeNumber
-            });
-
-            if (response.data && response.data.teams) {
-                console.log('✅ Команды успешно сгенерированы:', response.data.teams);
-                
-                // 🎯 ОБОГАЩАЕМ КОМАНДЫ СРЕДНИМ РЕЙТИНГОМ
-                const enrichedTeams = response.data.teams.map(team => ({
-                    ...team,
-                    averageRating: calculateTeamAverageRating(team)
-                }));
-                
-                setMixedTeams(enrichedTeams);
-                
-                // 🎯 ВЫЗЫВАЕМ onTeamsGenerated ТОЛЬКО при успешном создании НОВЫХ команд
-                if (onTeamsGenerated) {
-                    console.log('✅ Уведомляем родительский компонент о новых командах');
-                    onTeamsGenerated(enrichedTeams);
-                }
-                
-                // Обновляем tournament.participant_type на 'team' после успешного создания команд
-                if (onTeamsUpdated) {
-                    onTeamsUpdated();
-                }
-                
-                console.log('✅ Команды успешно созданы и установлены');
+            // Для Full Mix генерируем ЧЕРНОВИК 1-го раунда, а не пишем в БД
+            if (isFullMix) {
+                console.log('🚀 [FullMix] Создаем черновик команд для 1 раунда');
+                await api.post(`/api/tournaments/${tournament.id}/fullmix/rounds/1/preview`, {});
+                if (toast) toast.success('Черновик команд для 1 раунда создан');
+                // Реальные команды до подтверждения не приходят через /teams, поэтому здесь ничего не записываем
+                if (onTeamsUpdated) onTeamsUpdated();
             } else {
-                console.error('❌ Некорректный ответ сервера при генерации команд');
+                const teamSizeNumber = parseInt(teamSize);
+                console.log('🚀 Формируем команды (classic mix):', { teamSize: teamSizeNumber, participantsCount: displayParticipants.length, ratingType, tournamentId: tournament.id });
+                const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, { ratingType, teamSize: teamSizeNumber });
+                if (response.data && response.data.teams) {
+                    const enrichedTeams = response.data.teams.map(team => ({ ...team, averageRating: calculateTeamAverageRating(team) }));
+                    setMixedTeams(enrichedTeams);
+                    if (onTeamsGenerated) onTeamsGenerated(enrichedTeams);
+                    if (onTeamsUpdated) onTeamsUpdated();
+                } else {
+                    console.error('❌ Некорректный ответ сервера при генерации команд');
+                }
             }
         } catch (error) {
             console.error('❌ Ошибка при формировании команд:', error);
