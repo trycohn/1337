@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCrown } from '@fortawesome/free-solid-svg-icons';
-import TeamGenerator from '../TeamGenerator';
+// TeamGenerator рендерится в TournamentDetails (первым блоком)
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
@@ -324,17 +324,7 @@ const TournamentParticipants = ({
                         </>
                         </SkeletonTheme>
                     </div>
-                    <div className="team-generator-section-participants">
-                        <TeamGenerator
-                            tournament={tournament}
-                            participants={participantsList}
-                            onTeamsGenerated={onTeamsGenerated}
-                            onTeamsUpdated={onTournamentUpdate}
-                            onRemoveParticipant={removeParticipant}
-                            isAdminOrCreator={isAdminOrCreator}
-                            hideMixSettings={!isActive}
-                        />
-                    </div>
+                    {/* TeamGenerator удален из этого места, рендерится выше в TournamentDetails */}
                 </div>
             )}
 
