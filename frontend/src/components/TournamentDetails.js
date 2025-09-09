@@ -47,6 +47,7 @@ import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
+import TeamGenerator from './TeamGenerator';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
 import PodiumSection from './tournament/PodiumSection';
@@ -1035,6 +1036,18 @@ function TournamentDetails() {
             case 'participants':
                 return (
                     <div className="tab-content-participants">
+                        {tournament?.format === 'mix' && (
+                            <div className="team-generator-section-participants" style={{ marginBottom: 16 }}>
+                                <TeamGenerator
+                                    tournament={tournament}
+                                    participants={Array.isArray(originalParticipants) && originalParticipants.length > 0 ? originalParticipants : (tournament?.participants || [])}
+                                    onTeamsGenerated={handleTeamsGenerated}
+                                    onTeamsUpdated={fetchTournamentData}
+                                    isAdminOrCreator={isAdminOrCreator}
+                                    hideMixSettings={!((tournament?.status || '').toString().trim().toLowerCase() === 'active')}
+                                />
+                            </div>
+                        )}
                         <TournamentParticipants
                             tournament={tournament}
                             user={user}
