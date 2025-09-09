@@ -63,10 +63,18 @@ class FullMixController {
                 }
                 return it;
             });
-            return res.json({ success: true, items: sanitized });
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+            res.set('Vary', 'Authorization');
+            return res.status(200).json({ success: true, items: sanitized });
         }
 
-        res.json({ success: true, items });
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        res.set('Vary', 'Authorization');
+        res.status(200).json({ success: true, items });
     });
 
     static getRound = asyncHandler(async (req, res) => {
@@ -99,11 +107,19 @@ class FullMixController {
                 const cloned = { ...item };
                 const snap = cloned.snapshot || {};
                 cloned.snapshot = { ...snap, teams: [], matches: [] };
-                return res.json({ success: true, item: cloned });
+                res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+                res.set('Pragma', 'no-cache');
+                res.set('Expires', '0');
+                res.set('Vary', 'Authorization');
+                return res.status(200).json({ success: true, item: cloned });
             }
         }
 
-        res.json({ success: true, item });
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        res.set('Vary', 'Authorization');
+        res.status(200).json({ success: true, item });
     });
 
     static approve = asyncHandler(async (req, res) => {

@@ -495,14 +495,22 @@ class MixTeamController {
             const hasFullMixFlow = snapRes.rows.length > 0 || hasPreview;
             if (hasFullMixFlow && lastApproved !== true) {
                 console.log(`🛡️ [MixTeamController] Full Mix flow detected, not approved → скрываем команды`);
-                return res.json([]);
+                res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+                res.set('Pragma', 'no-cache');
+                res.set('Expires', '0');
+                res.set('Vary', 'Authorization');
+                return res.status(200).json([]);
             }
 
             const teams = await TournamentService.getTeams(tournamentId);
 
             console.log(`✅ [MixTeamController] Получено команд: ${teams.length}`);
 
-            res.json(teams);
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+            res.set('Vary', 'Authorization');
+            res.status(200).json(teams);
 
         } catch (error) {
             console.error(`❌ [MixTeamController] Ошибка получения команд:`, error);
