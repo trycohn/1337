@@ -105,55 +105,45 @@ class FullMixService {
      * Переформирование команд ТЕКУЩЕГО раунда (если составы ещё не подтверждены)
      */
     static async reshuffleRound(tournamentId, roundNumber) {
-        const client = await pool.connect();
-        try {
-            // Проверка существования снапшота и статуса approvals
-            const snap = await this.getSnapshot(tournamentId, roundNumber);
-            if (!snap) throw new Error('Снапшот раунда не найден');
-            if (snap.approved_teams) throw new Error('Составы уже подтверждены и не могут быть переформированы');
+        // Проверка существования снапшота и статуса approvals
+        const snap = await this.getSnapshot(tournamentId, roundNumber);
+        if (!snap) throw new Error('Снапшот раунда не найден');
+        if (snap.approved_teams) throw new Error('Составы уже подтверждены и не могут быть переформированы');
 
-            await client.query('BEGIN');
+        // Удаляем матчи текущего раунда
+        await pool.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
 
-            // Удаляем матчи текущего раунда
-            await client.query(
-                `DELETE FROM matches WHERE tournament_id = $1 AND round = $2`,
-                [tournamentId, roundNumber]
-            );
-
-            // Удаляем созданные команды и их участников по id из снапшота
-            const teamIds = Array.isArray(snap.snapshot?.teams)
-                ? snap.snapshot.teams.map(t => t.team_id).filter(Boolean)
-                : [];
-            if (teamIds.length > 0) {
-                await client.query(`DELETE FROM tournament_team_members WHERE team_id = ANY($1::int[])`, [teamIds]);
-                await client.query(`DELETE FROM tournament_teams WHERE id = ANY($1::int[])`, [teamIds]);
-            }
-
-            // Считаем standings и настройки для повторной генерации
-            const settings = await this.getSettings(tournamentId);
-            const standings = await this.calculateStandings(tournamentId);
-
-            // Генерируем заново текущий раунд
-            const newSnapshot = await this.generateRoundSnapshot(tournamentId, roundNumber, settings?.rating_mode || 'random', standings);
-
-            // Сохраняем снапшот (перезаписываем) и сбрасываем approvals
-            await client.query(
-                `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
-                 VALUES ($1, $2, $3, FALSE, FALSE)
-                 ON CONFLICT (tournament_id, round_number)
-                 DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = FALSE, approved_matches = FALSE`,
-                [tournamentId, roundNumber, newSnapshot]
-            );
-
-            await client.query('COMMIT');
-
-            return { round: roundNumber, snapshot: newSnapshot };
-        } catch (e) {
-            try { await client.query('ROLLBACK'); } catch (_) {}
-            throw e;
-        } finally {
-            client.release();
+        // Удаляем созданные команды и их участников по id из снапшота
+        const teamIds = Array.isArray(snap.snapshot?.teams)
+            ? snap.snapshot.teams.map(t => t.team_id).filter(Boolean)
+            : [];
+        if (teamIds.length > 0) {
+            await pool.query(`DELETE FROM tournament_team_members WHERE team_id = ANY($1::int[])`, [teamIds]);
+            await pool.query(`DELETE FROM tournament_teams WHERE id = ANY($1::int[])`, [teamIds]);
         }
+
+        // Считаем standings и настройки для повторной генерации
+        const settings = await this.getSettings(tournamentId);
+        const standings = await this.calculateStandings(tournamentId);
+
+        // Генерируем заново текущий раунд (внутри — собственная транзакция)
+        const newSnapshot = await this.generateRoundSnapshot(
+            tournamentId,
+            roundNumber,
+            settings?.rating_mode || 'random',
+            standings
+        );
+
+        // Сохраняем снапшот (перезаписываем) и сбрасываем approvals
+        await pool.query(
+            `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
+             VALUES ($1, $2, $3, FALSE, FALSE)
+             ON CONFLICT (tournament_id, round_number)
+             DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = FALSE, approved_matches = FALSE`,
+            [tournamentId, roundNumber, newSnapshot]
+        );
+
+        return { round: roundNumber, snapshot: newSnapshot };
     }
 
     static async completeRound(tournamentId, roundNumber) {

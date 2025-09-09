@@ -9,7 +9,8 @@ const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendTournamentChatAnnouncement } = require('../../utils/tournament/chatHelpers');
 const { migrateExistingTeamsCaptainsSafe } = require('../../migrate_existing_teams_captains_safe');
-const { pool } = require('../../db');
+const poolModule = require('../../db');
+const pool = poolModule.pool || poolModule;
 
 class MixTeamController {
     /**
