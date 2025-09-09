@@ -12,7 +12,6 @@ function Messenger() {
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
-    const [isLoadingMessages, setIsLoadingMessages] = useState(false);
     const [error, setError] = useState('');
     const [newMessage, setNewMessage] = useState('');
     const [unreadCounts, setUnreadCounts] = useState({});
@@ -30,7 +29,6 @@ function Messenger() {
     const [isClosing, setIsClosing] = useState(false);
 
     const activeChatRef = useRef(null);
-    const messagesAbortRef = useRef(null);
 
     // 🛡️ ЗАЩИТА ОТ ЧАСТЫХ ЗАПРОСОВ
     const lastRequestTimes = useRef({
@@ -382,13 +380,6 @@ function Messenger() {
             console.log('🔗 [Messenger] Присоединяемся к комнате чата:', activeChat.id);
             socketHook.chat.join(activeChat.id);
             
-            // Мгновенно очищаем старые сообщения, чтобы не было "плавающих" сообщений
-            setMessages([]);
-            // Отменяем предыдущий незавершённый запрос сообщений, если есть
-            if (messagesAbortRef.current) {
-                try { messagesAbortRef.current.abort(); } catch (_) {}
-            }
-            // Загружаем новые сообщения
             fetchMessages(activeChat.id);
             markChatAsRead(activeChat.id);
         }
@@ -407,7 +398,7 @@ function Messenger() {
         }
     };
     
-    // Получение сообщений для конкретного чата с защитой от частых запросов и отменой предыдущего
+    // Получение сообщений для конкретного чата С ЗАЩИТОЙ ОТ ЧАСТЫХ ЗАПРОСОВ
     const fetchMessages = async (chatId) => {
         if (!canMakeRequest('fetchMessages', chatId)) {
             console.log('��️ [Messenger] fetchMessages заблокирован cooldown-ом');
@@ -417,37 +408,17 @@ function Messenger() {
         try {
             const token = localStorage.getItem('token');
             console.log('📥 [Messenger] Загружаем сообщения для чата:', chatId);
-            // Создаём новый AbortController для этого запроса
-            const controller = new AbortController();
-            messagesAbortRef.current = controller;
-            setIsLoadingMessages(true);
             const response = await api.get(`/api/chats/${chatId}/messages`, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal: controller.signal
+                headers: { Authorization: `Bearer ${token}` }
             });
             
             console.log('✅ [Messenger] Сообщения загружены:', response.data.length, 'сообщений');
-            // Защита от гонок: применяем только если активный чат совпадает
-            if (Number(activeChatRef.current) === Number(chatId)) {
-                setMessages(response.data);
-            } else {
-                console.log('⏭️ [Messenger] Ответ пришёл для неактуального чата, пропускаем setMessages');
-            }
+            setMessages(response.data);
             setError('');
             
         } catch (err) {
-            if (err?.name === 'CanceledError' || err?.name === 'AbortError') {
-                console.log('🛑 [Messenger] Запрос сообщений отменён');
-            } else {
-                console.error('❌ [Messenger] Ошибка загрузки сообщений:', err);
-                setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
-            }
-        } finally {
-            // Сбрасываем только если этот контроллер ещё актуален
-            setIsLoadingMessages(false);
-            if (messagesAbortRef.current && messagesAbortRef.current.signal.aborted) {
-                // уже отменён — просто оставляем пустые сообщения до следующего fetch
-            }
+            console.error('❌ [Messenger] Ошибка загрузки сообщений:', err);
+            setError(err.response?.data?.error || 'Ошибка загрузки сообщений');
         }
     };
     
@@ -550,12 +521,11 @@ function Messenger() {
         socketHook.chat.join(chat.id);
         
         // fetchMessages и markChatAsRead будут вызваны из useEffect при смене activeChat
-        // Дополнительно мгновенно очищаем UI от старых сообщений
-        setMessages([]);
-        // И отменяем активный запрос если он ещё идёт, чтобы избежать "плавания"
-        if (messagesAbortRef.current) {
-            try { messagesAbortRef.current.abort(); } catch (_) {}
-        }
+        // но мы можем вызвать их здесь для более быстрого отклика (с защитой от дублирования)
+        setTimeout(() => {
+            fetchMessages(chat.id);
+            markChatAsRead(chat.id);
+        }, 100); // Небольшая задержка чтобы useEffect сработал
     };
     
     // Функция для возврата к списку чатов на мобильных устройствах
@@ -705,7 +675,6 @@ function Messenger() {
                 )}
                 
                 <ChatWindow 
-                    key={activeChat ? activeChat.id : 'empty'}
                     activeChat={activeChat}
                     messages={messages}
                     newMessage={newMessage}
@@ -718,7 +687,6 @@ function Messenger() {
                     onBackToChats={handleBackToChats}
                     isMobile={isMobile}
                     onHideChat={hideChat}
-                    isLoading={isLoadingMessages}
                 />
             </div>
 
