@@ -111,6 +111,7 @@ class FullMixController {
                 res.set('Pragma', 'no-cache');
                 res.set('Expires', '0');
                 res.set('Vary', 'Authorization');
+                res.set('ETag', `W/"fm-${tournamentId}-${round}-${req.user?.id || 'anon'}-${Date.now()}"`);
                 return res.status(200).json({ success: true, item: cloned });
             }
         }
@@ -119,6 +120,7 @@ class FullMixController {
         res.set('Pragma', 'no-cache');
         res.set('Expires', '0');
         res.set('Vary', 'Authorization');
+        res.set('ETag', `W/"fm-${tournamentId}-${round}-${req.user?.id || 'anon'}-${Date.now()}"`);
         res.status(200).json({ success: true, item });
     });
 

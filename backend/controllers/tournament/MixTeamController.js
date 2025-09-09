@@ -499,6 +499,7 @@ class MixTeamController {
                 res.set('Pragma', 'no-cache');
                 res.set('Expires', '0');
                 res.set('Vary', 'Authorization');
+                res.set('ETag', `W/"tm-${tournamentId}-${req.user?.id || 'anon'}-${Date.now()}"`);
                 return res.status(200).json([]);
             }
 
@@ -510,6 +511,7 @@ class MixTeamController {
             res.set('Pragma', 'no-cache');
             res.set('Expires', '0');
             res.set('Vary', 'Authorization');
+            res.set('ETag', `W/"tm-${tournamentId}-${req.user?.id || 'anon'}-${Date.now()}"`);
             res.status(200).json(teams);
 
         } catch (error) {
