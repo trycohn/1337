@@ -1036,18 +1036,27 @@ function TournamentDetails() {
             case 'participants':
                 return (
                     <div className="tab-content-participants">
-                        {tournament?.format === 'mix' && (
-                            <div className="team-generator-section-participants" style={{ marginBottom: 16 }}>
-                                <TeamGenerator
-                                    tournament={tournament}
-                                    participants={Array.isArray(originalParticipants) && originalParticipants.length > 0 ? originalParticipants : (tournament?.participants || [])}
-                                    onTeamsGenerated={handleTeamsGenerated}
-                                    onTeamsUpdated={fetchTournamentData}
-                                    isAdminOrCreator={isAdminOrCreator}
-                                    hideMixSettings={!((tournament?.status || '').toString().trim().toLowerCase() === 'active')}
-                                />
-                            </div>
-                        )}
+                        {(() => {
+                            const fmt = (tournament?.format || '').toString().trim().toLowerCase();
+                            const mixType = (tournament?.mix_type || '').toString().trim().toLowerCase();
+                            const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+                            const isMix = fmt === 'mix' || fmt === 'full_mix';
+                            if (isMix && !isFullMix) {
+                                return (
+                                    <div className="team-generator-section-participants" style={{ marginBottom: 16 }}>
+                                        <TeamGenerator
+                                            tournament={tournament}
+                                            participants={Array.isArray(originalParticipants) && originalParticipants.length > 0 ? originalParticipants : (tournament?.participants || [])}
+                                            onTeamsGenerated={handleTeamsGenerated}
+                                            onTeamsUpdated={fetchTournamentData}
+                                            isAdminOrCreator={isAdminOrCreator}
+                                            hideMixSettings={!((tournament?.status || '').toString().trim().toLowerCase() === 'active')}
+                                        />
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                         <TournamentParticipants
                             tournament={tournament}
                             user={user}
