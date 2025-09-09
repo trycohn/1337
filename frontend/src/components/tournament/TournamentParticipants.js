@@ -236,16 +236,7 @@ const TournamentParticipants = ({
     // 🆕 Проверка, нужно ли показывать список участников
     const shouldShowParticipantsList = useCallback(() => {
         if (!tournament) return false;
-        
-        // МИКС: для Full Mix показываем и стандартные списки участников
-        if (tournament.format === 'mix') {
-            const isFullMix = (tournament?.mix_type || '').toLowerCase() === 'full';
-            return isFullMix ? true : false;
-        }
-        // Исторический формат full_mix — оставляем прежнее поведение (без стандартных списков)
-        if (tournament.format === 'full_mix') return false;
-        
-        // Для всех остальных типов турниров показываем список участников
+        // Всегда показываем список участников для любых турниров, где он применим
         return true;
     }, [tournament]);
 
@@ -265,98 +256,12 @@ const TournamentParticipants = ({
             {isFullMix && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 16 }}>
                     <div>
-                        {shouldShowParticipantsList() && (
+                        {true && (
                             <SkeletonTheme baseColor="#2a2a2a" highlightColor="#3a3a3a">
                             <>
-                                {/* Список участников для команд */}
-                                {tournament?.participant_type === 'team' && (
-                                    <div className="teams-list-participants">
-                                        {(isLoadingInitial ? [...Array(skeletonRows)] : tournament.teams)?.map((team, index) => (
-                                            <div key={team?.id || index} className="team-card-participants">
-                                                <div className="team-header-participants">
-                                                    <div className="team-info-participants">
-                                                        <h4 className="team-name-participants">
-                                                            {isLoadingInitial ? (
-                                                                <Skeleton width={160} height={18} />
-                                                            ) : team.id ? (
-                                                                <a href={`/teams/${team.id}`} className="team-name-link-participants">{team.name}</a>
-                                                            ) : (
-                                                                team.name
-                                                            )}
-                                                        </h4>
-                                                        <span className="team-members-count-participants">
-                                                            {isLoadingInitial ? <Skeleton width={100} height={14} /> : `${team.members?.length || 0} участников`}
-                                                        </span>
-                                                    </div>
-                                                    {isAdminOrCreator && (
-                                                        <button 
-                                                            className="remove-team-btn-participants"
-                                                            onClick={() => !isLoadingInitial && removeParticipant(team.id, team.name)}
-                                                            title="Удалить команду"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <div className="team-members-participants">
-                                                    {(isLoadingInitial ? [...Array(3)] : team.members)?.map((member, memberIndex) => (
-                                                        <div key={member?.id || memberIndex} className="team-member-participants">
-                                                            <div className="member-info-participants">
-                                                                {isLoadingInitial ? (
-                                                                    <>
-                                                                        <div className="skeleton-avatar" style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a1a1a' }} />
-                                                                        <span className="member-name-participants" style={{ marginLeft: 10 }}>
-                                                                            <Skeleton width={140} height={14} />
-                                                                        </span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <img 
-                                                                            src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
-                                                                            alt={member.display_name || member.name || member.username}
-                                                                            className={`member-avatar-participants ${getAvatarCategoryClass(member.avatar_url)}`}
-                                                                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
-                                                                        />
-                                                                        <span className="member-name-participants">
-                                                                            {member.user_id ? (
-                                                                                <a href={`/user/${member.user_id}`} className="member-link-participants">
-                                                                                    {member.display_name || member.name || member.username}
-                                                                                </a>
-                                                                            ) : (
-                                                                                member.display_name || member.name || member.username
-                                                                            )}
-                                                                            {member.is_captain && (
-                                                                                <span className="captain-icon-participants" title="Капитан">
-                                                                                    <FontAwesomeIcon icon={byPrefixAndName.fas['crown']} />
-                                                                                </span>
-                                                                            )}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                            <div className="member-stats-participants">
-                                                                {isLoadingInitial ? (
-                                                                    <Skeleton width={120} height={12} />
-                                                                ) : (
-                                                                    <>
-                                                                        {member.faceit_elo && (
-                                                                            <span className="stat">FACEIT: {member.faceit_elo}</span>
-                                                                        )}
-                                                                        {member.cs2_premier_rank && (
-                                                                            <span className="stat">CS2: {member.cs2_premier_rank}</span>
-                                                                        )}
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                {/* Команды в левой колонке не отображаем */}
 
-                                {/* Список участников для соло турниров */}
+                                {/* Список участников для соло турниров (для MIX: показываем соло originalParticipants/participants) */}
                                 {tournament?.participant_type === 'solo' && (
                                     <div className="participants-list-participants">
                                         {(isLoadingInitial ? [...Array(skeletonRows)] : participantsList).map((participant, index) => (
