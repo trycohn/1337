@@ -56,10 +56,13 @@ const TournamentParticipants = ({
 
     // Получаем список участников
     const participantsList = getParticipantsList();
+    const isMixFormat = (tournament?.format === 'mix');
     const isLoadingInitial = !tournament || (
-        (tournament?.participant_type === 'team')
-            ? !Array.isArray(tournament?.teams)
-            : !Array.isArray(participantsList)
+        isMixFormat
+            ? !Array.isArray(participantsList)
+            : (tournament?.participant_type === 'team')
+                ? !Array.isArray(tournament?.teams)
+                : !Array.isArray(participantsList)
     );
     const skeletonRows = 3;
     
