@@ -6,18 +6,25 @@ import { getSocketInstance } from '../../../services/socketClient_v5_simplified'
 
 function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCreator = false }) {
     const tournamentId = tournament?.id;
-    const isFullMix = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
+    const formatNorm = (tournament?.format || '').toString().trim().toLowerCase();
+    const mixTypeNorm = (tournament?.mix_type || '').toString().trim().toLowerCase();
+    const isFullMix = formatNorm === 'full_mix' || (formatNorm === 'mix' && mixTypeNorm === 'full');
     const [rounds, setRounds] = useState([]);
-    const [currentRound, setCurrentRound] = useState(1);
+    const [currentRound, setCurrentRound] = useState(null);
     const [snapshot, setSnapshot] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const loadRounds = useCallback(async () => {
         if (!isFullMix) return;
-        const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
-        const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
-        setRounds(items);
-        if (items.length > 0) setCurrentRound(items[items.length - 1].round_number);
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
+            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+            setRounds(items);
+            if (items.length > 0) setCurrentRound(items[items.length - 1].round_number);
+        } catch (e) {
+            console.warn('[FullMix] Не удалось загрузить список раундов:', e?.message || e);
+            setRounds([]);
+        }
     }, [tournamentId, isFullMix]);
 
     const loadSnapshot = useCallback(async (round) => {
@@ -26,6 +33,9 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}`);
             setSnapshot(res.data?.item || null);
+        } catch (e) {
+            console.warn('[FullMix] Не удалось загрузить снапшот раунда:', e?.message || e);
+            setSnapshot(null);
         } finally {
             setLoading(false);
         }
@@ -37,9 +47,10 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     }, [isFullMix, tournamentId, loadRounds]);
 
     useEffect(() => {
-        if (!isFullMix || !tournamentId || !currentRound) return;
+        if (!isFullMix || !tournamentId) return;
+        if (!currentRound || rounds.length === 0) return;
         loadSnapshot(currentRound);
-    }, [isFullMix, tournamentId, currentRound, loadSnapshot]);
+    }, [isFullMix, tournamentId, currentRound, rounds.length, loadSnapshot]);
 
     useEffect(() => {
         if (!isFullMix) return;
@@ -83,11 +94,11 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         setBusy(true);
         setActionMessage('Переформируем команды...');
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/generate-next`, { forceReshuffle: true, targetRound: currentRound });
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${currentRound}/reshuffle`, {});
             await loadSnapshot(currentRound);
             setActionMessage('Команды переформированы');
-        } catch (_) {
-            setActionMessage('Ошибка переформирования');
+        } catch (e) {
+            setActionMessage(e?.response?.data?.error || 'Ошибка переформирования');
         } finally {
             setBusy(false);
             setTimeout(() => setActionMessage(''), 2500);
@@ -141,7 +152,8 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         );
     }
 
-    if ((!isFullMix && (!Array.isArray(teams) || teams.length === 0)) || (isFullMix && teamsToRender.length === 0)) {
+    // Для Full Mix не делаем ранний return, чтобы показывать панель управления даже без команд
+    if (!isFullMix && (!Array.isArray(teams) || teams.length === 0)) {
         return (
             <div className="no-teams-message-mixteams">
                 <h4>Команды еще не сформированы</h4>
@@ -176,11 +188,18 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                 </div>
             )}
 
-            <div className="mixed-teams-grid-mixteams">
-                {teamsToRender.map((team, idx) => (
-                    <MixTeamCard key={team.id || idx} team={team} />
-                ))}
-            </div>
+            {isFullMix && teamsToRender.length === 0 ? (
+                <div className="no-teams-message-mixteams">
+                    <h4>Команды еще не сформированы</h4>
+                    <p>Нажмите «Сформировать команды для 1 раунда» чтобы начать.</p>
+                </div>
+            ) : (
+                <div className="mixed-teams-grid-mixteams">
+                    {teamsToRender.map((team, idx) => (
+                        <MixTeamCard key={team.id || idx} team={team} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

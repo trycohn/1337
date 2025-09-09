@@ -15,6 +15,13 @@ class FullMixController {
         res.json({ success: true, ...result });
     });
 
+    static reshuffle = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const round = parseInt(req.params.round);
+        const result = await FullMixService.reshuffleRound(tournamentId, round);
+        res.json({ success: true, ...result });
+    });
+
     static completeRound = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         const { round } = req.body || {};
