@@ -3,6 +3,7 @@ import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCrown } from '@fortawesome/free-solid-svg-icons';
 import TeamGenerator from '../TeamGenerator';
+import FullMixParticipantsPanel from './fullmix/FullMixParticipantsPanel';
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
@@ -255,8 +256,15 @@ const TournamentParticipants = ({
 
             {/* Удален заголовок вкладки участников как дублирующий информацию */}
 
-            {/* 🆕 Для микс и фулл микс турниров ВСЕГДА показываем TeamGenerator */}
-            {(['mix','full_mix'].includes(tournament?.format)) && (
+            {/* 🆕 Full Mix: собственная панель вместо TeamGenerator */}
+            {(tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full') && (
+                <div className="team-generator-section-participants">
+                    <FullMixParticipantsPanel tournament={tournament} isAdminOrCreator={isAdminOrCreator} />
+                </div>
+            )}
+
+            {/* Classic Mix и остальные: TeamGenerator */}
+            {((tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() !== 'full') || tournament?.format === 'full_mix') && (
                 <div className="team-generator-section-participants">
                     <TeamGenerator
                         tournament={tournament}
