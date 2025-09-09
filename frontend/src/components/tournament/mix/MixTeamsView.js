@@ -93,6 +93,27 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
             setTimeout(() => setActionMessage(''), 2500);
         }
     }, [isFullMix, currentRound, tournamentId, loadSnapshot]);
+
+    const startFirstRound = useCallback(async () => {
+        if (!isFullMix) return;
+        setBusy(true);
+        setActionMessage('Формируем команды для 1 раунда...');
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/start`, {});
+            await loadRounds();
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
+            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+            const last = items.length > 0 ? items[items.length - 1].round_number : 1;
+            setCurrentRound(last);
+            await loadSnapshot(last);
+            setActionMessage('Команды первого раунда созданы');
+        } catch (_) {
+            setActionMessage('Ошибка формирования команд');
+        } finally {
+            setBusy(false);
+            setTimeout(() => setActionMessage(''), 2500);
+        }
+    }, [isFullMix, tournamentId, loadRounds, loadSnapshot]);
     if (isLoading || loading) {
         return (
             <SkeletonTheme baseColor="#2a2a2a" highlightColor="#3a3a3a">
@@ -144,6 +165,9 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                     </div>
                     {isAdminOrCreator && (
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            {rounds.length === 0 && (
+                                <button className="btn btn-primary" disabled={busy} onClick={startFirstRound}>Сформировать команды для 1 раунда</button>
+                            )}
                             <button className="btn btn-primary" disabled={busy} onClick={approveTeams}>Подтвердить составы</button>
                             <button className="btn btn-secondary" disabled={busy} onClick={reshuffleTeams}>Переформировать</button>
                             {actionMessage && <span style={{ color: '#aaa', fontSize: 12 }}>{actionMessage}</span>}
