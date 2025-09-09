@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
 import './Home.css';
 import './Layout.css';
@@ -18,7 +17,7 @@ function Layout() {
     const location = useLocation();
     const { loading, setLoading } = useLoader();
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    const [headerLoading, setHeaderLoading] = useState(true);
+    const [headerLoading, setHeaderLoading] = useState(false);
     const [prevPathname, setPrevPathname] = useState(location.pathname);
     const [hasMyTournaments, setHasMyTournaments] = useState(false);
 
@@ -229,12 +228,8 @@ function Layout() {
 
     // Отключаем глобальный экран загрузки при навигации, чтобы избежать вспышек
     useEffect(() => {
-        // Отключаем глобальный экран загрузки при навигации, чтобы избежать вспышек
         setLoading(false);
-        // Включаем скелетоны в хедере на короткое время для плавности
-        setHeaderLoading(true);
-        const t = setTimeout(() => setHeaderLoading(false), 1000);
-        return () => clearTimeout(t);
+        setHeaderLoading(false);
     }, [location.pathname, setLoading]);
 
     const handleLogout = () => {
@@ -307,15 +302,11 @@ function Layout() {
             {false && loading && <Loader />}
             <header className="header">
                     <div className="nav-container">
-                        {headerLoading ? (
-                            <div className="site-logo" aria-label="1337 Home" style={{ display: 'flex', alignItems: 'center' }}>
-                                <Skeleton width={120} height={24} />
-                            </div>
-                        ) : (
+                        {
                             <Link to="/" className="site-logo" aria-label="1337 Home">
                                 <img src="/images/1337%20white%20logo.svg" alt="1337" className="header-logo" />
                             </Link>
-                        )}
+                        }
                         <button className="hamburger" onClick={toggleMenu}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M3 6H21V8H3V6Z" fill="#ffffff"/>
@@ -330,14 +321,7 @@ function Layout() {
                                 if (e.target === e.currentTarget) setIsMenuOpen(false);
                             }}
                         >
-                            {headerLoading ? (
-                                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                                    <Skeleton width={90} height={16} />
-                                    <Skeleton width={120} height={16} />
-                                    <Skeleton width={110} height={16} />
-                                    <Skeleton width={100} height={16} />
-                                </div>
-                            ) : (
+                            {
                                 <>
                                     {user && user.role === 'admin' && (
                                         <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
@@ -372,16 +356,11 @@ function Layout() {
                                         </>
                                     )}
                                 </>
-                            )}
+                            }
                         </nav>
                     </div>
                     <div className="auth-block">
-                        {headerLoading ? (
-                            <div className="user-actions" style={{ display: 'flex', gap: 12 }}>
-                                <Skeleton width={140} height={32} />
-                                <Skeleton width={90} height={32} />
-                            </div>
-                        ) : user ? (
+                        {user ? (
                             <div className="user-actions">
                                 <Link to="/create" className="btn btn-primary create-btn">Создать турнир</Link>
                                 <button className="btn btn-secondary" onClick={handleLogout}>Выйти</button>
