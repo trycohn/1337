@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../../utils/api';
+import { getSocketInstance } from '../../../services/socketClient_v5_simplified';
 
 function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
@@ -35,6 +36,21 @@ function FullMixParticipantsPanel({ tournament, isAdminOrCreator }) {
         if (!tournamentId || !currentRound) return;
         loadSnapshot(currentRound);
     }, [tournamentId, currentRound, loadSnapshot]);
+
+    // Live updates: обновляем список при завершении раунда
+    useEffect(() => {
+        const socket = getSocketInstance && getSocketInstance();
+        if (!socket || !tournamentId) return;
+        const onRoundCompleted = (payload) => {
+            if (!payload || payload.round == null) return;
+            loadRounds();
+            loadSnapshot(payload.round);
+        };
+        socket.on('fullmix_round_completed', onRoundCompleted);
+        return () => {
+            socket.off && socket.off('fullmix_round_completed', onRoundCompleted);
+        };
+    }, [tournamentId, loadRounds, loadSnapshot]);
 
     const teams = useMemo(() => snapshot?.teams || [], [snapshot]);
 
