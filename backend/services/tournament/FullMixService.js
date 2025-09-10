@@ -282,12 +282,14 @@ class FullMixService {
     }
 
     static async approveRound(tournamentId, roundNumber, { approveTeams = false, approveMatches = false } = {}) {
+        console.log(`🧩 [FullMix] approveRound: t=${tournamentId} r=${roundNumber} flags: {teams:${approveTeams}, matches:${approveMatches}}`);
         // Стадия 1: утверждение команд
         if (approveTeams) {
             const preview = await this.getPreview(tournamentId, roundNumber);
             if (!preview || !Array.isArray(preview.preview?.teams)) {
                 throw new Error('Черновик составов не найден');
             }
+            console.log(`🧩 [FullMix] approveTeams: teams in preview = ${preview.preview.teams.length}`);
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
@@ -313,6 +315,7 @@ class FullMixService {
                     settings?.rating_mode || 'random',
                     client
                 );
+                console.log(`🧩 [FullMix] approveTeams: created DB teams = ${createdTeams.length}`);
 
                 // Обновляем снапшот: команды сохранены, матчи не созданы
                 const standings = await this.calculateStandings(tournamentId);
@@ -324,6 +327,8 @@ class FullMixService {
                      DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = TRUE, approved_matches = FALSE`,
                     [tournamentId, roundNumber, snapshotToSave]
                 );
+                const chk = await client.query('SELECT approved_teams, approved_matches, jsonb_array_length((snapshot->>\'teams\')::jsonb) AS tcnt FROM full_mix_snapshots WHERE tournament_id=$1 AND round_number=$2', [tournamentId, roundNumber]);
+                console.log(`🧩 [FullMix] approveTeams: saved snapshot check =`, chk.rows[0]);
 
                 // Не удаляем превью, чтобы фронт мог сразу сгенерировать пары матчей (mode: 'matches')
 
@@ -331,6 +336,7 @@ class FullMixService {
                 return { round: roundNumber, approved_teams: true, approved_matches: false };
             } catch (e) {
                 try { await client.query('ROLLBACK'); } catch (_) {}
+                console.error('❌ [FullMix] approveTeams error:', e.stack || e.message || e);
                 throw e;
             } finally {
                 client.release();
@@ -349,6 +355,7 @@ class FullMixService {
                 const mp = await this.generateMatchesPreviewFromSnapshot(tournamentId, roundNumber);
                 preview = { preview: mp };
             }
+            console.log(`🧩 [FullMix] approveMatches: pairs = ${preview.preview.matches.length}`);
 
             const client = await pool.connect();
             try {
@@ -385,6 +392,7 @@ class FullMixService {
                     nextMatchNumberInRound += 1;
                     nextTournamentMatchNumber += 1;
                 }
+                console.log(`🧩 [FullMix] approveMatches: created DB matches = ${createdMatches.length}`);
 
                 // Обновляем снапшот матчами
                 const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: createdMatches, standings: snap.snapshot?.standings || [] };
@@ -392,6 +400,8 @@ class FullMixService {
                     `UPDATE full_mix_snapshots SET snapshot = $3, approved_matches = TRUE WHERE tournament_id = $1 AND round_number = $2`,
                     [tournamentId, roundNumber, newSnap]
                 );
+                const chk = await client.query('SELECT approved_teams, approved_matches, jsonb_array_length((snapshot->>\'matches\')::jsonb) AS mcnt FROM full_mix_snapshots WHERE tournament_id=$1 AND round_number=$2', [tournamentId, roundNumber]);
+                console.log(`🧩 [FullMix] approveMatches: saved snapshot check =`, chk.rows[0]);
 
                 // Очищаем превью после подтверждения матчей
                 await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
@@ -406,6 +416,7 @@ class FullMixService {
                 return { round: roundNumber, approved_teams: true, approved_matches: true };
             } catch (e) {
                 try { await client.query('ROLLBACK'); } catch (_) {}
+                console.error('❌ [FullMix] approveMatches error:', e.stack || e.message || e);
                 throw e;
             } finally {
                 client.release();
