@@ -126,8 +126,22 @@ class FullMixService {
             return { completed: true, winners, standings };
         }
 
+        // Попытка определить TOP10 финалистов или исключить bottom10
+        const selection = this.selectFinalistsOrEliminate(standings, 10);
+        let finalists = selection.finalists || [];
+        let eliminated = selection.eliminated || [];
+
         const nextRound = current + 1;
         const snapshot = await this.generateRoundSnapshot(tournamentId, nextRound, settings.rating_mode, standings);
+        // сохраняем метаданные выбора
+        snapshot.meta = snapshot.meta || {};
+        if (finalists.length === 10) {
+            snapshot.meta.finalists = finalists;
+        } else if (eliminated.length === 10) {
+            snapshot.meta.eliminated = eliminated;
+        } else {
+            snapshot.meta.extra_round = true;
+        }
         await this.saveSnapshot(tournamentId, nextRound, snapshot);
         return { completed: false, round: nextRound, snapshot };
     }
@@ -233,6 +247,40 @@ class FullMixService {
             wins: parseInt(r.wins || 0, 10),
             losses: parseInt(r.losses || 0, 10)
         }));
+    }
+
+    static rankStandings(standings) {
+        // Сортировка: wins DESC, losses ASC, username ASC
+        return [...standings].sort((a, b) => {
+            if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+            if ((a.losses || 0) !== (b.losses || 0)) return (a.losses || 0) - (b.losses || 0);
+            return (a.username || '').localeCompare(b.username || '');
+        });
+    }
+
+    static selectFinalistsOrEliminate(standings, topSize = 10) {
+        const ranked = this.rankStandings(standings);
+        if (ranked.length <= topSize) {
+            return { finalists: ranked.map(s => s.user_id), eliminated: [] };
+        }
+        const cutoffWins = ranked[topSize - 1].wins;
+        const cutoffLosses = ranked[topSize - 1].losses;
+        const finalists = ranked.filter(s => (s.wins > cutoffWins) || (s.wins === cutoffWins && s.losses < cutoffLosses));
+        const tied = ranked.filter(s => s.wins === cutoffWins && s.losses === cutoffLosses);
+        if (finalists.length === topSize) {
+            return { finalists: finalists.map(s => s.user_id), eliminated: [] };
+        }
+        // не можем точно выбрать TOP10 → пробуем исключить bottom10
+        const reversed = [...ranked].reverse();
+        const bottomCutWins = reversed[topSize - 1].wins;
+        const bottomCutLosses = reversed[topSize - 1].losses;
+        const bottom = reversed.filter(s => (s.wins < bottomCutWins) || (s.wins === bottomCutWins && s.losses > bottomCutLosses));
+        const bottomTied = reversed.filter(s => s.wins === bottomCutWins && s.losses === bottomCutLosses);
+        if (bottom.length === topSize) {
+            return { finalists: [], eliminated: bottom.map(s => s.user_id) };
+        }
+        // иначе никого не исключаем, играем дополнительный раунд
+        return { finalists: [], eliminated: [] };
     }
 
     static async generateRoundSnapshot(tournamentId, roundNumber, ratingMode = 'random', standings = null, options = {}) {
