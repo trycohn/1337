@@ -87,7 +87,7 @@ function FullMixDraftPage() {
         }
     }, [tournamentId, round]);
 
-    const teams = useMemo(() => (preview?.snapshot?.teams || []), [preview]);
+    const teams = useMemo(() => (preview?.preview?.teams || []), [preview]);
 
     return (
         <div style={{ padding: 16 }}>
