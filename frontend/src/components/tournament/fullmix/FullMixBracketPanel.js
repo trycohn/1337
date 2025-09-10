@@ -121,33 +121,27 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         }
     }, [tournamentId, rounds, loadRounds, loadSnapshot]);
 
-    const generateNextRound = useCallback(async () => {
-        if (!tournamentId) return;
-        setActionMessage('Генерируем следующий раунд...');
-        try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/generate-next`, {});
-            await loadRounds();
-            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
-            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
-            const last = items.length > 0 ? items[items.length - 1].round_number : 1;
-            setCurrentRound(last);
-            await loadSnapshot(last);
-            setActionMessage(`Раунд ${last} создан`);
-        } catch (e) {
-            setActionMessage('Ошибка генерации раунда');
-        } finally {
-            setTimeout(() => setActionMessage(''), 3000);
-        }
-    }, [tournamentId, loadRounds, loadSnapshot]);
+    // Объединённая логика: завершить текущий раунд и сразу попытаться сгенерировать следующий
 
     const completeCurrentRound = useCallback(async () => {
         if (!tournamentId || !currentRound) return;
         setActionMessage('Завершаем текущий раунд...');
         try {
             await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: currentRound });
+            // После завершения сразу пытаемся сгенерировать следующий раунд
+            try {
+                setActionMessage('Генерируем следующий раунд...');
+                await api.post(`/api/tournaments/${tournamentId}/fullmix/generate-next`, {});
+            } catch (_) {
+                // Если турнир завершён по wins_to_win, генерация вернёт completed — это ок
+            }
             await loadRounds();
-            await loadSnapshot(currentRound);
-            setActionMessage('Раунд завершен');
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
+            const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
+            const last = items.length > 0 ? items[items.length - 1].round_number : currentRound;
+            setCurrentRound(last);
+            await loadSnapshot(last);
+            setActionMessage(`Раунд ${currentRound} завершён`);
         } catch (e) {
             setActionMessage('Ошибка завершения раунда');
         } finally {
@@ -211,8 +205,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         {rounds.length > 0 && (
                             <>
                                 <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
-                                <button className="btn btn-primary" onClick={generateNextRound}>Сгенерировать следующий раунд</button>
-                                <button className="btn btn-secondary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
+                                <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
                             </>
                         )}
                         {actionMessage && <span style={{ color: '#ccc', fontSize: 12 }}>{actionMessage}</span>}
