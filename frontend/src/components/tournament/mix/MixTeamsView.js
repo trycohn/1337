@@ -70,46 +70,20 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     // Команды лежат внутри item.snapshot.teams (JSONB из БД)
     const fullMixTeams = useMemo(() => (snapshot?.snapshot?.teams || snapshot?.teams || []), [snapshot]);
     const isApprovedTeams = !!(snapshot && snapshot.approved_teams === true);
-    const canSeeTeams = useMemo(() => {
-        if (!isFullMix) return true;
-        return isAdminOrCreator || isApprovedTeams;
-    }, [isFullMix, isAdminOrCreator, isApprovedTeams]);
-    const teamsToRender = isFullMix ? fullMixTeams : teams;
+    // Упрощаем: для Full Mix показываем только утвержденные команды из снапшота,
+    // черновики не отображаем здесь (переносим в отдельную страницу)
+    const teamsToRender = isFullMix ? (isApprovedTeams ? fullMixTeams : []) : teams;
 
     const [actionMessage, setActionMessage] = useState('');
     const [busy, setBusy] = useState(false);
 
-    const approveTeams = useCallback(async () => {
-        if (!isFullMix || !currentRound) return;
-        setBusy(true);
-        setActionMessage('Подтверждаем составы...');
-        try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${currentRound}/approve`, { approveTeams: true });
-            await loadSnapshot(currentRound);
-            setActionMessage('Составы подтверждены');
-        } catch (_) {
-            setActionMessage('Ошибка подтверждения');
-        } finally {
-            setBusy(false);
-            setTimeout(() => setActionMessage(''), 2500);
-        }
-    }, [isFullMix, currentRound, tournamentId, loadSnapshot]);
+    // Убираем подтверждение/переформирование из этого компонента — всё на странице черновика
 
-    const reshuffleTeams = useCallback(async () => {
-        if (!isFullMix || !currentRound) return;
-        setBusy(true);
-        setActionMessage('Переформируем команды...');
-        try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${currentRound}/reshuffle`, {});
-            await loadSnapshot(currentRound);
-            setActionMessage('Команды переформированы');
-        } catch (e) {
-            setActionMessage(e?.response?.data?.error || 'Ошибка переформирования');
-        } finally {
-            setBusy(false);
-            setTimeout(() => setActionMessage(''), 2500);
-        }
-    }, [isFullMix, currentRound, tournamentId, loadSnapshot]);
+    const openDraftPage = useCallback(() => {
+        const id = tournament?.id;
+        if (!id) return;
+        window.open(`/tournaments/${id}/fullmix/draft`, '_blank');
+    }, [tournament?.id]);
 
     const startFirstRound = useCallback(async () => {
         if (!isFullMix) return;
@@ -186,23 +160,17 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                             {rounds.length === 0 && (
                                 <button className="btn btn-primary" disabled={busy} onClick={startFirstRound}>Сформировать команды для 1 раунда</button>
                             )}
-                            <button className="btn btn-primary" disabled={busy} onClick={approveTeams}>Подтвердить составы</button>
-                            <button className="btn btn-secondary" disabled={busy} onClick={reshuffleTeams}>Переформировать</button>
+                            <button className="btn btn-secondary" onClick={openDraftPage}>Открыть черновик</button>
                             {actionMessage && <span style={{ color: '#aaa', fontSize: 12 }}>{actionMessage}</span>}
                         </div>
                     )}
                 </div>
             )}
 
-            {isFullMix && !canSeeTeams ? (
-                <div className="no-teams-message-mixteams">
-                    <h4>Составы раунда ожидают подтверждения</h4>
-                    <p>Организатор ещё не подтвердил команды этого раунда.</p>
-                </div>
-            ) : isFullMix && teamsToRender.length === 0 ? (
+            {isFullMix && teamsToRender.length === 0 ? (
                 <div className="no-teams-message-mixteams">
                     <h4>Команды еще не сформированы</h4>
-                    <p>Нажмите «Сформировать команды для 1 раунда» чтобы начать.</p>
+                    <p>Для управления черновиком используйте кнопку «Открыть черновик».</p>
                 </div>
             ) : (
                 <div className="mixed-teams-grid-mixteams">

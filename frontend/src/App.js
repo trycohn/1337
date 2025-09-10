@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'; // Заменяем Home на HomePage
 import TournamentDetails from './components/TournamentDetails';
 import TournamentsPage from './pages/TournamentsPage';
 import Layout from './components/Layout'; // Импортируем Layout как корневой компонент
+import FullMixDraftPage from './pages/FullMixDraftPage';
 import BracketSharePage from './pages/BracketSharePage';
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import UserProfile from './components/UserProfile'; // Импортируем компонент UserProfile
@@ -81,6 +82,7 @@ function App() {
                                 <Route index element={<HomeGate />} /> {/* Главная доступна только админам, остальные -> /tournaments */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
+                                <Route path="/tournaments/:id/fullmix/draft" element={<PrivateRoute component={FullMixDraftPage} />} />
                                 <Route path="/tournaments/:tournamentId/match/:matchId" element={<MatchDetailsPage />} />
                                 <Route path="/register" element={<RegisterRedirect />} />
                                 <Route path="/login" element={<AuthPage />} /> {/* Добавляем маршрут для входа */}

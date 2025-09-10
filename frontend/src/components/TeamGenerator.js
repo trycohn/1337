@@ -522,48 +522,30 @@ const TeamGenerator = ({
         }
     }, [tournament, isAdminOrCreator, toast, onTeamsUpdated]); // 🔧 ДОБАВЛЯЕМ НЕДОСТАЮЩИЕ ЗАВИСИМОСТИ
 
-    // Функция для формирования команд
+    // Функция для формирования команд (для classic mix). Для Full Mix переносим генерацию в отдельную страницу черновика
     const handleFormTeams = async () => {
-        // 🔧 ИСПРАВЛЕНО: проверяем минимум teamSize участников для создания 1 команды
         const minRequiredParticipants = parseInt(teamSize) || 5;
         if (!tournament?.id || displayParticipants.length < minRequiredParticipants) {
-            console.warn(`Недостаточно участников для формирования команд. Нужно минимум ${minRequiredParticipants}, а есть ${displayParticipants.length}`);
-            if (toast) {
-                toast.warning(`Недостаточно участников для формирования команд. Нужно минимум ${minRequiredParticipants} для создания команды из ${teamSize} игроков.`);
-            }
+            if (toast) toast.warning(`Недостаточно участников для формирования команд. Нужно минимум ${minRequiredParticipants}.`);
             return;
         }
-        
+        if (isFullMix) {
+            // Переход в страницу черновика
+            window.open(`/tournaments/${tournament.id}/fullmix/draft`, '_blank');
+            return;
+        }
         setLoading(true);
-        
         try {
-            // Для Full Mix генерируем ЧЕРНОВИК 1-го раунда, а не пишем в БД
-            if (isFullMix) {
-                console.log('🚀 [FullMix] Создаем черновик команд для 1 раунда');
-                await api.post(`/api/tournaments/${tournament.id}/fullmix/rounds/1/preview`, {});
-                if (toast) toast.success('Черновик команд для 1 раунда создан');
-                // Реальные команды до подтверждения не приходят через /teams, поэтому здесь ничего не записываем
+            const teamSizeNumber = parseInt(teamSize);
+            const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, { ratingType, teamSize: teamSizeNumber });
+            if (response.data && response.data.teams) {
+                const enrichedTeams = response.data.teams.map(team => ({ ...team, averageRating: calculateTeamAverageRating(team) }));
+                setMixedTeams(enrichedTeams);
+                if (onTeamsGenerated) onTeamsGenerated(enrichedTeams);
                 if (onTeamsUpdated) onTeamsUpdated();
-            } else {
-                const teamSizeNumber = parseInt(teamSize);
-                console.log('🚀 Формируем команды (classic mix):', { teamSize: teamSizeNumber, participantsCount: displayParticipants.length, ratingType, tournamentId: tournament.id });
-                const response = await api.post(`/api/tournaments/${tournament.id}/form-teams`, { ratingType, teamSize: teamSizeNumber });
-                if (response.data && response.data.teams) {
-                    const enrichedTeams = response.data.teams.map(team => ({ ...team, averageRating: calculateTeamAverageRating(team) }));
-                    setMixedTeams(enrichedTeams);
-                    if (onTeamsGenerated) onTeamsGenerated(enrichedTeams);
-                    if (onTeamsUpdated) onTeamsUpdated();
-                } else {
-                    console.error('❌ Некорректный ответ сервера при генерации команд');
-                }
             }
         } catch (error) {
-            console.error('❌ Ошибка при формировании команд:', error);
-            
-            // Показываем пользователю ошибку
-            if (error.response?.data?.message) {
-                console.error('Сообщение об ошибке:', error.response.data.message);
-            }
+            console.error('Ошибка при формировании команд:', error);
         } finally {
             setLoading(false);
         }
