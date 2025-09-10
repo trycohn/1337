@@ -62,6 +62,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     useEffect(() => {
         const socket = getSocketInstance && getSocketInstance();
         if (!socket || !tournamentId) return;
+        // Присоединяемся к комнате турнира для broadcast событий
+        try { socket.emit && socket.emit('join_tournament', tournamentId); } catch (_) {}
         const onRoundCompleted = (payload) => {
             if (!payload || payload.round == null) return;
             loadRounds();

@@ -374,7 +374,7 @@ class FullMixService {
                 let nextMatchNumberInRound = parseInt(mrRes.rows[0]?.max || 0, 10) + 1;
 
                 for (const p of matchPairs) {
-                    if (!p.team1_id || !p.team2_id) continue;
+                    if (p.team1_id == null || p.team2_id == null) continue;
                     const ins = await client.query(
                         `INSERT INTO matches (
                             tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
