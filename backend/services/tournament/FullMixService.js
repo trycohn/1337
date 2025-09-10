@@ -420,9 +420,11 @@ class FullMixService {
             const a = teams[i];
             const b = teams[i + 1];
             if (!b) break;
-            pairs.push({ team1_id: a.team_id, team2_id: b.team_id });
+            pairs.push({ team1_id: a.team_id, team2_id: b.team_id, team1_name: a.name || null, team2_name: b.name || null });
         }
-        return { round: roundNumber, matches: pairs };
+        // Добавим краткий справочник команд для удобства на фронте
+        const teamRefs = teams.map(t => ({ team_id: t.team_id, name: t.name || null }));
+        return { round: roundNumber, teams: teamRefs, matches: pairs };
     }
 
     static async getEligibleParticipants(tournamentId, ratingMode, standings) {

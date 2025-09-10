@@ -99,6 +99,7 @@ function FullMixDraftPage() {
 
     // Генерация черновика матчей (после утверждения составов)
     const [matchesPreview, setMatchesPreview] = useState([]);
+    const [matchTeamMap, setMatchTeamMap] = useState(new Map());
     const [matchesApproved, setMatchesApproved] = useState(false);
 
     const loadMatchesPreview = useCallback(async (r) => {
@@ -108,8 +109,13 @@ function FullMixDraftPage() {
             const item = res.data?.item || null;
             const mp = Array.isArray(item?.preview?.matches) ? item.preview.matches : [];
             setMatchesPreview(mp);
+            const teamsArr = Array.isArray(item?.preview?.teams) ? item.preview.teams : [];
+            const map = new Map();
+            teamsArr.forEach(t => { if (t.team_id) map.set(t.team_id, t.name || `Команда ${t.team_id}`); });
+            setMatchTeamMap(map);
         } catch (_) {
             setMatchesPreview([]);
+            setMatchTeamMap(new Map());
         } finally {
             setLoading(false);
         }
@@ -252,7 +258,7 @@ function FullMixDraftPage() {
                                 {matchesPreview.map((p, i) => (
                                     <div key={i} className="fullmixdraft-match-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #1f1f1f', borderRadius: 8, padding: 10, background: '#0a0a0a' }}>
                                         <span>Матч {i + 1}</span>
-                                        <span>#{p.team1_id} vs #{p.team2_id}</span>
+                                        <span>{matchTeamMap.get(p.team1_id) || `#${p.team1_id}`} vs {matchTeamMap.get(p.team2_id) || `#${p.team2_id}`}</span>
                                     </div>
                                 ))}
                             </div>
