@@ -86,6 +86,10 @@ class MatchService {
         const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
 
         // Отправляем обновления через WebSocket
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_match_updated', { tournamentId, matchId, round: match.round });
+        } catch (_) {}
         broadcastTournamentUpdate(tournamentId, updatedTournament, 'updateMatchResult');
 
         // Отправляем объявление в чат турнира
@@ -177,6 +181,10 @@ class MatchService {
         const updatedTournament = await TournamentRepository.getByIdWithCreator(tournamentId);
 
         // Отправляем обновления через WebSocket
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_match_updated', { tournamentId, matchId, round: match.round });
+        } catch (_) {}
         broadcastTournamentUpdate(tournamentId, updatedTournament, 'updateSpecificMatchResult');
 
         console.log('✅ MatchService: Результат матча обновлен');

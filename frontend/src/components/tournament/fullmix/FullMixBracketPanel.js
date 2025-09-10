@@ -69,11 +69,17 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             loadRounds();
             loadSnapshot(payload.round);
         };
+        const onMatchUpdated = (payload) => {
+            if (!payload) return;
+            loadSnapshot(currentRound || payload.round);
+        };
         socket.on('fullmix_round_completed', onRoundCompleted);
+        socket.on('fullmix_match_updated', onMatchUpdated);
         return () => {
             socket.off && socket.off('fullmix_round_completed', onRoundCompleted);
+            socket.off && socket.off('fullmix_match_updated', onMatchUpdated);
         };
-    }, [tournamentId, loadRounds, loadSnapshot]);
+    }, [tournamentId, currentRound, loadRounds, loadSnapshot]);
 
     const onApprove = useCallback(async (type) => {
         if (!currentRound) return;
