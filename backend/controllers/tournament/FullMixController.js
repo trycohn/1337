@@ -151,9 +151,15 @@ class FullMixController {
         const tournamentId = parseInt(req.params.id);
         const round = parseInt(req.params.round);
         const userId = req.user?.id || null;
+        const { mode } = req.body || {}; // mode: 'teams' | 'matches'; default 'teams'
+        if (mode === 'matches') {
+            // Сгенерировать превью матчей по уже подтверждённым командам
+            const mp = await FullMixService.generateMatchesPreviewFromSnapshot(tournamentId, round);
+            const saved = await FullMixService.savePreview(tournamentId, round, mp, userId);
+            return res.json({ success: true, item: saved });
+        }
         const settings = await FullMixService.getSettings(tournamentId);
         const standings = await FullMixService.calculateStandings(tournamentId);
-        // Эфемерная генерация: не создаём записи в БД, отдаём только payload
         const snapshot = await FullMixService.generateRoundSnapshot(
             tournamentId,
             round,

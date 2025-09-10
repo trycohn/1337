@@ -85,7 +85,7 @@ function FullMixDraftPage() {
         setMessage('Генерируем черновик...');
         setLoading(true);
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/preview`, {});
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/preview`, { mode: 'teams' });
             await loadPreview(round);
             setMessage('Черновик обновлен');
         } catch (e) {
@@ -95,6 +95,67 @@ function FullMixDraftPage() {
             setTimeout(() => setMessage(''), 2000);
         }
     }, [tournamentId, round, loadPreview]);
+
+    // Генерация черновика матчей (после утверждения составов)
+    const [matchesPreview, setMatchesPreview] = useState([]);
+    const [matchesApproved, setMatchesApproved] = useState(false);
+
+    const loadMatchesPreview = useCallback(async (r) => {
+        setLoading(true);
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
+            const item = res.data?.item || null;
+            const mp = Array.isArray(item?.preview?.matches) ? item.preview.matches : [];
+            setMatchesPreview(mp);
+        } catch (_) {
+            setMatchesPreview([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [tournamentId]);
+
+    const regenerateMatchesPreview = useCallback(async () => {
+        if (!approved) {
+            setMessage('Сначала подтвердите составы команд');
+            return;
+        }
+        setMessage('Генерируем пары матчей...');
+        setLoading(true);
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/preview`, { mode: 'matches' });
+            await loadMatchesPreview(round);
+            setMessage('Пары матчей обновлены');
+        } catch (e) {
+            setMessage(e?.response?.data?.error || 'Ошибка генерации пар матчей');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 2000);
+        }
+    }, [tournamentId, round, approved, loadMatchesPreview]);
+
+    const approveMatches = useCallback(async () => {
+        if (!approved) {
+            setMessage('Сначала подтвердите составы команд');
+            return;
+        }
+        if (!matchesPreview || matchesPreview.length === 0) {
+            setMessage('Сгенерируйте пары матчей перед подтверждением');
+            return;
+        }
+        setMessage('Подтверждаем пары матчей...');
+        setLoading(true);
+        try {
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/approve`, { approveMatches: true });
+            setMatchesApproved(true);
+            setMessage('Матчи подтверждены');
+            await loadSnapshot(round);
+        } catch (e) {
+            setMessage(e?.response?.data?.error || 'Ошибка подтверждения матчей');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 2000);
+        }
+    }, [tournamentId, round, matchesPreview, approved, loadSnapshot]);
 
     const approveTeams = useCallback(async () => {
         setMessage('Подтверждаем составы...');
@@ -146,24 +207,50 @@ function FullMixDraftPage() {
                     <p style={{ margin: 0 }}>Черновик пуст. Нажмите «Переформировать составы», чтобы сгенерировать черновик.</p>
                 </div>
             ) : (
-                <div className="fullmixdraft-teams" style={{ display: 'grid', gap: 12 }}>
-                    {teams.map((team, idx) => (
-                        <div key={team.id || idx} className="fullmixdraft-team-card" style={{ border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
-                            <div className="fullmixdraft-team-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <strong>{team.name || `Команда ${idx + 1}`}</strong>
-                                {Array.isArray(team.members) && <span style={{ color: '#888', fontSize: 12 }}>Игроков: {team.members.length}</span>}
+                <div className="fullmixdraft-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div className="fullmixdraft-teams" style={{ display: 'grid', gap: 12 }}>
+                        {teams.map((team, idx) => (
+                            <div key={team.id || idx} className="fullmixdraft-team-card" style={{ border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
+                                <div className="fullmixdraft-team-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                    <strong>{team.name || `Команда ${idx + 1}`}</strong>
+                                    {Array.isArray(team.members) && <span style={{ color: '#888', fontSize: 12 }}>Игроков: {team.members.length}</span>}
+                                </div>
+                                <div className="fullmixdraft-team-members" style={{ display: 'grid', gap: 6 }}>
+                                    {(team.members || []).map((m, j) => (
+                                        <div key={m.id || j} className="fullmixdraft-team-member" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div className="fullmixdraft-team-member-avatar" style={{ width: 22, height: 22, borderRadius: '50%', background: '#222', display: 'inline-block' }} />
+                                            <span className="fullmixdraft-team-member-name">{m.name || m.username || `Игрок ${j + 1}`}</span>
+                                            {m.is_captain && <span className="fullmixdraft-team-member-captain" style={{ color: '#999', fontSize: 12 }}>(капитан)</span>}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="fullmixdraft-team-members" style={{ display: 'grid', gap: 6 }}>
-                                {(team.members || []).map((m, j) => (
-                                    <div key={m.id || j} className="fullmixdraft-team-member" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div className="fullmixdraft-team-member-avatar" style={{ width: 22, height: 22, borderRadius: '50%', background: '#222', display: 'inline-block' }} />
-                                        <span className="fullmixdraft-team-member-name">{m.name || m.username || `Игрок ${j + 1}`}</span>
-                                        {m.is_captain && <span className="fullmixdraft-team-member-captain" style={{ color: '#999', fontSize: 12 }}>(капитан)</span>}
+                        ))}
+                    </div>
+                    <div className="fullmixdraft-matches" style={{ display: 'grid', gap: 12 }}>
+                        <div className="fullmixdraft-matches-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button className="btn btn-secondary" onClick={regenerateMatchesPreview} disabled={!approved || loading}>Переформировать пары матчей</button>
+                            <button className="btn btn-primary" onClick={approveMatches} disabled={!approved || loading || matchesPreview.length === 0 || matchesApproved}>
+                                {matchesApproved ? 'Матчи подтверждены' : 'Подтвердить матчи'}
+                            </button>
+                        </div>
+                        {(!approved) && (
+                            <div className="fullmixdraft-matches-note" style={{ color: '#aaa', fontSize: 12 }}>Сначала подтвердите составы команд, затем формируйте пары матчей.</div>
+                        )}
+                        {(approved && matchesPreview.length === 0) && (
+                            <div className="fullmixdraft-matches-empty" style={{ color: '#aaa', fontSize: 12 }}>Пары матчей не сформированы.</div>
+                        )}
+                        {matchesPreview.length > 0 && (
+                            <div className="fullmixdraft-matches-list" style={{ display: 'grid', gap: 8 }}>
+                                {matchesPreview.map((p, i) => (
+                                    <div key={i} className="fullmixdraft-match-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #1f1f1f', borderRadius: 8, padding: 10, background: '#0a0a0a' }}>
+                                        <span>Матч {i + 1}</span>
+                                        <span>#{p.team1_id} vs #{p.team2_id}</span>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    ))}
+                        )}
+                    </div>
                 </div>
             )}
         </div>

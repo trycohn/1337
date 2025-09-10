@@ -282,17 +282,18 @@ class FullMixService {
     }
 
     static async approveRound(tournamentId, roundNumber, { approveTeams = false, approveMatches = false } = {}) {
-        // Если есть preview — материализуем его в БД и отмечаем approvals
-        const preview = await this.getPreview(tournamentId, roundNumber);
-        if (preview && approveTeams) {
+        // Стадия 1: утверждение команд
+        if (approveTeams) {
+            const preview = await this.getPreview(tournamentId, roundNumber);
+            if (!preview || !Array.isArray(preview.preview?.teams)) {
+                throw new Error('Черновик составов не найден');
+            }
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
 
-                // Удаляем старые матчи данного раунда (если были)
+                // Удаляем матчи и команды этого раунда (если были)
                 await client.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
-
-                // Удаляем ранее созданные команды этого раунда, если они существуют (по именам R{round}-Team %)
                 const toDelete = await client.query(
                     `SELECT id FROM tournament_teams WHERE tournament_id = $1 AND name LIKE $2`,
                     [tournamentId, `R${roundNumber}-%`]
@@ -303,30 +304,32 @@ class FullMixService {
                     await client.query(`DELETE FROM tournament_teams WHERE id = ANY($1::int[])`, [teamIds]);
                 }
 
-                // Создаём команды из preview.preview.teams и матчи
-                const payload = preview.preview || preview;
-                const teamsSpec = Array.isArray(payload?.teams) ? payload.teams : [];
-                // Подготовим структуру для createTeamsForRound: {team_index, members}
-                const normalized = teamsSpec.map((t, idx) => ({ team_index: idx + 1, members: t.members || [] }));
-                const createdTeams = await this.createTeamsForRound(tournamentId, roundNumber, normalized, (await this.getSettings(tournamentId))?.rating_mode || 'random', client);
-                await this.createRoundMatches(tournamentId, roundNumber, createdTeams, client);
-
-                // Сохраняем снапшот (approved)
-                const snapshotToSave = payload;
-                await client.query(
-                    `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
-                     VALUES ($1,$2,$3, $4, $5)
-                     ON CONFLICT (tournament_id, round_number)
-                     DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = EXCLUDED.approved_teams, approved_matches = EXCLUDED.approved_matches`,
-                    [tournamentId, roundNumber, snapshotToSave, true, !!approveMatches]
+                const settings = await this.getSettings(tournamentId);
+                const teamsSpec = preview.preview.teams.map((t, idx) => ({ team_index: idx + 1, members: t.members || [] }));
+                const createdTeams = await this.createTeamsForRound(
+                    tournamentId,
+                    roundNumber,
+                    teamsSpec,
+                    settings?.rating_mode || 'random',
+                    client
                 );
 
-                // Удаляем preview
+                // Обновляем снапшот: команды сохранены, матчи не созданы
+                const standings = await this.calculateStandings(tournamentId);
+                const snapshotToSave = { round: roundNumber, teams: createdTeams, matches: [], standings };
+                await client.query(
+                    `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
+                     VALUES ($1,$2,$3, TRUE, FALSE)
+                     ON CONFLICT (tournament_id, round_number)
+                     DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = TRUE, approved_matches = FALSE`,
+                    [tournamentId, roundNumber, snapshotToSave]
+                );
+
+                // Очищаем превью (на этапе матчей можно создать новое превью для пар)
                 await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
 
                 await client.query('COMMIT');
-
-                return { round: roundNumber, approved_teams: true, approved_matches: !!approveMatches };
+                return { round: roundNumber, approved_teams: true, approved_matches: false };
             } catch (e) {
                 try { await client.query('ROLLBACK'); } catch (_) {}
                 throw e;
@@ -335,15 +338,91 @@ class FullMixService {
             }
         }
 
-        // Если черновика нет — просто обновим флаги снапшота
-        const fields = [];
-        if (approveTeams) fields.push('approved_teams = TRUE');
-        if (approveMatches) fields.push('approved_matches = TRUE');
-        if (fields.length === 0) return { round: roundNumber };
-        const sql = `UPDATE full_mix_snapshots SET ${fields.join(', ')} WHERE tournament_id = $1 AND round_number = $2`;
-        await pool.query(sql, [tournamentId, roundNumber]);
-        const res = await pool.query('SELECT round_number, approved_teams, approved_matches FROM full_mix_snapshots WHERE tournament_id = $1 AND round_number = $2', [tournamentId, roundNumber]);
-        return { round: roundNumber, ...res.rows[0] };
+        // Стадия 2: утверждение матчей (требует approved_teams)
+        if (approveMatches) {
+            const snap = await this.getSnapshot(tournamentId, roundNumber);
+            if (!snap || snap.approved_teams !== true) {
+                throw new Error('Составы команд не подтверждены');
+            }
+            const preview = await this.getPreview(tournamentId, roundNumber);
+            if (!preview || !Array.isArray(preview.preview?.matches) || preview.preview.matches.length === 0) {
+                throw new Error('Черновик матчей не найден');
+            }
+
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                // Удаляем старые матчи данного раунда
+                await client.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
+
+                // Создаём матчи по превью
+                const matchPairs = preview.preview.matches; // [{team1_id, team2_id}]
+                const createdMatches = [];
+
+                // Глобальные счётчики
+                const tmRes = await client.query(
+                    `SELECT COALESCE(MAX(tournament_match_number), 0) AS max FROM matches WHERE tournament_id = $1`,
+                    [tournamentId]
+                );
+                let nextTournamentMatchNumber = parseInt(tmRes.rows[0]?.max || 0, 10) + 1;
+
+                const mrRes = await client.query(
+                    `SELECT COALESCE(MAX(match_number), 0) AS max FROM matches WHERE tournament_id = $1 AND round = $2`,
+                    [tournamentId, roundNumber]
+                );
+                let nextMatchNumberInRound = parseInt(mrRes.rows[0]?.max || 0, 10) + 1;
+
+                for (const p of matchPairs) {
+                    if (!p.team1_id || !p.team2_id) continue;
+                    const ins = await client.query(
+                        `INSERT INTO matches (
+                            tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
+                         ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'winner') RETURNING id`,
+                        [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, p.team1_id, p.team2_id]
+                    );
+                    createdMatches.push({ id: ins.rows[0].id, team1_id: p.team1_id, team2_id: p.team2_id });
+                    nextMatchNumberInRound += 1;
+                    nextTournamentMatchNumber += 1;
+                }
+
+                // Обновляем снапшот матчами
+                const newSnap = { ...(snap.snapshot || {}), matches: createdMatches };
+                await client.query(
+                    `UPDATE full_mix_snapshots SET snapshot = $3, approved_matches = TRUE WHERE tournament_id = $1 AND round_number = $2`,
+                    [tournamentId, roundNumber, newSnap]
+                );
+
+                // Удаляем превью матчей
+                await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
+
+                await client.query('COMMIT');
+                return { round: roundNumber, approved_teams: true, approved_matches: true };
+            } catch (e) {
+                try { await client.query('ROLLBACK'); } catch (_) {}
+                throw e;
+            } finally {
+                client.release();
+            }
+        }
+
+        return { round: roundNumber };
+    }
+
+    static async generateMatchesPreviewFromSnapshot(tournamentId, roundNumber) {
+        const snap = await this.getSnapshot(tournamentId, roundNumber);
+        if (!snap || snap.approved_teams !== true) {
+            throw new Error('Составы команд не подтверждены');
+        }
+        const teams = Array.isArray(snap.snapshot?.teams) ? snap.snapshot.teams : [];
+        // Парами по порядку, если нечётное число — последняя без пары
+        const pairs = [];
+        for (let i = 0; i < teams.length; i += 2) {
+            const a = teams[i];
+            const b = teams[i + 1];
+            if (!b) break;
+            pairs.push({ team1_id: a.team_id, team2_id: b.team_id });
+        }
+        return { round: roundNumber, matches: pairs };
     }
 
     static async getEligibleParticipants(tournamentId, ratingMode, standings) {
