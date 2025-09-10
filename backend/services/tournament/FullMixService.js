@@ -414,16 +414,21 @@ class FullMixService {
             throw new Error('Составы команд не подтверждены');
         }
         const teams = Array.isArray(snap.snapshot?.teams) ? snap.snapshot.teams : [];
-        // Парами по порядку, если нечётное число — последняя без пары
+        // Случайная перестановка команд (Fisher–Yates), затем пары по последовательности
+        const shuffled = [...teams];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
         const pairs = [];
-        for (let i = 0; i < teams.length; i += 2) {
-            const a = teams[i];
-            const b = teams[i + 1];
+        for (let i = 0; i < shuffled.length; i += 2) {
+            const a = shuffled[i];
+            const b = shuffled[i + 1];
             if (!b) break;
             pairs.push({ team1_id: a.team_id, team2_id: b.team_id, team1_name: a.name || null, team2_name: b.name || null });
         }
         // Добавим краткий справочник команд для удобства на фронте
-        const teamRefs = teams.map(t => ({ team_id: t.team_id, name: t.name || null }));
+        const teamRefs = shuffled.map(t => ({ team_id: t.team_id, name: t.name || null }));
         return { round: roundNumber, teams: teamRefs, matches: pairs };
     }
 
