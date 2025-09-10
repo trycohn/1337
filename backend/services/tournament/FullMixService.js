@@ -378,6 +378,24 @@ class FullMixService {
                     if (n1) nameToId.set(n1, id);
                     if (n2) nameToId.set(n2, id);
                 }
+                // Маппинг имён команд к фактическим DB id для данного раунда (R{round}-Team N)
+                const dbTeamsRes = await client.query(
+                    `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND name LIKE $2`,
+                    [tournamentId, `R${roundNumber}-%`]
+                );
+                const dbNameToId = new Map();
+                const dbIndexToId = new Map();
+                for (const row of dbTeamsRes.rows || []) {
+                    const n1 = norm(row.name || '');
+                    const n2 = minorm(row.name || '');
+                    if (n1) dbNameToId.set(n1, row.id);
+                    if (n2) dbNameToId.set(n2, row.id);
+                    const m = /team\s*(\d+)/i.exec(row.name || '');
+                    if (m) {
+                        const idx = parseInt(m[1], 10);
+                        if (Number.isInteger(idx)) dbIndexToId.set(idx, row.id);
+                    }
+                }
                 const createdMatches = [];
 
                 // Глобальные счётчики
@@ -401,7 +419,7 @@ class FullMixService {
                         const raw = (p.team1_name || p.team1Name);
                         const k1 = norm(raw);
                         const k2 = minorm(raw);
-                        t1 = nameToId.get(k1) ?? nameToId.get(k2) ?? null;
+                        t1 = nameToId.get(k1) ?? nameToId.get(k2) ?? dbNameToId.get(k1) ?? dbNameToId.get(k2) ?? null;
                         if (t1 == null) {
                             // Попробуем распарсить индекс команды из строки вида R1-Team 5
                             const m = /team\s*(\d+)/i.exec(raw.toString());
@@ -410,6 +428,7 @@ class FullMixService {
                                 // По индексу найдём в снапшоте
                                 const matchByIndex = [...snapTeams, ...previewTeams].find(tt => /team\s*(\d+)/i.test(tt.name || '') && parseInt(/team\s*(\d+)/i.exec(tt.name || '')[1], 10) === idx);
                                 if (matchByIndex && matchByIndex.team_id != null) t1 = parseInt(matchByIndex.team_id, 10);
+                                if (t1 == null && dbIndexToId.has(idx)) t1 = dbIndexToId.get(idx);
                             }
                         }
                     }
@@ -417,13 +436,14 @@ class FullMixService {
                         const raw = (p.team2_name || p.team2Name);
                         const k1 = norm(raw);
                         const k2 = minorm(raw);
-                        t2 = nameToId.get(k1) ?? nameToId.get(k2) ?? null;
+                        t2 = nameToId.get(k1) ?? nameToId.get(k2) ?? dbNameToId.get(k1) ?? dbNameToId.get(k2) ?? null;
                         if (t2 == null) {
                             const m = /team\s*(\d+)/i.exec(raw.toString());
                             if (m) {
                                 const idx = parseInt(m[1], 10);
                                 const matchByIndex = [...snapTeams, ...previewTeams].find(tt => /team\s*(\d+)/i.test(tt.name || '') && parseInt(/team\s*(\d+)/i.exec(tt.name || '')[1], 10) === idx);
                                 if (matchByIndex && matchByIndex.team_id != null) t2 = parseInt(matchByIndex.team_id, 10);
+                                if (t2 == null && dbIndexToId.has(idx)) t2 = dbIndexToId.get(idx);
                             }
                         }
                     }
@@ -451,13 +471,24 @@ class FullMixService {
                         const a = teamsList[i];
                         const b = teamsList[i + 1];
                         if (!a || !b) break;
+                        // Разрешаем имена в фактические DB id
+                        const aK1 = norm(a.name || '');
+                        const aK2 = minorm(a.name || '');
+                        const bK1 = norm(b.name || '');
+                        const bK2 = minorm(b.name || '');
+                        const aId = dbNameToId.get(aK1) ?? dbNameToId.get(aK2) ?? a.team_id;
+                        const bId = dbNameToId.get(bK1) ?? dbNameToId.get(bK2) ?? b.team_id;
+                        if (!(Number.isInteger(aId) && Number.isInteger(bId))) {
+                            console.warn('⚠️ [FullMix] approveMatches: skip snapshot pair due to missing DB ids', { a: a.name, b: b.name });
+                            continue;
+                        }
                         const ins = await client.query(
                             `INSERT INTO matches (
                                 tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
                              ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'winner') RETURNING id`,
-                            [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, a.team_id, b.team_id]
+                            [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, aId, bId]
                         );
-                        createdMatches.push({ id: ins.rows[0].id, team1_id: a.team_id, team2_id: b.team_id });
+                        createdMatches.push({ id: ins.rows[0].id, team1_id: aId, team2_id: bId });
                         nextMatchNumberInRound += 1;
                         nextTournamentMatchNumber += 1;
                     }
