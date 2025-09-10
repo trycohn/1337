@@ -17,6 +17,30 @@ function FullMixDraftPage() {
     const [message, setMessage] = useState('');
     const [approved, setApproved] = useState(false);
 
+    // Генерация черновика матчей (после утверждения составов)
+    const [matchesPreview, setMatchesPreview] = useState([]);
+    const [matchTeamMap, setMatchTeamMap] = useState(new Map());
+    const [matchesApproved, setMatchesApproved] = useState(false);
+
+    const loadMatchesPreview = useCallback(async (r) => {
+        setLoading(true);
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
+            const item = res.data?.item || null;
+            const mp = Array.isArray(item?.preview?.matches) ? item.preview.matches : [];
+            setMatchesPreview(mp);
+            const teamsArr = Array.isArray(item?.preview?.teams) ? item.preview.teams : [];
+            const map = new Map();
+            teamsArr.forEach(t => { if (t.team_id) map.set(t.team_id, t.name || `Команда ${t.team_id}`); });
+            setMatchTeamMap(map);
+        } catch (_) {
+            setMatchesPreview([]);
+            setMatchTeamMap(new Map());
+        } finally {
+            setLoading(false);
+        }
+    }, [tournamentId]);
+
     const loadRounds = useCallback(async () => {
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
@@ -108,29 +132,6 @@ function FullMixDraftPage() {
         }
     }, [tournamentId, round, loadPreview]);
 
-    // Генерация черновика матчей (после утверждения составов)
-    const [matchesPreview, setMatchesPreview] = useState([]);
-    const [matchTeamMap, setMatchTeamMap] = useState(new Map());
-    const [matchesApproved, setMatchesApproved] = useState(false);
-
-    const loadMatchesPreview = useCallback(async (r) => {
-        setLoading(true);
-        try {
-            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
-            const item = res.data?.item || null;
-            const mp = Array.isArray(item?.preview?.matches) ? item.preview.matches : [];
-            setMatchesPreview(mp);
-            const teamsArr = Array.isArray(item?.preview?.teams) ? item.preview.teams : [];
-            const map = new Map();
-            teamsArr.forEach(t => { if (t.team_id) map.set(t.team_id, t.name || `Команда ${t.team_id}`); });
-            setMatchTeamMap(map);
-        } catch (_) {
-            setMatchesPreview([]);
-            setMatchTeamMap(new Map());
-        } finally {
-            setLoading(false);
-        }
-    }, [tournamentId]);
 
     const regenerateMatchesPreview = useCallback(async () => {
         if (!approved) {
