@@ -58,6 +58,7 @@ function FullMixDraftPage() {
             const item = res.data?.item || null;
             setSnapshot(item);
             if (item && item.approved_teams === true) setApproved(true);
+            if (item && item.approved_matches === true) setMatchesApproved(true);
         } catch (_) {
             setSnapshot(null);
         }
@@ -204,6 +205,22 @@ function FullMixDraftPage() {
         });
     }, [preview, snapshot]);
 
+    // Карта имён команд из снапшота для отображения подтверждённых матчей
+    const snapshotTeamNameMap = useMemo(() => {
+        const map = new Map();
+        const arr = Array.isArray(snapshot?.snapshot?.teams) ? snapshot.snapshot.teams : [];
+        arr.forEach(t => { if (t?.team_id != null) map.set(String(t.team_id), t.name || `Команда ${t.team_id}`); });
+        return map;
+    }, [snapshot]);
+
+    // Источник матчей: если уже подтверждены — берём из снапшота, иначе из превью
+    const matchesToShow = useMemo(() => {
+        if (matchesApproved) {
+            return Array.isArray(snapshot?.snapshot?.matches) ? snapshot.snapshot.matches : [];
+        }
+        return Array.isArray(matchesPreview) ? matchesPreview : [];
+    }, [matchesApproved, snapshot, matchesPreview]);
+
     return (
         <div className="fullmixdraft-page" style={{ padding: 16 }}>
             <div className="fullmixdraft-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -275,12 +292,16 @@ function FullMixDraftPage() {
                         {(approved && matchesPreview.length === 0) && (
                             <div className="fullmixdraft-matches-empty" style={{ color: '#aaa', fontSize: 12 }}>Пары матчей не сформированы.</div>
                         )}
-                        {matchesPreview.length > 0 && (
+                        {matchesToShow.length > 0 && (
                             <div className="fullmixdraft-matches-list" style={{ display: 'grid', gap: 8 }}>
-                                {matchesPreview.map((p, i) => (
+                                {matchesToShow.map((p, i) => (
                                     <div key={i} className="fullmixdraft-match-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #1f1f1f', borderRadius: 8, padding: 10, background: '#0a0a0a' }}>
                                         <span>Матч {i + 1}</span>
-                                        <span>{p.team1_name || matchTeamMap.get(String(p.team1_id)) || `#${p.team1_id}`} vs {p.team2_name || matchTeamMap.get(String(p.team2_id)) || `#${p.team2_id}`}</span>
+                                        <span>
+                                            {p.team1_name || matchTeamMap.get(String(p.team1_id)) || snapshotTeamNameMap.get(String(p.team1_id)) || `#${p.team1_id}`} 
+                                            vs 
+                                            {p.team2_name || matchTeamMap.get(String(p.team2_id)) || snapshotTeamNameMap.get(String(p.team2_id)) || `#${p.team2_id}`}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
