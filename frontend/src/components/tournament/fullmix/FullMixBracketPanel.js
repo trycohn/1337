@@ -210,6 +210,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         )}
                         {rounds.length > 0 && (
                             <>
+                                <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
                                 <button className="btn btn-primary" onClick={generateNextRound}>Сгенерировать следующий раунд</button>
                                 <button className="btn btn-secondary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
                             </>
@@ -258,18 +259,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     )}
                 </div>
 
-                {/* Блок подтверждения для админов */}
-                {isAdminOrCreator && (
-                    <div className="fullmix-admin-approve" style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 12 }}>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <button className="btn btn-primary" disabled={approving} onClick={() => onApprove('teams')}>Подтвердить команды раунда</button>
-                            <button className="btn btn-secondary" disabled={approving} onClick={() => onApprove('matches')}>Подтвердить матчи раунда</button>
-                        </div>
-                        <div style={{ marginTop: 8, fontSize: 12, color: '#aaa' }}>
-                            Статус: команды {snapshot?.approved_teams ? 'подтверждены' : 'не подтверждены'}, матчи {snapshot?.approved_matches ? 'подтверждены' : 'не подтверждены'}
-                        </div>
-                    </div>
-                )}
+                {/* Блок подтверждения убран, вместо него кнопка открытия черновика в панели выше */}
             </div>
         </div>
     );
