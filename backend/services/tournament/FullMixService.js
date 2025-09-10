@@ -427,8 +427,8 @@ class FullMixService {
             if (!b) break;
             pairs.push({ team1_id: a.team_id, team2_id: b.team_id, team1_name: a.name || null, team2_name: b.name || null });
         }
-        // Добавим краткий справочник команд для удобства на фронте
-        const teamRefs = shuffled.map(t => ({ team_id: t.team_id, name: t.name || null }));
+        // Вернём полный список команд для превью матчей (с участниками), чтобы слева отображались составы
+        const teamRefs = shuffled.map(t => ({ team_id: t.team_id, name: t.name || null, members: Array.isArray(t.members) ? t.members : [] }));
         return { round: roundNumber, teams: teamRefs, matches: pairs };
     }
 
