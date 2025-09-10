@@ -11,6 +11,7 @@ function FullMixDraftPage() {
     const [round, setRound] = useState(1);
     const [loading, setLoading] = useState(false);
     const [preview, setPreview] = useState(null);
+    const [snapshot, setSnapshot] = useState(null);
     const [rounds, setRounds] = useState([]);
     const [message, setMessage] = useState('');
     const [approved, setApproved] = useState(false);
@@ -26,18 +27,38 @@ function FullMixDraftPage() {
         }
     }, [tournamentId]);
 
+    const loadSnapshot = useCallback(async (r) => {
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}`);
+            const item = res.data?.item || null;
+            setSnapshot(item);
+            if (item && item.approved_teams === true) setApproved(true);
+        } catch (_) {
+            setSnapshot(null);
+        }
+    }, [tournamentId]);
+
     const loadPreview = useCallback(async (r) => {
         setLoading(true);
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
-            setPreview(res.data?.item || null);
+            const item = res.data?.item || null;
+            setPreview(item);
             setApproved(false);
+            if (!item) {
+                // Если черновик отсутствует (после approve), показываем утверждённый снапшот
+                await loadSnapshot(r);
+            } else {
+                // Сбрасываем снапшот, если отображаем черновик
+                setSnapshot(null);
+            }
         } catch (e) {
             setPreview(null);
+            await loadSnapshot(r);
         } finally {
             setLoading(false);
         }
-    }, [tournamentId]);
+    }, [tournamentId, loadSnapshot]);
 
     useEffect(() => {
         if (!tournamentId) return;
@@ -82,15 +103,18 @@ function FullMixDraftPage() {
             await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/approve`, { approveTeams: true });
             setApproved(true);
             setMessage('Составы подтверждены');
+            await loadSnapshot(round);
         } catch (e) {
             setMessage(e?.response?.data?.error || 'Ошибка подтверждения');
         } finally {
             setLoading(false);
             setTimeout(() => setMessage(''), 2000);
         }
-    }, [tournamentId, round]);
+    }, [tournamentId, round, loadSnapshot]);
 
-    const teams = useMemo(() => (preview?.preview?.teams || []), [preview]);
+    const teams = useMemo(() => (
+        (preview?.preview?.teams) || (snapshot?.snapshot?.teams) || []
+    ), [preview, snapshot]);
 
     return (
         <div className="fullmixdraft-page" style={{ padding: 16 }}>
