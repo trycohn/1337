@@ -13,6 +13,7 @@ function FullMixDraftPage() {
     const [preview, setPreview] = useState(null);
     const [rounds, setRounds] = useState([]);
     const [message, setMessage] = useState('');
+    const [approved, setApproved] = useState(false);
 
     const loadRounds = useCallback(async () => {
         try {
@@ -30,6 +31,7 @@ function FullMixDraftPage() {
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
             setPreview(res.data?.item || null);
+            setApproved(false);
         } catch (e) {
             setPreview(null);
         } finally {
@@ -78,6 +80,7 @@ function FullMixDraftPage() {
         setLoading(true);
         try {
             await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/approve`, { approveTeams: true });
+            setApproved(true);
             setMessage('Составы подтверждены');
         } catch (e) {
             setMessage(e?.response?.data?.error || 'Ошибка подтверждения');
@@ -105,7 +108,9 @@ function FullMixDraftPage() {
                 </select>
                 <div className="fullmixdraft-actions" style={{ display: 'flex', gap: 8 }}>
                     <button className="btn btn-secondary" disabled={loading} onClick={createOrRegeneratePreview}>Переформировать составы</button>
-                    <button className="btn btn-primary" disabled={loading || teams.length === 0} onClick={approveTeams}>Подтвердить составы</button>
+                    <button className="btn btn-primary" disabled={loading || teams.length === 0 || approved} onClick={approveTeams}>
+                        {approved ? 'Составы подтверждены' : 'Подтвердить составы'}
+                    </button>
                 </div>
                 {message && <span className="fullmixdraft-message" style={{ color: '#aaa', fontSize: 12 }}>{message}</span>}
             </div>
