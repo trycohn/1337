@@ -281,15 +281,15 @@ function FullMixDraftPage() {
                     </div>
                     <div className="fullmixdraft-matches" style={{ display: 'grid', gap: 12 }}>
                         <div className="fullmixdraft-matches-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button className="btn btn-secondary" onClick={regenerateMatchesPreview} disabled={!approved || loading}>Переформировать пары матчей</button>
-                            <button className="btn btn-primary" onClick={approveMatches} disabled={!approved || loading || matchesPreview.length === 0 || matchesApproved}>
+                            <button className="btn btn-secondary" onClick={regenerateMatchesPreview} disabled={!approved || loading || matchesApproved}>Переформировать пары матчей</button>
+                            <button className="btn btn-primary" onClick={approveMatches} disabled={!approved || loading || matchesToShow.length === 0 || matchesApproved}>
                                 {matchesApproved ? 'Матчи подтверждены' : 'Подтвердить матчи'}
                             </button>
                         </div>
                         {(!approved) && (
                             <div className="fullmixdraft-matches-note" style={{ color: '#aaa', fontSize: 12 }}>Сначала подтвердите составы команд, затем формируйте пары матчей.</div>
                         )}
-                        {(approved && matchesPreview.length === 0) && (
+                        {(approved && !matchesApproved && matchesToShow.length === 0) && (
                             <div className="fullmixdraft-matches-empty" style={{ color: '#aaa', fontSize: 12 }}>Пары матчей не сформированы.</div>
                         )}
                         {matchesToShow.length > 0 && (
@@ -298,9 +298,9 @@ function FullMixDraftPage() {
                                     <div key={i} className="fullmixdraft-match-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #1f1f1f', borderRadius: 8, padding: 10, background: '#0a0a0a' }}>
                                         <span>Матч {i + 1}</span>
                                         <span>
-                                            {p.team1_name || matchTeamMap.get(String(p.team1_id)) || snapshotTeamNameMap.get(String(p.team1_id)) || `#${p.team1_id}`} 
-                                            vs 
-                                            {p.team2_name || matchTeamMap.get(String(p.team2_id)) || snapshotTeamNameMap.get(String(p.team2_id)) || `#${p.team2_id}`}
+                                            {p.team1_name || snapshotTeamNameMap.get(String(p.team1_id)) || matchTeamMap.get(String(p.team1_id)) || `#${p.team1_id}`} 
+                                            {' vs '} 
+                                            {p.team2_name || snapshotTeamNameMap.get(String(p.team2_id)) || matchTeamMap.get(String(p.team2_id)) || `#${p.team2_id}`}
                                         </span>
                                     </div>
                                 ))}
