@@ -46,6 +46,15 @@ function FullMixDraftPage() {
             const item = res.data?.item || null;
             setPreview(item);
             setApproved(false);
+            // Если превью содержит матчи/справочник команд — заполняем список матчей
+            if (item && item.preview) {
+                const mp = Array.isArray(item.preview.matches) ? item.preview.matches : [];
+                setMatchesPreview(mp);
+                const teamsArr = Array.isArray(item.preview.teams) ? item.preview.teams : [];
+                const map = new Map();
+                teamsArr.forEach(t => { if (t.team_id) map.set(t.team_id, t.name || `Команда ${t.team_id}`); });
+                setMatchTeamMap(map);
+            }
             if (!item) {
                 // Если черновик отсутствует (после approve), показываем утверждённый снапшот
                 await loadSnapshot(r);
@@ -69,7 +78,9 @@ function FullMixDraftPage() {
     useEffect(() => {
         if (!tournamentId || !round) return;
         loadPreview(round);
-    }, [tournamentId, round, loadPreview]);
+        // Одновременно пытаемся подтянуть превью матчей, если оно есть
+        loadMatchesPreview(round);
+    }, [tournamentId, round, loadPreview, loadMatchesPreview]);
 
     useEffect(() => {
         const socket = getSocketInstance && getSocketInstance();
