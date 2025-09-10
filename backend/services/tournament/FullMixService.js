@@ -343,9 +343,11 @@ class FullMixService {
             if (!snap || snap.approved_teams !== true) {
                 throw new Error('Составы команд не подтверждены');
             }
-            const preview = await this.getPreview(tournamentId, roundNumber);
+            let preview = await this.getPreview(tournamentId, roundNumber);
             if (!preview || !Array.isArray(preview.preview?.matches) || preview.preview.matches.length === 0) {
-                throw new Error('Черновик матчей не найден');
+                // Fallback: если превью матчей нет — сгенерировать пары на лету из снапшота
+                const mp = await this.generateMatchesPreviewFromSnapshot(tournamentId, roundNumber);
+                preview = { preview: mp };
             }
 
             const client = await pool.connect();
@@ -385,7 +387,7 @@ class FullMixService {
                 }
 
                 // Обновляем снапшот матчами
-                const newSnap = { ...(snap.snapshot || {}), matches: createdMatches };
+                const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: createdMatches, standings: snap.snapshot?.standings || [] };
                 await client.query(
                     `UPDATE full_mix_snapshots SET snapshot = $3, approved_matches = TRUE WHERE tournament_id = $1 AND round_number = $2`,
                     [tournamentId, roundNumber, newSnap]
