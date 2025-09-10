@@ -368,9 +368,15 @@ class FullMixService {
                 const previewTeams = Array.isArray(preview.preview?.teams) ? preview.preview.teams : [];
                 const snapTeams = Array.isArray(snap.snapshot?.teams) ? snap.snapshot.teams : [];
                 const nameToId = new Map();
+                const norm = (s) => s ? s.toString().trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9\s-]/g, '') : '';
+                const minorm = (s) => norm(s).replace(/[\s-]/g, '');
                 for (const t of [...previewTeams, ...snapTeams]) {
-                    const nm = (t.name || '').toString().trim().toLowerCase();
-                    if (nm && t.team_id != null) nameToId.set(nm, parseInt(t.team_id, 10));
+                    const id = t.team_id != null ? parseInt(t.team_id, 10) : null;
+                    if (!Number.isInteger(id)) continue;
+                    const n1 = norm(t.name || '');
+                    const n2 = minorm(t.name || '');
+                    if (n1) nameToId.set(n1, id);
+                    if (n2) nameToId.set(n2, id);
                 }
                 const createdMatches = [];
 
@@ -392,12 +398,34 @@ class FullMixService {
                     let t1 = p.team1_id ?? p.team1Id ?? p.t1 ?? (p.team1 && (p.team1.team_id ?? p.team1.id)) ?? null;
                     let t2 = p.team2_id ?? p.team2Id ?? p.t2 ?? (p.team2 && (p.team2.team_id ?? p.team2.id)) ?? null;
                     if (t1 == null && (p.team1_name || p.team1Name)) {
-                        const key = (p.team1_name || p.team1Name).toString().trim().toLowerCase();
-                        t1 = nameToId.get(key) ?? null;
+                        const raw = (p.team1_name || p.team1Name);
+                        const k1 = norm(raw);
+                        const k2 = minorm(raw);
+                        t1 = nameToId.get(k1) ?? nameToId.get(k2) ?? null;
+                        if (t1 == null) {
+                            // Попробуем распарсить индекс команды из строки вида R1-Team 5
+                            const m = /team\s*(\d+)/i.exec(raw.toString());
+                            if (m) {
+                                const idx = parseInt(m[1], 10);
+                                // По индексу найдём в снапшоте
+                                const matchByIndex = [...snapTeams, ...previewTeams].find(tt => /team\s*(\d+)/i.test(tt.name || '') && parseInt(/team\s*(\d+)/i.exec(tt.name || '')[1], 10) === idx);
+                                if (matchByIndex && matchByIndex.team_id != null) t1 = parseInt(matchByIndex.team_id, 10);
+                            }
+                        }
                     }
                     if (t2 == null && (p.team2_name || p.team2Name)) {
-                        const key = (p.team2_name || p.team2Name).toString().trim().toLowerCase();
-                        t2 = nameToId.get(key) ?? null;
+                        const raw = (p.team2_name || p.team2Name);
+                        const k1 = norm(raw);
+                        const k2 = minorm(raw);
+                        t2 = nameToId.get(k1) ?? nameToId.get(k2) ?? null;
+                        if (t2 == null) {
+                            const m = /team\s*(\d+)/i.exec(raw.toString());
+                            if (m) {
+                                const idx = parseInt(m[1], 10);
+                                const matchByIndex = [...snapTeams, ...previewTeams].find(tt => /team\s*(\d+)/i.test(tt.name || '') && parseInt(/team\s*(\d+)/i.exec(tt.name || '')[1], 10) === idx);
+                                if (matchByIndex && matchByIndex.team_id != null) t2 = parseInt(matchByIndex.team_id, 10);
+                            }
+                        }
                     }
                     const team1Id = t1 != null ? parseInt(t1, 10) : null;
                     const team2Id = t2 != null ? parseInt(t2, 10) : null;
