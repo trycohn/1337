@@ -443,6 +443,25 @@ class FullMixService {
                     nextMatchNumberInRound += 1;
                     nextTournamentMatchNumber += 1;
                 }
+                // Если из превью ничего не вставили — создадим пары напрямую из снапшота
+                if (createdMatches.length === 0) {
+                    console.warn('⚠️ [FullMix] approveMatches: preview pairs unusable, generating from snapshot');
+                    const teamsList = Array.isArray(snap.snapshot?.teams) ? snap.snapshot.teams : [];
+                    for (let i = 0; i < teamsList.length; i += 2) {
+                        const a = teamsList[i];
+                        const b = teamsList[i + 1];
+                        if (!a || !b) break;
+                        const ins = await client.query(
+                            `INSERT INTO matches (
+                                tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
+                             ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'winner') RETURNING id`,
+                            [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, a.team_id, b.team_id]
+                        );
+                        createdMatches.push({ id: ins.rows[0].id, team1_id: a.team_id, team2_id: b.team_id });
+                        nextMatchNumberInRound += 1;
+                        nextTournamentMatchNumber += 1;
+                    }
+                }
                 console.log(`🧩 [FullMix] approveMatches: created DB matches = ${createdMatches.length}`);
 
                 // Обновляем снапшот матчами
