@@ -79,12 +79,12 @@ function FullMixDraftPage() {
                 teamsArr.forEach(t => { if (t.team_id) map.set(t.team_id, t.name || `Команда ${t.team_id}`); });
                 setMatchTeamMap(map);
             }
-            if (!item) {
-                // Если черновик отсутствует (после approve), показываем утверждённый снапшот
-                await loadSnapshot(r);
-            } else {
-                // Сбрасываем снапшот, если отображаем черновик
+            // Логика источника команд: если превью содержит teams — используем его; иначе пробуем снапшот
+            const hasPreviewTeams = !!(item && Array.isArray(item.preview?.teams) && item.preview.teams.length > 0);
+            if (hasPreviewTeams) {
                 setSnapshot(null);
+            } else {
+                await loadSnapshot(r);
             }
         } catch (e) {
             setPreview(null);
@@ -221,10 +221,6 @@ function FullMixDraftPage() {
 
             {loading ? (
                 <p className="fullmixdraft-loading">Загрузка...</p>
-            ) : teams.length === 0 ? (
-                <div className="fullmixdraft-empty" style={{ padding: 24, border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a' }}>
-                    <p style={{ margin: 0 }}>Черновик пуст. Нажмите «Переформировать составы», чтобы сгенерировать черновик.</p>
-                </div>
             ) : (
                 <div className="fullmixdraft-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="fullmixdraft-teams" style={{ display: 'grid', gap: 12 }}>
@@ -234,23 +230,29 @@ function FullMixDraftPage() {
                                 {approved ? 'Составы подтверждены' : 'Подтвердить составы'}
                             </button>
                         </div>
-                        {teams.map((team, idx) => (
-                            <div key={team.id || idx} className="fullmixdraft-team-card" style={{ border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
-                                <div className="fullmixdraft-team-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                    <strong>{team.name || `Команда ${idx + 1}`}</strong>
-                                    {Array.isArray(team.members) && <span style={{ color: '#888', fontSize: 12 }}>Игроков: {team.members.length}</span>}
-                                </div>
-                                <div className="fullmixdraft-team-members" style={{ display: 'grid', gap: 6 }}>
-                                    {(team.members || []).map((m, j) => (
-                                        <div key={m.id || j} className="fullmixdraft-team-member" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div className="fullmixdraft-team-member-avatar" style={{ width: 22, height: 22, borderRadius: '50%', background: '#222', display: 'inline-block' }} />
-                                            <span className="fullmixdraft-team-member-name">{m.name || m.username || `Игрок ${j + 1}`}</span>
-                                            {m.is_captain && <span className="fullmixdraft-team-member-captain" style={{ color: '#999', fontSize: 12 }}>(капитан)</span>}
-                                        </div>
-                                    ))}
-                                </div>
+                        {teams.length === 0 ? (
+                            <div className="fullmixdraft-empty" style={{ padding: 24, border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a' }}>
+                                <p style={{ margin: 0 }}>Черновик пуст. Нажмите «Переформировать составы», чтобы сгенерировать черновик.</p>
                             </div>
-                        ))}
+                        ) : (
+                            teams.map((team, idx) => (
+                                <div key={team.id || idx} className="fullmixdraft-team-card" style={{ border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
+                                    <div className="fullmixdraft-team-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <strong>{team.name || `Команда ${idx + 1}`}</strong>
+                                        {Array.isArray(team.members) && <span style={{ color: '#888', fontSize: 12 }}>Игроков: {team.members.length}</span>}
+                                    </div>
+                                    <div className="fullmixdraft-team-members" style={{ display: 'grid', gap: 6 }}>
+                                        {(team.members || []).map((m, j) => (
+                                            <div key={m.id || j} className="fullmixdraft-team-member" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div className="fullmixdraft-team-member-avatar" style={{ width: 22, height: 22, borderRadius: '50%', background: '#222', display: 'inline-block' }} />
+                                                <span className="fullmixdraft-team-member-name">{m.name || m.username || `Игрок ${j + 1}`}</span>
+                                                {m.is_captain && <span className="fullmixdraft-team-member-captain" style={{ color: '#999', fontSize: 12 }}>(капитан)</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                     <div className="fullmixdraft-matches" style={{ display: 'grid', gap: 12 }}>
                         <div className="fullmixdraft-matches-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
