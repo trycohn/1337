@@ -1,0 +1,79 @@
+.fullmixdraft-page {
+	background: #000;
+	color: #fff;
+}
+
+.fullmixdraft-header {
+	border-bottom: 1px solid #111;
+	padding-bottom: 8px;
+	margin-bottom: 12px;
+}
+
+.fullmixdraft-title {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.fullmixdraft-toolbar {
+	border: 1px solid #111;
+	background: #0a0a0a;
+	border-radius: 8px;
+	padding: 8px 10px;
+}
+
+.fullmixdraft-rounds .btn {
+	min-width: 36px;
+	padding: 4px 8px;
+}
+
+.fullmixdraft-message {
+	margin-left: 8px;
+}
+
+.fullmixdraft-grid {
+	margin-top: 12px;
+}
+
+.fullmixdraft-teams-toolbar,
+.fullmixdraft-matches-toolbar {
+	border: 1px solid #111;
+	background: #0a0a0a;
+	border-radius: 8px;
+	padding: 8px 10px;
+}
+
+.fullmixdraft-team-card {
+	border: 1px solid #1f1f1f;
+	background: #0a0a0a;
+	border-radius: 8px;
+}
+
+.fullmixdraft-team-card-header strong {
+	font-weight: 600;
+}
+
+.fullmixdraft-team-member {
+	padding: 4px 0;
+	border-bottom: 1px dashed #111;
+}
+
+.fullmixdraft-team-member:last-child {
+	border-bottom: none;
+}
+
+.fullmixdraft-match-row {
+	border: 1px solid #1f1f1f;
+	background: #0a0a0a;
+	border-radius: 8px;
+}
+
+/* Buttons: rely on global .btn styles; add hover alignment for dark theme */
+.btn {
+	border: 1px solid #ff0000;
+	background: #000;
+	color: #fff;
+}
+
+.btn:hover {
+	background: #111111;
+}

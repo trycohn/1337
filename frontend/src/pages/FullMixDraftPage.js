@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { getSocketInstance } from '../services/socketClient_v5_simplified';
+import './FullMixDraftPage.css';
 
 function FullMixDraftPage() {
     const { id } = useParams();
