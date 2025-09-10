@@ -153,7 +153,14 @@ class FullMixController {
         const userId = req.user?.id || null;
         const settings = await FullMixService.getSettings(tournamentId);
         const standings = await FullMixService.calculateStandings(tournamentId);
-        const snapshot = await FullMixService.generateRoundSnapshot(tournamentId, round, settings?.rating_mode || 'random', standings);
+        // Эфемерная генерация: не создаём записи в БД, отдаём только payload
+        const snapshot = await FullMixService.generateRoundSnapshot(
+            tournamentId,
+            round,
+            settings?.rating_mode || 'random',
+            standings,
+            { ephemeral: true }
+        );
         const saved = await FullMixService.savePreview(tournamentId, round, snapshot, userId);
         res.json({ success: true, item: saved });
     });

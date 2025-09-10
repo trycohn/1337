@@ -235,7 +235,22 @@ class FullMixService {
         }));
     }
 
-    static async generateRoundSnapshot(tournamentId, roundNumber, ratingMode = 'random', standings = null) {
+    static async generateRoundSnapshot(tournamentId, roundNumber, ratingMode = 'random', standings = null, options = {}) {
+        const { ephemeral = false } = options;
+        // Эфемерный режим: не пишем в БД, отдаём только расчётные команды/матчи для превью
+        if (ephemeral) {
+            const participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            const teamSize = await this.getTeamSize(tournamentId);
+            const formed = this.formTeams(participants, ratingMode, teamSize);
+            const previewTeams = formed.map((t, idx) => ({
+                team_index: t.team_index || (idx + 1),
+                name: `R${roundNumber}-Team ${t.team_index || (idx + 1)}`,
+                members: t.members || []
+            }));
+            const currentStandings = standings || await this.calculateStandings(tournamentId);
+            return { round: roundNumber, teams: previewTeams, matches: [], standings: currentStandings };
+        }
+
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
