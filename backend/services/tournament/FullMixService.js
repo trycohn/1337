@@ -495,8 +495,14 @@ class FullMixService {
                 }
                 console.log(`🧩 [FullMix] approveMatches: created DB matches = ${createdMatches.length}`);
 
-                // Обновляем снапшот матчами
-                const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: createdMatches, standings: snap.snapshot?.standings || [] };
+                // Обновляем снапшот матчами с именами команд для корректного отображения на фронте
+                const idToName = new Map((dbTeamsRes.rows || []).map(r => [r.id, r.name]));
+                const matchesNamed = createdMatches.map(m => ({
+                    ...m,
+                    team1_name: idToName.get(m.team1_id) || null,
+                    team2_name: idToName.get(m.team2_id) || null,
+                }));
+                const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: matchesNamed, standings: snap.snapshot?.standings || [] };
                 await client.query(
                     `UPDATE full_mix_snapshots SET snapshot = $3, approved_matches = TRUE WHERE tournament_id = $1 AND round_number = $2`,
                     [tournamentId, roundNumber, newSnap]
