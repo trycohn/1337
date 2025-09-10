@@ -364,7 +364,7 @@ class FullMixService {
                 await client.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
 
                 // Создаём матчи по превью
-                const matchPairs = preview.preview.matches; // [{team1_id, team2_id}]
+                const matchPairs = preview.preview.matches; // [{team1_id, team2_id}] или иные варианты ключей
                 const createdMatches = [];
 
                 // Глобальные счётчики
@@ -381,14 +381,22 @@ class FullMixService {
                 let nextMatchNumberInRound = parseInt(mrRes.rows[0]?.max || 0, 10) + 1;
 
                 for (const p of matchPairs) {
-                    if (p.team1_id == null || p.team2_id == null) continue;
+                    // Нормализация ключей и приведение к числу
+                    const t1 = p.team1_id ?? p.team1Id ?? p.t1 ?? (p.team1 && (p.team1.team_id ?? p.team1.id)) ?? null;
+                    const t2 = p.team2_id ?? p.team2Id ?? p.t2 ?? (p.team2 && (p.team2.team_id ?? p.team2.id)) ?? null;
+                    const team1Id = t1 != null ? parseInt(t1, 10) : null;
+                    const team2Id = t2 != null ? parseInt(t2, 10) : null;
+                    if (!(Number.isInteger(team1Id) && Number.isInteger(team2Id))) {
+                        console.warn('⚠️ [FullMix] approveMatches: skip invalid pair', p);
+                        continue;
+                    }
                     const ins = await client.query(
                         `INSERT INTO matches (
                             tournament_id, round, match_number, tournament_match_number, team1_id, team2_id, status, bracket_type
                          ) VALUES ($1, $2, $3, $4, $5, $6, 'pending', 'winner') RETURNING id`,
-                        [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, p.team1_id, p.team2_id]
+                        [tournamentId, roundNumber, nextMatchNumberInRound, nextTournamentMatchNumber, team1Id, team2Id]
                     );
-                    createdMatches.push({ id: ins.rows[0].id, team1_id: p.team1_id, team2_id: p.team2_id });
+                    createdMatches.push({ id: ins.rows[0].id, team1_id: team1Id, team2_id: team2Id });
                     nextMatchNumberInRound += 1;
                     nextTournamentMatchNumber += 1;
                 }
