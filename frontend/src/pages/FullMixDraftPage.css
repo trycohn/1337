@@ -1,10 +1,9 @@
 .fullmixdraft-page {
-	background: #000;
 	color: #fff;
+    margin-top: 240px;
 }
 
 .fullmixdraft-header {
-	border-bottom: 1px solid #111;
 	padding-bottom: 8px;
 	margin-bottom: 12px;
 }
@@ -15,8 +14,7 @@
 }
 
 .fullmixdraft-toolbar {
-	border: 1px solid #111;
-	background: #0a0a0a;
+
 	border-radius: 8px;
 	padding: 8px 10px;
 }
@@ -32,14 +30,15 @@
 
 .fullmixdraft-grid {
 	margin-top: 12px;
+    align-items: start;
+
 }
 
 .fullmixdraft-teams-toolbar,
 .fullmixdraft-matches-toolbar {
-	border: 1px solid #111;
-	background: #0a0a0a;
 	border-radius: 8px;
 	padding: 8px 10px;
+    height: 45px;
 }
 
 .fullmixdraft-team-card {
