@@ -365,6 +365,13 @@ class FullMixService {
 
                 // Создаём матчи по превью
                 const matchPairs = preview.preview.matches; // [{team1_id, team2_id}] или иные варианты ключей
+                const previewTeams = Array.isArray(preview.preview?.teams) ? preview.preview.teams : [];
+                const snapTeams = Array.isArray(snap.snapshot?.teams) ? snap.snapshot.teams : [];
+                const nameToId = new Map();
+                for (const t of [...previewTeams, ...snapTeams]) {
+                    const nm = (t.name || '').toString().trim().toLowerCase();
+                    if (nm && t.team_id != null) nameToId.set(nm, parseInt(t.team_id, 10));
+                }
                 const createdMatches = [];
 
                 // Глобальные счётчики
@@ -381,13 +388,21 @@ class FullMixService {
                 let nextMatchNumberInRound = parseInt(mrRes.rows[0]?.max || 0, 10) + 1;
 
                 for (const p of matchPairs) {
-                    // Нормализация ключей и приведение к числу
-                    const t1 = p.team1_id ?? p.team1Id ?? p.t1 ?? (p.team1 && (p.team1.team_id ?? p.team1.id)) ?? null;
-                    const t2 = p.team2_id ?? p.team2Id ?? p.t2 ?? (p.team2 && (p.team2.team_id ?? p.team2.id)) ?? null;
+                    // Нормализация ключей и приведение к числу, поддержка пар по именам
+                    let t1 = p.team1_id ?? p.team1Id ?? p.t1 ?? (p.team1 && (p.team1.team_id ?? p.team1.id)) ?? null;
+                    let t2 = p.team2_id ?? p.team2Id ?? p.t2 ?? (p.team2 && (p.team2.team_id ?? p.team2.id)) ?? null;
+                    if (t1 == null && (p.team1_name || p.team1Name)) {
+                        const key = (p.team1_name || p.team1Name).toString().trim().toLowerCase();
+                        t1 = nameToId.get(key) ?? null;
+                    }
+                    if (t2 == null && (p.team2_name || p.team2Name)) {
+                        const key = (p.team2_name || p.team2Name).toString().trim().toLowerCase();
+                        t2 = nameToId.get(key) ?? null;
+                    }
                     const team1Id = t1 != null ? parseInt(t1, 10) : null;
                     const team2Id = t2 != null ? parseInt(t2, 10) : null;
                     if (!(Number.isInteger(team1Id) && Number.isInteger(team2Id))) {
-                        console.warn('⚠️ [FullMix] approveMatches: skip invalid pair', p);
+                        console.warn('⚠️ [FullMix] approveMatches: skip invalid pair after normalize', p);
                         continue;
                     }
                     const ins = await client.query(
