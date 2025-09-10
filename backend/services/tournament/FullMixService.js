@@ -395,6 +395,12 @@ class FullMixService {
                 await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
 
                 await client.query('COMMIT');
+
+                // 🔔 Broadcast: матчи подтверждены → обновить сетку у всех клиентов
+                try {
+                    const { broadcastToTournament } = require('../../socketio-server');
+                    broadcastToTournament(tournamentId, 'fullmix_round_completed', { round: roundNumber, type: 'matches_approved' });
+                } catch (_) {}
                 return { round: roundNumber, approved_teams: true, approved_matches: true };
             } catch (e) {
                 try { await client.query('ROLLBACK'); } catch (_) {}
