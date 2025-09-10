@@ -59,6 +59,8 @@ function FullMixDraftPage() {
             setSnapshot(item);
             if (item && item.approved_teams === true) setApproved(true);
             if (item && item.approved_matches === true) setMatchesApproved(true);
+            const ms = Array.isArray(item?.snapshot?.matches) ? item.snapshot.matches : [];
+            if (ms.length > 0) setMatchesApproved(true);
         } catch (_) {
             setSnapshot(null);
         }
@@ -209,7 +211,13 @@ function FullMixDraftPage() {
     const snapshotTeamNameMap = useMemo(() => {
         const map = new Map();
         const arr = Array.isArray(snapshot?.snapshot?.teams) ? snapshot.snapshot.teams : [];
-        arr.forEach(t => { if (t?.team_id != null) map.set(String(t.team_id), t.name || `Команда ${t.team_id}`); });
+        arr.forEach(t => {
+            const name = t?.name || (t?.team_id != null ? `Команда ${t.team_id}` : undefined);
+            const keys = [];
+            if (t?.team_id != null) keys.push(String(t.team_id));
+            if (t?.id != null) keys.push(String(t.id));
+            keys.forEach(k => map.set(k, name));
+        });
         return map;
     }, [snapshot]);
 
