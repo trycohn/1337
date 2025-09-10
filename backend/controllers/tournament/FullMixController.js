@@ -82,6 +82,41 @@ class FullMixController {
         const round = parseInt(req.params.round);
         const item = await FullMixService.getSnapshot(tournamentId, round);
 
+        // Обогащаем снапшот именами команд для матчей (автоматически на чтении)
+        try {
+            if (item && item.snapshot) {
+                const snap = item.snapshot;
+                const matches = Array.isArray(snap.matches) ? snap.matches : [];
+                const teams = Array.isArray(snap.teams) ? snap.teams : [];
+                const needNames = matches.some(m => !m.team1_name || !m.team2_name);
+                const teamsNeedNames = teams.some(t => !t.name);
+                if (needNames || teamsNeedNames) {
+                    const db = require('../../db');
+                    const { rows } = await db.query(
+                        `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND (name LIKE $2 OR id = ANY($3::int[]))`,
+                        [tournamentId, `R${round}-%`, matches.flatMap(m => [m.team1_id, m.team2_id]).filter(v => Number.isInteger(v))]
+                    );
+                    const idToName = new Map((rows || []).map(r => [r.id, r.name]));
+                    // Обновляем имена команд внутри снапшота (не пишем в БД, только отдача)
+                    if (teamsNeedNames) {
+                        item.snapshot.teams = teams.map(t => ({
+                            ...t,
+                            name: t.name || idToName.get(t.team_id || t.id) || t.name || null,
+                        }));
+                    }
+                    if (needNames) {
+                        item.snapshot.matches = matches.map(m => ({
+                            ...m,
+                            team1_name: m.team1_name || idToName.get(m.team1_id) || null,
+                            team2_name: m.team2_name || idToName.get(m.team2_id) || null,
+                        }));
+                    }
+                }
+            }
+        } catch (e) {
+            // Мягко игнорируем ошибки обогащения, чтобы не ломать отдачу снапшота
+        }
+
         // 🔒 Скрываем составы/матчи черновика для не-админов до подтверждения
         if (item && item.approved_teams !== true) {
             let isAdminOrCreator = false;
