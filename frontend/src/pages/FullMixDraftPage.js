@@ -185,17 +185,17 @@ function FullMixDraftPage() {
             </div>
 
             <div className="fullmixdraft-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-                <span className="fullmixdraft-round-label" style={{ color: '#ccc', fontSize: 13 }}>Раунд:</span>
-                <select value={round} onChange={e => setRound(parseInt(e.target.value))} className="input fullmixdraft-round-select">
+                <span className="fullmixdraft-round-label" style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
+                <div className="fullmixdraft-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(rounds.length > 0 ? rounds.map(r => r.round_number) : [1]).map(rn => (
-                        <option key={rn} value={rn}>{rn}</option>
+                        <button
+                            key={rn}
+                            className={`btn ${rn === round ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setRound(rn)}
+                        >
+                            {rn}
+                        </button>
                     ))}
-                </select>
-                <div className="fullmixdraft-actions" style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-secondary" disabled={loading} onClick={createOrRegeneratePreview}>Переформировать составы</button>
-                    <button className="btn btn-primary" disabled={loading || teams.length === 0 || approved} onClick={approveTeams}>
-                        {approved ? 'Составы подтверждены' : 'Подтвердить составы'}
-                    </button>
                 </div>
                 {message && <span className="fullmixdraft-message" style={{ color: '#aaa', fontSize: 12 }}>{message}</span>}
             </div>
@@ -209,6 +209,12 @@ function FullMixDraftPage() {
             ) : (
                 <div className="fullmixdraft-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="fullmixdraft-teams" style={{ display: 'grid', gap: 12 }}>
+                        <div className="fullmixdraft-teams-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button className="btn btn-secondary" disabled={loading} onClick={createOrRegeneratePreview}>Переформировать составы</button>
+                            <button className="btn btn-primary" disabled={loading || teams.length === 0 || approved} onClick={approveTeams}>
+                                {approved ? 'Составы подтверждены' : 'Подтвердить составы'}
+                            </button>
+                        </div>
                         {teams.map((team, idx) => (
                             <div key={team.id || idx} className="fullmixdraft-team-card" style={{ border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
                                 <div className="fullmixdraft-team-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
