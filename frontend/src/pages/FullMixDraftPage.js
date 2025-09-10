@@ -79,13 +79,8 @@ function FullMixDraftPage() {
                 teamsArr.forEach(t => { if (t.team_id != null) map.set(String(t.team_id), t.name || `Команда ${t.team_id}`); });
                 setMatchTeamMap(map);
             }
-            // Логика источника команд: если превью содержит teams — используем его; иначе пробуем снапшот
-            const hasPreviewTeams = !!(item && Array.isArray(item.preview?.teams) && item.preview.teams.length > 0);
-            if (hasPreviewTeams) {
-                setSnapshot(null);
-            } else {
-                await loadSnapshot(r);
-            }
+            // Всегда подгружаем снапшот для получения approved-флагов и обогащения участников
+            await loadSnapshot(r);
         } catch (e) {
             setPreview(null);
             await loadSnapshot(r);
@@ -192,9 +187,22 @@ function FullMixDraftPage() {
         }
     }, [tournamentId, round, loadSnapshot]);
 
-    const teams = useMemo(() => (
-        (preview?.preview?.teams) || (snapshot?.snapshot?.teams) || []
-    ), [preview, snapshot]);
+    const teams = useMemo(() => {
+        const p = Array.isArray(preview?.preview?.teams) ? preview.preview.teams : [];
+        const s = Array.isArray(snapshot?.snapshot?.teams) ? snapshot.snapshot.teams : [];
+        if (p.length === 0) return s;
+        const hasMembers = p.some(t => Array.isArray(t.members) && t.members.length > 0);
+        if (hasMembers) return p;
+        if (s.length === 0) return p;
+        const byId = new Map(s.map(t => [t.team_id, t]));
+        return p.map(t => {
+            const src = byId.get(t.team_id);
+            if (src && Array.isArray(src.members) && src.members.length > 0) {
+                return { ...t, members: src.members };
+            }
+            return t;
+        });
+    }, [preview, snapshot]);
 
     return (
         <div className="fullmixdraft-page" style={{ padding: 16 }}>

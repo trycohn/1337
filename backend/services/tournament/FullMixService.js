@@ -325,8 +325,7 @@ class FullMixService {
                     [tournamentId, roundNumber, snapshotToSave]
                 );
 
-                // Очищаем превью (на этапе матчей можно создать новое превью для пар)
-                await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
+                // Не удаляем превью, чтобы фронт мог сразу сгенерировать пары матчей (mode: 'matches')
 
                 await client.query('COMMIT');
                 return { round: roundNumber, approved_teams: true, approved_matches: false };
@@ -392,7 +391,7 @@ class FullMixService {
                     [tournamentId, roundNumber, newSnap]
                 );
 
-                // Удаляем превью матчей
+                // Очищаем превью после подтверждения матчей
                 await client.query(`DELETE FROM full_mix_previews WHERE tournament_id = $1 AND round_number = $2`, [tournamentId, roundNumber]);
 
                 await client.query('COMMIT');
