@@ -489,7 +489,7 @@ const MatchDetailsPage = () => {
         if (selections.length > 0) {
             return (
                 <div className="match-map-pool">
-                    <h3 className="section-title">🗺️ Карты</h3>
+                    <h3 className="section-title">Карты</h3>
                     <div className="map-pool-grid">
                         {selections.map((s, idx) => {
                             const mapKey = normalizeMapName(s.map_name || s.map || s.name);
@@ -554,7 +554,7 @@ const MatchDetailsPage = () => {
 
         return (
             <div className="match-map-pool">
-                <h3 className="section-title">🗺️ Карты</h3>
+                <h3 className="section-title">Карты</h3>
                 <div className="map-pool-grid">
                     {displayPool.map(rawName => {
                         const mapKey = normalizeMapName(rawName);
@@ -622,7 +622,7 @@ const MatchDetailsPage = () => {
         
         return (
             <div className="match-lineups">
-                <h3 className="section-title">👥 Составы команд</h3>
+                <h3 className="section-title">Составы команд</h3>
                 <div className="lineups-grid">
                     {/* Команда 1 */}
                     <div className="lineup-team">
@@ -709,7 +709,7 @@ const MatchDetailsPage = () => {
         
         return (
             <div className="match-team-history">
-                <h3 className="section-title">📊 Последние матчи</h3>
+                <h3 className="section-title">Последние матчи</h3>
                 <div className="history-grid">
                     {/* История команды 1 */}
                     <div className="history-team">
@@ -775,7 +775,7 @@ const MatchDetailsPage = () => {
     if (error) {
         return (
             <div className="match-details-error">
-                <h2>❌ Ошибка загрузки</h2>
+                <h2>Ошибка загрузки</h2>
                 <p>{error}</p>
                 <button onClick={() => navigate(-1)} className="btn-back">
                     ← Назад
@@ -787,7 +787,7 @@ const MatchDetailsPage = () => {
     if (!match || !tournament) {
         return (
             <div className="match-details-error">
-                <h2>🔍 Матч не найден</h2>
+                <h2>Матч не найден</h2>
                 <button onClick={() => navigate(-1)} className="btn-back">
                     ← Назад
                 </button>

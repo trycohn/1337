@@ -37,7 +37,7 @@ const MatchResultModal = ({
         onClose: () => {
             if (hasChanges && !isLoading) {
                 const confirmed = window.confirm(
-                    '⚠️ У вас есть несохраненные изменения. Закрыть без сохранения?'
+                    'У вас есть несохраненные изменения. Закрыть без сохранения?'
                 );
                 if (!confirmed) return;
             }
@@ -419,7 +419,7 @@ const MatchResultModal = ({
             
             // Если есть определенный победитель по картам, не меняем его
             if (team1MapWins !== team2MapWins) {
-                console.log('🗺️ Карты определяют победителя, игнорируем изменение общего счета');
+                console.log('Карты определяют победителя, игнорируем изменение общего счета');
                 shouldUpdateWinnerByScore = false;
             }
         }
@@ -748,10 +748,10 @@ const MatchResultModal = ({
         return (
             <div className="modal-system-section">
                 <h3 className="modal-system-section-title">
-                    🗺️ Результаты по картам ({mapsData.length}/7)
+                    Результаты по картам ({mapsData.length}/7)
                 </h3>
                 <p className="modal-system-section-content modal-system-mb-20">
-                    🎯 Укажите результаты на каждой карте для детальной статистики
+                    Укажите результаты на каждой карте для детальной статистики
                 </p>
                 
                 <div className="modal-system-flex-column">
@@ -828,17 +828,17 @@ const MatchResultModal = ({
                         onClick={addMap}
                         disabled={isLoading || mapsData.length >= 7}
                     >
-                        ➕ Добавить карту ({mapsData.length}/7)
+                        Добавить карту ({mapsData.length}/7)
                     </button>
                 </div>
 
                 {/* Расширенная статистика по картам */}
                 {mapStats && (
                     <div className="modal-system-section modal-system-mt-20">
-                        <h4 className="modal-system-bold modal-system-mb-10">📊 Расширенная статистика</h4>
+                        <h4 className="modal-system-bold modal-system-mb-10">Расширенная статистика</h4>
                         <div className="modal-system-grid-3">
                             <div className="modal-system-info">
-                                <h5 className="modal-system-bold modal-system-mb-10">🏆 Победы по картам</h5>
+                                <h5 className="modal-system-bold modal-system-mb-10">Победы по картам</h5>
                                 <div className="modal-system-flex-column">
                                     <span>
                                         {/* 🆕 УНИВЕРСАЛЬНОЕ ОТОБРАЖЕНИЕ в статистике */}
@@ -872,7 +872,7 @@ const MatchResultModal = ({
                             </div>
                             
                             <div className="modal-system-info">
-                                <h5 className="modal-system-bold modal-system-mb-10">📈 Эффективность</h5>
+                                <h5 className="modal-system-bold modal-system-mb-10">Эффективность</h5>
                                 <div className="modal-system-flex-column">
                                     <span>Карт сыграно: {mapStats.mapsCount}</span>
                                     <span>Формат: {mapStats.mapsCount === 1 ? 'BO1' : 
