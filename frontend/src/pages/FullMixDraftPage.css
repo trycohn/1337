@@ -24,6 +24,26 @@
 	padding: 4px 8px;
 }
 
+/* Кнопки раундов — единый стиль */
+.fullmixdraft-rounds .fullmix-round-btn {
+	background: #0a0a0a;
+	color: #fff;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.fullmixdraft-rounds .fullmix-round-btn:hover {
+	background: #111111;
+}
+
+.fullmixdraft-rounds .fullmix-round-btn.is-active,
+.fullmixdraft-rounds .fullmix-round-btn:disabled {
+	background: #1D1D1D;
+	cursor: default;
+}
+
 .fullmixdraft-message {
 	margin-left: 8px;
 }
