@@ -4,6 +4,19 @@
     gap: 16px;
 }
 
+.fullmix-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.fullmix-header-message {
+    color: #ccc;
+    font-size: 12px;
+}
+
 .fullmix-standings {
     background: #000;
     border: 1px solid #1D1D1D;

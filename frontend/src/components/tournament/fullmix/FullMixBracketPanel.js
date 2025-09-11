@@ -233,7 +233,25 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     }, [tournamentId, currentRound, loadRounds, loadSnapshot]);
 
     return (
-        <div className="fullmix-panel" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
+        <>
+            {/* Header with admin controls */}
+            {isAdminOrCreator && (
+                <div className="fullmix-header">
+                    {rounds.length === 0 && (
+                        <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
+                    )}
+                    {rounds.length > 0 && (
+                        <>
+                            <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
+                            <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
+                            <button className="btn btn-secondary" onClick={() => window.open(window.location.href, '_blank')}>Открыть в отдельном окне</button>
+                        </>
+                    )}
+                    {actionMessage && <span className="fullmix-header-message">{actionMessage}</span>}
+                </div>
+            )}
+
+            <div className="fullmix-panel" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
             {/* Standings слева */}
             <div className="fullmix-standings">
                 <div className="fullmix-standings-headline">
@@ -281,23 +299,6 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     </ul>
                 </div>
 
-                {/* Admin controls */}
-                {isAdminOrCreator && (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {rounds.length === 0 && (
-                            <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
-                        )}
-                        {rounds.length > 0 && (
-                            <>
-                                <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
-                                <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
-                                <button className="btn btn-secondary" onClick={() => window.open(window.location.href, '_blank')}>Открыть в отдельном окне</button>
-                            </>
-                        )}
-                        {actionMessage && <span style={{ color: '#ccc', fontSize: 12 }}>{actionMessage}</span>}
-                    </div>
-                )}
-
                 {/* Переключатель раундов */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
@@ -340,7 +341,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
                 {/* Блок подтверждения убран, вместо него кнопка открытия черновика в панели выше */}
             </div>
-        </div>
+            </div>
+        </>
     );
 }
 
