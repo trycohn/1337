@@ -572,7 +572,7 @@ const MatchDetailsPage = () => {
                                 key={mapKey}
                                 className={`map-card ${isSelected ? 'map-played' : 'map-not-played'}`}
                                 onClick={() => {
-                                    if (!isAdminOrCreator || !isSelected) return;
+                                    if (!isAdminOrCreator) return;
                                     const mapsDataArr = getEditableMapsData();
                                     const idx = mapsDataArr.findIndex(m => normalizeMapName(m.map_name || m.map || m.name) === mapKey);
                                     if (idx >= 0) {
@@ -588,7 +588,7 @@ const MatchDetailsPage = () => {
                                     setEditingMapKey(mapKey);
                                     setIsScoreModalOpen(true);
                                 }}
-                                style={{ cursor: isAdminOrCreator && isSelected ? 'pointer' : 'default' }}
+                                style={{ cursor: isAdminOrCreator ? 'pointer' : 'default' }}
                             >
                                 <div className="map-image-wrapper">
                                     <img src={getMapImage(mapKey)} alt={mapKey} className="map-image" />
