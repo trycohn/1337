@@ -50,8 +50,10 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const loadStandings = useCallback(async () => {
         try {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/standings`);
+            try { console.log('[FullMix] loadStandings -> rows:', Array.isArray(res.data?.standings) ? res.data.standings.length : 'n/a'); } catch (_) {}
             setLiveStandings(res.data?.standings || []);
         } catch (_) {
+            try { console.warn('[FullMix] loadStandings failed'); } catch (_) {}
             setLiveStandings([]);
         }
     }, [tournamentId]);
@@ -90,12 +92,14 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
         const onRoundCompleted = (payload) => {
             if (!payload || payload.round == null) return;
+            try { console.log('[FullMix] socket fullmix_round_completed', payload); } catch (_) {}
             loadRounds();
             loadSnapshot(payload.round);
             loadStandings();
         };
         const onMatchUpdated = (payload) => {
             if (!payload) return;
+            try { console.log('[FullMix] socket fullmix_match_updated', payload); } catch (_) {}
             loadRounds();
             loadSnapshot(currentRound || payload.round);
             loadStandings();
