@@ -28,16 +28,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    height: 67px;
+    padding: 16px;
 }
 
 .fullmix-standings-title {
     margin: 0;
+    font-family: Play;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
 }
 
 .fullmix-standings-round {
+    font-family: Play;
+    font-weight: 400;
     font-size: 12px;
-    color: #aaa;
+    line-height: 100%;
+    letter-spacing: 8%;
+    color: #949494;
 }
 
 .fullmix-standings-scroll {
@@ -58,6 +70,48 @@
 
 .fullmix-standings-table td, .fullmix-standings-table th {
     padding: 6px 4px;
+}
+
+.fullmix-standings-table thead th {
+    position: sticky;
+    top: 0;
+    background: #000;
+    z-index: 1;
+    border-bottom: 1px solid #1D1D1D;
+}
+
+.fullmix-standings-table tbody tr {
+    border-bottom: 1px solid #1D1D1D;
+}
+
+.fullmix-standings-table tbody tr:nth-child(even) {
+    background: #0a0a0a;
+}
+
+.fullmix-standings-table tbody tr:hover {
+    background: #111111;
+}
+
+/* Колонки: 1 — имя влево; 2..4 — центр и фикс. ширина */
+.fullmix-standings-table th:nth-child(1),
+.fullmix-standings-table td:nth-child(1) {
+    text-align: left;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fullmix-standings-table th:nth-child(n+2),
+.fullmix-standings-table td:nth-child(n+2) {
+    text-align: center;
+    width: 56px;
+}
+
+/* Вертикальные разделители между колонками (кроме первой) */
+.fullmix-standings-table th + th,
+.fullmix-standings-table td + td {
+    border-left: 1px solid #1D1D1D;
 }
 
 .fullmix-standings-empty {

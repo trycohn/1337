@@ -990,9 +990,6 @@ const TeamGenerator = ({
                                     </button>
                                 </div>
                             </div>
-                            <div className="no-teams-message" style={{ marginTop: 12 }}>
-                                <p>Составы и матчи управляются на вкладке "MIX команды" и в черновике.</p>
-                            </div>
                         </div>
                     ) : (
                         renderTeamsList()
