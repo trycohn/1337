@@ -974,10 +974,25 @@ const TeamGenerator = ({
                     {renderParticipantsList()}
                 </div>
                 <div className="mix-grid-right">
-                    {/* Для Full Mix на вкладке "Участники" скрываем правый блок сформированных команд */}
                     {isFullMix ? (
-                        <div className="no-teams-message">
-                            <p>Составы и матчи управляются на вкладке "MIX команды" и в черновике.</p>
+                        <div className="teams-display-participants2.0">
+                            <div className="referral-invite-card-participants2.0">
+                                <div className="referral-invite-content-participants2.0">
+                                    <div className="referral-invite-text-participants2.0">
+                                        <div className="referral-title-participants2.0">Зови друзей — делите бонусы</div>
+                                        <div className="referral-subtitle-participants2.0">Поделитесь ссылкой с друзьями и получайте бонусы за каждого нового игрока!</div>
+                                    </div>
+                                    <button 
+                                        className="btn btn-secondary"
+                                        onClick={() => setShowReferralModal(true)}
+                                    >
+                                        Пригласить друга
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="no-teams-message" style={{ marginTop: 12 }}>
+                                <p>Составы и матчи управляются на вкладке "MIX команды" и в черновике.</p>
+                            </div>
                         </div>
                     ) : (
                         renderTeamsList()
@@ -993,7 +1008,7 @@ const TeamGenerator = ({
                 <div className="modal-overlay">
                     <div className="modal-content reform-modal">
                         <div className="modal-header">
-                            <h3>🔄 Подтверждение переформирования</h3>
+                            <h3>Подтверждение переформирования</h3>
                             <button 
                                 className="close-btn"
                                 onClick={() => {
@@ -1008,7 +1023,7 @@ const TeamGenerator = ({
                         
                         <div className="modal-body">
                             <div className="warning-content">
-                                <div className="warning-icon">⚠️</div>
+                                
                                 <div className="warning-text">
                                     <h4>Вы уверены что хотите переформировать команды?</h4>
                                     <p className="warning-message">
@@ -1023,7 +1038,7 @@ const TeamGenerator = ({
                                         <li>Участники могут попасть в совершенно другие команды</li>
                                         <li>Размер команд: {teamSize} игрок{teamSize === '1' ? '' : teamSize > '4' ? 'ов' : 'а'}</li>
                                         {tournament?.matches && tournament.matches.length > 0 && (
-                                            <li className="warning-remainder">⚠️ Турнирная сетка будет полностью удалена и потребует повторной генерации</li>
+                                            <li className="warning-remainder">Турнирная сетка будет полностью удалена и потребует повторной генерации</li>
                                         )}
                                         <li>Действие нельзя будет отменить</li>
                                     </ul>
@@ -1035,7 +1050,7 @@ const TeamGenerator = ({
                                             <li>В командах: {displayParticipants.filter(p => p.in_team).length}</li>
                                             {displayParticipants.filter(p => !p.in_team).length > 0 && (
                                                 <li className="new-participants-highlight">
-                                                    🆕 Новых участников (не в команде): {displayParticipants.filter(p => !p.in_team).length}
+                                                    Новых участников (не в команде): {displayParticipants.filter(p => !p.in_team).length}
                                                 </li>
                                             )}
                                             <li>Существующих команд: {mixedTeams.length}</li>
@@ -1045,7 +1060,7 @@ const TeamGenerator = ({
                                         {/* 🆕 ПОКАЗЫВАЕМ НОВЫХ УЧАСТНИКОВ ЕСЛИ ОНИ ЕСТЬ */}
                                         {displayParticipants.filter(p => !p.in_team).length > 0 && (
                                             <div className="new-participants-preview">
-                                                <p><strong>🆕 Новые участники будут включены в команды:</strong></p>
+                                                <p><strong>Новые участники будут включены в команды:</strong></p>
                                                 <ul className="new-participants-list">
                                                     {(showAllNewParticipants 
                                                         ? displayParticipants.filter(p => !p.in_team)
@@ -1125,14 +1140,14 @@ const TeamGenerator = ({
                                         
                                         {/* 🆕 ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА */}
                                         <div className="reform-preview">
-                                            <p><strong>📊 После переформирования будет:</strong></p>
+                                            <p><strong>После переформирования будет:</strong></p>
                                             <ul>
                                                 <li>Команд: {Math.floor(displayParticipants.length / parseInt(teamSize))}</li>
                                                 <li>Игроков в каждой команде: {teamSize}</li>
                                                 <li>Общий охват: {Math.floor(displayParticipants.length / parseInt(teamSize)) * parseInt(teamSize)} из {displayParticipants.length} участников</li>
                                                 {displayParticipants.length % parseInt(teamSize) !== 0 && (
                                                     <li className="warning-remainder">
-                                                        ⚠️ Останется вне команд: {displayParticipants.length % parseInt(teamSize)} участников
+                                                        Останется вне команд: {displayParticipants.length % parseInt(teamSize)} участников
                                                     </li>
                                                 )}
                                             </ul>
@@ -1151,14 +1166,14 @@ const TeamGenerator = ({
                                 }}
                                 disabled={reformLoading}
                             >
-                                ❌ Отмена
+                                Отмена
                             </button>
                             <button 
                                 className="btn-confirm-reform"
                                 onClick={handleReformTeams}
                                 disabled={reformLoading}
                             >
-                                {reformLoading ? '⏳ Переформирование...' : '🔄 Да, переформировать команды'}
+                                {reformLoading ? 'Переформирование...' : 'Да, переформировать команды'}
                             </button>
                         </div>
                     </div>
