@@ -1128,16 +1128,18 @@ function TournamentDetails() {
             case 'bracket':
                 return (
                     <div className="tab-content-bracket">
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
-                            {tournament?.id && (
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => window.open(`/tournaments/${tournament.id}/bracket`, '_blank', 'noopener,noreferrer')}
-                                >
-                                    Открыть в отдельном окне
-                                </button>
-                            )}
-                        </div>
+                        {!(tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full') && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
+                                {tournament?.id && (
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => window.open(`/tournaments/${tournament.id}/bracket`, '_blank', 'noopener,noreferrer')}
+                                    >
+                                        Открыть в отдельном окне
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         {/* Новая система управления сеткой */}
                         {tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full' ? (
                             <FullMixBracketPanel tournament={tournament} isAdminOrCreator={isAdminOrCreator} />
