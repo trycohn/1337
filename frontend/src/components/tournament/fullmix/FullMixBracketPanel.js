@@ -74,12 +74,18 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     useEffect(() => {
         const socket = getSocketInstance && getSocketInstance();
         if (!socket || !tournamentId) return;
-        // Присоединяемся к комнате турнира для broadcast событий
-        try { socket.emit && socket.emit('join_tournament', tournamentId); } catch (_) {}
+        // Гарантируем вступление в комнату после установления соединения/переподключения
+        const joinRoom = () => {
+            try { socket.emit && socket.emit('join_tournament', tournamentId); } catch (_) {}
+        };
+        if (socket.connected) joinRoom();
+        socket.on && socket.on('connect', joinRoom);
+
         const onRoundCompleted = (payload) => {
             if (!payload || payload.round == null) return;
             loadRounds();
             loadSnapshot(payload.round);
+            loadStandings();
         };
         const onMatchUpdated = (payload) => {
             if (!payload) return;
@@ -89,6 +95,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         socket.on('fullmix_round_completed', onRoundCompleted);
         socket.on('fullmix_match_updated', onMatchUpdated);
         return () => {
+            socket.off && socket.off('connect', joinRoom);
             socket.off && socket.off('fullmix_round_completed', onRoundCompleted);
             socket.off && socket.off('fullmix_match_updated', onMatchUpdated);
         };
