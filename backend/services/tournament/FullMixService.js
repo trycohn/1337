@@ -118,13 +118,7 @@ class FullMixService {
         }
         const standings = await this.calculateStandings(tournamentId);
 
-        // Проверяем победителя по wins_to_win
-        const winners = standings.filter(s => (s.wins || 0) >= settings.wins_to_win);
-        if (winners.length > 0) {
-            const t = await TournamentService.getTournament(tournamentId);
-            await TournamentService.endTournament(tournamentId, t?.created_by);
-            return { completed: true, winners, standings };
-        }
+        // Не завершаем турнир автоматически: финал оформляется отдельным финальным раундом, завершение делает администратор
 
         // Попытка определить TOP10 финалистов или исключить bottom10
         const selection = this.selectFinalistsOrEliminate(standings, 10);
