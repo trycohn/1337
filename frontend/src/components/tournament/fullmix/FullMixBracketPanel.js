@@ -244,7 +244,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         <>
                             <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
                             <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
-                            <button className="btn btn-secondary" onClick={() => window.open(window.location.href, '_blank')}>Открыть в отдельном окне</button>
+                            <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournament.id}/bracket`, '_blank', 'noopener,noreferrer')}>Открыть в отдельном окне</button>
                         </>
                     )}
                     {actionMessage && <span className="fullmix-header-message">{actionMessage}</span>}
