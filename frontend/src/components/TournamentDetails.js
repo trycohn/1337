@@ -1051,7 +1051,7 @@ function TournamentDetails() {
             case 'participants':
                 return (
                     <div className="tab-content-participants">
-                        {tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() !== 'full' && (
+                        {tournament?.format === 'mix' && (
                             <div className="team-generator-section-participants" style={{ marginBottom: 16 }}>
                                 <TeamGenerator
                                     tournament={tournament}

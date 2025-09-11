@@ -974,7 +974,14 @@ const TeamGenerator = ({
                     {renderParticipantsList()}
                 </div>
                 <div className="mix-grid-right">
-                    {renderTeamsList()}
+                    {/* Для Full Mix на вкладке "Участники" скрываем правый блок сформированных команд */}
+                    {isFullMix ? (
+                        <div className="no-teams-message">
+                            <p>Составы и матчи управляются на вкладке "MIX команды" и в черновике.</p>
+                        </div>
+                    ) : (
+                        renderTeamsList()
+                    )}
                 </div>
             </div>
 
