@@ -18,8 +18,6 @@
 }
 
 .fullmix-standings {
-    background: #000;
-    border: 1px solid #1D1D1D;
     border-radius: 8px;
     padding: 12px;
 }
@@ -30,6 +28,9 @@
     justify-content: space-between;
     height: 67px;
     padding: 16px;
+    background-color: #1D1D1D;
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
 }
 
 .fullmix-standings-title {
@@ -48,7 +49,7 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 100%;
-    letter-spacing: 8%;
+    letter-spacing: 0.08em;
     color: #949494;
 }
 
@@ -66,6 +67,9 @@
 .fullmix-standings-table thead tr {
     text-align: left;
     color: #ccc;
+    height: 64px;
+    padding: 16px 32px;
+    background-color: #1D1D1D;
 }
 
 .fullmix-standings-table td, .fullmix-standings-table th {
@@ -77,11 +81,25 @@
     top: 0;
     background: #000;
     z-index: 1;
-    border-bottom: 1px solid #1D1D1D;
 }
 
 .fullmix-standings-table tbody tr {
     border-bottom: 1px solid #1D1D1D;
+}
+
+.fullmix-standings-table tbody tr:nth-child(1) {
+    background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(167, 125, 42, 0) 0deg, #A77D2A 180deg, rgba(65, 49, 16, 0) 360deg);
+    border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D)
+}
+
+.fullmix-standings-table tbody tr:nth-child(2) {
+    background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(94, 141, 141, 0) 0deg, #5E8D8D 180deg, rgba(94, 141, 141, 0) 360deg);
+    border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D)
+}
+
+.fullmix-standings-table tbody tr:nth-child(3) {
+    background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(88, 88, 88, 0) 0deg, #585858 180deg, rgba(88, 88, 88, 0) 360deg);
+    border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D)
 }
 
 .fullmix-standings-table tbody tr:nth-child(even) {
