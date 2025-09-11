@@ -132,7 +132,13 @@ class FullMixService {
         let eliminated = selection.eliminated || [];
 
         const nextRound = current + 1;
-        const snapshot = await this.generateRoundSnapshot(tournamentId, nextRound, settings.rating_mode, standings);
+        // Исключаем нижние 10 при необходимости
+        let eligible = null;
+        if (eliminated.length === 10) {
+            const eliminatedSet = new Set(eliminated.map(id => parseInt(id, 10)));
+            eligible = this.rankStandings(standings).map(s => s.user_id).filter(uid => !eliminatedSet.has(parseInt(uid, 10)));
+        }
+        const snapshot = await this.generateRoundSnapshot(tournamentId, nextRound, settings.rating_mode, standings, { eligibleUserIds: eligible });
         // сохраняем метаданные выбора
         snapshot.meta = snapshot.meta || {};
         if (finalists.length === 10) {
@@ -284,10 +290,14 @@ class FullMixService {
     }
 
     static async generateRoundSnapshot(tournamentId, roundNumber, ratingMode = 'random', standings = null, options = {}) {
-        const { ephemeral = false } = options;
+        const { ephemeral = false, eligibleUserIds = null } = options;
         // Эфемерный режим: не пишем в БД, отдаём только расчётные команды/матчи для превью
         if (ephemeral) {
-            const participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            let participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            if (Array.isArray(eligibleUserIds) && eligibleUserIds.length > 0) {
+                const allow = new Set(eligibleUserIds.map(id => parseInt(id, 10)));
+                participants = participants.filter(p => allow.has(parseInt(p.user_id, 10)));
+            }
             const teamSize = await this.getTeamSize(tournamentId);
             const formed = this.formTeams(participants, ratingMode, teamSize);
             const previewTeams = formed.map((t, idx) => ({
@@ -303,7 +313,11 @@ class FullMixService {
         try {
             await client.query('BEGIN');
             // Получаем пул участников
-            const participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            let participants = await this.getEligibleParticipants(tournamentId, ratingMode, standings);
+            if (Array.isArray(eligibleUserIds) && eligibleUserIds.length > 0) {
+                const allow = new Set(eligibleUserIds.map(id => parseInt(id, 10)));
+                participants = participants.filter(p => allow.has(parseInt(p.user_id, 10)));
+            }
             const teamSize = await this.getTeamSize(tournamentId);
             const teams = this.formTeams(participants, ratingMode, teamSize);
             const createdTeams = await this.createTeamsForRound(tournamentId, roundNumber, teams, ratingMode, client);
