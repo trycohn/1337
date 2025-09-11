@@ -208,7 +208,7 @@ class FullMixService {
             `WITH m AS (
                 SELECT id, tournament_id, team1_id, team2_id, winner_team_id
                 FROM matches
-                WHERE tournament_id = $1 AND status = 'completed' AND winner_team_id IS NOT NULL
+                WHERE tournament_id = $1 AND winner_team_id IS NOT NULL
             ),
             winners AS (
                 SELECT COALESCE(ttm.user_id, tp.user_id) AS user_id

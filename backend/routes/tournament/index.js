@@ -491,7 +491,7 @@ router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyControlle
 router.post('/:id/fullmix/start', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.start);
 router.post('/:id/fullmix/generate-next', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.generateNext);
 router.post('/:id/fullmix/complete-round', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.completeRound);
-router.get('/:id/fullmix/standings', authenticateToken, FullMixController.standings);
+router.get('/:id/fullmix/standings', FullMixController.standings);
 router.get('/:id/fullmix/snapshots', authenticateToken, FullMixController.snapshots);
 router.get('/:id/fullmix/rounds/:round', authenticateToken, FullMixController.getRound);
 router.post('/:id/fullmix/rounds/:round/approve', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.approve);

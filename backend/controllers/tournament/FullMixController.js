@@ -32,7 +32,11 @@ class FullMixController {
     static standings = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         const standings = await FullMixService.calculateStandings(tournamentId);
-        res.json({ success: true, standings });
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        res.set('Vary', 'Authorization');
+        res.status(200).json({ success: true, standings });
     });
 
     static snapshots = asyncHandler(async (req, res) => {
