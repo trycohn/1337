@@ -27,12 +27,6 @@ const MatchDetailsPage = () => {
     const [score1Input, setScore1Input] = useState('');
     const [score2Input, setScore2Input] = useState('');
     const [isSavingMap, setIsSavingMap] = useState(false);
-    // 🆕 Редактор итогового счёта серии (без лобби)
-    const [isSeriesScoreModalOpen, setIsSeriesScoreModalOpen] = useState(false);
-    const [seriesScore1, setSeriesScore1] = useState('');
-    const [seriesScore2, setSeriesScore2] = useState('');
-    const [seriesWinnerTeamId, setSeriesWinnerTeamId] = useState(null);
-    const [isSavingSeries, setIsSavingSeries] = useState(false);
     const [userIsAdmin, setUserIsAdmin] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
 
@@ -183,53 +177,7 @@ const MatchDetailsPage = () => {
         }
     };
 
-    // 🆕 Открытие редактора результата серии (для случаев без лобби/карт)
-    const handleOpenSeriesEditor = () => {
-        if (!isAdminOrCreator) return;
-        const s1 = Number.isFinite(match?.score1) ? String(match.score1) : '';
-        const s2 = Number.isFinite(match?.score2) ? String(match.score2) : '';
-        setSeriesScore1(s1);
-        setSeriesScore2(s2);
-        setSeriesWinnerTeamId(match?.winner_team_id || null);
-        setIsSeriesScoreModalOpen(true);
-    };
-
-    const handleSaveSeriesResult = async () => {
-        try {
-            setIsSavingSeries(true);
-            const token = localStorage.getItem('token');
-            if (!token) { alert('Нужна авторизация'); return; }
-
-            const s1 = seriesScore1 === '' ? null : parseInt(seriesScore1, 10);
-            const s2 = seriesScore2 === '' ? null : parseInt(seriesScore2, 10);
-
-            let winnerTeamId = seriesWinnerTeamId;
-            if (!winnerTeamId && typeof s1 === 'number' && typeof s2 === 'number' && s1 !== s2) {
-                winnerTeamId = s1 > s2 ? match.team1_id : match.team2_id;
-            }
-            if (!winnerTeamId) { alert('Укажите победителя или несмешанный счёт.'); return; }
-
-            const body = {
-                winner_team_id: winnerTeamId,
-                score1: typeof s1 === 'number' ? s1 : null,
-                score2: typeof s2 === 'number' ? s2 : null,
-                maps_data: Array.isArray(match?.maps_data) ? match.maps_data : []
-            };
-
-            const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify(body)
-            });
-            if (!resp.ok) throw new Error('Не удалось сохранить результат матча');
-            await fetchMatchDetails();
-            setIsSeriesScoreModalOpen(false);
-        } catch (e) {
-            alert(e.message || 'Ошибка сохранения результата');
-        } finally {
-            setIsSavingSeries(false);
-        }
-    };
+    // Редактирование серии удалено — счёт выставляется кликом по карте
 
     const getTeamLogo = (team) => {
         if (!team) return '/default-avatar.png';
@@ -532,6 +480,7 @@ const MatchDetailsPage = () => {
 
         // 2) Если есть история лобби (selections) — показываем карты в порядке BAN/PICK
         const selections = Array.isArray(match?.selections) ? match.selections : [];
+        // Если нет ни карт, ни истории лобби — показываем стандартный пул (ниже)
         const teamNameById = {
             [match.team1_id]: match.team1_name || 'Команда 1',
             [match.team2_id]: match.team2_name || 'Команда 2'
@@ -875,11 +824,7 @@ const MatchDetailsPage = () => {
                                 Завершить матч
                             </button>
                         )}
-                        {isAdminOrCreator && (
-                            <button className="btn btn-secondary" onClick={handleOpenSeriesEditor} title="Редактировать итоговый счёт матча">
-                                Редактировать результат
-                            </button>
-                        )}
+                        {/* Редактирование итога — по клику на карту */}
                         <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
                             🔗 Поделиться
                         </button>
@@ -1019,67 +964,7 @@ const MatchDetailsPage = () => {
                 </div>
             )}
 
-            {/* 🆕 Модалка итогового счёта серии (без лобби) */}
-            {isSeriesScoreModalOpen && isAdminOrCreator && (
-                <div className="score-modal-overlay" onClick={() => setIsSeriesScoreModalOpen(false)}>
-                    <div className="score-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="score-modal-header">
-                            <span className="score-modal-title">Итоговый счёт матча</span>
-                            <button className="score-modal-close" onClick={() => setIsSeriesScoreModalOpen(false)}>✕</button>
-                        </div>
-                        <div className="score-modal-body">
-                            <div className="score-field" style={{ gap: 8 }}>
-                                <label>{match.team1_name || 'Команда 1'}</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="score-input"
-                                    value={seriesScore1}
-                                    onChange={(e) => setSeriesScore1(e.target.value)}
-                                />
-                                <input
-                                    type="radio"
-                                    name="series-winner"
-                                    checked={seriesWinnerTeamId === match.team1_id}
-                                    onChange={() => setSeriesWinnerTeamId(match.team1_id)}
-                                    title="Выбрать победителем"
-                                    style={{ marginLeft: 8 }}
-                                />
-                            </div>
-                            <div className="score-sep">:</div>
-                            <div className="score-field" style={{ gap: 8 }}>
-                                <label>{match.team2_name || 'Команда 2'}</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="score-input"
-                                    value={seriesScore2}
-                                    onChange={(e) => setSeriesScore2(e.target.value)}
-                                />
-                                <input
-                                    type="radio"
-                                    name="series-winner"
-                                    checked={seriesWinnerTeamId === match.team2_id}
-                                    onChange={() => setSeriesWinnerTeamId(match.team2_id)}
-                                    title="Выбрать победителем"
-                                    style={{ marginLeft: 8 }}
-                                />
-                            </div>
-                            <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
-                                Подсказка: если счёт не равный, победитель выберется автоматически.
-                            </div>
-                        </div>
-                        <div className="score-modal-actions">
-                            <button className="btn btn-primary" onClick={handleSaveSeriesResult} disabled={isSavingSeries}>
-                                {isSavingSeries ? 'Сохранение…' : 'Сохранить'}
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => setIsSeriesScoreModalOpen(false)} disabled={isSavingSeries}>
-                                Отменить
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Итог считается автоматически по картам; отдельная серия-модалка не требуется */}
             
             {/* Pick & Ban — удалено, история интегрирована в маппул */}
             
