@@ -67,7 +67,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     useEffect(() => {
         if (!tournamentId || !currentRound) return;
         loadSnapshot(currentRound);
-    }, [tournamentId, currentRound, loadSnapshot]);
+        loadStandings();
+    }, [tournamentId, currentRound, loadSnapshot, loadStandings]);
 
     // Live updates via Socket.IO
     useEffect(() => {
@@ -134,13 +135,14 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             const last = rounds[rounds.length - 1]?.round_number || 1;
             setCurrentRound(last);
             await loadSnapshot(last);
+            await loadStandings();
             setActionMessage('Раунд 1 создан');
         } catch (e) {
             setActionMessage('Ошибка старта раунда');
         } finally {
             setTimeout(() => setActionMessage(''), 3000);
         }
-    }, [tournamentId, rounds, loadRounds, loadSnapshot]);
+    }, [tournamentId, rounds, loadRounds, loadSnapshot, loadStandings]);
 
     // Объединённая логика: завершить текущий раунд и сразу попытаться сгенерировать следующий
 
