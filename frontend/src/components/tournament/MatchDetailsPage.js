@@ -937,10 +937,17 @@ const MatchDetailsPage = () => {
                                                     const token = localStorage.getItem('token');
                                                     const s1 = score1Input === '' ? null : parseInt(score1Input, 10);
                                                     const s2 = score2Input === '' ? null : parseInt(score2Input, 10);
-                                                    const mapsData = getEditableMapsData();
-                                                    const body = {
-                                                        maps_data: mapsData.map((mm, i) => i === (editingMapIndex ?? 0) ? { ...mm, score1: s1, score2: s2 } : mm)
-                                                    };
+                                                    const base = getEditableMapsData();
+                                                    // Обеспечиваем наличие выбранной карты в массиве
+                                                    let mapsList = Array.isArray(base) ? [...base] : [];
+                                                    const key = normalizeMapName(editingMapKey || current?.map_name || current?.map || current?.name);
+                                                    let idx = (editingMapIndex != null) ? editingMapIndex : mapsList.findIndex(mm => normalizeMapName(mm.map_name || mm.map || mm.name) === key);
+                                                    if (idx < 0) {
+                                                        mapsList.push({ map_name: key, score1: null, score2: null });
+                                                        idx = mapsList.length - 1;
+                                                    }
+                                                    mapsList = mapsList.map((mm, i) => i === idx ? { ...mm, score1: s1, score2: s2 } : mm);
+                                                    const body = { maps_data: mapsList };
                                                     const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
