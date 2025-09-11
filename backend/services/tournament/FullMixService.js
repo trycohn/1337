@@ -149,6 +149,8 @@ class FullMixService {
         const snap = await this.getSnapshot(tournamentId, roundNumber);
         if (!snap) throw new Error('Снапшот раунда не найден');
         if (snap.approved_teams) throw new Error('Составы уже подтверждены и не могут быть переформированы');
+        const completed = await this.isRoundCompleted(tournamentId, roundNumber);
+        if (completed) throw new Error('Раунд уже завершён. Переформирование запрещено.');
 
         // Удаляем матчи текущего раунда
         await pool.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
@@ -344,6 +346,8 @@ class FullMixService {
         console.log(`🧩 [FullMix] approveRound: t=${tournamentId} r=${roundNumber} flags: {teams:${approveTeams}, matches:${approveMatches}}`);
         // Стадия 1: утверждение команд
         if (approveTeams) {
+            const completed = await this.isRoundCompleted(tournamentId, roundNumber);
+            if (completed) throw new Error('Раунд уже завершён. Подтверждение составов недоступно.');
             const preview = await this.getPreview(tournamentId, roundNumber);
             if (!preview || !Array.isArray(preview.preview?.teams)) {
                 throw new Error('Черновик составов не найден');
@@ -408,6 +412,8 @@ class FullMixService {
             if (!snap || snap.approved_teams !== true) {
                 throw new Error('Составы команд не подтверждены');
             }
+            const completed = await this.isRoundCompleted(tournamentId, roundNumber);
+            if (completed) throw new Error('Раунд уже завершён. Подтверждение матчей недоступно.');
             let preview = await this.getPreview(tournamentId, roundNumber);
             if (!preview || !Array.isArray(preview.preview?.matches) || preview.preview.matches.length === 0) {
                 // Fallback: если превью матчей нет — сгенерировать пары на лету из снапшота

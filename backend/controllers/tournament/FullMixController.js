@@ -191,11 +191,27 @@ class FullMixController {
         const round = parseInt(req.params.round);
         const userId = req.user?.id || null;
         const { mode } = req.body || {}; // mode: 'teams' | 'matches'; default 'teams'
+        // Защиты: нельзя переформировать в завершённом раунде
+        const roundCompleted = await FullMixService.isRoundCompleted(tournamentId, round);
+        if (roundCompleted) {
+            return res.status(400).json({ success: false, error: 'Раунд завершён. Переформирование запрещено.' });
+        }
+        const snap = await FullMixService.getSnapshot(tournamentId, round);
         if (mode === 'matches') {
+            if (snap && snap.approved_matches === true) {
+                return res.status(400).json({ success: false, error: 'Матчи уже подтверждены. Переформирование запрещено.' });
+            }
+            if (!snap || snap.approved_teams !== true) {
+                return res.status(400).json({ success: false, error: 'Сначала подтвердите составы команд.' });
+            }
             // Сгенерировать превью матчей по уже подтверждённым командам
             const mp = await FullMixService.generateMatchesPreviewFromSnapshot(tournamentId, round);
             const saved = await FullMixService.savePreview(tournamentId, round, mp, userId);
             return res.json({ success: true, item: saved });
+        }
+        // mode === 'teams' (или по умолчанию)
+        if (snap && snap.approved_teams === true) {
+            return res.status(400).json({ success: false, error: 'Составы уже подтверждены. Переформирование запрещено.' });
         }
         const settings = await FullMixService.getSettings(tournamentId);
         const standings = await FullMixService.calculateStandings(tournamentId);
