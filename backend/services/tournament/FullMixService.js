@@ -203,7 +203,7 @@ class FullMixService {
     }
 
     static async calculateStandings(tournamentId) {
-        // Корректная агрегация побед/поражений по пользователям
+        console.log(`📊 [FullMix] calculateStandings for tournament ${tournamentId}`);
         const res = await pool.query(
             `WITH m AS (
                 SELECT id, tournament_id, team1_id, team2_id, winner_team_id
@@ -211,47 +211,55 @@ class FullMixService {
                 WHERE tournament_id = $1 AND winner_team_id IS NOT NULL
             ),
             winners AS (
-                SELECT COALESCE(ttm.user_id, tp.user_id) AS user_id
+                SELECT ttm.participant_id AS participant_id
                 FROM m
                 JOIN tournament_team_members ttm ON ttm.team_id = m.winner_team_id
-                LEFT JOIN tournament_participants tp ON tp.id = ttm.participant_id
+                WHERE ttm.participant_id IS NOT NULL
             ),
             losers AS (
-                SELECT COALESCE(ttm.user_id, tp.user_id) AS user_id
+                SELECT ttm.participant_id AS participant_id
                 FROM m
                 JOIN LATERAL (
                     SELECT CASE WHEN m.winner_team_id = m.team1_id THEN m.team2_id ELSE m.team1_id END AS loser_team_id
                 ) l ON true
                 JOIN tournament_team_members ttm ON ttm.team_id = l.loser_team_id
-                LEFT JOIN tournament_participants tp ON tp.id = ttm.participant_id
+                WHERE ttm.participant_id IS NOT NULL
             ),
             win_agg AS (
-                SELECT user_id, COUNT(*)::int AS wins FROM winners WHERE user_id IS NOT NULL GROUP BY user_id
+                SELECT participant_id, COUNT(*)::int AS wins FROM winners GROUP BY participant_id
             ),
             loss_agg AS (
-                SELECT user_id, COUNT(*)::int AS losses FROM losers WHERE user_id IS NOT NULL GROUP BY user_id
+                SELECT participant_id, COUNT(*)::int AS losses FROM losers GROUP BY participant_id
             ),
             base AS (
-                SELECT DISTINCT COALESCE(u.id, tp.user_id) AS user_id, COALESCE(u.username, tp.name) AS username
+                SELECT tp.id AS participant_id,
+                       COALESCE(u.id, tp.user_id) AS user_id,
+                       COALESCE(u.username, tp.name) AS username
                 FROM tournament_participants tp
                 LEFT JOIN users u ON u.id = tp.user_id
                 WHERE tp.tournament_id = $1
             )
-            SELECT b.user_id, b.username,
+            SELECT b.participant_id,
+                   COALESCE(b.user_id, b.participant_id) AS uid,
+                   b.user_id,
+                   b.username,
                    COALESCE(w.wins, 0) AS wins,
                    COALESCE(l.losses, 0) AS losses
             FROM base b
-            LEFT JOIN win_agg w ON w.user_id = b.user_id
-            LEFT JOIN loss_agg l ON l.user_id = b.user_id
+            LEFT JOIN win_agg w ON w.participant_id = b.participant_id
+            LEFT JOIN loss_agg l ON l.participant_id = b.participant_id
             ORDER BY wins DESC, losses ASC, LOWER(username) ASC`,
             [tournamentId]
         );
-        return res.rows.map(r => ({
-            user_id: r.user_id ? parseInt(r.user_id, 10) : null,
+        const rows = res.rows.map(r => ({
+            participant_id: r.participant_id ? parseInt(r.participant_id, 10) : null,
+            user_id: r.uid ? parseInt(r.uid, 10) : null,
             username: r.username,
             wins: parseInt(r.wins || 0, 10),
             losses: parseInt(r.losses || 0, 10)
         }));
+        console.log(`📊 [FullMix] standings rows: ${rows.length}`);
+        return rows;
     }
 
     static rankStandings(standings) {
