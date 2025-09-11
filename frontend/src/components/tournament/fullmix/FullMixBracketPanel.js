@@ -242,7 +242,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 </div>
             )}
 
-            <div className="fullmix-panel" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
+            <div className="fullmix-panel">
             {/* Standings слева */}
             <div className="fullmix-standings">
                 <div className="fullmix-standings-headline">
