@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import api from '../../../utils/api';
-import { getSocketInstance } from '../../../services/socketClient_v5_simplified';
+import { getSocketInstance, authenticateSocket } from '../../../services/socketClient_v5_simplified';
 
 function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
@@ -78,6 +78,13 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const joinRoom = () => {
             try { socket.emit && socket.emit('join_tournament', tournamentId); } catch (_) {}
         };
+        // 🛡️ Авторизация сокета, если есть токен
+        try {
+            const token = localStorage.getItem('token');
+            if (token && (!socket.auth || socket.auth.token !== token)) {
+                authenticateSocket(token);
+            }
+        } catch (_) {}
         if (socket.connected) joinRoom();
         socket.on && socket.on('connect', joinRoom);
 
@@ -89,6 +96,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         };
         const onMatchUpdated = (payload) => {
             if (!payload) return;
+            loadRounds();
             loadSnapshot(currentRound || payload.round);
             loadStandings();
         };
@@ -100,6 +108,36 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             socket.off && socket.off('fullmix_match_updated', onMatchUpdated);
         };
     }, [tournamentId, currentRound, loadRounds, loadSnapshot, loadStandings]);
+
+    // 🔁 Резервный поллинг, если сокет недоступен или соединение потеряно
+    useEffect(() => {
+        const socket = getSocketInstance && getSocketInstance();
+        if (!tournamentId) return;
+        let intervalId = null;
+        const startPolling = () => {
+            if (intervalId) return;
+            intervalId = setInterval(() => {
+                loadStandings();
+                if (currentRound) loadSnapshot(currentRound);
+            }, 7000);
+        };
+        const stopPolling = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+        const handleConnect = () => stopPolling();
+        const handleDisconnect = () => startPolling();
+        if (!socket || !socket.connected) startPolling();
+        socket && socket.on && socket.on('connect', handleConnect);
+        socket && socket.on && socket.on('disconnect', handleDisconnect);
+        return () => {
+            stopPolling();
+            socket && socket.off && socket.off('connect', handleConnect);
+            socket && socket.off && socket.off('disconnect', handleDisconnect);
+        };
+    }, [tournamentId, currentRound, loadSnapshot, loadStandings]);
 
     const onApprove = useCallback(async (type) => {
         if (!currentRound) return;
