@@ -500,8 +500,7 @@ const MatchDetailsPage = () => {
                             const teamName = teamNameById[s.team_id] || 'Команда';
                             const canEdit = isAdminOrCreator && isPick;
                             return (
-                                <button
-                                    type="button"
+                                <div
                                     key={`${mapKey}-${idx}`}
                                     className={`map-card ${isPick ? 'map-played' : ''} ${isBan ? 'map-banned' : ''}`}
                                     onClick={() => {
@@ -513,9 +512,13 @@ const MatchDetailsPage = () => {
                                             const m = mapsDataArr[editIdx];
                                             setScore1Input(m.score1 ?? m.team1_score ?? '');
                                             setScore2Input(m.score2 ?? m.team2_score ?? '');
-                                            setEditingMapKey(mapKey);
-                                            setIsScoreModalOpen(true);
+                                        } else {
+                                            setEditingMapIndex(null);
+                                            setScore1Input('');
+                                            setScore2Input('');
                                         }
+                                        setEditingMapKey(mapKey);
+                                        setIsScoreModalOpen(true);
                                     }}
                                     style={{ cursor: canEdit ? 'pointer' : 'default' }}
                                 >
@@ -539,7 +542,7 @@ const MatchDetailsPage = () => {
                                             </span>
                                         </div>
                                     )}
-                                </button>
+                                </div>
                             );
                         })}
                     </div>
@@ -565,8 +568,7 @@ const MatchDetailsPage = () => {
                         const isPlayed = playedMapsData.has(mapKey);
                         const isSelected = isPlayed || pickedBySelections.has(mapKey);
                         return (
-                            <button
-                                type="button"
+                            <div
                                 key={mapKey}
                                 className={`map-card ${isSelected ? 'map-played' : 'map-not-played'}`}
                                 onClick={() => {
@@ -578,9 +580,13 @@ const MatchDetailsPage = () => {
                                         const m = mapsDataArr[idx];
                                         setScore1Input(m.score1 ?? m.team1_score ?? '');
                                         setScore2Input(m.score2 ?? m.team2_score ?? '');
-                                        setEditingMapKey(mapKey);
-                                        setIsScoreModalOpen(true);
+                                    } else {
+                                        setEditingMapIndex(null);
+                                        setScore1Input('');
+                                        setScore2Input('');
                                     }
+                                    setEditingMapKey(mapKey);
+                                    setIsScoreModalOpen(true);
                                 }}
                                 style={{ cursor: isAdminOrCreator && isSelected ? 'pointer' : 'default' }}
                             >
@@ -600,7 +606,7 @@ const MatchDetailsPage = () => {
                                         </span>
                                     </div>
                                 )}
-                            </button>
+                            </div>
                         );
                     })}
                 </div>
