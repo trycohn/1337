@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import api from '../../../utils/api';
 import { getSocketInstance, authenticateSocket } from '../../../services/socketClient_v5_simplified';
+import './FullMixBracketPanel.css';
 
 function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
@@ -165,6 +166,16 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const teams = snapshot?.teams || [];
     const matches = snapshot?.matches || [];
     const standings = (liveStandings && liveStandings.length > 0) ? liveStandings : (snapshot?.standings || []);
+    const sortedStandings = useMemo(() => {
+        const arr = Array.isArray(standings) ? [...standings] : [];
+        return arr.sort((a, b) => {
+            const dw = (b.wins || 0) - (a.wins || 0);
+            if (dw !== 0) return dw;
+            const dl = (a.losses || 0) - (b.losses || 0);
+            if (dl !== 0) return dl;
+            return (a.username || '').localeCompare(b.username || '');
+        });
+    }, [standings]);
     const meta = snapshot?.meta || {};
     const finalistsSet = new Set((meta.finalists || []).map(id => parseInt(id, 10)));
     const eliminatedSet = new Set((meta.eliminated || []).map(id => parseInt(id, 10)));
@@ -224,30 +235,32 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     return (
         <div className="fullmix-panel" style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 16 }}>
             {/* Standings слева */}
-            <div className="fullmix-standings" style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <h4 style={{ margin: 0 }}>Standings</h4>
-                    <div style={{ fontSize: 12, color: '#aaa' }}>Раунд {currentRound || '—'}</div>
+            <div className="fullmix-standings">
+                <div className="fullmix-standings-headline">
+                    <h4 className="fullmix-standings-title">Standings</h4>
+                    <div className="fullmix-standings-round">Раунд {currentRound || '—'}</div>
                 </div>
-                <div style={{ maxHeight: 540, overflow: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <div className="fullmix-standings-scroll">
+                    <table className="fullmix-standings-table">
                         <thead>
-                            <tr style={{ textAlign: 'left', color: '#ccc' }}>
+                            <tr>
                                 <th>Игрок</th>
+                                <th>G</th>
                                 <th>W</th>
                                 <th>L</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {standings.map((s, idx) => (
+                            {sortedStandings.map((s, idx) => (
                                 <tr key={s.user_id || idx}>
-                                    <td style={{ padding: '6px 4px' }}>{s.username}</td>
-                                    <td style={{ padding: '6px 4px' }}>{s.wins}</td>
-                                    <td style={{ padding: '6px 4px' }}>{s.losses}</td>
+                                    <td>{s.username}</td>
+                                    <td>{(s.wins || 0) + (s.losses || 0)}</td>
+                                    <td>{s.wins}</td>
+                                    <td>{s.losses}</td>
                                 </tr>
                             ))}
-                            {standings.length === 0 && (
-                                <tr><td colSpan={3} style={{ color: '#888', paddingTop: 12 }}>Нет данных</td></tr>
+                            {sortedStandings.length === 0 && (
+                                <tr><td colSpan={4} className="fullmix-standings-empty">Нет данных</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -270,7 +283,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
                 {/* Admin controls */}
                 {isAdminOrCreator && (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         {rounds.length === 0 && (
                             <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
                         )}
@@ -278,6 +291,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                             <>
                                 <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
                                 <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
+                                <button className="btn btn-secondary" onClick={() => window.open(window.location.href, '_blank')}>Открыть в отдельном окне</button>
                             </>
                         )}
                         {actionMessage && <span style={{ color: '#ccc', fontSize: 12 }}>{actionMessage}</span>}
