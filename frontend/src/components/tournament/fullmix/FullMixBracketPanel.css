@@ -136,3 +136,30 @@
     padding-top: 12px;
 }
 
+/* Кнопки раундов (единый стиль) */
+.fullmix-rounds .fullmix-round-btn,
+.fullmixdraft-rounds .fullmix-round-btn {
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.fullmix-rounds .fullmix-round-btn:hover,
+.fullmixdraft-rounds .fullmix-round-btn:hover {
+    background: #111111;
+}
+
+.fullmix-rounds .fullmix-round-btn.is-active,
+.fullmixdraft-rounds .fullmix-round-btn.is-active {
+    background: #1D1D1D;
+    cursor: default;
+}
+
+.fullmix-rounds .fullmix-round-btn.is-active:hover,
+.fullmixdraft-rounds .fullmix-round-btn.is-active:hover {
+    background: #1D1D1D;
+}
+

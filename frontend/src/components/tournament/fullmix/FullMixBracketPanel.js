@@ -26,7 +26,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
         const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
         setRounds(items);
-        if (items.length > 0) setCurrentRound(items[items.length - 1].round_number);
+        if (items.length > 0) setCurrentRound(items[0].round_number);
     }, [tournamentId]);
 
     const loadSnapshot = useCallback(async (round) => {
@@ -293,11 +293,12 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 {/* Переключатель раундов */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <div className="fullmix-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {rounds.map(r => (
                             <button
                                 key={r.round_number}
-                                className={`btn ${r.round_number === currentRound ? 'btn-primary' : 'btn-secondary'}`}
+                                className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`}
+                                disabled={r.round_number === currentRound}
                                 onClick={() => setCurrentRound(r.round_number)}
                             >
                                 {r.round_number}

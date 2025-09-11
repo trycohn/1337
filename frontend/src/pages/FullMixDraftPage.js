@@ -46,7 +46,7 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
             const items = (res.data?.items || []).sort((a, b) => a.round_number - b.round_number);
             setRounds(items);
-            if (items.length > 0) setRound(items[items.length - 1].round_number);
+            if (items.length > 0) setRound(items[0].round_number);
         } catch (_) {
             setRounds([]);
         }
@@ -242,7 +242,8 @@ function FullMixDraftPage() {
                     {(rounds.length > 0 ? rounds.map(r => r.round_number) : [1]).map(rn => (
                         <button
                             key={rn}
-                            className={`btn ${rn === round ? 'btn-primary' : 'btn-secondary'}`}
+                            className={`fullmix-round-btn ${rn === round ? 'is-active' : ''}`}
+                            disabled={rn === round}
                             onClick={() => setRound(rn)}
                         >
                             {rn}
