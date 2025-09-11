@@ -6,7 +6,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
     const [rounds, setRounds] = useState([]); // [{round_number, approved_teams, approved_matches}]
     const [currentRound, setCurrentRound] = useState(1);
-    const [snapshot, setSnapshot] = useState(null); // {teams, matches, standings}
+    const [snapshot, setSnapshot] = useState(null); // {teams, matches, standings, meta}
+    const [liveStandings, setLiveStandings] = useState([]);
     const [settings, setSettings] = useState(null); // {wins_to_win, rating_mode}
     const [participantsCount, setParticipantsCount] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -46,12 +47,22 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         } catch (_) {}
     }, [tournamentId]);
 
+    const loadStandings = useCallback(async () => {
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/standings`);
+            setLiveStandings(res.data?.standings || []);
+        } catch (_) {
+            setLiveStandings([]);
+        }
+    }, [tournamentId]);
+
     useEffect(() => {
         if (!tournamentId) return;
         loadSettings();
         loadRounds();
         loadParticipantsCount();
-    }, [tournamentId, loadSettings, loadRounds, loadParticipantsCount]);
+        loadStandings();
+    }, [tournamentId, loadSettings, loadRounds, loadParticipantsCount, loadStandings]);
 
     useEffect(() => {
         if (!tournamentId || !currentRound) return;
@@ -72,6 +83,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const onMatchUpdated = (payload) => {
             if (!payload) return;
             loadSnapshot(currentRound || payload.round);
+            loadStandings();
         };
         socket.on('fullmix_round_completed', onRoundCompleted);
         socket.on('fullmix_match_updated', onMatchUpdated);
@@ -79,7 +91,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             socket.off && socket.off('fullmix_round_completed', onRoundCompleted);
             socket.off && socket.off('fullmix_match_updated', onMatchUpdated);
         };
-    }, [tournamentId, currentRound, loadRounds, loadSnapshot]);
+    }, [tournamentId, currentRound, loadRounds, loadSnapshot, loadStandings]);
 
     const onApprove = useCallback(async (type) => {
         if (!currentRound) return;
@@ -102,7 +114,10 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
     const teams = snapshot?.teams || [];
     const matches = snapshot?.matches || [];
-    const standings = snapshot?.standings || [];
+    const standings = (liveStandings && liveStandings.length > 0) ? liveStandings : (snapshot?.standings || []);
+    const meta = snapshot?.meta || {};
+    const finalistsSet = new Set((meta.finalists || []).map(id => parseInt(id, 10)));
+    const eliminatedSet = new Set((meta.eliminated || []).map(id => parseInt(id, 10)));
     const notInTeams = useMemo(() => {
         if (!participantsCount || teams.length === 0) return null;
         const placed = teams.reduce((sum, t) => sum + (Array.isArray(t.members) ? t.members.length : 0), 0);
