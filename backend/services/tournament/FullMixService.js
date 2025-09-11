@@ -126,19 +126,9 @@ class FullMixService {
         let eliminated = selection.eliminated || [];
 
         const nextRound = current + 1;
-        // Определяем пул участников следующего раунда
-        let eligible = null;
-        if (Array.isArray(selection.finalists) && selection.finalists.length === 10) {
-            // Финальный раунд из TOP10
-            eligible = selection.finalists;
-        } else if (Array.isArray(selection.eliminated) && selection.eliminated.length === 10) {
-            // Исключаем нижние 10
-            const eliminatedSet = new Set(selection.eliminated.map(id => parseInt(id, 10)));
-            eligible = this.rankStandings(standings).map(s => s.user_id).filter(uid => !eliminatedSet.has(parseInt(uid, 10)));
-        }
-        const snapshot = await this.generateRoundSnapshot(tournamentId, nextRound, settings.rating_mode, standings, { eligibleUserIds: eligible });
-        // сохраняем метаданные выбора
-        snapshot.meta = snapshot.meta || {};
+        // Не создаём команды/матчи автоматически. Создаём пустой снапшот раунда (для кнопки раунда и метаданных),
+        // дальнейшее формирование идёт через Черновик (preview -> approve).
+        const snapshot = { round: nextRound, teams: [], matches: [], standings: standings, meta: {} };
         if (finalists.length === 10) {
             snapshot.meta.finalists = finalists;
             snapshot.meta.final_round = true;
