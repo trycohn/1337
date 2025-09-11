@@ -147,9 +147,9 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
             {isFullMix && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
                     <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <div className="fullmixdraft-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {rounds.map(r => (
-                            <button key={r.round_number} className={`btn ${r.round_number === currentRound ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCurrentRound(r.round_number)}>
+                            <button key={r.round_number} className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`} disabled={r.round_number === currentRound} onClick={() => setCurrentRound(r.round_number)}>
                                 {r.round_number}
                             </button>
                         ))}

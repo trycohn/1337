@@ -259,7 +259,7 @@ function FullMixDraftPage() {
                 <div className="fullmixdraft-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="fullmixdraft-teams" style={{ display: 'grid', gap: 12 }}>
                         <div className="fullmixdraft-teams-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button className="btn btn-secondary" disabled={loading} onClick={createOrRegeneratePreview}>Переформировать составы</button>
+                            <button className="btn btn-secondary" disabled={loading || approved || matchesApproved} onClick={createOrRegeneratePreview}>Переформировать составы</button>
                             <button className="btn btn-primary" disabled={loading || teams.length === 0 || approved} onClick={approveTeams}>
                                 {approved ? 'Составы подтверждены' : 'Подтвердить составы'}
                             </button>
