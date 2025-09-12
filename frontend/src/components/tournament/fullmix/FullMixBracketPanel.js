@@ -23,6 +23,9 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [displayRoundLabel, setDisplayRoundLabel] = useState('—');
     const [lastCompletedRound, setLastCompletedRound] = useState(0);
     const [errorTip, setErrorTip] = useState('');
+    const [infoOpen, setInfoOpen] = useState(false);
+    const [infoTitle, setInfoTitle] = useState('');
+    const [infoMessage, setInfoMessage] = useState('');
 
     const loadSettings = useCallback(async () => {
         try {
@@ -321,7 +324,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         if (!usedRound) return;
         setActionMessage('Завершаем текущий раунд...');
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: usedRound });
+            const res = await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: usedRound });
             await loadRounds();
             // После завершения раунда НЕ генерируем следующий автоматически.
             // Ожидаем действий администратора в черновике (двухэтапное утверждение).
@@ -329,6 +332,23 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             setActionMessage(`Раунд ${usedRound} завершён. Сформируйте следующий раунд через Черновик.`);
             // Обновляем настройки, чтобы подтянуть новый current_round из БД и синхронизировать UI
             await loadSettings();
+
+            // Информационное сообщение о финалистах / топ худших
+            const nri = res?.data?.next_round_info;
+            if (nri && (!nri.finalists || nri.finalists.length === 0)) {
+                // Финалистов выделить невозможно → показываем статус и информацию о топ худших
+                const eliminated = Array.isArray(nri.eliminated) ? nri.eliminated : [];
+                let text = 'Финалистов выделить невозможно, будет создан дополнительный раунд.';
+                if (eliminated.length > 0) {
+                    const names = eliminated.map(e => e.username || `ID ${e.user_id}`).join(', ');
+                    text += `\nТОП худших определены и будут исключены из турнира: ${names}.`;
+                } else {
+                    text += '\nТОП худших определить не удалось, будем пробовать в следующем раунде.';
+                }
+                setInfoTitle('Информация о результате отбора');
+                setInfoMessage(text);
+                setInfoOpen(true);
+            }
         } catch (e) {
             const msg = e?.response?.data?.error || 'Раунд не может быть завершён: не все матчи завершены.';
             setErrorTip(msg);
@@ -447,6 +467,22 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                                 setSuggestSwitchOpen(false);
                                 setCurrentRound(suggestedRound);
                             }}>Да</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Информационное окно о финалистах / исключениях */}
+            {infoOpen && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 16, width: 520, maxWidth: '92vw' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <h4 style={{ margin: 0 }}>{infoTitle || 'Информация'}</h4>
+                            <button className="btn btn-secondary" onClick={() => setInfoOpen(false)}>✕</button>
+                        </div>
+                        <pre style={{ whiteSpace: 'pre-wrap', color: '#ccc', margin: 0 }}>{infoMessage}</pre>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+                            <button className="btn btn-primary" onClick={() => setInfoOpen(false)}>Понятно</button>
                         </div>
                     </div>
                 </div>
