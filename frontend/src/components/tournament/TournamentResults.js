@@ -153,7 +153,7 @@ const TournamentResults = ({ tournament }) => {
                     </div>
                     
                     <div className="results-match-history-list">
-                        {tournamentResults.completedMatches.map(match => renderMatchHistoryItem(match, tournament, openMatchDetails))}
+                        {tournamentResults.completedMatches.map((match, idx) => renderMatchHistoryItem(match, tournament, openMatchDetails))}
                     </div>
                 </div>
             )}
@@ -353,33 +353,20 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
     const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
     const loser = getParticipantInfo(loserId, tournament);
 
-    // Добавляем диагностику для проблемных матчей
-    if (process.env.NODE_ENV === 'development' && match.bracket_type === 'grand_final') {
-        console.log('🔍 Диагностика финального матча:', {
-            matchId: match.id,
-            team1_id: match.team1_id,
-            team2_id: match.team2_id,
-            winner_team_id: match.winner_team_id,
-            score1: match.score1,
-            score2: match.score2,
-            winner_name: winner?.name,
-            loser_name: loser?.name,
-            maps_data: match.maps_data
-        });
-    }
+    // Особые матчи
+    const special = getBracketTypeDisplayName(match.bracket_type);
 
     return (
         <div key={match.id} className="results-match-history-item">
             <div className="results-match-info">
                 <div className="results-match-header">
-                    <span className="results-match-number">#{match.match_number || match.id}</span>
-                    <span className="results-round-name">{match.round_name || `Раунд ${match.round}`}</span>
-                    <span className="results-bracket-type">{getBracketTypeDisplayName(match.bracket_type)}</span>
+                    <span className="results-match-number">#{match.tournament_match_number || match.match_number || match.id}</span>
+                    {special && <span className="results-bracket-type">{special}</span>}
                 </div>
                 
                 <div className="results-match-result">
                     <div className="results-participants">
-                        <div className="results-participant results-winner">
+                        <div className="results-participant results-winner" style={{fontWeight: 700, color: '#ff0000'}}>
                             <div className="results-participant-avatar">
                                 <img 
                                     src={ensureHttps(winner?.avatar_url) || '/default-avatar.png'}
@@ -411,7 +398,7 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
                         className="results-match-details-link"
                         title="Открыть страницу матча"
                     >
-                        Подробнее →
+                        Посмотреть матч
                     </button>
                 </div>
             </div>
