@@ -74,6 +74,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    padding: 0px 32px 16px;
 }
 
 .fullmix-standings-table thead tr {
@@ -83,10 +84,6 @@
     padding: 0px 32px 16px;
     background-color: #1d1d1d;
     border-bottom: 1px solid #000000;
-}
-
-.fullmix-standings-table head th {
-    padding: 0px 32px 16px;
 }
 
 .fullmix-standings-table tbody tr {
