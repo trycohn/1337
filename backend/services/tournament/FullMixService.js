@@ -121,6 +121,7 @@ class FullMixService {
         }
 
         const standings = await this.calculateStandings(tournamentId);
+        console.log(`🏁 [FullMix] generateNextRound: baseRound=${baseRound} winsToWin=${settings?.wins_to_win} standings=${standings.length}`);
         const nextRound = baseRound + 1;
 
         // В обычных раундах (до wins_to_win) никого не исключаем и не определяем финалистов
@@ -136,6 +137,7 @@ class FullMixService {
             const teamSize = await this.getTeamSize(tournamentId);
             const topCount = Math.max(2 * (parseInt(teamSize, 10) || 5), 2);
             const selection = this.selectFinalistsOrEliminate(standings, topCount);
+            console.log(`🏁 [FullMix] selection at milestone: topCount=${topCount} finalists=${selection.finalists?.length||0} eliminated=${selection.eliminated?.length||0}`);
             const finalists = Array.isArray(selection.finalists) ? selection.finalists : [];
             const eliminated = Array.isArray(selection.eliminated) ? selection.eliminated : [];
 
@@ -150,6 +152,7 @@ class FullMixService {
         }
 
         await this.saveSnapshot(tournamentId, nextRound, snapshot);
+        console.log(`🏁 [FullMix] next snapshot saved: round=${nextRound} meta=`, snapshot.meta);
         return { completed: false, round: nextRound, snapshot };
     }
 
@@ -251,6 +254,7 @@ class FullMixService {
                         finalists: finalists.map(id => ({ user_id: id, username: nameMap.get(id) || null })),
                         eliminated: eliminated.map(id => ({ user_id: id, username: nameMap.get(id) || null }))
                     };
+                    console.log('🏁 [FullMix] next_round_info:', nextRoundInfo);
                 }
             } catch (_) {
                 // Фолбэк: даже если генерация следующего раунда не удалась, попробуем вычислить исход напрямую
@@ -290,6 +294,7 @@ class FullMixService {
                             finalists: finalists.map(id => ({ user_id: id, username: nameMap.get(id) || null })),
                             eliminated: eliminated.map(id => ({ user_id: id, username: nameMap.get(id) || null }))
                         };
+                        console.log('🏁 [FullMix] fallback next_round_info:', nextRoundInfo);
                     }
                 } catch (_) {}
             }
@@ -369,26 +374,34 @@ class FullMixService {
 
     static selectFinalistsOrEliminate(standings, topSize = 10) {
         const ranked = this.rankStandings(standings);
+        if (!Array.isArray(ranked) || ranked.length === 0) return { finalists: [], eliminated: [] };
         if (ranked.length <= topSize) {
             return { finalists: ranked.map(s => s.user_id), eliminated: [] };
         }
-        const cutoffWins = ranked[topSize - 1].wins;
-        const cutoffLosses = ranked[topSize - 1].losses;
-        const finalists = ranked.filter(s => (s.wins > cutoffWins) || (s.wins === cutoffWins && s.losses < cutoffLosses));
-        const tied = ranked.filter(s => s.wins === cutoffWins && s.losses === cutoffLosses);
-        if (finalists.length === topSize) {
-            return { finalists: finalists.map(s => s.user_id), eliminated: [] };
+
+        // Попытка выбрать ТОП лучших ровно topSize без ничьих на границе
+        const topK = ranked.slice(0, topSize);
+        const topBoundary = topK[topK.length - 1];
+        const nextAfterTop = ranked[topSize];
+        const noTieAtTopBoundary = !nextAfterTop
+            || (nextAfterTop.wins < topBoundary.wins)
+            || (nextAfterTop.wins === topBoundary.wins && (nextAfterTop.losses > topBoundary.losses));
+        if (noTieAtTopBoundary) {
+            return { finalists: topK.map(s => s.user_id), eliminated: [] };
         }
-        // не можем точно выбрать TOP → пробуем исключить bottom такого же размера
+
+        // Попытка выбрать ТОП худших ровно topSize без ничьих на границе
         const reversed = [...ranked].reverse();
-        const bottomCutWins = reversed[topSize - 1].wins;
-        const bottomCutLosses = reversed[topSize - 1].losses;
-        const bottom = reversed.filter(s => (s.wins < bottomCutWins) || (s.wins === bottomCutWins && s.losses > bottomCutLosses));
-        const bottomTied = reversed.filter(s => s.wins === bottomCutWins && s.losses === bottomCutLosses);
-        if (bottom.length === topSize) {
-            return { finalists: [], eliminated: bottom.map(s => s.user_id) };
+        const bottomK = reversed.slice(0, topSize);
+        const bottomBoundary = bottomK[bottomK.length - 1];
+        const nextAfterBottom = reversed[topSize];
+        const noTieAtBottomBoundary = !nextAfterBottom
+            || (nextAfterBottom.wins > bottomBoundary.wins)
+            || (nextAfterBottom.wins === bottomBoundary.wins && (nextAfterBottom.losses < bottomBoundary.losses));
+        if (noTieAtBottomBoundary) {
+            return { finalists: [], eliminated: bottomK.map(s => s.user_id) };
         }
-        // иначе никого не исключаем, играем дополнительный раунд
+
         return { finalists: [], eliminated: [] };
     }
 
