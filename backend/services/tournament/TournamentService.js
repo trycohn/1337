@@ -586,9 +586,43 @@ class TournamentService {
         // Создатель может удалить турнир в любом статусе
         console.log(`🗑️ [deleteTournament] Удаление турнира "${tournament.name}" (статус: ${tournament.status})`);
 
-        await TournamentRepository.delete(tournamentId);
+        // Выполняем удаление зависимостей в безопасном порядке, чтобы избежать FK на map_selections(team_id)
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
 
-        console.log('✅ TournamentService: Турнир удален');
+            // 1) Удаляем все map_selections и приглашения через лобби этого турнира
+            await client.query(
+                `DELETE FROM map_selections
+                 WHERE lobby_id IN (
+                   SELECT id FROM match_lobbies WHERE tournament_id = $1
+                 )`,
+                [tournamentId]
+            );
+
+            await client.query(
+                `DELETE FROM lobby_invitations
+                 WHERE lobby_id IN (
+                   SELECT id FROM match_lobbies WHERE tournament_id = $1
+                 )`,
+                [tournamentId]
+            );
+
+            // 2) Удаляем лобби (и связанные сущности, если что-то осталось)
+            await client.query('DELETE FROM match_lobbies WHERE tournament_id = $1', [tournamentId]);
+
+            // 3) Удаляем сам турнир (каскадом уйдут команды, участники, карты, настройки и т.д.)
+            await client.query('DELETE FROM tournaments WHERE id = $1', [tournamentId]);
+
+            await client.query('COMMIT');
+            console.log('✅ TournamentService: Турнир удален');
+        } catch (e) {
+            await client.query('ROLLBACK');
+            console.error('❌ [deleteTournament] Ошибка при удалении турнира:', e.message);
+            throw e;
+        } finally {
+            client.release();
+        }
     }
 
     /**
