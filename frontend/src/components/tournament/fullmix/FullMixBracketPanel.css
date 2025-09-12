@@ -1,7 +1,15 @@
+.tab-content-bracket {
+    display: grid;
+    gap: 24px;
+    grid-template-areas: 'header header header'
+                         'standings bracket bracket';
+}
+
+
 .fullmix-panel {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 24px;
+    grid-area: standings;
 }
 
 .fullmix-header {
@@ -10,7 +18,13 @@
     align-items: center;
     flex-wrap: wrap;
     margin-bottom: 24px;
+    grid-area: header;
 }
+
+.bracket-stage-wrapper.bracket-full-bleed {
+    grid-area: bracket;
+}
+
 
 .fullmix-header-message {
     color: #ccc;
