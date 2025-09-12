@@ -145,9 +145,9 @@
     border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D);
 }
 
-/* Выбывшие участники — бледно-красная подсветка */
-.fullmix-standings-table tbody tr.fullmix-eliminated {
-    background: rgba(255, 0, 0, 0.08);
+/* Выбывшие участники — перечёркнутый текст */
+.fullmix-standings-table tbody tr.fullmix-eliminated td {
+    text-decoration: line-through;
 }
 
 /* Колонки: 1 — имя влево; 2..4 — центр и фикс. ширина */
