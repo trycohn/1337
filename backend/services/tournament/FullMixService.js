@@ -107,31 +107,32 @@ class FullMixService {
         return { round: roundNumber, settings, snapshot };
     }
 
-    static async generateNextRound(tournamentId) {
+    static async generateNextRound(tournamentId, baseRoundNumber = null) {
         const settings = await this.getSettings(tournamentId);
         if (!settings) throw new Error('Настройки Full Mix не найдены');
-        const current = await this.getCurrentRound(tournamentId);
-        if (current > 0) {
-            const completed = await this.isRoundCompleted(tournamentId, current);
+
+        // Базовый раунд: либо переданный, либо текущий максимум снапшотов
+        const baseRound = Number.isInteger(baseRoundNumber) ? baseRoundNumber : await this.getCurrentRound(tournamentId);
+        if (baseRound > 0) {
+            const completed = await this.isRoundCompleted(tournamentId, baseRound);
             if (!completed) {
-                throw new Error(`Раунд ${current} ещё не завершён. Завершите все матчи перед генерацией следующего раунда`);
+                throw new Error(`Раунд ${baseRound} ещё не завершён. Завершите все матчи перед генерацией следующего раунда`);
             }
         }
-        const standings = await this.calculateStandings(tournamentId);
 
-        // Не завершаем турнир автоматически: финал оформляется отдельным финальным раундом, завершение делает администратор
+        const standings = await this.calculateStandings(tournamentId);
 
         // Попытка определить TOP финалистов (team_size * 2) или исключить bottom того же размера
         const teamSize = await this.getTeamSize(tournamentId);
         const topCount = Math.max(2 * (parseInt(teamSize, 10) || 5), 2);
         const selection = this.selectFinalistsOrEliminate(standings, topCount);
-        let finalists = selection.finalists || [];
-        let eliminated = selection.eliminated || [];
+        const finalists = Array.isArray(selection.finalists) ? selection.finalists : [];
+        const eliminated = Array.isArray(selection.eliminated) ? selection.eliminated : [];
 
-        const nextRound = current + 1;
+        const nextRound = baseRound + 1;
         // Не создаём команды/матчи автоматически. Создаём пустой снапшот раунда (для кнопки раунда и метаданных),
         // дальнейшее формирование идёт через Черновик (preview -> approve).
-        const snapshot = { round: nextRound, teams: [], matches: [], standings: standings, meta: {} };
+        const snapshot = { round: nextRound, teams: [], matches: [], standings, meta: {} };
         if (finalists.length === topCount) {
             snapshot.meta.finalists = finalists;
             snapshot.meta.final_round = true;
@@ -209,7 +210,7 @@ class FullMixService {
                 const settings = await this.getSettings(tournamentId);
                 const winsToWin = parseInt(settings?.wins_to_win, 10) || 0;
                 const reachedMilestone = winsToWin > 0 && roundNumber >= winsToWin;
-                const next = await this.generateNextRound(tournamentId);
+                const next = await this.generateNextRound(tournamentId, roundNumber);
                 if (reachedMilestone && next && next.snapshot && next.snapshot.meta) {
                     const meta = next.snapshot.meta || {};
                     let outcome = null;
@@ -225,14 +226,15 @@ class FullMixService {
                         const ids = [...new Set([...finalists, ...eliminated])];
                         if (ids.length > 0) {
                             const res = await pool.query(
-                                `SELECT tp.user_id, COALESCE(u.username, tp.name) AS username
+                                `SELECT tp.id AS participant_id, tp.user_id, COALESCE(u.username, tp.name) AS username
                                  FROM tournament_participants tp
                                  LEFT JOIN users u ON u.id = tp.user_id
-                                 WHERE tp.tournament_id = $1 AND tp.user_id = ANY($2::int[])`,
+                                 WHERE tp.tournament_id = $1 AND (tp.user_id = ANY($2::int[]) OR tp.id = ANY($2::int[]))`,
                                 [tournamentId, ids]
                             );
                             for (const r of res.rows || []) {
-                                nameMap.set(parseInt(r.user_id, 10), r.username);
+                                if (r.user_id != null) nameMap.set(parseInt(r.user_id, 10), r.username);
+                                if (r.participant_id != null) nameMap.set(parseInt(r.participant_id, 10), r.username);
                             }
                         }
                     }
@@ -242,7 +244,42 @@ class FullMixService {
                         eliminated: eliminated.map(id => ({ user_id: id, username: nameMap.get(id) || null }))
                     };
                 }
-            } catch (_) {}
+            } catch (_) {
+                // Фолбэк: даже если генерация следующего раунда не удалась, попробуем вычислить исход напрямую
+                try {
+                    const teamSize = await this.getTeamSize(tournamentId);
+                    const topCount = Math.max(2 * (parseInt(teamSize, 10) || 5), 2);
+                    const selection = this.selectFinalistsOrEliminate(standings, topCount);
+                    const finalists = Array.isArray(selection.finalists) ? selection.finalists : [];
+                    const eliminated = Array.isArray(selection.eliminated) ? selection.eliminated : [];
+                    let outcome = null;
+                    if (finalists.length === topCount) outcome = 'finalists';
+                    else if (eliminated.length === topCount) outcome = 'eliminated';
+                    else outcome = 'extra_round';
+
+                    // Обогащаем именами
+                    let nameMap = new Map();
+                    const ids = [...new Set([...finalists, ...eliminated])];
+                    if (ids.length > 0) {
+                        const res = await pool.query(
+                            `SELECT tp.id AS participant_id, tp.user_id, COALESCE(u.username, tp.name) AS username
+                             FROM tournament_participants tp
+                             LEFT JOIN users u ON u.id = tp.user_id
+                             WHERE tp.tournament_id = $1 AND (tp.user_id = ANY($2::int[]) OR tp.id = ANY($2::int[]))`,
+                            [tournamentId, ids]
+                        );
+                        for (const r of res.rows || []) {
+                            if (r.user_id != null) nameMap.set(parseInt(r.user_id, 10), r.username);
+                            if (r.participant_id != null) nameMap.set(parseInt(r.participant_id, 10), r.username);
+                        }
+                    }
+                    nextRoundInfo = {
+                        outcome,
+                        finalists: finalists.map(id => ({ user_id: id, username: nameMap.get(id) || null })),
+                        eliminated: eliminated.map(id => ({ user_id: id, username: nameMap.get(id) || null }))
+                    };
+                } catch (_) {}
+            }
             return { round: roundNumber, round_completed: completed, standings, next_round_info: nextRoundInfo };
         }
         return { round: roundNumber, round_completed: completed, standings };

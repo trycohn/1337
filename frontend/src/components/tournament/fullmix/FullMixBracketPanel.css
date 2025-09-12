@@ -202,6 +202,7 @@
     width: 560px;
     max-width: 92vw;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
 }
 
 .fullmix-info-modal__header {
