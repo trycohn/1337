@@ -89,6 +89,33 @@ const BracketManagementPanel = ({
         return tournament?.format === 'mix';
     }, [tournament]);
 
+    // 🆕 FULL MIX
+    const isFullMix = useMemo(() => {
+        const fmt = (tournament?.format || '').toString().trim().toLowerCase();
+        const mixType = (tournament?.mix_type || '').toString().trim().toLowerCase();
+        return fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+    }, [tournament?.format, tournament?.mix_type]);
+
+    const [fmSettings, setFmSettings] = useState(null); // { wins_to_win, rating_mode, current_round }
+    const [winsToWinInput, setWinsToWinInput] = useState('');
+    const [savingWins, setSavingWins] = useState(false);
+
+    const loadFullMixSettings = useCallback(async () => {
+        if (!isFullMix || !tournament?.id) return;
+        try {
+            const res = await api.get(`/api/tournaments/${tournament.id}/fullmix/settings`);
+            const s = res.data?.settings || null;
+            setFmSettings(s);
+            if (s?.wins_to_win != null) setWinsToWinInput(String(s.wins_to_win));
+        } catch (_) {
+            setFmSettings(null);
+        }
+    }, [isFullMix, tournament?.id]);
+
+    useEffect(() => {
+        loadFullMixSettings();
+    }, [loadFullMixSettings]);
+
     // 🆕 ПОЛУЧЕНИЕ ОТОБРАЖАЕМОГО НАЗВАНИЯ ТИПА СЕТКИ
     const getBracketTypeDisplayName = useCallback((bracketType) => {
         const bracketTypes = [
@@ -818,6 +845,47 @@ const BracketManagementPanel = ({
                         ) : (
                             // Раздел управления существующей сеткой
                             <div className="management-section">
+                                {isFullMix && (
+                                    <div style={{ marginBottom: 16 }}>
+                                        <h4>Full Mix настройки</h4>
+                                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <label>
+                                                Мин. количество раундов (кол-во побед):
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    value={winsToWinInput}
+                                                    onChange={(e) => setWinsToWinInput(e.target.value.replace(/[^0-9]/g, ''))}
+                                                    style={{ marginLeft: 8, width: 80 }}
+                                                />
+                                            </label>
+                                            <button
+                                                className="btn-primary"
+                                                disabled={savingWins || !winsToWinInput || Number(winsToWinInput) < 1}
+                                                onClick={async () => {
+                                                    if (!tournament?.id) return;
+                                                    try {
+                                                        setSavingWins(true);
+                                                        await api.put(`/api/tournaments/${tournament.id}/fullmix/settings`, {
+                                                            wins_to_win: Number(winsToWinInput)
+                                                        });
+                                                        await loadFullMixSettings();
+                                                        alert('Сохранено');
+                                                    } catch (err) {
+                                                        alert(`Ошибка сохранения: ${err?.response?.data?.error || err.message}`);
+                                                    } finally {
+                                                        setSavingWins(false);
+                                                    }
+                                                }}
+                                            >
+                                                {savingWins ? 'Сохранение...' : 'Сохранить'}
+                                            </button>
+                                            {fmSettings?.wins_to_win != null && (
+                                                <span style={{ color: '#aaa' }}>Текущее значение: {fmSettings.wins_to_win}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="bracket-info">
                                     <p>Статистика турнирной сетки</p>
                                     <ul>
