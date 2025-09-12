@@ -51,6 +51,16 @@ function TournamentRulesPage() {
         return admins.some(a => Number(a.user_id) === Number(user.id));
     }, [tournament, user]);
 
+    // Правило видимости блока регламента: показывать админу/создателю всегда,
+    // остальным — только если есть непустой текст (после удаления HTML)
+    const showRulesBlock = useMemo(() => {
+        if (isAdminOrCreator) return true;
+        const text = typeof rules === 'string'
+            ? rules.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+            : '';
+        return text.length > 0;
+    }, [isAdminOrCreator, rules]);
+
     async function saveDescription() {
         if (!tournament?.id) return;
         if (!isAdminOrCreator) { setEditingDescription(false); return; }
@@ -140,29 +150,31 @@ function TournamentRulesPage() {
                 )}
             </div>
 
-            <div className="rules-section-block rules-block" style={{ marginTop: 24 }}>
-                <h3>Регламент</h3>
-                {isAdminOrCreator && editingRules ? (
-                    <>
-                        <SafeRichTextEditor value={rules} onChange={setRules} forceSimpleEditor={true} />
-                        <div style={{ marginTop: 12 }}>
-                            <button className="btn btn-primary" onClick={saveRules} disabled={saving}>
-                                {saving ? 'Сохранение...' : 'Сохранить'}
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => setEditingRules(false)} disabled={saving}>Отмена</button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <SafeRichTextDisplay content={rules} />
-                        {isAdminOrCreator && (
+            {showRulesBlock && (
+                <div className="rules-section-block rules-block" style={{ marginTop: 24 }}>
+                    <h3>Регламент</h3>
+                    {isAdminOrCreator && editingRules ? (
+                        <>
+                            <SafeRichTextEditor value={rules} onChange={setRules} forceSimpleEditor={true} />
                             <div style={{ marginTop: 12 }}>
-                                <button className="btn btn-secondary" onClick={() => setEditingRules(true)}>Редактировать</button>
+                                <button className="btn btn-primary" onClick={saveRules} disabled={saving}>
+                                    {saving ? 'Сохранение...' : 'Сохранить'}
+                                </button>
+                                <button className="btn btn-secondary" onClick={() => setEditingRules(false)} disabled={saving}>Отмена</button>
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
+                        </>
+                    ) : (
+                        <>
+                            <SafeRichTextDisplay content={rules} />
+                            {isAdminOrCreator && (
+                                <div style={{ marginTop: 12 }}>
+                                    <button className="btn btn-secondary" onClick={() => setEditingRules(true)}>Редактировать</button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
         </section>
     );
 }

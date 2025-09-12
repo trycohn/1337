@@ -1816,6 +1816,20 @@ div.score-container input {
 
 .rules-section-block {
     text-align: start;
+    margin-top: 260px;
+    padding: 24px
+}
+
+.tournament-rules-page h2 {
+    color: #fff;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    line-height: 100%;
+    margin-bottom: 20px;
+    min-height: 112px;
+    text-transform: uppercase;
+    text-align: start;
 }
 
 .rules-section-block .rules-block {

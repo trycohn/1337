@@ -1004,6 +1004,14 @@ function TournamentDetails() {
     }, [isCS2]);
     const hasHero = Boolean(heroImageUrl);
 
+    // Видимость кнопки "Регламент": показывать, если есть текст правил или есть права админа/создателя
+    const canShowRulesButton = useMemo(() => {
+        if (isAdminOrCreator) return true;
+        const rulesHtml = typeof tournament?.rules === 'string' ? tournament.rules : '';
+        const text = rulesHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+        return text.length > 0;
+    }, [isAdminOrCreator, tournament?.rules]);
+
     // 🆕 Функция переключения вкладок
     const switchTab = useCallback((tabName) => {
         setActiveTab(tabName);
@@ -2503,16 +2511,18 @@ function TournamentDetails() {
                                             Принять участие
                                         </button>
                                     )}
-                                    <button 
-                                        className="btn btn-secondary"
-                                        onClick={() => {
-                                            if (tournament?.id) {
-                                                window.open(`/tournaments/${tournament.id}/rules`, '_blank', 'noopener,noreferrer');
-                                            }
-                                        }}
-                                    >
-                                        Регламент
-                                    </button>
+                                    {canShowRulesButton && (
+                                        <button 
+                                            className="btn btn-secondary"
+                                            onClick={() => {
+                                                if (tournament?.id) {
+                                                    window.open(`/tournaments/${tournament.id}/rules`, '_blank', 'noopener,noreferrer');
+                                                }
+                                            }}
+                                        >
+                                            Регламент
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             <div className={`tournament-header-infoblock ${tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game) ? 'with-cs2-hero' : ''}`}>
