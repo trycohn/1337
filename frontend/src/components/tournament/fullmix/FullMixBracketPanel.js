@@ -333,19 +333,32 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             // Обновляем настройки, чтобы подтянуть новый current_round из БД и синхронизировать UI
             await loadSettings();
 
-            // Информационное сообщение о финалистах / топ худших
+            // Информационное сообщение о результате отбора (финалисты / доп. раунд / исключённые)
             const nri = res?.data?.next_round_info;
-            if (nri && (!nri.finalists || nri.finalists.length === 0)) {
-                // Финалистов выделить невозможно → показываем статус и информацию о топ худших
+            if (nri) {
+                const finalists = Array.isArray(nri.finalists) ? nri.finalists : [];
                 const eliminated = Array.isArray(nri.eliminated) ? nri.eliminated : [];
-                let text = 'Финалистов выделить невозможно, будет создан дополнительный раунд.';
-                if (eliminated.length > 0) {
-                    const names = eliminated.map(e => e.username || `ID ${e.user_id}`).join(', ');
-                    text += `\nТОП худших определены и будут исключены из турнира: ${names}.`;
+                const isExtraRound = Boolean(nri.extra_round);
+
+                let title = 'Результат отбора';
+                let text = '';
+
+                if (finalists.length > 0) {
+                    const names = finalists.map(f => f.username || `ID ${f.user_id}`).join(', ');
+                    text = `Определены финалисты (${finalists.length}): ${names}.\nБудет создан финальный раунд.`;
+                } else if (isExtraRound) {
+                    text = 'Финалисты не определены, будет создан дополнительный раунд.';
+                    if (eliminated.length > 0) {
+                        const names = eliminated.map(e => e.username || `ID ${e.user_id}`).join(', ');
+                        text += `\nТОП худших определены и будут исключены из турнира: ${names}.`;
+                    } else {
+                        text += '\nТОП худших определить не удалось, все участники остаются в пуле.';
+                    }
                 } else {
-                    text += '\nТОП худших определить не удалось, будем пробовать в следующем раунде.';
+                    text = 'Отбор завершён. Перейдите в Черновик для формирования следующего раунда.';
                 }
-                setInfoTitle('Информация о результате отбора');
+
+                setInfoTitle(title);
                 setInfoMessage(text);
                 setInfoOpen(true);
             }
