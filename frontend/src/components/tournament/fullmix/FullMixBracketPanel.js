@@ -21,6 +21,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const lastMaxRoundRef = React.useRef(null);
     const [roundsInfo, setRoundsInfo] = useState([]); // [{round, completed, isFinal}]
     const [displayRoundLabel, setDisplayRoundLabel] = useState('—');
+    const [lastCompletedRound, setLastCompletedRound] = useState(0);
 
     const loadSettings = useCallback(async () => {
         try {
@@ -99,6 +100,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     }
                 }));
                 setRoundsInfo(details);
+                const lcr = details.filter(d => d.completed).map(d => d.round).sort((a,b)=>a-b).pop() || 0;
+                setLastCompletedRound(lcr);
                 const last = details[details.length - 1];
                 if (last && last.isFinal) {
                     setDisplayRoundLabel('ФИНАЛ');
@@ -311,16 +314,18 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
     // Объединённая логика: завершить текущий раунд и сразу попытаться сгенерировать следующий
 
-    const completeCurrentRound = useCallback(async () => {
-        if (!tournamentId || !currentRound) return;
+    const completeCurrentRound = useCallback(async (targetRound) => {
+        if (!tournamentId) return;
+        const usedRound = Number.isInteger(parseInt(targetRound, 10)) ? parseInt(targetRound, 10) : (lastCompletedRound || currentRound);
+        if (!usedRound) return;
         setActionMessage('Завершаем текущий раунд...');
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: currentRound });
+            await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: usedRound });
             await loadRounds();
             // После завершения раунда НЕ генерируем следующий автоматически.
             // Ожидаем действий администратора в черновике (двухэтапное утверждение).
-            await loadSnapshot(currentRound);
-            setActionMessage(`Раунд ${currentRound} завершён. Сформируйте следующий раунд через Черновик.`);
+            await loadSnapshot(usedRound);
+            setActionMessage(`Раунд ${usedRound} завершён. Сформируйте следующий раунд через Черновик.`);
             // Обновляем настройки, чтобы подтянуть новый current_round из БД и синхронизировать UI
             await loadSettings();
         } catch (e) {
@@ -328,7 +333,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         } finally {
             setTimeout(() => setActionMessage(''), 3000);
         }
-    }, [tournamentId, currentRound, loadRounds, loadSnapshot]);
+    }, [tournamentId, currentRound, lastCompletedRound, loadRounds, loadSnapshot, loadSettings]);
 
     return (
         <>
@@ -400,7 +405,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>Отмена</button>
-                            <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(); }}>Завершить</button>
+                            <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(settings?.current_round || currentRound || lastCompletedRound); }}>Завершить</button>
                         </div>
                     </div>
                 </div>
