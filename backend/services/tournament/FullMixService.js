@@ -415,10 +415,26 @@ class FullMixService {
             const completed = await this.isRoundCompleted(tournamentId, roundNumber);
             if (completed) throw new Error('Раунд уже завершён. Подтверждение матчей недоступно.');
             let preview = await this.getPreview(tournamentId, roundNumber);
-            if (!preview || !Array.isArray(preview.preview?.matches) || preview.preview.matches.length === 0) {
+            if (!preview || !Array.isArray(preview.preview?.matches)) {
                 // Fallback: если превью матчей нет — сгенерировать пары на лету из снапшота
                 const mp = await this.generateMatchesPreviewFromSnapshot(tournamentId, roundNumber);
                 preview = { preview: mp };
+            }
+            // Если после генерации всё равно нет пар — создадим случайные пары из списка команд снапшота
+            if (!Array.isArray(preview.preview.matches) || preview.preview.matches.length === 0) {
+                const teamsList = Array.isArray(snap.snapshot?.teams) ? [...snap.snapshot.teams] : [];
+                for (let i = teamsList.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [teamsList[i], teamsList[j]] = [teamsList[j], teamsList[i]];
+                }
+                const pairs = [];
+                for (let i = 0; i < teamsList.length; i += 2) {
+                    const a = teamsList[i];
+                    const b = teamsList[i + 1];
+                    if (!a || !b) break;
+                    pairs.push({ team1_id: a.team_id, team2_id: b.team_id, team1_name: a.name, team2_name: b.name });
+                }
+                preview.preview.matches = pairs;
             }
             console.log(`🧩 [FullMix] approveMatches: pairs = ${preview.preview.matches.length}`);
 

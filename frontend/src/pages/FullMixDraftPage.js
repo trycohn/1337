@@ -57,10 +57,8 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}`);
             const item = res.data?.item || null;
             setSnapshot(item);
-            if (item && item.approved_teams === true) setApproved(true);
-            if (item && item.approved_matches === true) setMatchesApproved(true);
-            const ms = Array.isArray(item?.snapshot?.matches) ? item.snapshot.matches : [];
-            if (ms.length > 0) setMatchesApproved(true);
+            setApproved(!!(item && item.approved_teams === true));
+            setMatchesApproved(!!(item && item.approved_matches === true));
         } catch (_) {
             setSnapshot(null);
         }
@@ -72,7 +70,6 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}/preview`);
             const item = res.data?.item || null;
             setPreview(item);
-            setApproved(false);
             // Если превью содержит матчи/справочник команд — заполняем список матчей
             if (item && item.preview) {
                 const mp = Array.isArray(item.preview.matches) ? item.preview.matches : [];
