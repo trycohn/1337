@@ -22,6 +22,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [roundsInfo, setRoundsInfo] = useState([]); // [{round, completed, isFinal}]
     const [displayRoundLabel, setDisplayRoundLabel] = useState('—');
     const [lastCompletedRound, setLastCompletedRound] = useState(0);
+    const [errorTip, setErrorTip] = useState('');
 
     const loadSettings = useCallback(async () => {
         try {
@@ -329,7 +330,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             // Обновляем настройки, чтобы подтянуть новый current_round из БД и синхронизировать UI
             await loadSettings();
         } catch (e) {
-            setActionMessage('Ошибка завершения раунда');
+            const msg = e?.response?.data?.error || 'Раунд не может быть завершён: не все матчи завершены.';
+            setErrorTip(msg);
         } finally {
             setTimeout(() => setActionMessage(''), 3000);
         }
@@ -352,6 +354,15 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         </>
                     )}
                     {actionMessage && <span className="fullmix-header-message">{actionMessage}</span>}
+                    {errorTip && (
+                        <div style={{ position: 'relative', marginLeft: 12 }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#1a1a1a', color: '#fff', border: '1px solid #ff0000', borderRadius: 6, padding: '6px 10px' }}>
+                                <span style={{ color: '#ff6b6b' }}>✖</span>
+                                <span style={{ fontSize: 13 }}>{errorTip}</span>
+                                <button className="btn btn-secondary" onClick={() => setErrorTip('')} style={{ padding: '2px 6px' }}>✕</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
