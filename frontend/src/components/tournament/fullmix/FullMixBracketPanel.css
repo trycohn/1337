@@ -146,9 +146,7 @@
 }
 
 /* Выбывшие участники — перечёркнутый текст */
-.fullmix-standings-table tbody tr.fullmix-eliminated td {
-    text-decoration: line-through;
-}
+.fullmix-standings-table tbody tr.fullmix-eliminated td { text-decoration: line-through !important; }
 
 /* Колонки: 1 — имя влево; 2..4 — центр и фикс. ширина */
 .fullmix-standings-table th:nth-child(1),

@@ -290,7 +290,19 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     }, [standings]);
     const meta = snapshot?.meta || {};
     const finalistsSet = new Set((meta.finalists || []).map(id => parseInt(id, 10)));
-    const eliminatedSet = new Set((meta.eliminated || []).map(id => parseInt(id, 10)));
+    const eliminatedSet = useMemo(() => {
+        const arr = Array.isArray(meta.eliminated) ? meta.eliminated : [];
+        const ids = arr.map(v => {
+            if (v && typeof v === 'object') {
+                const a = parseInt(v.user_id, 10);
+                const b = parseInt(v.participant_id, 10);
+                return Number.isInteger(a) ? a : (Number.isInteger(b) ? b : null);
+            }
+            const n = parseInt(v, 10);
+            return Number.isInteger(n) ? n : null;
+        }).filter(n => Number.isInteger(n));
+        return new Set(ids);
+    }, [meta?.eliminated]);
     const notInTeams = useMemo(() => {
         if (!participantsCount || teams.length === 0) return null;
         const placed = teams.reduce((sum, t) => sum + (Array.isArray(t.members) ? t.members.length : 0), 0);
@@ -454,14 +466,18 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedStandings.map((s, idx) => (
-                                <tr key={s.user_id || idx} className={eliminatedSet.has(parseInt(s.user_id, 10)) ? 'fullmix-eliminated' : undefined}>
+                            {sortedStandings.map((s, idx) => {
+                                const u = parseInt(s.user_id, 10);
+                                const p = parseInt(s.participant_id, 10);
+                                const isElim = (Number.isInteger(u) && eliminatedSet.has(u)) || (Number.isInteger(p) && eliminatedSet.has(p));
+                                return (
+                                <tr key={s.user_id || s.participant_id || idx} className={isElim ? 'fullmix-eliminated' : undefined}>
                                     <td>{s.username}</td>
                                     <td>{(s.wins || 0) + (s.losses || 0)}</td>
                                     <td>{s.wins}</td>
                                     <td>{s.losses}</td>
                                 </tr>
-                            ))}
+                            );})}
                             {sortedStandings.length === 0 && (
                                 <tr><td colSpan={4} className="fullmix-standings-empty">Нет данных</td></tr>
                             )}
