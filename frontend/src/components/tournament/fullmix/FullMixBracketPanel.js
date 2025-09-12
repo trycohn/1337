@@ -19,6 +19,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [suggestSwitchOpen, setSuggestSwitchOpen] = useState(false);
     const [suggestedRound, setSuggestedRound] = useState(null);
     const lastMaxRoundRef = React.useRef(null);
+    const [roundsInfo, setRoundsInfo] = useState([]); // [{round, completed, isFinal}]
+    const [displayRoundLabel, setDisplayRoundLabel] = useState('—');
 
     const loadSettings = useCallback(async () => {
         try {
@@ -74,6 +76,30 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 }
                 lastMaxRoundRef.current = maxRound;
             }
+
+            // Подсчёт завершённых/финальных раундов для отображения текущего
+            try {
+                const details = await Promise.all(numbers.map(async (rn) => {
+                    try {
+                        const rres = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${rn}`);
+                        const item = rres.data?.item || {};
+                        const ms = Array.isArray(item?.snapshot?.matches) ? item.snapshot.matches : [];
+                        const completed = ms.length > 0 && ms.every(m => (m?.status === 'completed') || (m?.winner_team_id));
+                        const isFinal = !!(item?.snapshot?.meta?.final_round);
+                        return { round: rn, completed, isFinal };
+                    } catch (_) {
+                        return { round: rn, completed: false, isFinal: false };
+                    }
+                }));
+                setRoundsInfo(details);
+                const last = details[details.length - 1];
+                if (last && last.isFinal) {
+                    setDisplayRoundLabel('ФИНАЛ');
+                } else {
+                    const completedCount = details.filter(d => d.completed).length;
+                    setDisplayRoundLabel(String(Math.max(1, completedCount + 1)));
+                }
+            } catch (_) {}
         }
     }, [tournamentId, currentRound, isAdminOrCreator]);
 
@@ -280,7 +306,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             {/* Header with admin controls */}
             {isAdminOrCreator && (
                 <div className="fullmix-header">
-                    <span>Текущий раунд: {currentRound || '—'}</span>
+                    <span>Текущий раунд: {displayRoundLabel}</span>
                     {rounds.length === 0 && (
                         <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
                     )}
