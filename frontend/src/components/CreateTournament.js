@@ -42,6 +42,8 @@ function CreateTournament() {
     mix_rating_type: 'faceit',
     // 🆕 Тип микса: classic | full (только для format = 'mix')
     mix_type: 'classic',
+    // 🆕 Минимальные раунды (wins_to_win) для MIX
+    wins_to_win: 4,
     // 🆕 Требования привязок для MIX
     require_faceit_linked: false,
     require_steam_linked: false,
@@ -153,6 +155,8 @@ function CreateTournament() {
             bracket_type: formData.bracket_type, // 🔧 ИСПРАВЛЕНО: передаем bracket_type как есть для всех типов турниров
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             mix_type: formData.format === 'mix' ? formData.mix_type : null,
+            // 🆕 Передаем wins_to_win только для MIX
+            wins_to_win: formData.format === 'mix' ? parseInt(formData.wins_to_win || 4, 10) : null,
             // 🆕 Передаём флаги требований привязок только для MIX
             require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
             require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,
@@ -771,6 +775,20 @@ function CreateTournament() {
                   {formData.mix_type === 'classic' && 'Команды формируются один раз перед стартом турнира'}
                   {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
                 </small>
+              </div>
+              <div className="form-group">
+                <label>Минимальное число раундов (до победы)</label>
+                <input
+                  type="number"
+                  name="wins_to_win"
+                  value={formData.wins_to_win}
+                  onChange={handleInputChange}
+                  min="1"
+                  max="20"
+                  disabled={!verificationStatus.canCreate}
+                  required
+                />
+                <small className="form-hint">Используется в Full Mix для отбора финалистов и доп. раундов</small>
               </div>
               <div className="form-group">
                 <label>Формирование команд</label>
