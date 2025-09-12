@@ -229,7 +229,7 @@ function FullMixDraftPage() {
     return (
         <div className="fullmixdraft-page" style={{ padding: 16 }}>
             <div className="fullmixdraft-header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                <button className="btn btn-secondary" onClick={() => navigate(-1)}>← Назад</button>
+                <button className="btn btn-secondary" onClick={() => navigate(`/tournaments/${tournamentId}`)}>← Назад</button>
                 <h2 className="fullmixdraft-title" style={{ margin: 0 }}>FullMix Черновик — Турнир #{tournamentId}</h2>
             </div>
 
