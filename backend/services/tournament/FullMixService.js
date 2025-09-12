@@ -121,8 +121,10 @@ class FullMixService {
 
         // Не завершаем турнир автоматически: финал оформляется отдельным финальным раундом, завершение делает администратор
 
-        // Попытка определить TOP10 финалистов или исключить bottom10
-        const selection = this.selectFinalistsOrEliminate(standings, 10);
+        // Попытка определить TOP финалистов (team_size * 2) или исключить bottom того же размера
+        const teamSize = await this.getTeamSize(tournamentId);
+        const topCount = Math.max(2 * (parseInt(teamSize, 10) || 5), 2);
+        const selection = this.selectFinalistsOrEliminate(standings, topCount);
         let finalists = selection.finalists || [];
         let eliminated = selection.eliminated || [];
 
@@ -130,10 +132,10 @@ class FullMixService {
         // Не создаём команды/матчи автоматически. Создаём пустой снапшот раунда (для кнопки раунда и метаданных),
         // дальнейшее формирование идёт через Черновик (preview -> approve).
         const snapshot = { round: nextRound, teams: [], matches: [], standings: standings, meta: {} };
-        if (finalists.length === 10) {
+        if (finalists.length === topCount) {
             snapshot.meta.finalists = finalists;
             snapshot.meta.final_round = true;
-        } else if (eliminated.length === 10) {
+        } else if (eliminated.length === topCount) {
             snapshot.meta.eliminated = eliminated;
         } else {
             snapshot.meta.extra_round = true;
@@ -285,7 +287,7 @@ class FullMixService {
         if (finalists.length === topSize) {
             return { finalists: finalists.map(s => s.user_id), eliminated: [] };
         }
-        // не можем точно выбрать TOP10 → пробуем исключить bottom10
+        // не можем точно выбрать TOP → пробуем исключить bottom такого же размера
         const reversed = [...ranked].reverse();
         const bottomCutWins = reversed[topSize - 1].wins;
         const bottomCutLosses = reversed[topSize - 1].losses;
