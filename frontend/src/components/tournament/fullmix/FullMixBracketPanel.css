@@ -182,3 +182,54 @@
     border-radius: 6px;
     cursor: pointer;
 }
+
+/* Информационная модалка о результатах отбора */
+.fullmix-info-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.fullmix-info-modal {
+    background: #000;
+    border: 1px solid #1d1d1d;
+    border-radius: 8px;
+    padding: 16px;
+    width: 560px;
+    max-width: 92vw;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.fullmix-info-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.fullmix-info-modal__title {
+    margin: 0;
+    color: #fff;
+    font-weight: 600;
+}
+
+.fullmix-info-modal__close {
+    min-width: 32px;
+}
+
+.fullmix-info-modal__content {
+    white-space: pre-wrap;
+    color: #ccc;
+    margin: 0;
+}
+
+.fullmix-info-modal__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}

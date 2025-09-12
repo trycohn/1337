@@ -514,14 +514,14 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
             {/* Информационное окно о финалистах / исключениях */}
             {infoOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 16, width: 520, maxWidth: '92vw' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <h4 style={{ margin: 0 }}>{infoTitle || 'Информация'}</h4>
-                            <button className="btn btn-secondary" onClick={() => setInfoOpen(false)}>✕</button>
+                <div className="fullmix-info-modal-overlay">
+                    <div className="fullmix-info-modal">
+                        <div className="fullmix-info-modal__header">
+                            <h4 className="fullmix-info-modal__title">{infoTitle || 'Информация'}</h4>
+                            <button className="btn btn-secondary fullmix-info-modal__close" onClick={() => setInfoOpen(false)}>✕</button>
                         </div>
-                        <pre style={{ whiteSpace: 'pre-wrap', color: '#ccc', margin: 0 }}>{infoMessage}</pre>
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+                        <pre className="fullmix-info-modal__content">{infoMessage}</pre>
+                        <div className="fullmix-info-modal__actions">
                             <button className="btn btn-primary" onClick={() => setInfoOpen(false)}>Понятно</button>
                         </div>
                     </div>
