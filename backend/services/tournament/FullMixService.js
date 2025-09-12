@@ -765,12 +765,17 @@ class FullMixService {
 
     static async isRoundCompleted(tournamentId, roundNumber) {
         const res = await pool.query(
-            `SELECT COUNT(*)::int AS pending
+            `SELECT 
+                COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE status <> 'completed')::int AS pending
              FROM matches
-             WHERE tournament_id = $1 AND round = $2 AND status <> 'completed'`,
+             WHERE tournament_id = $1 AND round = $2`,
             [tournamentId, roundNumber]
         );
-        return parseInt(res.rows[0]?.pending || 0, 10) === 0;
+        const total = parseInt(res.rows[0]?.total || 0, 10);
+        const pending = parseInt(res.rows[0]?.pending || 0, 10);
+        // Раунд считается завершённым ТОЛЬКО если есть хотя бы один матч и нет незавершённых
+        return total > 0 && pending === 0;
     }
 }
 
