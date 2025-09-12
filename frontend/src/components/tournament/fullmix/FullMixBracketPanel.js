@@ -342,7 +342,11 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             {/* Header with admin controls */}
             {isAdminOrCreator && (
                 <div className="fullmix-header">
-                    <span>Текущий раунд: {displayRoundLabel}</span>
+                    <span>
+                        Текущий раунд: {displayRoundLabel === 'ФИНАЛ'
+                            ? 'ФИНАЛ'
+                            : `${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+                    </span>
                     {rounds.length === 0 && (
                         <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
                     )}
@@ -371,7 +375,11 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             <div className="fullmix-standings">
                 <div className="fullmix-standings-headline">
                     <h4 className="fullmix-standings-title">Standings</h4>
-                    <div className="fullmix-standings-round">{displayRoundLabel === 'ФИНАЛ' ? 'ФИНАЛ' : `Раунд ${displayRoundLabel}`}</div>
+                    <div className="fullmix-standings-round">
+                        {displayRoundLabel === 'ФИНАЛ'
+                            ? 'ФИНАЛ'
+                            : `Раунд ${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+                    </div>
                 </div>
                 <div className="fullmix-standings-scroll">
                     <table className="fullmix-standings-table">
