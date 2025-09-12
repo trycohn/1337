@@ -244,7 +244,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             )}
 
             <div className="fullmix-panel">
-            {/* Standings слева */}
+            {/* Standings */}
             <div className="fullmix-standings">
                 <div className="fullmix-standings-headline">
                     <h4 className="fullmix-standings-title">Standings</h4>
@@ -277,50 +277,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 </div>
             </div>
 
-            {/* Правая часть — сетка bracket-stage-wrapper */}
-            <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
-                <div className="bracket-stage-grid" style={{ display: 'grid', gap: 12 }}>
-
-                    {/* Переключатель раундов */}
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
-                        <div className="fullmix-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {rounds.map(r => (
-                                <button
-                                    key={r.round_number}
-                                    className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`}
-                                    disabled={r.round_number === currentRound}
-                                    onClick={() => setCurrentRound(r.round_number)}
-                                >
-                                    {r.round_number}
-                                </button>
-                            ))}
-                            {rounds.length === 0 && <span style={{ color: '#888' }}>Нет раундов</span>}
-                        </div>
-                    </div>
-
-                    {/* Блок визуализации сетки через BracketRenderer */}
-                    <div className="bracket-renderer-host">
-                        {loading ? (
-                            <div style={{ color: '#888' }}>Загрузка...</div>
-                        ) : (
-                            <BracketRenderer
-                                games={matches}
-                                tournament={{ id: tournamentId, bracket_type: 'single_elimination', participant_type: 'team' }}
-                                onEditMatch={null}
-                                canEditMatches={false}
-                                selectedMatch={null}
-                                setSelectedMatch={() => {}}
-                                format={'single_elimination'}
-                                onMatchClick={() => {}}
-                                readOnly={true}
-                                focusMatchId={null}
-                                isAdminOrCreator={false}
-                            />
-                        )}
-                    </div>
-                </div>
-            </div>
+            {/* Правая часть удалена по требованию */}
             </div>
         </>
     );
