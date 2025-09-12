@@ -28,8 +28,16 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
         const items = (res.data?.items || []).sort((a,b) => a.round_number - b.round_number);
         setRounds(items);
-        if (items.length > 0) setCurrentRound(items[0].round_number);
-    }, [tournamentId]);
+        if (items.length > 0) {
+            const numbers = items.map(i => i.round_number);
+            if (!currentRound) {
+                setCurrentRound(numbers[0]);
+            } else if (!numbers.includes(currentRound)) {
+                // Если текущий раунд отсутствует в списке (например, список обновился) — показываем последний доступный
+                setCurrentRound(numbers[numbers.length - 1]);
+            }
+        }
+    }, [tournamentId, currentRound]);
 
     const loadSnapshot = useCallback(async (round) => {
         setLoading(true);
@@ -70,10 +78,12 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     }, [tournamentId, loadSettings, loadRounds, loadParticipantsCount, loadStandings]);
 
     useEffect(() => {
-        if (!tournamentId || !currentRound) return;
-        loadSnapshot(currentRound);
+        if (!tournamentId) return;
+        const targetRound = currentRound || (rounds.length > 0 ? rounds[rounds.length - 1].round_number : null);
+        if (!targetRound) return;
+        loadSnapshot(targetRound);
         loadStandings();
-    }, [tournamentId, currentRound, loadSnapshot, loadStandings]);
+    }, [tournamentId, currentRound, rounds, loadSnapshot, loadStandings]);
 
     // Live updates via Socket.IO
     useEffect(() => {
@@ -230,7 +240,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             {/* Header with admin controls */}
             {isAdminOrCreator && (
                 <div className="fullmix-header">
-                    <span style={{ color: '#ccc', marginRight: 12 }}>Текущий раунд: {currentRound || '—'}</span>
+                    <span>Текущий раунд: {currentRound || '—'}</span>
                     {rounds.length === 0 && (
                         <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
                     )}

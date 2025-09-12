@@ -19,6 +19,12 @@
     flex-wrap: wrap;
     margin-bottom: 24px;
     grid-area: header;
+    padding: 12px;
+}
+
+.fullmix-header span {
+    margin-right: 32px;
+    color: #fff;
 }
 
 .bracket-stage-wrapper.bracket-full-bleed {
