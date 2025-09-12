@@ -153,10 +153,19 @@
 .fullmix-standings-table th:nth-child(1),
 .fullmix-standings-table td:nth-child(1) {
     text-align: left;
-    max-width: 220px;
+    max-width: 260px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.fullmix-standings-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
 .fullmix-standings-table th:nth-child(n+2),

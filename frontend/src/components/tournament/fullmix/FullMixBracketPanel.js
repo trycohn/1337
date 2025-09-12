@@ -518,7 +518,12 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                                 const isElim = (Number.isInteger(u) && eliminatedSet.has(u)) || (Number.isInteger(p) && eliminatedSet.has(p));
                                 return (
                                 <tr key={s.user_id || s.participant_id || idx} className={isElim ? 'fullmix-eliminated' : undefined}>
-                                    <td>{s.username}</td>
+                                    <td>
+                                        {s.avatar_url && (
+                                            <img src={s.avatar_url} alt="" className="fullmix-standings-avatar" />
+                                        )}
+                                        {s.username}
+                                    </td>
                                     <td>{(s.wins || 0) + (s.losses || 0)}</td>
                                     <td>{s.wins}</td>
                                     <td>{s.losses}</td>

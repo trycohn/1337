@@ -391,7 +391,8 @@ class FullMixService {
             base AS (
                 SELECT tp.id AS participant_id,
                        COALESCE(u.id, tp.user_id) AS user_id,
-                       COALESCE(u.username, tp.name) AS username
+                       COALESCE(u.username, tp.name) AS username,
+                       u.avatar_url
                 FROM tournament_participants tp
                 LEFT JOIN users u ON u.id = tp.user_id
                 WHERE tp.tournament_id = $1
@@ -400,6 +401,7 @@ class FullMixService {
                    COALESCE(b.user_id, b.participant_id) AS uid,
                    b.user_id,
                    b.username,
+                   b.avatar_url,
                    COALESCE(w.wins, 0) AS wins,
                    COALESCE(l.losses, 0) AS losses
             FROM base b
@@ -412,6 +414,7 @@ class FullMixService {
             participant_id: r.participant_id ? parseInt(r.participant_id, 10) : null,
             user_id: r.uid ? parseInt(r.uid, 10) : null,
             username: r.username,
+            avatar_url: r.avatar_url || null,
             wins: parseInt(r.wins || 0, 10),
             losses: parseInt(r.losses || 0, 10)
         }));
