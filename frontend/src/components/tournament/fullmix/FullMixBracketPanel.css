@@ -64,14 +64,7 @@
     font-size: 13px;
 }
 
-.fullmix-standings-table thead tr {
-    text-align: left;
-    color: #ccc;
-    height: 64px;
-    padding: 0px 32px 16px;
-    background-color: #1d1d1d;
-    border-bottom: 1px solid #000000;
-}
+
 
 .fullmix-standings-table td, .fullmix-standings-table th {
     padding: 16px;
@@ -81,6 +74,19 @@
     position: sticky;
     top: 0;
     z-index: 1;
+}
+
+.fullmix-standings-table thead tr {
+    text-align: left;
+    color: #ccc;
+    height: 64px;
+    padding: 0px 32px 16px;
+    background-color: #1d1d1d;
+    border-bottom: 1px solid #000000;
+}
+
+.fullmix-standings-table head th {
+    padding: 0px 32px 16px;
 }
 
 .fullmix-standings-table tbody tr {
