@@ -15,6 +15,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [loading, setLoading] = useState(false);
     const [approving, setApproving] = useState(false);
     const [actionMessage, setActionMessage] = useState('');
+    const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
 
     const loadSettings = useCallback(async () => {
         try {
@@ -229,13 +230,14 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             {/* Header with admin controls */}
             {isAdminOrCreator && (
                 <div className="fullmix-header">
+                    <span style={{ color: '#ccc', marginRight: 12 }}>Текущий раунд: {currentRound || '—'}</span>
                     {rounds.length === 0 && (
                         <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
                     )}
                     {rounds.length > 0 && (
                         <>
                             <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
-                            <button className="btn btn-primary" onClick={completeCurrentRound}>Завершить текущий раунд</button>
+                            <button className="btn btn-primary" onClick={() => setConfirmFinishOpen(true)}>Завершить текущий раунд</button>
                             <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournament.id}/bracket`, '_blank', 'noopener,noreferrer')}>Открыть в отдельном окне</button>
                         </>
                     )}
@@ -279,6 +281,25 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
             {/* Правая часть удалена по требованию */}
             </div>
+
+            {/* Модалка подтверждения завершения раунда */}
+            {confirmFinishOpen && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 16, width: 420, maxWidth: '90vw' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <h4 style={{ margin: 0 }}>Подтверждение</h4>
+                            <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>✕</button>
+                        </div>
+                        <div style={{ color: '#ccc', marginBottom: 16 }}>
+                            Завершить раунд № {currentRound || '—'}? После завершения переформирование в этом раунде будет недоступно.
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>Отмена</button>
+                            <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(); }}>Завершить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
