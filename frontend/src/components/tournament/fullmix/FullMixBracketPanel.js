@@ -384,7 +384,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>✕</button>
                         </div>
                         <div style={{ color: '#ccc', marginBottom: 16 }}>
-                            Завершить раунд № {currentRound || '—'}? После завершения переформирование в этом раунде будет недоступно.
+                            Завершить раунд № {(settings?.current_round ?? currentRound) || '—'}? После завершения переформирование в этом раунде будет недоступно.
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>Отмена</button>
