@@ -301,6 +301,16 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             // Ожидаем действий администратора в черновике (двухэтапное утверждение).
             await loadSnapshot(currentRound);
             setActionMessage(`Раунд ${currentRound} завершён. Сформируйте следующий раунд через Черновик.`);
+
+            // Авто-переход currentRound -> currentRound + 1
+            const nextRound = (parseInt(currentRound, 10) || 1) + 1;
+            setCurrentRound(nextRound);
+            try {
+                localStorage.setItem(`fm_current_round_${tournamentId}`, String(nextRound));
+                const url = new URL(window.location.href);
+                url.searchParams.set('round', String(nextRound));
+                window.history.replaceState({}, '', url.toString());
+            } catch (_) {}
         } catch (e) {
             setActionMessage('Ошибка завершения раунда');
         } finally {
