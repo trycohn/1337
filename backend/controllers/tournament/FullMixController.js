@@ -25,7 +25,12 @@ class FullMixController {
     static completeRound = asyncHandler(async (req, res) => {
         const tournamentId = parseInt(req.params.id);
         const { round } = req.body || {};
-        const result = await FullMixService.completeRound(tournamentId, parseInt(round));
+        const r = parseInt(round);
+        const isCompleted = await FullMixService.isRoundCompleted(tournamentId, r);
+        if (!isCompleted) {
+            return res.status(400).json({ success: false, error: 'Раунд не может быть завершён: нет матчей или есть незавершённые матчи.' });
+        }
+        const result = await FullMixService.completeRound(tournamentId, r);
         res.json({ success: true, ...result });
     });
 

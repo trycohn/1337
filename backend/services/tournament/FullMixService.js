@@ -793,7 +793,7 @@ class FullMixService {
         const res = await pool.query(
             `SELECT 
                 COUNT(*)::int AS total,
-                COUNT(*) FILTER (WHERE status <> 'completed')::int AS pending
+                COUNT(*) FILTER (WHERE (status <> 'completed' AND (winner_team_id IS NULL)))::int AS pending
              FROM matches
              WHERE tournament_id = $1 AND round = $2`,
             [tournamentId, roundNumber]
