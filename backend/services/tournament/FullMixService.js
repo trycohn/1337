@@ -7,6 +7,35 @@ const MatchService = require('./MatchService');
  * Логика Full Mix (раунды, снапшоты, победитель по числу побед)
  */
 class FullMixService {
+    static async getLatestEliminatedIds(tournamentId) {
+        try {
+            const res = await pool.query(
+                `SELECT snapshot->'meta' AS meta
+                 FROM full_mix_snapshots
+                 WHERE tournament_id = $1
+                 ORDER BY round_number DESC
+                 LIMIT 3`,
+                [tournamentId]
+            );
+            const ids = new Set();
+            for (const row of res.rows || []) {
+                const meta = row.meta;
+                if (!meta) continue;
+                const eliminated = Array.isArray(meta?.eliminated) ? meta.eliminated : [];
+                for (const v of eliminated) {
+                    const n = parseInt(v, 10);
+                    if (Number.isInteger(n)) { ids.add(n); continue; }
+                    if (v && typeof v === 'object') {
+                        const a = parseInt(v.user_id, 10);
+                        const b = parseInt(v.participant_id, 10);
+                        if (Number.isInteger(a)) ids.add(a);
+                        if (Number.isInteger(b)) ids.add(b);
+                    }
+                }
+            }
+            return ids;
+        } catch (_) { return new Set(); }
+    }
     // ===== PREVIEW API (DB-based cache) =====
     static async savePreview(tournamentId, roundNumber, preview, createdBy = null) {
         await pool.query(
@@ -473,6 +502,12 @@ class FullMixService {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
+                // Читаем текущий снапшот, чтобы сохранить meta (finalists/eliminated/extra_round)
+                let prevMeta = {};
+                try {
+                    const prev = await client.query('SELECT snapshot FROM full_mix_snapshots WHERE tournament_id = $1 AND round_number = $2', [tournamentId, roundNumber]);
+                    prevMeta = prev?.rows?.[0]?.snapshot?.meta || {};
+                } catch (_) { prevMeta = {}; }
 
                 // Удаляем матчи и команды этого раунда (если были)
                 await client.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
@@ -499,7 +534,7 @@ class FullMixService {
 
                 // Обновляем снапшот: команды сохранены, матчи не созданы
                 const standings = await this.calculateStandings(tournamentId);
-                const snapshotToSave = { round: roundNumber, teams: createdTeams, matches: [], standings };
+                const snapshotToSave = { round: roundNumber, teams: createdTeams, matches: [], standings, meta: prevMeta };
                 await client.query(
                     `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
                      VALUES ($1,$2,$3, TRUE, FALSE)
@@ -700,7 +735,12 @@ class FullMixService {
                     team1_name: idToName.get(m.team1_id) || null,
                     team2_name: idToName.get(m.team2_id) || null,
                 }));
-                const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: matchesNamed, standings: snap.snapshot?.standings || [] };
+                // Сохраняем meta из существующего снапшота (не затираем информацию об eliminated/finalists)
+                let prevMeta = {};
+                try {
+                    prevMeta = snap?.snapshot?.meta || {};
+                } catch (_) { prevMeta = {}; }
+                const newSnap = { round: roundNumber, teams: snap.snapshot?.teams || [], matches: matchesNamed, standings: snap.snapshot?.standings || [], meta: prevMeta };
                 await client.query(
                     `UPDATE full_mix_snapshots SET snapshot = $3, approved_matches = TRUE WHERE tournament_id = $1 AND round_number = $2`,
                     [tournamentId, roundNumber, newSnap]
@@ -756,7 +796,7 @@ class FullMixService {
     }
 
     static async getEligibleParticipants(tournamentId, ratingMode, standings) {
-        // Все участники турнира, исключений по поражениям нет (победа считается по wins_to_win)
+        // Базовый пул участников
         const res = await pool.query(
             `SELECT tp.id as participant_id, tp.user_id, COALESCE(u.username, tp.name) as username,
                     u.faceit_elo, u.cs2_premier_rank
@@ -766,7 +806,15 @@ class FullMixService {
              ORDER BY tp.id ASC`,
             [tournamentId]
         );
-        return res.rows;
+
+        // Исключаем выбывших, если такие уже определены в последних снапшотах
+        const eliminatedSet = await this.getLatestEliminatedIds(tournamentId);
+        if (eliminatedSet.size === 0) return res.rows;
+        return res.rows.filter(r => {
+            const uid = r.user_id != null ? parseInt(r.user_id, 10) : null;
+            const pid = r.participant_id != null ? parseInt(r.participant_id, 10) : null;
+            return !( (uid != null && eliminatedSet.has(uid)) || (pid != null && eliminatedSet.has(pid)) );
+        });
     }
 
     static formTeams(participants, ratingMode, perTeam) {

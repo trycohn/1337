@@ -220,12 +220,16 @@ class FullMixController {
         }
         const settings = await FullMixService.getSettings(tournamentId);
         const standings = await FullMixService.calculateStandings(tournamentId);
+        const latestEliminated = await FullMixService.getLatestEliminatedIds(tournamentId);
+        const eligible = (latestEliminated && latestEliminated.size > 0)
+            ? standings.map(s => s.user_id).filter(id => !latestEliminated.has(id))
+            : null;
         const snapshot = await FullMixService.generateRoundSnapshot(
             tournamentId,
             round,
             settings?.rating_mode || 'random',
             standings,
-            { ephemeral: true }
+            { ephemeral: true, eligibleUserIds: eligible }
         );
         const saved = await FullMixService.savePreview(tournamentId, round, snapshot, userId);
         res.json({ success: true, item: saved });
