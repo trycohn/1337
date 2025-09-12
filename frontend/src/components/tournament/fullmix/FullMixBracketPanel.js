@@ -333,7 +333,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             <div className="fullmix-standings">
                 <div className="fullmix-standings-headline">
                     <h4 className="fullmix-standings-title">Standings</h4>
-                    <div className="fullmix-standings-round">Раунд {currentRound || '—'}</div>
+                    <div className="fullmix-standings-round">{displayRoundLabel === 'ФИНАЛ' ? 'ФИНАЛ' : `Раунд ${displayRoundLabel}`}</div>
                 </div>
                 <div className="fullmix-standings-scroll">
                     <table className="fullmix-standings-table">
