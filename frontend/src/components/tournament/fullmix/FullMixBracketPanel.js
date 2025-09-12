@@ -16,6 +16,9 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [approving, setApproving] = useState(false);
     const [actionMessage, setActionMessage] = useState('');
     const [confirmFinishOpen, setConfirmFinishOpen] = useState(false);
+    const [suggestSwitchOpen, setSuggestSwitchOpen] = useState(false);
+    const [suggestedRound, setSuggestedRound] = useState(null);
+    const lastMaxRoundRef = React.useRef(null);
 
     const loadSettings = useCallback(async () => {
         try {
@@ -30,14 +33,49 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         setRounds(items);
         if (items.length > 0) {
             const numbers = items.map(i => i.round_number);
+            const maxRound = numbers[numbers.length - 1];
+            // 1) Попытка взять из URL
+            let initial = null;
+            try {
+                const url = new URL(window.location.href);
+                const qRound = parseInt(url.searchParams.get('round'), 10);
+                if (Number.isInteger(qRound) && numbers.includes(qRound)) initial = qRound;
+            } catch (_) {}
+            // 2) Попытка взять из localStorage
+            if (initial == null) {
+                try {
+                    const stored = parseInt(localStorage.getItem(`fm_current_round_${tournamentId}`), 10);
+                    if (Number.isInteger(stored) && numbers.includes(stored)) initial = stored;
+                } catch (_) {}
+            }
+            // 3) Фоллбек: последний (максимальный) раунд
+            if (initial == null) initial = maxRound;
+
+            // Если текущий ещё не установлен
             if (!currentRound) {
-                setCurrentRound(numbers[0]);
+                setCurrentRound(initial);
             } else if (!numbers.includes(currentRound)) {
-                // Если текущий раунд отсутствует в списке (например, список обновился) — показываем последний доступный
-                setCurrentRound(numbers[numbers.length - 1]);
+                // Если выбранный исчез — берём последний
+                setCurrentRound(maxRound);
+            }
+
+            // Детект появления нового раунда
+            if (lastMaxRoundRef.current == null) lastMaxRoundRef.current = maxRound;
+            if (maxRound > lastMaxRoundRef.current) {
+                // Появился новый раунд
+                const declineKey = `fm_declined_jump_${tournamentId}_${maxRound}`;
+                const declined = localStorage.getItem(declineKey) === '1';
+                if (isAdminOrCreator && !declined) {
+                    setSuggestedRound(maxRound);
+                    setSuggestSwitchOpen(true);
+                } else if (!isAdminOrCreator) {
+                    // Зрителям переключаем автоматически
+                    setCurrentRound(maxRound);
+                }
+                lastMaxRoundRef.current = maxRound;
             }
         }
-    }, [tournamentId, currentRound]);
+    }, [tournamentId, currentRound, isAdminOrCreator]);
 
     const loadSnapshot = useCallback(async (round) => {
         setLoading(true);
@@ -106,8 +144,10 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const onRoundCompleted = (payload) => {
             if (!payload || payload.round == null) return;
             try { console.log('[FullMix] socket fullmix_round_completed', payload); } catch (_) {}
+            // Не переключаемся автоматически, только обновляем списки
             loadRounds();
-            loadSnapshot(payload.round);
+            // если сейчас смотрим этот раунд — просто обновим снапшот
+            if (currentRound === payload.round) loadSnapshot(payload.round);
             loadStandings();
         };
         const onMatchUpdated = (payload) => {
@@ -306,6 +346,28 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>Отмена</button>
                             <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(); }}>Завершить</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модалка предложения перейти к новому раунду (для админов) */}
+            {suggestSwitchOpen && suggestedRound && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 16, width: 420, maxWidth: '90vw' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <h4 style={{ margin: 0 }}>Новый раунд</h4>
+                            <button className="btn btn-secondary" onClick={() => { setSuggestSwitchOpen(false); localStorage.setItem(`fm_declined_jump_${tournamentId}_${suggestedRound}`, '1'); }}>✕</button>
+                        </div>
+                        <div style={{ color: '#ccc', marginBottom: 16 }}>
+                            Появился раунд № {suggestedRound}. Перейти к нему?
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button className="btn btn-secondary" onClick={() => { setSuggestSwitchOpen(false); localStorage.setItem(`fm_declined_jump_${tournamentId}_${suggestedRound}`, '1'); }}>Нет</button>
+                            <button className="btn btn-primary" onClick={() => {
+                                setSuggestSwitchOpen(false);
+                                setCurrentRound(suggestedRound);
+                            }}>Да</button>
                         </div>
                     </div>
                 </div>
