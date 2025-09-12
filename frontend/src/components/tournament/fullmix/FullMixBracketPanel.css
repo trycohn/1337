@@ -31,6 +31,7 @@
     background-color: #1D1D1D;
     border-top-right-radius: 8px;
     border-top-left-radius: 8px;
+    padding-bottom: 0px;
 }
 
 .fullmix-standings-title {
@@ -67,7 +68,7 @@
     text-align: left;
     color: #ccc;
     height: 64px;
-    padding: 16px 32px;
+    padding: 0px 32px 16px;
     background-color: #1d1d1d;
     border-bottom: 1px solid #000000;
 }
@@ -101,10 +102,6 @@
 .fullmix-standings-table tbody tr:nth-child(3) {
     background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(88, 88, 88, 0) 0deg, #585858 180deg, rgba(88, 88, 88, 0) 360deg);
     border-bottom: 1px solid var(--Neutral-Grey-80, #1D1D1D);
-}
-
-.fullmix-standings-table tbody tr:hover {
-    background: #111111;
 }
 
 /* Колонки: 1 — имя влево; 2..4 — центр и фикс. ширина */
