@@ -102,6 +102,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 const last = details[details.length - 1];
                 if (last && last.isFinal) {
                     setDisplayRoundLabel('ФИНАЛ');
+                } else if (settings?.current_round) {
+                    setDisplayRoundLabel(String(settings.current_round));
                 } else {
                     const completedCount = details.filter(d => d.completed).length;
                     setDisplayRoundLabel(String(Math.max(1, completedCount + 1)));
@@ -155,6 +157,24 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         loadSnapshot(targetRound);
         loadStandings();
     }, [tournamentId, currentRound, rounds, loadSnapshot, loadStandings]);
+
+    // Синхронизация выбранного раунда с настройками турнира (истина из БД)
+    useEffect(() => {
+        if (!settings?.current_round) return;
+        const desired = parseInt(settings.current_round, 10);
+        if (!Number.isInteger(desired)) return;
+        const numbers = rounds.map(r => r.round_number);
+        const target = numbers.includes(desired) ? desired : (numbers[numbers.length - 1] || desired);
+        if (target && currentRound !== target) {
+            setCurrentRound(target);
+            try {
+                localStorage.setItem(`fm_current_round_${tournamentId}`, String(target));
+                const url = new URL(window.location.href);
+                url.searchParams.set('round', String(target));
+                window.history.replaceState({}, '', url.toString());
+            } catch (_) {}
+        }
+    }, [settings?.current_round, rounds.length]);
 
     // Live updates via Socket.IO
     useEffect(() => {
@@ -301,16 +321,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             // Ожидаем действий администратора в черновике (двухэтапное утверждение).
             await loadSnapshot(currentRound);
             setActionMessage(`Раунд ${currentRound} завершён. Сформируйте следующий раунд через Черновик.`);
-
-            // Авто-переход currentRound -> currentRound + 1
-            const nextRound = (parseInt(currentRound, 10) || 1) + 1;
-            setCurrentRound(nextRound);
-            try {
-                localStorage.setItem(`fm_current_round_${tournamentId}`, String(nextRound));
-                const url = new URL(window.location.href);
-                url.searchParams.set('round', String(nextRound));
-                window.history.replaceState({}, '', url.toString());
-            } catch (_) {}
+            // Обновляем настройки, чтобы подтянуть новый current_round из БД и синхронизировать UI
+            await loadSettings();
         } catch (e) {
             setActionMessage('Ошибка завершения раунда');
         } finally {
