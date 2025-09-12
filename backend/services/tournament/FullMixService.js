@@ -7,6 +7,33 @@ const MatchService = require('./MatchService');
  * Логика Full Mix (раунды, снапшоты, победитель по числу побед)
  */
 class FullMixService {
+    static async getLatestFinalistsIds(tournamentId) {
+        try {
+            const res = await pool.query(
+                `SELECT snapshot->'meta' AS meta
+                 FROM full_mix_snapshots
+                 WHERE tournament_id = $1
+                 ORDER BY round_number DESC
+                 LIMIT 1`,
+                [tournamentId]
+            );
+            const ids = new Set();
+            const meta = res?.rows?.[0]?.meta;
+            if (!meta) return ids;
+            const list = Array.isArray(meta?.finalists) ? meta.finalists : [];
+            for (const v of list) {
+                const n = parseInt(v, 10);
+                if (Number.isInteger(n)) { ids.add(n); continue; }
+                if (v && typeof v === 'object') {
+                    const a = parseInt(v.user_id, 10);
+                    const b = parseInt(v.participant_id, 10);
+                    if (Number.isInteger(a)) ids.add(a);
+                    if (Number.isInteger(b)) ids.add(b);
+                }
+            }
+            return ids;
+        } catch (_) { return new Set(); }
+    }
     static async getLatestEliminatedIds(tournamentId) {
         try {
             const res = await pool.query(
@@ -806,24 +833,35 @@ class FullMixService {
              ORDER BY tp.id ASC`,
             [tournamentId]
         );
-
-        // Исключаем выбывших только на рубеже wins_to_win и далее, чтобы не сломать превью до рубежа
         try {
             const settings = await this.getSettings(tournamentId);
             const current = await this.getCurrentRound(tournamentId);
             const winsToWin = parseInt(settings?.wins_to_win, 10) || 0;
             const atOrAfterMilestone = winsToWin > 0 && current >= winsToWin;
-            if (!atOrAfterMilestone) return res.rows;
-            const eliminatedSet = await this.getLatestEliminatedIds(tournamentId);
-            if (eliminatedSet.size === 0) return res.rows;
-            return res.rows.filter(r => {
-                const uid = r.user_id != null ? parseInt(r.user_id, 10) : null;
-                const pid = r.participant_id != null ? parseInt(r.participant_id, 10) : null;
-                return !( (uid != null && eliminatedSet.has(uid)) || (pid != null && eliminatedSet.has(pid)) );
-            });
-        } catch (_) {
+
+            // Если определены финалисты в последнем снапшоте — ограничиваем пул только ими
+            const finalistsSet = await this.getLatestFinalistsIds(tournamentId);
+            if (finalistsSet.size > 0) {
+                return res.rows.filter(r => {
+                    const uid = r.user_id != null ? parseInt(r.user_id, 10) : null;
+                    const pid = r.participant_id != null ? parseInt(r.participant_id, 10) : null;
+                    return (uid != null && finalistsSet.has(uid)) || (pid != null && finalistsSet.has(pid));
+                });
+            }
+
+            // Иначе (на рубеже и далее), исключаем выбывших
+            if (atOrAfterMilestone) {
+                const eliminatedSet = await this.getLatestEliminatedIds(tournamentId);
+                if (eliminatedSet.size === 0) return res.rows;
+                return res.rows.filter(r => {
+                    const uid = r.user_id != null ? parseInt(r.user_id, 10) : null;
+                    const pid = r.participant_id != null ? parseInt(r.participant_id, 10) : null;
+                    return !( (uid != null && eliminatedSet.has(uid)) || (pid != null && eliminatedSet.has(pid)) );
+                });
+            }
+
             return res.rows;
-        }
+        } catch (_) { return res.rows; }
     }
 
     static formTeams(participants, ratingMode, perTeam) {
