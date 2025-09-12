@@ -276,62 +276,62 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 </div>
             </div>
 
-            {/* Правый блок — матчи и переключатель раундов */}
-            <div className="fullmix-matches" style={{ display: 'grid', gap: 12 }}>
-                {/* Инфо блок */}
-                <div className="fullmix-info" style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 12 }}>
-                    <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 1.6 }}>
-                        <li>Формат турнира: MIX</li>
-                        <li>Тип MIX турнира: {isFull ? 'Fullmix' : 'Classic'}</li>
-                        <li>Тип распределения: {ratingDisplay}</li>
-                        <li>Игроков в команде: {tournament?.team_size || 5}</li>
-                        <li>Количество сформированных команд: {teams.length}</li>
-                        <li>Количество игроков не в командах: {notInTeams ?? '—'}</li>
-                    </ul>
-                </div>
+            {/* Правая часть — сетка bracket-stage-wrapper */}
+            <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
+                <div className="bracket-stage-grid" style={{ display: 'grid', gap: 12 }}>
+                    {/* Инфо блок */}
+                    <div className="fullmix-info" style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 12 }}>
+                        <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 1.6 }}>
+                            <li>Формат турнира: MIX</li>
+                            <li>Тип MIX турнира: {isFull ? 'Fullmix' : 'Classic'}</li>
+                            <li>Тип распределения: {ratingDisplay}</li>
+                            <li>Игроков в команде: {tournament?.team_size || 5}</li>
+                            <li>Количество сформированных команд: {teams.length}</li>
+                            <li>Количество игроков не в командах: {notInTeams ?? '—'}</li>
+                        </ul>
+                    </div>
 
-                {/* Переключатель раундов */}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
-                    <div className="fullmix-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {rounds.map(r => (
-                            <button
-                                key={r.round_number}
-                                className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`}
-                                disabled={r.round_number === currentRound}
-                                onClick={() => setCurrentRound(r.round_number)}
-                            >
-                                {r.round_number}
-                            </button>
-                        ))}
-                        {rounds.length === 0 && <span style={{ color: '#888' }}>Нет раундов</span>}
+                    {/* Переключатель раундов */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
+                        <div className="fullmix-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {rounds.map(r => (
+                                <button
+                                    key={r.round_number}
+                                    className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`}
+                                    disabled={r.round_number === currentRound}
+                                    onClick={() => setCurrentRound(r.round_number)}
+                                >
+                                    {r.round_number}
+                                </button>
+                            ))}
+                            {rounds.length === 0 && <span style={{ color: '#888' }}>Нет раундов</span>}
+                        </div>
+                    </div>
+
+                    {/* Список матчей внутри обёртки сетки */}
+                    <div className="fullmix-matches-list" style={{ display: 'grid', gap: 8 }}>
+                        {loading ? (
+                            <div style={{ color: '#888' }}>Загрузка...</div>
+                        ) : (
+                            matches.length > 0 ? matches.map(m => (
+                                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: '10px 12px' }}>
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <span style={{ color: '#fff' }}>Матч #{m.id}</span>
+                                        <span style={{ color: '#aaa', fontSize: 12 }}>R{currentRound}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <a className="btn btn-secondary" href={`/tournaments/${tournamentId}/match/${m.id}`}>
+                                            Открыть
+                                        </a>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div style={{ color: '#888' }}>Матчей нет</div>
+                            )
+                        )}
                     </div>
                 </div>
-
-                {/* Матчи текущего раунда */}
-                <div className="fullmix-matches-list" style={{ display: 'grid', gap: 8 }}>
-                    {loading ? (
-                        <div style={{ color: '#888' }}>Загрузка...</div>
-                    ) : (
-                        matches.length > 0 ? matches.map(m => (
-                            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: '10px 12px' }}>
-                                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                    <span style={{ color: '#fff' }}>Матч #{m.id}</span>
-                                    <span style={{ color: '#aaa', fontSize: 12 }}>R{currentRound}</span>
-                                </div>
-                                <div style={{ display: 'flex', gap: 8 }}>
-                                    <a className="btn btn-secondary" href={`/tournaments/${tournamentId}/match/${m.id}`}>
-                                        Открыть
-                                    </a>
-                                </div>
-                            </div>
-                        )) : (
-                            <div style={{ color: '#888' }}>Матчей нет</div>
-                        )
-                    )}
-                </div>
-
-                {/* Блок подтверждения убран, вместо него кнопка открытия черновика в панели выше */}
             </div>
             </div>
         </>
