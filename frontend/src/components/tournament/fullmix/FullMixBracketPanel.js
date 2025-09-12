@@ -334,23 +334,30 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             await loadSettings();
 
             // Информационное сообщение о результате отбора (финалисты / доп. раунд / исключённые)
-            const nri = res?.data?.next_round_info;
-            if (nri) {
-                const finalists = Array.isArray(nri.finalists) ? nri.finalists : [];
-                const eliminated = Array.isArray(nri.eliminated) ? nri.eliminated : [];
-                const isExtraRound = Boolean(nri.extra_round);
+            let nri = res?.data?.next_round_info;
+            const openInfo = (payload) => {
+                if (!payload) return;
+                const finalists = Array.isArray(payload.finalists) ? payload.finalists : [];
+                const eliminated = Array.isArray(payload.eliminated) ? payload.eliminated : [];
+                const isExtraRound = Boolean(payload.extra_round);
 
                 let title = 'Результат отбора';
                 let text = '';
 
+                const namesFrom = (arr) => {
+                    if (!Array.isArray(arr) || arr.length === 0) return '';
+                    const names = arr.map(x => x?.username || x?.name || (x?.user_id != null ? `ID ${x.user_id}` : '')).filter(Boolean);
+                    return names.length > 0 ? names.join(', ') : '';
+                };
+
                 if (finalists.length > 0) {
-                    const names = finalists.map(f => f.username || `ID ${f.user_id}`).join(', ');
-                    text = `Определены финалисты (${finalists.length}): ${names}.\nБудет создан финальный раунд.`;
+                    const names = namesFrom(finalists);
+                    text = names ? `Определены финалисты (${finalists.length}): ${names}.\nБудет создан финальный раунд.` : `Определены финалисты (${finalists.length}). Будет создан финальный раунд.`;
                 } else if (isExtraRound) {
                     text = 'Финалисты не определены, будет создан дополнительный раунд.';
                     if (eliminated.length > 0) {
-                        const names = eliminated.map(e => e.username || `ID ${e.user_id}`).join(', ');
-                        text += `\nТОП худших определены и будут исключены из турнира: ${names}.`;
+                        const names = namesFrom(eliminated);
+                        text += names ? `\nТОП худших определены и будут исключены из турнира: ${names}.` : `\nТОП худших определены и будут исключены из турнира (${eliminated.length}).`;
                     } else {
                         text += '\nТОП худших определить не удалось, все участники остаются в пуле.';
                     }
@@ -361,6 +368,26 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 setInfoTitle(title);
                 setInfoMessage(text);
                 setInfoOpen(true);
+            };
+
+            if (nri) {
+                openInfo(nri);
+            } else {
+                // Фолбэк: читаем снапшот следующего раунда и берём meta
+                const nextRound = usedRound + 1;
+                try {
+                    const rs = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${nextRound}`);
+                    const meta = rs?.data?.item?.snapshot?.meta || rs?.data?.snapshot?.meta || null;
+                    if (meta) {
+                        openInfo({
+                            finalists: meta.finalists || [],
+                            eliminated: meta.eliminated || [],
+                            extra_round: Boolean(meta.extra_round)
+                        });
+                    }
+                } catch (_e) {
+                    // игнорируем: просто нет данных для показа
+                }
             }
         } catch (e) {
             const msg = e?.response?.data?.error || 'Раунд не может быть завершён: не все матчи завершены.';
