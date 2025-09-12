@@ -203,7 +203,47 @@ class FullMixService {
                 [tournamentId, roundNumber + 1]
             );
             // Создаём пустой снапшот следующего раунда (без команд и матчей), чтобы черновик мог с ним работать
-            try { await this.generateNextRound(tournamentId); } catch (_) {}
+            // и определяем исход (финалисты/выбывшие/доп.раунд) на рубеже wins_to_win
+            let nextRoundInfo = null;
+            try {
+                const settings = await this.getSettings(tournamentId);
+                const winsToWin = parseInt(settings?.wins_to_win, 10) || 0;
+                const reachedMilestone = winsToWin > 0 && roundNumber >= winsToWin;
+                const next = await this.generateNextRound(tournamentId);
+                if (reachedMilestone && next && next.snapshot && next.snapshot.meta) {
+                    const meta = next.snapshot.meta || {};
+                    let outcome = null;
+                    let finalists = Array.isArray(meta.finalists) ? meta.finalists.map(x => parseInt(x, 10)).filter(Boolean) : [];
+                    let eliminated = Array.isArray(meta.eliminated) ? meta.eliminated.map(x => parseInt(x, 10)).filter(Boolean) : [];
+                    if (finalists.length > 0) outcome = 'finalists';
+                    else if (eliminated.length > 0) outcome = 'eliminated';
+                    else if (meta.extra_round) outcome = 'extra_round';
+
+                    // Обогащаем именами
+                    let nameMap = new Map();
+                    if (finalists.length > 0 || eliminated.length > 0) {
+                        const ids = [...new Set([...finalists, ...eliminated])];
+                        if (ids.length > 0) {
+                            const res = await pool.query(
+                                `SELECT tp.user_id, COALESCE(u.username, tp.name) AS username
+                                 FROM tournament_participants tp
+                                 LEFT JOIN users u ON u.id = tp.user_id
+                                 WHERE tp.tournament_id = $1 AND tp.user_id = ANY($2::int[])`,
+                                [tournamentId, ids]
+                            );
+                            for (const r of res.rows || []) {
+                                nameMap.set(parseInt(r.user_id, 10), r.username);
+                            }
+                        }
+                    }
+                    nextRoundInfo = {
+                        outcome,
+                        finalists: finalists.map(id => ({ user_id: id, username: nameMap.get(id) || null })),
+                        eliminated: eliminated.map(id => ({ user_id: id, username: nameMap.get(id) || null }))
+                    };
+                }
+            } catch (_) {}
+            return { round: roundNumber, round_completed: completed, standings, next_round_info: nextRoundInfo };
         }
         return { round: roundNumber, round_completed: completed, standings };
     }
