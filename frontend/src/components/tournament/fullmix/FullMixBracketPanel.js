@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import api from '../../../utils/api';
 import { getSocketInstance, authenticateSocket } from '../../../services/socketClient_v5_simplified';
+import BracketRenderer from '../../BracketRenderer';
 import './FullMixBracketPanel.css';
 
 function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
@@ -298,26 +299,24 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         </div>
                     </div>
 
-                    {/* Сетка матчей текущего раунда */}
-                    <div className="fullmix-matches-list" style={{ display: 'grid', gap: 8 }}>
+                    {/* Блок визуализации сетки через BracketRenderer */}
+                    <div className="bracket-renderer-host">
                         {loading ? (
                             <div style={{ color: '#888' }}>Загрузка...</div>
                         ) : (
-                            matches.length > 0 ? matches.map(m => (
-                                <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: '10px 12px' }}>
-                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                        <span style={{ color: '#fff' }}>Матч #{m.id}</span>
-                                        <span style={{ color: '#aaa', fontSize: 12 }}>R{currentRound}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <a className="btn btn-secondary" href={`/tournaments/${tournamentId}/match/${m.id}`}>
-                                            Открыть
-                                        </a>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div style={{ color: '#888' }}>Матчей нет</div>
-                            )
+                            <BracketRenderer
+                                games={matches}
+                                tournament={{ id: tournamentId, bracket_type: 'single_elimination', participant_type: 'team' }}
+                                onEditMatch={null}
+                                canEditMatches={false}
+                                selectedMatch={null}
+                                setSelectedMatch={() => {}}
+                                format={'single_elimination'}
+                                onMatchClick={() => {}}
+                                readOnly={true}
+                                focusMatchId={null}
+                                isAdminOrCreator={false}
+                            />
                         )}
                     </div>
                 </div>
