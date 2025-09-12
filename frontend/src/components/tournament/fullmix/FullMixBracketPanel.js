@@ -455,7 +455,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         </thead>
                         <tbody>
                             {sortedStandings.map((s, idx) => (
-                                <tr key={s.user_id || idx}>
+                                <tr key={s.user_id || idx} className={eliminatedSet.has(parseInt(s.user_id, 10)) ? 'fullmix-eliminated' : undefined}>
                                     <td>{s.username}</td>
                                     <td>{(s.wins || 0) + (s.losses || 0)}</td>
                                     <td>{s.wins}</td>
