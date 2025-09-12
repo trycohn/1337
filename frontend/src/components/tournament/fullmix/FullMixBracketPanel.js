@@ -26,6 +26,8 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const [infoOpen, setInfoOpen] = useState(false);
     const [infoTitle, setInfoTitle] = useState('');
     const [infoMessage, setInfoMessage] = useState('');
+    const [nextRoundMeta, setNextRoundMeta] = useState(null);
+    const [eliminatedNow, setEliminatedNow] = useState([]);
 
     const loadSettings = useCallback(async () => {
         try {
@@ -289,9 +291,32 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         });
     }, [standings]);
     const meta = snapshot?.meta || {};
-    const finalistsSet = new Set((meta.finalists || []).map(id => parseInt(id, 10)));
+    // Подтягиваем мета следующего раунда (там хранится eliminated/finalists после завершения рубежного раунда)
+    useEffect(() => {
+        (async () => {
+            try {
+                setNextRoundMeta(null);
+                const numbers = rounds.map(r => r.round_number);
+                if (!currentRound || numbers.length === 0) return;
+                const next = currentRound + 1;
+                // если в текущем снапшоте нет мета об исключённых/финалистах — смотрим следующий раунд
+                const hasMeta = Array.isArray(meta?.finalists) || Array.isArray(meta?.eliminated) || meta?.extra_round;
+                if (!hasMeta && numbers.includes(next)) {
+                    try {
+                        const rres = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${next}`);
+                        const nm = rres?.data?.item?.snapshot?.meta || null;
+                        if (nm) setNextRoundMeta(nm);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+        })();
+    }, [tournamentId, currentRound, rounds.length, meta?.finalists, meta?.eliminated, meta?.extra_round]);
+    const finalistsSet = new Set((meta.finalists || nextRoundMeta?.finalists || []).map(id => parseInt(id, 10)));
     const eliminatedSet = useMemo(() => {
-        const arr = Array.isArray(meta.eliminated) ? meta.eliminated : [];
+        const srcA = (Array.isArray(meta.eliminated) && meta.eliminated.length > 0) ? meta.eliminated : [];
+        const srcB = (Array.isArray(nextRoundMeta?.eliminated) && nextRoundMeta.eliminated.length > 0) ? nextRoundMeta.eliminated : [];
+        const srcC = Array.isArray(eliminatedNow) ? eliminatedNow : [];
+        const arr = [...srcA, ...srcB, ...srcC];
         const ids = arr.map(v => {
             if (v && typeof v === 'object') {
                 const a = parseInt(v.user_id, 10);
@@ -302,7 +327,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             return Number.isInteger(n) ? n : null;
         }).filter(n => Number.isInteger(n));
         return new Set(ids);
-    }, [meta?.eliminated]);
+    }, [meta?.eliminated, nextRoundMeta?.eliminated, eliminatedNow]);
     const notInTeams = useMemo(() => {
         if (!participantsCount || teams.length === 0) return null;
         const placed = teams.reduce((sum, t) => sum + (Array.isArray(t.members) ? t.members.length : 0), 0);
@@ -385,6 +410,10 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             };
 
             if (nri) {
+                try {
+                    const elim = Array.isArray(nri.eliminated) ? nri.eliminated : [];
+                    setEliminatedNow(elim);
+                } catch (_) {}
                 openInfo(nri);
             } else {
                 // Фолбэк: читаем снапшот следующего раунда и берём meta
