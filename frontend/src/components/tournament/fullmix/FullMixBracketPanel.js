@@ -353,14 +353,16 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                 if (finalists.length > 0) {
                     const names = namesFrom(finalists);
                     text = names ? `Определены финалисты (${finalists.length}): ${names}.\nБудет создан финальный раунд.` : `Определены финалисты (${finalists.length}). Будет создан финальный раунд.`;
-                } else if (isExtraRound) {
-                    text = 'Финалисты не определены, будет создан дополнительный раунд.';
-                    if (eliminated.length > 0) {
-                        const names = namesFrom(eliminated);
-                        text += names ? `\nТОП худших определены и будут исключены из турнира: ${names}.` : `\nТОП худших определены и будут исключены из турнира (${eliminated.length}).`;
+                } else if (eliminated.length > 0) {
+                    const names = namesFrom(eliminated);
+                    const elimText = names ? `ТОП худших определены и будут исключены из турнира: ${names}.` : `ТОП худших определены и будут исключены из турнира (${eliminated.length}).`;
+                    if (isExtraRound) {
+                        text = `${elimText}\nБудет создан дополнительный раунд.`;
                     } else {
-                        text += '\nТОП худших определить не удалось, все участники остаются в пуле.';
+                        text = `${elimText}\nСформирован следующий раунд.`;
                     }
+                } else if (isExtraRound) {
+                    text = 'Финалисты не определены, будет создан дополнительный раунд.\nТОП худших определить не удалось, все участники остаются в пуле.';
                 } else {
                     text = 'Отбор завершён. Перейдите в Черновик для формирования следующего раунда.';
                 }
