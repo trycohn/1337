@@ -40,23 +40,24 @@ class FullMixService {
 
     static async getSettings(tournamentId) {
         const res = await pool.query(
-            'SELECT tournament_id, wins_to_win, rating_mode FROM tournament_full_mix_settings WHERE tournament_id = $1',
+            'SELECT tournament_id, wins_to_win, rating_mode, current_round FROM tournament_full_mix_settings WHERE tournament_id = $1',
             [tournamentId]
         );
         if (res.rows.length === 0) return null;
         return res.rows[0];
     }
 
-    static async upsertSettings(tournamentId, { wins_to_win, rating_mode }) {
+    static async upsertSettings(tournamentId, { wins_to_win, rating_mode, current_round }) {
         const res = await pool.query(
-            `INSERT INTO tournament_full_mix_settings (tournament_id, wins_to_win, rating_mode)
-             VALUES ($1, COALESCE($2, 3), COALESCE($3, 'random'))
+            `INSERT INTO tournament_full_mix_settings (tournament_id, wins_to_win, rating_mode, current_round)
+             VALUES ($1, COALESCE($2, 3), COALESCE($3, 'random'), COALESCE($4, 1))
              ON CONFLICT (tournament_id)
              DO UPDATE SET wins_to_win = COALESCE($2, tournament_full_mix_settings.wins_to_win),
                            rating_mode = COALESCE($3, tournament_full_mix_settings.rating_mode),
+                           current_round = COALESCE($4, tournament_full_mix_settings.current_round),
                            updated_at = NOW()
-             RETURNING tournament_id, wins_to_win, rating_mode`,
-            [tournamentId, wins_to_win, rating_mode]
+             RETURNING tournament_id, wins_to_win, rating_mode, current_round`,
+            [tournamentId, wins_to_win, rating_mode, current_round]
         );
         return res.rows[0];
     }
@@ -191,6 +192,15 @@ class FullMixService {
     static async completeRound(tournamentId, roundNumber) {
         const completed = await this.isRoundCompleted(tournamentId, roundNumber);
         const standings = await this.calculateStandings(tournamentId);
+        // Если раунд завершён — автоинкремент current_round в настройках
+        if (completed) {
+            await pool.query(
+                `UPDATE tournament_full_mix_settings
+                 SET current_round = GREATEST(COALESCE(current_round, 1) + 1, $2)
+                 WHERE tournament_id = $1`,
+                [tournamentId, roundNumber + 1]
+            );
+        }
         return { round: roundNumber, round_completed: completed, standings };
     }
 

@@ -178,8 +178,8 @@ class FullMixController {
             return res.json({ success: true, settings });
         }
         if (req.method === 'PUT') {
-            const { wins_to_win, rating_mode } = req.body || {};
-            const settings = await FullMixService.upsertSettings(tournamentId, { wins_to_win, rating_mode });
+            const { wins_to_win, rating_mode, current_round } = req.body || {};
+            const settings = await FullMixService.upsertSettings(tournamentId, { wins_to_win, rating_mode, current_round });
             return res.json({ success: true, settings });
         }
         return res.status(405).json({ success: false, error: 'Method not allowed' });
