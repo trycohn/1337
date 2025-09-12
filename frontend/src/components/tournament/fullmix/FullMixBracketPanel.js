@@ -79,11 +79,18 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
             // Подсчёт завершённых/финальных раундов для отображения текущего
             try {
+                // Загружаем все матчи один раз, чтобы корректно определить завершённость раундов
+                let allMatches = [];
+                try {
+                    const mres = await api.get(`/api/tournaments/${tournamentId}/matches`);
+                    allMatches = mres.data?.data || mres.data || [];
+                } catch (_) {}
+
                 const details = await Promise.all(numbers.map(async (rn) => {
                     try {
                         const rres = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${rn}`);
                         const item = rres.data?.item || {};
-                        const ms = Array.isArray(item?.snapshot?.matches) ? item.snapshot.matches : [];
+                        const ms = Array.isArray(allMatches) ? allMatches.filter(m => Number(m.round) === Number(rn)) : [];
                         const completed = ms.length > 0 && ms.every(m => (m?.status === 'completed') || (m?.winner_team_id));
                         const isFinal = !!(item?.snapshot?.meta?.final_round);
                         return { round: rn, completed, isFinal };
