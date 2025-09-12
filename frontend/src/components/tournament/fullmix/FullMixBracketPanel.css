@@ -68,7 +68,8 @@
     color: #ccc;
     height: 64px;
     padding: 16px 32px;
-    background-color: #0a0a0a;
+    background-color: #1d1d1d;
+    border-bottom: 1px solid #000000;
 }
 
 .fullmix-standings-table td, .fullmix-standings-table th {
@@ -78,7 +79,6 @@
 .fullmix-standings-table thead th {
     position: sticky;
     top: 0;
-    background: #0a0a0a;
     z-index: 1;
 }
 
