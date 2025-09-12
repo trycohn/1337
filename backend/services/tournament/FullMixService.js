@@ -202,6 +202,8 @@ class FullMixService {
                  WHERE tournament_id = $1`,
                 [tournamentId, roundNumber + 1]
             );
+            // Создаём пустой снапшот следующего раунда (без команд и матчей), чтобы черновик мог с ним работать
+            try { await this.generateNextRound(tournamentId); } catch (_) {}
         }
         return { round: roundNumber, round_completed: completed, standings };
     }
