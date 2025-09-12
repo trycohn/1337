@@ -279,17 +279,6 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
             {/* Правая часть — сетка bracket-stage-wrapper */}
             <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
                 <div className="bracket-stage-grid" style={{ display: 'grid', gap: 12 }}>
-                    {/* Инфо блок */}
-                    <div className="fullmix-info" style={{ background: '#000', border: '1px solid #1D1D1D', borderRadius: 8, padding: 12 }}>
-                        <ul style={{ margin: 0, paddingLeft: 16, lineHeight: 1.6 }}>
-                            <li>Формат турнира: MIX</li>
-                            <li>Тип MIX турнира: {isFull ? 'Fullmix' : 'Classic'}</li>
-                            <li>Тип распределения: {ratingDisplay}</li>
-                            <li>Игроков в команде: {tournament?.team_size || 5}</li>
-                            <li>Количество сформированных команд: {teams.length}</li>
-                            <li>Количество игроков не в командах: {notInTeams ?? '—'}</li>
-                        </ul>
-                    </div>
 
                     {/* Переключатель раундов */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -309,7 +298,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         </div>
                     </div>
 
-                    {/* Список матчей внутри обёртки сетки */}
+                    {/* Сетка матчей текущего раунда */}
                     <div className="fullmix-matches-list" style={{ display: 'grid', gap: 8 }}>
                         {loading ? (
                             <div style={{ color: '#888' }}>Загрузка...</div>
