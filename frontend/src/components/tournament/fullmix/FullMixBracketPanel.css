@@ -50,11 +50,12 @@
     align-items: center;
     justify-content: space-between;
     height: 40px;
-    padding: 16px;
     background-color: #1D1D1D;
     border-top-right-radius: 8px;
     border-top-left-radius: 8px;
     padding-bottom: 0px;
+    padding: 32px 16px;
+    border-bottom: 1px solid #4c4c4c;
 }
 
 .fullmix-standings-title {
@@ -71,10 +72,10 @@
 .fullmix-standings-round {
     font-family: Play;
     font-weight: 400;
-    font-size: 12px;
+    font-size: 16px;
     line-height: 100%;
     letter-spacing: 0.08em;
-    color: #949494;
+    color: #ffffff;
 }
 
 .fullmix-standings-scroll {
