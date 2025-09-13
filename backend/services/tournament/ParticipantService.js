@@ -243,6 +243,20 @@ class ParticipantService {
             throw new Error('Участник не найден');
         }
 
+        // 🆕 Если турнир MIX типа full и уже стартовал — считаем участника выбывшим в FullMix
+        try {
+            if ((tournament.format === 'full_mix') || (tournament.format === 'mix' && (tournament.mix_type || '').toLowerCase() === 'full')) {
+                const FullMixService = require('./FullMixService');
+                // Помечаем как eliminated (по user_id, fallback по participant_id)
+                const elimId = removedParticipant.user_id || removedParticipant.id;
+                if (elimId) {
+                    await FullMixService.addEliminated(tournamentId, [elimId]);
+                }
+            }
+        } catch (e) {
+            console.warn('⚠️ Не удалось отметить участника как выбывшего в FullMix:', e.message || e);
+        }
+
         // Логируем событие
         await logTournamentEvent(tournamentId, adminUserId, 'participant_removed_by_admin', {
             removedParticipantId: participantId,

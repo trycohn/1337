@@ -34,6 +34,45 @@ class FullMixService {
             return ids;
         } catch (_) { return new Set(); }
     }
+
+    /**
+     * Добавить пользователей/участников в список eliminated последнего снапшота
+     */
+    static async addEliminated(tournamentId, ids) {
+        try {
+            // Находим последний раунд со снапшотом
+            const cur = await this.getCurrentRound(tournamentId);
+            if (!Number.isInteger(cur) || cur <= 0) return false;
+            const snap = await this.getSnapshot(tournamentId, cur);
+            if (!snap) return false;
+            const snapshot = snap.snapshot || {};
+            const meta = snapshot.meta || {};
+            const current = Array.isArray(meta.eliminated) ? meta.eliminated.slice() : [];
+            const asSet = new Set(
+                current.map(v => {
+                    const n = parseInt(v, 10);
+                    if (Number.isInteger(n)) return n;
+                    if (v && typeof v === 'object') {
+                        const a = parseInt(v.user_id, 10);
+                        const b = parseInt(v.participant_id, 10);
+                        return Number.isInteger(a) ? a : (Number.isInteger(b) ? b : null);
+                    }
+                    return null;
+                }).filter(n => Number.isInteger(n))
+            );
+            for (const raw of ids || []) {
+                const n = parseInt(raw, 10);
+                if (Number.isInteger(n)) asSet.add(n);
+            }
+            const nextArray = Array.from(asSet.values());
+            snapshot.meta = { ...(snapshot.meta || {}), eliminated: nextArray };
+            await this.saveSnapshot(tournamentId, cur, snapshot);
+            return true;
+        } catch (e) {
+            try { console.warn('[FullMix] addEliminated failed:', e.message || e); } catch (_) {}
+            return false;
+        }
+    }
     static async getLatestEliminatedIds(tournamentId) {
         try {
             const res = await pool.query(
