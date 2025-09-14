@@ -1,8 +1,8 @@
 name: Health Check VDS
 on:
   schedule:
-    # Проверка каждые 30 минут
-    - cron: '*/30 * * * *'
+    # Проверка раз в 3 часа
+    - cron: '0 */3 * * *'
   workflow_dispatch:
 
 jobs:
