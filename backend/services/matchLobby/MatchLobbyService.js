@@ -25,6 +25,37 @@ class MatchLobbyService {
         return result.rows[0];
     }
     
+    // 🔎 Батч: активные лобби по списку матчей для пользователя
+    static async getActiveLobbiesByMatchesBatch(tournamentId, matchIds, userId) {
+        // Убираем дубликаты и ограничиваем размер
+        const ids = Array.from(new Set(matchIds.map((v) => parseInt(v)).filter((v) => Number.isInteger(v) && v > 0)));
+        if (ids.length === 0) return {};
+
+        const result = await pool.query(
+            `SELECT DISTINCT ON (l.match_id)
+                    l.id, l.match_id
+             FROM match_lobbies l
+             JOIN lobby_invitations i ON i.lobby_id = l.id AND i.user_id = $3
+             WHERE l.tournament_id = $1
+               AND l.match_id = ANY($2::int[])
+               AND l.status IN ('waiting','ready','picking')
+             ORDER BY l.match_id, l.created_at DESC NULLS LAST`,
+            [parseInt(tournamentId), ids, parseInt(userId)]
+        );
+
+        const byMatchId = {};
+        for (const row of result.rows) {
+            byMatchId[row.match_id] = row.id;
+        }
+
+        // Для матчей без активного лобби — явно null
+        for (const id of ids) {
+            if (!(id in byMatchId)) byMatchId[id] = null;
+        }
+
+        return byMatchId;
+    }
+
     // 🔎 Получить активное лобби по матчу, доступное пользователю (по приглашению)
     static async getActiveLobbyByMatch(matchId, tournamentId, userId) {
         const result = await pool.query(

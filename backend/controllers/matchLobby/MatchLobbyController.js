@@ -69,6 +69,51 @@ class MatchLobbyController {
         }
     }
 
+    // 🔎 Батч: активные лобби по списку матчей
+    static async getActiveLobbiesBatch(req, res) {
+        try {
+            const { tournamentId } = req.params;
+            const userId = req.user.id;
+            const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+
+            if (!ids || ids.length === 0) {
+                return res.json({ success: true, byMatchId: {} });
+            }
+
+            // Ограничение размера батча для защиты
+            const MAX_IDS = 300;
+            const matchIds = ids
+                .map((v) => parseInt(v))
+                .filter((v) => Number.isInteger(v) && v > 0)
+                .slice(0, MAX_IDS);
+
+            if (matchIds.length === 0) {
+                return res.json({ success: true, byMatchId: {} });
+            }
+
+            const start = Date.now();
+            const byMatchId = await MatchLobbyService.getActiveLobbiesByMatchesBatch(
+                tournamentId,
+                matchIds,
+                userId
+            );
+
+            // Короткие приватные заголовки кэша
+            res.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+            res.set('Vary', 'Authorization');
+
+            const duration = Date.now() - start;
+            if (duration > 250) {
+                console.warn(`⚠️ [active-lobbies batch] slow=${duration}ms size=${matchIds.length}`);
+            }
+
+            return res.json({ success: true, byMatchId });
+        } catch (error) {
+            console.error('❌ Ошибка батч-получения активных лобби:', error);
+            res.status(500).json({ error: error.message || 'Ошибка при получении активных лобби' });
+        }
+    }
+
     // 🔎 Получение активных лобби для текущего пользователя
     static async getActiveLobbiesForUser(req, res) {
         try {
