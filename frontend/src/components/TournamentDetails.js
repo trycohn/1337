@@ -1071,45 +1071,47 @@ function TournamentDetails() {
                                 />
                             </div>
                         )}
-                        <TournamentParticipants
-                            tournament={tournament}
-                            user={user}
-                            isAdminOrCreator={isAdminOrCreator}
-                            originalParticipants={originalParticipants}
-                            onTeamsGenerated={handleTeamsGenerated}
-                            onTournamentUpdate={async (updateInfo) => {
-                                // Обработка разных типов обновлений
-                                if (updateInfo?.action === 'remove_participant') {
-                                    // Мгновенное удаление участника из состояния
-                                    const participantId = updateInfo.participantId;
-                                    
-                                    console.log('🚀 Обновляем состояние турнира после удаления участника:', participantId);
-                                    
-                                    // Обновляем tournament.participants
-                                    setTournament(prev => ({
-                                        ...prev,
-                                        participants: prev.participants?.filter(p => p.id !== participantId) || []
-                                    }));
-                                    
-                                    // Обновляем originalParticipants
-                                    setOriginalParticipants(prev => prev.filter(p => p.id !== participantId));
-                                    
-                                    // Очищаем кеш для следующих запросов
-                                    const cacheKey = `tournament_cache_${id}`;
-                                    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-                                    localStorage.removeItem(cacheKey);
-                                    localStorage.removeItem(cacheTimestampKey);
-                                    
-                                    // Обновляем данные с сервера в фоне
-                                    setTimeout(() => {
-                                        fetchTournamentData();
-                                    }, 1000);
-                                } else {
-                                    // Обычное обновление данных
-                                    await fetchTournamentData();
-                                }
-                            }}
-                        />
+                        {tournament?.format !== 'mix' && (
+                            <TournamentParticipants
+                                tournament={tournament}
+                                user={user}
+                                isAdminOrCreator={isAdminOrCreator}
+                                originalParticipants={originalParticipants}
+                                onTeamsGenerated={handleTeamsGenerated}
+                                onTournamentUpdate={async (updateInfo) => {
+                                    // Обработка разных типов обновлений
+                                    if (updateInfo?.action === 'remove_participant') {
+                                        // Мгновенное удаление участника из состояния
+                                        const participantId = updateInfo.participantId;
+                                        
+                                        console.log('🚀 Обновляем состояние турнира после удаления участника:', participantId);
+                                        
+                                        // Обновляем tournament.participants
+                                        setTournament(prev => ({
+                                            ...prev,
+                                            participants: prev.participants?.filter(p => p.id !== participantId) || []
+                                        }));
+                                        
+                                        // Обновляем originalParticipants
+                                        setOriginalParticipants(prev => prev.filter(p => p.id !== participantId));
+                                        
+                                        // Очищаем кеш для следующих запросов
+                                        const cacheKey = `tournament_cache_${id}`;
+                                        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                        localStorage.removeItem(cacheKey);
+                                        localStorage.removeItem(cacheTimestampKey);
+                                        
+                                        // Обновляем данные с сервера в фоне
+                                        setTimeout(() => {
+                                            fetchTournamentData();
+                                        }, 1000);
+                                    } else {
+                                        // Обычное обновление данных
+                                        await fetchTournamentData();
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
                 );
 
