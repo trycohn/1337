@@ -1,6 +1,7 @@
 // frontend/src/components/BracketRenderer.js
 import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import './BracketRenderer.css';
+import { getSocketInstance, authenticateSocket } from '../services/socketClient_v5_simplified';
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
 import { DoubleEliminationFormat } from '../utils/tournament/formats/DoubleEliminationFormat';
@@ -232,6 +233,49 @@ const BracketRenderer = ({
         return () => { cancelled = true; };
         // намеренно не включаем api в зависимости, чтобы не триггерить лишние перезапуски
     }, [tournament?.id, idsKey]);
+
+    // 🆕 Реалтайм обновления activeLobby (инвайт/закрытие)
+    useEffect(() => {
+        if (!tournament?.id) return;
+        let socket;
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            if (token) authenticateSocket(token);
+            socket = getSocketInstance();
+        } catch (_) { return; }
+
+        const handleInvite = (data) => {
+            // data: { lobbyId, matchId, tournamentId }
+            if (!data || Number(data.tournamentId) !== Number(tournament?.id)) return;
+            setActiveLobbyByMatchId(prev => ({ ...prev, [Number(data.matchId)]: Number(data.lobbyId) }));
+        };
+        const handleLobbyCompleted = (payload) => {
+            if (!payload) return;
+            const tid = Number(payload.tournamentId || tournament?.id);
+            if (tid !== Number(tournament?.id)) return;
+            const mid = Number(payload.matchId);
+            if (mid) setActiveLobbyByMatchId(prev => ({ ...prev, [mid]: null }));
+        };
+
+        socket.on('match_lobby_invite', handleInvite);
+        socket.on('lobby_completed', handleLobbyCompleted);
+        socket.on('lobby_update', (lobby) => {
+            // Если статус стал completed — зачистим
+            try {
+                if (lobby && lobby.status === 'completed' && lobby.match_id) {
+                    setActiveLobbyByMatchId(prev => ({ ...prev, [Number(lobby.match_id)]: null }));
+                }
+            } catch (_) {}
+        });
+
+        return () => {
+            try {
+                socket.off('match_lobby_invite', handleInvite);
+                socket.off('lobby_completed', handleLobbyCompleted);
+                socket.off('lobby_update');
+            } catch (_) {}
+        };
+    }, [tournament?.id]);
 
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
