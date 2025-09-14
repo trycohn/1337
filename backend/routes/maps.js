@@ -11,21 +11,68 @@ const { authenticateToken } = require('../middleware/auth');
  */
 router.get('/', async (req, res) => {
     try {
-        const gameFilter = req.query.game ? `WHERE game = $1` : '';
-        const queryParams = req.query.game ? [req.query.game] : [];
+        const rawGame = (req.query.game || '').toString();
+        const normalized = rawGame
+            ? (rawGame.toLowerCase().replace(/[^a-z0-9]+/g, ''))
+            : '';
 
-        console.log(`Поиск карт${req.query.game ? ` для игры ${req.query.game}` : ''}`);
+        // Нормализация популярных синонимов
+        const normalizeGameKey = (g) => {
+            if (!g) return '';
+            if (['counterstrike2', 'cs2', 'counterstrikeii'].includes(g)) return 'cs2';
+            if (['counterstrike', 'csgo', 'csglobaloffensive'].includes(g)) return 'csgo';
+            if (['dota2', 'dota'].includes(g)) return 'dota2';
+            return g;
+        };
+        const gameKey = normalizeGameKey(normalized);
 
-        const mapsQuery = `
-            SELECT id, name, game, display_name, image_url, created_at
-            FROM maps
-            ${gameFilter}
-            ORDER BY id ASC
-        `;
-        
-        const result = await db.query(mapsQuery, queryParams);
-        console.log(`Найдено ${result.rows.length} карт`);
-        
+        const start = Date.now();
+        console.log(`Поиск карт${rawGame ? ` для игры ${rawGame} [key=${gameKey}]` : ''}`);
+
+        let result;
+        if (gameKey) {
+            // Сравнение по нормализованному ключу
+            result = await db.query(
+                `SELECT id, name, game, display_name, image_url, created_at
+                 FROM maps
+                 WHERE lower(regexp_replace(game, '[^a-z0-9]+', '', 'g')) = $1
+                 ORDER BY id ASC`,
+                [gameKey]
+            );
+        } else {
+            result = await db.query(
+                `SELECT id, name, game, display_name, image_url, created_at
+                 FROM maps
+                 ORDER BY id ASC`
+            );
+        }
+
+        // Fallback: если для CS2 нет строк в БД — отдаём дефолтный маппул
+        if (gameKey === 'cs2' && (!result || result.rows.length === 0)) {
+            const fallback = await db.query(`
+                SELECT 
+                    NULL::int AS id,
+                    lower(regexp_replace(dm.map_name, '^de[_-]?', '')) AS name,
+                    'cs2' AS game,
+                    COALESCE(m.display_name, dm.map_name) AS display_name,
+                    m.image_url,
+                    NOW() AS created_at
+                FROM default_map_pool dm
+                LEFT JOIN maps m
+                  ON lower(regexp_replace(m.name, '^de[_-]?', '')) = lower(regexp_replace(dm.map_name, '^de[_-]?', ''))
+                ORDER BY dm.display_order ASC, dm.id ASC
+            `);
+            result = { rows: fallback.rows };
+        }
+
+        // Короткий публичный кэш и диагностика
+        res.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=86400');
+        try {
+            res.set('ETag', `W/"maps-${gameKey || 'all'}-${result.rows.length}"`);
+            res.set('X-Response-Time', `${Date.now() - start}ms`);
+        } catch (_) {}
+
+        console.log(`Найдено ${result.rows.length} карт (took ${Date.now() - start}ms)`);
         res.json(result.rows);
     } catch (error) {
         console.error('Ошибка при получении карт:', error);

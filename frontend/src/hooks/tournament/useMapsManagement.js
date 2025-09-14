@@ -39,28 +39,30 @@ export const useMapsManagement = (tournament) => {
     const fetchMapsForGame = useCallback(async (gameName) => {
         try {
             if (!gameName) return;
+            const norm = gameName.toString().toLowerCase().replace(/[^a-z0-9]+/g, '');
+            const key = ['counterstrike2','cs2','counterstrikeii'].includes(norm) ? 'cs2' : gameName;
             
             // Если карты для этой игры уже загружены в состоянии, не делаем повторный запрос
-            if (availableMaps[gameName] && availableMaps[gameName].length > 0) {
+            if (availableMaps[key] && availableMaps[key].length > 0) {
                 return;
             }
 
             // Проверяем debounce
-            if (!shouldLoadMaps(gameName)) {
+            if (!shouldLoadMaps(key)) {
                 return;
             }
             
             // Устанавливаем флаг, что мы начали загружать карты для этой игры
             setAvailableMaps(prev => ({
                 ...prev,
-                [gameName]: prev[gameName] || [],
-                [`${gameName}_loading`]: true
+                [key]: prev[key] || [],
+                [`${key}_loading`]: true
             }));
             
             // Проверяем, есть ли карты в localStorage
-            const cacheKey = `maps_cache_${gameName}`;
+            const cacheKey = `maps_cache_${key}`;
             const cachedMaps = localStorage.getItem(cacheKey);
-            const cacheTimestampKey = `maps_cache_timestamp_${gameName}`;
+            const cacheTimestampKey = `maps_cache_timestamp_${key}`;
             const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
             const cacheValidityPeriod = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
             
@@ -73,11 +75,11 @@ export const useMapsManagement = (tournament) => {
                     try {
                         const parsedMaps = JSON.parse(cachedMaps);
                         if (Array.isArray(parsedMaps) && parsedMaps.length > 0) {
-                            console.log(`Используем кешированные карты для игры ${gameName}`);
+                            console.log(`Используем кешированные карты для игры ${key}`);
                             setAvailableMaps(prev => ({
                                 ...prev,
-                                [gameName]: parsedMaps,
-                                [`${gameName}_loading`]: false
+                                [key]: parsedMaps,
+                                [`${key}_loading`]: false
                             }));
                             return;
                         }
@@ -94,13 +96,13 @@ export const useMapsManagement = (tournament) => {
             }
             
             // Если нет валидного кеша, делаем запрос к API
-            console.log(`Загружаем карты для игры ${gameName} с сервера...`);
+            console.log(`Загружаем карты для игры ${key} с сервера...`);
             
             // Добавляем задержку между повторными запросами
             await new Promise(resolve => setTimeout(resolve, 300));
             
             try {
-                const response = await api.get(`/api/maps?game=${encodeURIComponent(gameName)}`);
+                const response = await api.get(`/api/maps?game=${encodeURIComponent(key)}`);
                 
                 if (response.data && Array.isArray(response.data)) {
                     // Сохраняем карты в кеш
@@ -110,43 +112,43 @@ export const useMapsManagement = (tournament) => {
                     // Обновляем состояние
                     setAvailableMaps(prev => ({
                         ...prev,
-                        [gameName]: response.data,
-                        [`${gameName}_loading`]: false
+                        [key]: response.data,
+                        [`${key}_loading`]: false
                     }));
-                    console.log(`Загружены карты для игры ${gameName}:`, response.data);
+                    console.log(`Загружены карты для игры ${key}:`, response.data);
                 }
             } catch (apiError) {
-                console.error(`Ошибка при загрузке карт для игры ${gameName}:`, apiError);
+                console.error(`Ошибка при загрузке карт для игры ${key}:`, apiError);
                 
                 // В случае ошибки, используем запасной вариант со стандартными картами для CS2
-                if (isCounterStrike2(gameName)) {
-                    console.log(`Используем стандартные карты для игры ${gameName}`);
+                if (isCounterStrike2(key)) {
+                    console.log(`Используем стандартные карты для игры ${key}`);
                     
                     const defaultMaps = getDefaultCS2Maps();
                     
-                    localStorage.setItem(`maps_cache_${gameName}`, JSON.stringify(defaultMaps));
-                    localStorage.setItem(`maps_cache_timestamp_${gameName}`, new Date().getTime().toString());
+                    localStorage.setItem(`maps_cache_${key}`, JSON.stringify(defaultMaps));
+                    localStorage.setItem(`maps_cache_timestamp_${key}`, new Date().getTime().toString());
                     
                     setAvailableMaps(prev => ({
                         ...prev,
-                        [gameName]: defaultMaps,
-                        [`${gameName}_loading`]: false
+                        [key]: defaultMaps,
+                        [`${key}_loading`]: false
                     }));
                 } else {
                     setAvailableMaps(prev => ({
                         ...prev,
-                        [gameName]: [],
-                        [`${gameName}_loading`]: false
+                        [key]: [],
+                        [`${key}_loading`]: false
                     }));
                 }
             }
         } catch (error) {
-            console.error(`Ошибка при получении карт для игры ${gameName}:`, error);
+            console.error(`Ошибка при получении карт для игры ${key}:`, error);
             
             setAvailableMaps(prev => ({
                 ...prev,
-                [gameName]: [],
-                [`${gameName}_loading`]: false
+                [key]: [],
+                [`${key}_loading`]: false
             }));
         }
     }, [availableMaps, shouldLoadMaps]);
