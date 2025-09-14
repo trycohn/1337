@@ -427,7 +427,8 @@ class FullMixService {
             loss_agg AS (
                 SELECT participant_id, COUNT(*)::int AS losses FROM losers GROUP BY participant_id
             ),
-            base AS (
+            -- Текущие участники турнира
+            base_current AS (
                 SELECT tp.id AS participant_id,
                        COALESCE(u.id, tp.user_id) AS user_id,
                        COALESCE(u.username, tp.name) AS username,
@@ -435,6 +436,29 @@ class FullMixService {
                 FROM tournament_participants tp
                 LEFT JOIN users u ON u.id = tp.user_id
                 WHERE tp.tournament_id = $1
+            ),
+            -- Участники, игравшие хотя бы один матч (через команды из matches)
+            teams_played AS (
+                SELECT DISTINCT unnest(ARRAY[m2.team1_id, m2.team2_id])::int AS team_id
+                FROM matches m2
+                WHERE m2.tournament_id = $1 AND (m2.team1_id IS NOT NULL OR m2.team2_id IS NOT NULL)
+            ),
+            base_played AS (
+                SELECT DISTINCT
+                    ttm.participant_id AS participant_id,
+                    COALESCE(u.id, ttm.user_id) AS user_id,
+                    COALESCE(u.username, tp.name) AS username,
+                    u.avatar_url
+                FROM tournament_team_members ttm
+                JOIN teams_played tpids ON tpids.team_id = ttm.team_id
+                LEFT JOIN tournament_participants tp ON tp.id = ttm.participant_id
+                LEFT JOIN users u ON u.id = ttm.user_id
+                WHERE ttm.participant_id IS NOT NULL
+            ),
+            base AS (
+                SELECT * FROM base_current
+                UNION
+                SELECT * FROM base_played
             )
             SELECT b.participant_id,
                    COALESCE(b.user_id, b.participant_id) AS uid,
