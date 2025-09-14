@@ -191,6 +191,48 @@ const BracketRenderer = ({
         };
     }, [isMobile]);
 
+    // 🆕 Батч-загрузка active-lobby для матчей на экране
+    let api;
+    try { api = require('../axios').default; } catch (_) {}
+    const [activeLobbyByMatchId, setActiveLobbyByMatchId] = useState({});
+    const idsKey = useMemo(() => {
+        const ids = (matches || []).map(m => m && m.id).filter(Boolean).map(Number).sort((a, b) => a - b);
+        return ids.join(',');
+    }, [matches]);
+
+    useEffect(() => {
+        if (!api || !tournament?.id) return;
+        if (!idsKey) return;
+        if (typeof document !== 'undefined' && document.hidden) return;
+        let cancelled = false;
+        const ids = (matches || []).map(m => m && m.id).filter(Boolean).map(Number);
+
+        async function loadActiveLobbiesBatch() {
+            try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const chunkSize = 200;
+                const newMap = {};
+                for (let i = 0; i < ids.length; i += chunkSize) {
+                    const chunk = ids.slice(i, i + chunkSize);
+                    const res = await api.post(`/api/tournaments/${tournament.id}/matches/active-lobbies`, { ids: chunk }, { headers });
+                    const byMatchId = res?.data?.byMatchId || {};
+                    for (const key in byMatchId) {
+                        if (!Object.prototype.hasOwnProperty.call(byMatchId, key)) continue;
+                        const mid = Number(key);
+                        newMap[mid] = byMatchId[key];
+                    }
+                }
+                if (!cancelled) setActiveLobbyByMatchId(prev => ({ ...prev, ...newMap }));
+            } catch (_) {
+                // молча игнорируем
+            }
+        }
+        loadActiveLobbiesBatch();
+        return () => { cancelled = true; };
+        // намеренно не включаем api в зависимости, чтобы не триггерить лишние перезапуски
+    }, [tournament?.id, idsKey]);
+
     // 🔧 ИСПРАВЛЕНО: Добавляем проверку на пустые матчи
     if (!matches || matches.length === 0) {
         return (
@@ -258,6 +300,7 @@ const BracketRenderer = ({
                                 isAdminOrCreator={isAdminOrCreator}
                                 customLabel={match.bracket_type === 'placement' ? '3rd Place' : null}
                                 matchType={match.bracket_type}
+                                activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
                         </div>
                     ))}
@@ -335,6 +378,7 @@ const BracketRenderer = ({
                                 isAdminOrCreator={isAdminOrCreator}
                                 matchType={match.bracket_type}
                                 customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
+                                activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
                         </div>
                     ))}
@@ -632,7 +676,7 @@ const BracketRenderer = ({
 };
 
 // MatchCard компонент с поддержкой bracket_type и кастомных меток
-const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false }) => {
+const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false, activeLobbyId: activeLobbyIdFromParent = null }) => {
     const { user } = useAuth();
     const [isHovered, setIsHovered] = useState(false);
     const [isCreatingLobby, setIsCreatingLobby] = useState(false);
@@ -657,7 +701,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const isCaptainForThisMatch = isUserCaptainOfMatch();
     let api;
     try { api = require('../axios').default; } catch (_) {}
-    const [activeLobbyId, setActiveLobbyId] = useState(null);
+    const [activeLobbyId, setActiveLobbyId] = useState(activeLobbyIdFromParent || null);
     const getBracketTypeStyle = () => {
         // 🔧 ИСПРАВЛЕНО: Проверяем матч за 3-е место
         if (match.bracket_type === 'placement' || match.is_third_place_match || matchType === 'third-place') {
@@ -792,26 +836,10 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     const matchStatus = getMatchStatus();
     
-    // Пытаемся найти активное лобби для этого матча (для приглашенных пользователей)
+    // Синхронизируем проп из родителя
     useEffect(() => {
-        let cancelled = false;
-        async function fetchActiveLobby() {
-            if (!api || !tournament?.id || !match?.id) return;
-            try {
-                const token = localStorage.getItem('token');
-                const res = await api.get(`/api/tournaments/${tournament.id}/matches/${match.id}/active-lobby`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!cancelled && res?.data?.success) {
-                    setActiveLobbyId(res.data.lobby?.id || null);
-                }
-            } catch (_) {
-                if (!cancelled) setActiveLobbyId(null);
-            }
-        }
-        fetchActiveLobby();
-        return () => { cancelled = true; };
-    }, [api, tournament?.id, match?.id]);
+        setActiveLobbyId(activeLobbyIdFromParent || null);
+    }, [activeLobbyIdFromParent]);
 
     // Клик по карточке всегда ведёт на страницу матча (без модалок)
     const handleMatchClick = (e) => {
