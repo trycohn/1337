@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../utils/api';
+import LiveParticipantSearch from './tournament/LiveParticipantSearch';
 import { ensureHttps } from '../utils/userHelpers';
 import './TeamGenerator.css';
 import TeamCard from './TeamCard';
@@ -1046,6 +1047,12 @@ const TeamGenerator = ({
                                     <div style={{marginTop: 6, fontSize: 12, color:'#bbb'}}>Поддерживается добавление незарегистрированных участников. Рейтинг — опционально.</div>
                                 </div>
                             )}
+                            {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
+                                <div className="mix-admin-search-participant" style={{marginBottom: 16, background: '#111', border: '1px dashed #333', padding: 12, borderRadius: 8}}>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
+                                    <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
+                                </div>
+                            )}
                             <div className="referral-invite-card-participants2.0">
                                 <div className="referral-invite-content-participants2.0">
                                     <div className="referral-invite-text-participants2.0">
@@ -1072,6 +1079,12 @@ const TeamGenerator = ({
                                         <input type="number" placeholder="CS2 Premier" value={addPremier} onChange={(e)=>setAddPremier(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
                                         <button type="submit" className="btn btn-primary" disabled={addingParticipant}>{addingParticipant ? 'Добавление...' : 'Добавить'}</button>
                                     </form>
+                                </div>
+                            )}
+                            {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
+                                <div className="mix-admin-search-participant" style={{marginBottom: 16, background: '#111', border: '1px dashed #333', padding: 12, borderRadius: 8}}>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
+                                    <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}
                             {renderTeamsList()}
