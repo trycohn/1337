@@ -22,7 +22,9 @@ function FullMixDraftPage() {
     const [matchTeamMap, setMatchTeamMap] = useState(new Map());
     const [matchesApproved, setMatchesApproved] = useState(false);
     const [eliminated, setEliminated] = useState([]);
-    const [elimInput, setElimInput] = useState('');
+    const [participants, setParticipants] = useState([]);
+    const [standingsMap, setStandingsMap] = useState(new Map());
+    const [searchName, setSearchName] = useState('');
 
     const loadMatchesPreview = useCallback(async (r) => {
         setLoading(true);
@@ -75,6 +77,34 @@ function FullMixDraftPage() {
         }
     }, [tournamentId]);
 
+    const loadParticipants = useCallback(async () => {
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}`);
+            const list = Array.isArray(res.data?.participants) ? res.data.participants : [];
+            setParticipants(list);
+        } catch (_) {
+            setParticipants([]);
+        }
+    }, [tournamentId]);
+
+    const loadStandings = useCallback(async () => {
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/standings`);
+            const items = Array.isArray(res.data?.items) ? res.data.items : [];
+            const byPid = new Map();
+            items.forEach(row => {
+                const wins = Number(row.wins || 0);
+                const losses = Number(row.losses || 0);
+                const games = wins + losses;
+                const participantId = row.participant_id || row.id;
+                if (participantId != null) byPid.set(Number(participantId), { wins, losses, games });
+            });
+            setStandingsMap(byPid);
+        } catch (_) {
+            setStandingsMap(new Map());
+        }
+    }, [tournamentId]);
+
     const loadPreview = useCallback(async (r) => {
         setLoading(true);
         try {
@@ -104,7 +134,9 @@ function FullMixDraftPage() {
         if (!tournamentId) return;
         loadRounds();
         loadEliminated();
-    }, [tournamentId, loadRounds]);
+        loadParticipants();
+        loadStandings();
+    }, [tournamentId, loadRounds, loadParticipants, loadStandings]);
 
     useEffect(() => {
         if (!tournamentId || !round) return;
@@ -126,8 +158,11 @@ function FullMixDraftPage() {
         };
         socket.on && socket.on('fullmix_preview_updated', onPreviewUpdated);
         socket.on && socket.on('fullmix_eliminated_updated', onElimUpdated);
-        return () => socket.off && socket.off('fullmix_preview_updated', onPreviewUpdated);
-    }, [tournamentId, round, loadPreview]);
+        return () => {
+            socket.off && socket.off('fullmix_preview_updated', onPreviewUpdated);
+            socket.off && socket.off('fullmix_eliminated_updated', onElimUpdated);
+        };
+    }, [tournamentId, round, loadPreview, loadEliminated]);
 
     const createOrRegeneratePreview = useCallback(async () => {
         setMessage('Генерируем черновик...');
@@ -330,49 +365,85 @@ function FullMixDraftPage() {
                             </div>
                         )}
                     </div>
-                    {/* Админ-блок: управление выбывшими */}
+                    {/* Админ-блок: управление статусами участников */}
                     <div className="fullmixdraft-eliminated" style={{ gridColumn: '1 / span 2', border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <strong>Выбывшие</strong>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <input
-                                    type="text"
-                                    placeholder="ID через запятую"
-                                    value={elimInput}
-                                    onChange={(e) => setElimInput(e.target.value)}
-                                    style={{ background: '#000', color: '#fff', border: '1px solid #1f1f1f', borderRadius: 6, padding: '6px 8px', width: 220 }}
-                                />
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={async () => {
-                                        const ids = elimInput.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isInteger);
-                                        if (ids.length === 0) return;
-                                        try {
-                                            await api.post(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { user_ids: ids });
-                                            setElimInput('');
-                                            await loadEliminated();
-                                        } catch (_) {}
-                                    }}
-                                >Исключить</button>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={async () => {
-                                        const ids = elimInput.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isInteger);
-                                        if (ids.length === 0) return;
-                                        try {
-                                            await api.delete(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { data: { user_ids: ids } });
-                                            setElimInput('');
-                                            await loadEliminated();
-                                        } catch (_) {}
-                                    }}
-                                >Вернуть</button>
-                            </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <strong>Участники и статусы</strong>
+                            <input
+                                type="text"
+                                placeholder="Поиск по нику"
+                                value={searchName}
+                                onChange={(e) => setSearchName(e.target.value)}
+                                style={{ background: '#000', color: '#fff', border: '1px solid #1f1f1f', borderRadius: 6, padding: '6px 8px', width: 260 }}
+                            />
                         </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {eliminated.length === 0 && <span style={{ color: '#888', fontSize: 12 }}>Список пуст</span>}
-                            {eliminated.map((p, i) => (
-                                <span key={i} style={{ background: '#111', border: '1px solid #1f1f1f', borderRadius: 999, padding: '4px 10px', color: '#ccc' }}>{p.username || `ID ${p.user_id || p.participant_id}`}</span>
-                            ))}
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ textAlign: 'left' }}>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f' }}>Участник</th>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f' }}>G</th>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f' }}>W</th>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f' }}>L</th>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f' }}>Статус</th>
+                                        <th style={{ padding: '8px 6px', borderBottom: '1px solid #1f1f1f', textAlign: 'right' }}>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(() => {
+                                        const elimSetByPid = new Set(eliminated.map(e => Number(e.participant_id)).filter(Number.isFinite));
+                                        const elimSetByUid = new Set(eliminated.map(e => Number(e.user_id)).filter(Number.isFinite));
+                                        const finalistsArr = Array.isArray(snapshot?.snapshot?.meta?.finalists) ? snapshot.snapshot.meta.finalists : [];
+                                        const finSetPid = new Set(finalistsArr.map(v => Number(v.participant_id)).filter(Number.isFinite));
+                                        const finSetUid = new Set(finalistsArr.map(v => Number(v.user_id)).filter(Number.isFinite));
+                                        const filtered = participants.filter(p => {
+                                            const name = (p.username || p.name || '').toString().toLowerCase();
+                                            const q = searchName.trim().toLowerCase();
+                                            if (!q) return true;
+                                            return name.includes(q);
+                                        });
+                                        return filtered.map(p => {
+                                            const stat = standingsMap.get(p.id) || { wins: 0, losses: 0, games: 0 };
+                                            const isElim = elimSetByPid.has(p.id) || elimSetByUid.has(p.user_id);
+                                            const isFinal = finSetPid.has(p.id) || finSetUid.has(p.user_id);
+                                            const status = isFinal ? 'финалист' : (isElim ? 'исключен' : 'играет');
+                                            const onExclude = async () => {
+                                                try {
+                                                    await api.post(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { user_ids: [p.user_id] });
+                                                    await loadEliminated();
+                                                } catch (_) {}
+                                            };
+                                            const onReturn = async () => {
+                                                try {
+                                                    await api.delete(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { data: { user_ids: [p.user_id] } });
+                                                    await loadEliminated();
+                                                } catch (_) {}
+                                            };
+                                            const onRowClick = async () => {
+                                                if (isElim) await onReturn(); else await onExclude();
+                                            };
+                                            return (
+                                                <tr key={p.id} onClick={onRowClick} style={{ cursor: 'pointer' }}>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            <img src={p.avatar_url || '/images/avatars/default.svg'} alt="avatar" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', background: '#222' }} />
+                                                            <span style={isElim ? { textDecoration: 'line-through' } : undefined}>{p.username || p.name || `ID ${p.id}`}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111' }}>{stat.games}</td>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111' }}>{stat.wins}</td>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111' }}>{stat.losses}</td>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111', textTransform: 'capitalize' }}>{status}</td>
+                                                    <td style={{ padding: '8px 6px', borderBottom: '1px solid #111', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                                                        <button className="btn btn-secondary" style={{ marginRight: 8 }} onClick={onExclude} disabled={isElim}>Исключить</button>
+                                                        <button className="btn btn-secondary" onClick={onReturn} disabled={!isElim}>Вернуть</button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        });
+                                    })()}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
