@@ -507,6 +507,7 @@ router.delete('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEma
 router.get('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.getEliminated);
 router.post('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.addEliminated);
 router.delete('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.deleteEliminated);
+router.post('/:id/fullmix/eliminated/recover', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.recoverEliminated);
 
 // 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
 

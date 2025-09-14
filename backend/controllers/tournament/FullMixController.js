@@ -324,6 +324,27 @@ class FullMixController {
         const items = await FullMixService.getEliminatedDetailed(tournamentId);
         res.json({ success: true, items });
     });
+
+    // Восстановление удалённых ранее участников в список исключённых
+    static recoverEliminated = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+        const t = await TournamentRepository.getById(tournamentId);
+        if (!t) return res.status(404).json({ success: false, error: 'Турнир не найден' });
+        const mixType = (t.mix_type || '').toString().trim().toLowerCase();
+        const isFullMixFormat = t.format === 'full_mix' || (t.format === 'mix' && mixType === 'full');
+        if (!isFullMixFormat) return res.status(400).json({ success: false, error: 'Доступно только для Full Mix' });
+
+        const result = await FullMixService.recoverRemovedParticipants(tournamentId);
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            if (result.added_count > 0) {
+                broadcastToTournament(tournamentId, 'fullmix_eliminated_updated', { added: result.added_ids, removed: [] });
+            }
+        } catch (_) {}
+        const items = await FullMixService.getEliminatedDetailed(tournamentId);
+        res.json({ success: true, recovered: result, items });
+    });
 }
 
 module.exports = FullMixController;

@@ -24,6 +24,7 @@ function FullMixDraftPage() {
     const [eliminated, setEliminated] = useState([]);
     const [participants, setParticipants] = useState([]);
     const [standingsMap, setStandingsMap] = useState(new Map());
+    const [standingsByUser, setStandingsByUser] = useState(new Map());
     const [searchName, setSearchName] = useState('');
 
     const loadMatchesPreview = useCallback(async (r) => {
@@ -92,16 +93,21 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/standings`);
             const items = Array.isArray(res.data?.items) ? res.data.items : [];
             const byPid = new Map();
+            const byUid = new Map();
             items.forEach(row => {
                 const wins = Number(row.wins || 0);
                 const losses = Number(row.losses || 0);
                 const games = wins + losses;
-                const participantId = row.participant_id || row.id;
+                const participantId = row.participant_id ?? row.id;
+                const userId = row.user_id ?? row.uid ?? row.participant_id ?? row.id;
                 if (participantId != null) byPid.set(Number(participantId), { wins, losses, games });
+                if (userId != null) byUid.set(Number(userId), { wins, losses, games });
             });
             setStandingsMap(byPid);
+            setStandingsByUser(byUid);
         } catch (_) {
             setStandingsMap(new Map());
+            setStandingsByUser(new Map());
         }
     }, [tournamentId]);
 
@@ -367,15 +373,33 @@ function FullMixDraftPage() {
                     </div>
                     {/* Админ-блок: управление статусами участников */}
                     <div className="fullmixdraft-eliminated" style={{ gridColumn: '1 / span 2', border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
                             <strong>Участники и статусы</strong>
-                            <input
-                                type="text"
-                                placeholder="Поиск по нику"
-                                value={searchName}
-                                onChange={(e) => setSearchName(e.target.value)}
-                                style={{ background: '#000', color: '#fff', border: '1px solid #1f1f1f', borderRadius: 6, padding: '6px 8px', width: 260 }}
-                            />
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Поиск по нику"
+                                    value={searchName}
+                                    onChange={(e) => setSearchName(e.target.value)}
+                                    style={{ background: '#000', color: '#fff', border: '1px solid #1f1f1f', borderRadius: 6, padding: '6px 8px', width: 260 }}
+                                />
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={async () => {
+                                        try {
+                                            setLoading(true);
+                                            await api.post(`/api/tournaments/${tournamentId}/fullmix/eliminated/recover`);
+                                            await loadEliminated();
+                                            setMessage('Восстановление завершено');
+                                        } catch (e) {
+                                            setMessage(e?.response?.data?.error || 'Ошибка восстановления');
+                                        } finally {
+                                            setLoading(false);
+                                            setTimeout(() => setMessage(''), 2000);
+                                        }
+                                    }}
+                                >Восстановить удалённых</button>
+                            </div>
                         </div>
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -396,14 +420,22 @@ function FullMixDraftPage() {
                                         const finalistsArr = Array.isArray(snapshot?.snapshot?.meta?.finalists) ? snapshot.snapshot.meta.finalists : [];
                                         const finSetPid = new Set(finalistsArr.map(v => Number(v.participant_id)).filter(Number.isFinite));
                                         const finSetUid = new Set(finalistsArr.map(v => Number(v.user_id)).filter(Number.isFinite));
-                                        const filtered = participants.filter(p => {
+                                        const presentByUid = new Set(participants.map(p => Number(p.user_id)).filter(Number.isFinite));
+                                        const extras = eliminated
+                                            .filter(e => {
+                                                const uid = Number(e.user_id);
+                                                return Number.isFinite(uid) && !presentByUid.has(uid);
+                                            })
+                                            .map(e => ({ id: -Number(e.user_id), user_id: Number(e.user_id), username: e.username, avatar_url: null }));
+                                        const rowsAll = [...participants, ...extras];
+                                        const filtered = rowsAll.filter(p => {
                                             const name = (p.username || p.name || '').toString().toLowerCase();
                                             const q = searchName.trim().toLowerCase();
                                             if (!q) return true;
                                             return name.includes(q);
                                         });
                                         return filtered.map(p => {
-                                            const stat = standingsMap.get(p.id) || { wins: 0, losses: 0, games: 0 };
+                                            const stat = standingsMap.get(p.id) || standingsByUser.get(p.user_id) || { wins: 0, losses: 0, games: 0 };
                                             const isElim = elimSetByPid.has(p.id) || elimSetByUid.has(p.user_id);
                                             const isFinal = finSetPid.has(p.id) || finSetUid.has(p.user_id);
                                             const status = isFinal ? 'финалист' : (isElim ? 'исключен' : 'играет');

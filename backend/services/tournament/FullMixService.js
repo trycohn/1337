@@ -152,6 +152,93 @@ class FullMixService {
             return ids;
         } catch (_) { return new Set(); }
     }
+
+    /**
+     * Восстановить удалённых ранее участников как "исключённых":
+     * - собираем user_id из превью (R1 и далее), снапшотов (teams.members), а также из сыгранных матчей через team members
+     * - исключаем тех, кто уже числится в tournament_participants
+     * - исключаем уже внесённых в eliminated
+     * - добавляем оставшихся в meta.eliminated последнего снапшота
+     */
+    static async recoverRemovedParticipants(tournamentId) {
+        const client = await pool.connect();
+        try {
+            const existingElimSet = await this.getLatestEliminatedIds(tournamentId);
+            // user_id из превью и снапшотов
+            const jsonRes = await client.query(
+                `WITH p AS (
+                    SELECT preview
+                    FROM full_mix_previews
+                    WHERE tournament_id = $1
+                ),
+                s AS (
+                    SELECT snapshot
+                    FROM full_mix_snapshots
+                    WHERE tournament_id = $1
+                ),
+                from_prev AS (
+                    SELECT DISTINCT (m->>'user_id')::int AS user_id
+                    FROM p
+                    CROSS JOIN LATERAL jsonb_array_elements(preview->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'user_id') ~ '^\\d+$'
+                ),
+                from_snap AS (
+                    SELECT DISTINCT (m->>'user_id')::int AS user_id
+                    FROM s
+                    CROSS JOIN LATERAL jsonb_array_elements(snapshot->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'user_id') ~ '^\\d+$'
+                ),
+                from_matches AS (
+                    SELECT DISTINCT ttm.user_id::int AS user_id
+                    FROM matches m
+                    JOIN tournament_team_members ttm ON ttm.team_id IN (m.team1_id, m.team2_id)
+                    WHERE m.tournament_id = $1 AND ttm.user_id IS NOT NULL
+                )
+                SELECT DISTINCT user_id
+                FROM (
+                    SELECT user_id FROM from_prev
+                    UNION
+                    SELECT user_id FROM from_snap
+                    UNION
+                    SELECT user_id FROM from_matches
+                ) u
+                WHERE user_id IS NOT NULL`,
+                [tournamentId]
+            );
+
+            const allUserIds = new Set();
+            for (const r of jsonRes.rows || []) {
+                const uid = parseInt(r.user_id, 10);
+                if (Number.isInteger(uid)) allUserIds.add(uid);
+            }
+
+            if (allUserIds.size === 0) return { added_count: 0, added_ids: [] };
+
+            // Исключим текущих участников турнира (по user_id)
+            const curRes = await client.query(
+                `SELECT COALESCE(u.id, tp.user_id) AS user_id
+                 FROM tournament_participants tp
+                 LEFT JOIN users u ON u.id = tp.user_id
+                 WHERE tp.tournament_id = $1`,
+                [tournamentId]
+            );
+            const currentUserIds = new Set((curRes.rows || []).map(r => parseInt(r.user_id, 10)).filter(Number.isInteger));
+
+            // Вычтем уже исключённых и текущих
+            const toAdd = Array.from(allUserIds).filter(uid => !existingElimSet.has(uid) && !currentUserIds.has(uid));
+            if (toAdd.length === 0) return { added_count: 0, added_ids: [] };
+
+            await this.addEliminated(tournamentId, toAdd);
+            return { added_count: toAdd.length, added_ids: toAdd };
+        } catch (e) {
+            try { console.warn('[FullMix] recoverRemovedParticipants failed:', e.message || e); } catch (_) {}
+            return { added_count: 0, added_ids: [] };
+        } finally {
+            client.release();
+        }
+    }
     // ===== PREVIEW API (DB-based cache) =====
     static async savePreview(tournamentId, roundNumber, preview, createdBy = null) {
         await pool.query(
