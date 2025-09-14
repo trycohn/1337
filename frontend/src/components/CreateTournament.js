@@ -156,7 +156,7 @@ function CreateTournament() {
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             mix_type: formData.format === 'mix' ? formData.mix_type : null,
             // 🆕 Передаем wins_to_win только для MIX
-            wins_to_win: formData.format === 'mix' ? parseInt(formData.wins_to_win || 4, 10) : null,
+            wins_to_win: formData.format === 'mix' && formData.mix_type === 'full' ? parseInt(formData.wins_to_win || 4, 10) : null,
             // 🆕 Передаём флаги требований привязок только для MIX
             require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
             require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,
@@ -169,7 +169,8 @@ function CreateTournament() {
             // 🆕 НОВОЕ: Опция Full Double Elimination
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
             // 🆕 Тип доступа
-            access_type: formData.tournament_type === 'closed' ? 'closed' : 'open',
+            access_type: (formData.tournament_type === 'closed' || formData.tournament_type === 'hidden') ? 'closed' : 'open',
+            is_hidden: formData.tournament_type === 'hidden',
             // 🆕 Флаг финала серии (из выпадающего списка)
             is_series_final: formData.tournament_type === 'final'
           },
@@ -225,6 +226,17 @@ function CreateTournament() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === 'mix_type') {
+      setFormData((prev) => {
+        const next = { ...prev, mix_type: value };
+        if (value === 'full') {
+          next.mix_rating_type = 'mixed';
+          next.bracket_type = 'swiss';
+        }
+        return next;
+      });
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -642,9 +654,10 @@ function CreateTournament() {
               >
                 <option value="open">Открытый</option>
                 <option value="closed">Закрытый</option>
+                <option value="hidden">Скрытый</option>
                 <option value="final">Финал серии</option>
               </select>
-              <small className="form-hint">Открытый — свободное вступление; Закрытый — по приглашению/из отборочных; Финал серии — только победители отборочных.</small>
+              <small className="form-hint">Открытый — свободное вступление; Закрытый — по приглашению/из отборочных; Скрытый — не показывается в списке, только по приглашению; Финал серии — только победители отборочных.</small>
             </div>
 
             {/* Тип турнирной сетки (перенесено в Основную информацию) */}
@@ -657,12 +670,16 @@ function CreateTournament() {
                 disabled={!verificationStatus.canCreate}
                 required
               >
+                {formData.format === 'mix' && formData.mix_type === 'full' && (
+                  <option value="swiss">Швейцарка</option>
+                )}
                 <option value="single_elimination">Single Elimination</option>
                 <option value="double_elimination">Double Elimination</option>
               </select>
               <small className="form-hint">
                 {formData.bracket_type === 'single_elimination' && 'Классическая система на выбывание — проигравший исключается'}
                 {formData.bracket_type === 'double_elimination' && 'Система двойного выбывания — можно проиграть один раз'}
+                {formData.bracket_type === 'swiss' && 'Швейцарская система — несколько туров без немедленного выбывания'}
               </small>
             </div>
             {/* Убрали Full Double Elimination — оставляем только классический Double Elimination */}
@@ -776,20 +793,22 @@ function CreateTournament() {
                   {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
                 </small>
               </div>
-              <div className="form-group">
-                <label>Минимальное число раундов (до победы)</label>
-                <input
-                  type="number"
-                  name="wins_to_win"
-                  value={formData.wins_to_win}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="20"
-                  disabled={!verificationStatus.canCreate}
-                  required
-                />
-                <small className="form-hint">Используется в Full Mix для отбора финалистов и доп. раундов</small>
-              </div>
+              {formData.mix_type === 'full' && (
+                <div className="form-group">
+                  <label>Минимальное число раундов (до победы)</label>
+                  <input
+                    type="number"
+                    name="wins_to_win"
+                    value={formData.wins_to_win}
+                    onChange={handleInputChange}
+                    min="1"
+                    max="20"
+                    disabled={!verificationStatus.canCreate}
+                    required
+                  />
+                  <small className="form-hint">Используется в Full Mix для отбора финалистов и доп. раундов</small>
+                </div>
+              )}
               <div className="form-group">
                 <label>Формирование команд</label>
                 <select
@@ -799,8 +818,17 @@ function CreateTournament() {
                   disabled={!verificationStatus.canCreate}
                   required
                 >
-                  <option value="faceit">Формирование на основе рейтинга</option>
-                  <option value="mixed">Случайное формирование без учета рейтинга</option>
+                  {formData.mix_type === 'full' ? (
+                    <>
+                      <option value="mixed">Случайное формирование без учета рейтинга</option>
+                      <option value="faceit">Формирование на основе рейтинга</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="faceit">Формирование на основе рейтинга</option>
+                      <option value="mixed">Случайное формирование без учета рейтинга</option>
+                    </>
+                  )}
                 </select>
                 <small className="form-hint">
                   {formData.mix_rating_type === 'faceit' && 'Команды формируются на основе рейтинга участников (FACEIT/Premier)'}

@@ -256,6 +256,74 @@ class FullMixController {
         await FullMixService.deletePreview(tournamentId, round);
         res.json({ success: true });
     });
+
+    // ===== ELIMINATED (admin endpoints) =====
+    static getEliminated = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        // Формат проверки: только Full Mix
+        const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+        const t = await TournamentRepository.getById(tournamentId);
+        if (!t) return res.status(404).json({ success: false, error: 'Турнир не найден' });
+        const mixType = (t.mix_type || '').toString().trim().toLowerCase();
+        const isFullMixFormat = t.format === 'full_mix' || (t.format === 'mix' && mixType === 'full');
+        if (!isFullMixFormat) return res.status(400).json({ success: false, error: 'Доступно только для Full Mix' });
+
+        const items = await FullMixService.getEliminatedDetailed(tournamentId);
+        res.json({ success: true, items });
+    });
+
+    static addEliminated = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+        const t = await TournamentRepository.getById(tournamentId);
+        if (!t) return res.status(404).json({ success: false, error: 'Турнир не найден' });
+        const mixType = (t.mix_type || '').toString().trim().toLowerCase();
+        const isFullMixFormat = t.format === 'full_mix' || (t.format === 'mix' && mixType === 'full');
+        if (!isFullMixFormat) return res.status(400).json({ success: false, error: 'Доступно только для Full Mix' });
+        if (!['active', 'in_progress'].includes((t.status || '').toLowerCase())) {
+            return res.status(400).json({ success: false, error: 'Операция доступна только для активного турнира' });
+        }
+
+        const { user_ids = [], participant_ids = [] } = req.body || {};
+        const ids = [];
+        if (Array.isArray(user_ids)) ids.push(...user_ids);
+        if (Array.isArray(participant_ids)) ids.push(...participant_ids);
+        if (ids.length === 0) return res.status(400).json({ success: false, error: 'Не переданы идентификаторы' });
+
+        await FullMixService.addEliminated(tournamentId, ids);
+
+        // Широковещательно оповестим клиентов
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_eliminated_updated', { added: ids, removed: [] });
+        } catch (_) {}
+        const items = await FullMixService.getEliminatedDetailed(tournamentId);
+        res.json({ success: true, items });
+    });
+
+    static deleteEliminated = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+        const t = await TournamentRepository.getById(tournamentId);
+        if (!t) return res.status(404).json({ success: false, error: 'Турнир не найден' });
+        const mixType = (t.mix_type || '').toString().trim().toLowerCase();
+        const isFullMixFormat = t.format === 'full_mix' || (t.format === 'mix' && mixType === 'full');
+        if (!isFullMixFormat) return res.status(400).json({ success: false, error: 'Доступно только для Full Mix' });
+
+        const { user_ids = [], participant_ids = [] } = req.body || {};
+        const ids = [];
+        if (Array.isArray(user_ids)) ids.push(...user_ids);
+        if (Array.isArray(participant_ids)) ids.push(...participant_ids);
+        if (ids.length === 0) return res.status(400).json({ success: false, error: 'Не переданы идентификаторы' });
+
+        await FullMixService.removeEliminated(tournamentId, ids);
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_eliminated_updated', { added: [], removed: ids });
+        } catch (_) {}
+        const items = await FullMixService.getEliminatedDetailed(tournamentId);
+        res.json({ success: true, items });
+    });
 }
 
 module.exports = FullMixController;

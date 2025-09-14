@@ -103,11 +103,11 @@ class TournamentValidator {
             errors.push('Описание не должно превышать 1000 символов');
         }
 
-        // Проверка типа сетки
+        // Проверка типа сетки (добавлен 'swiss')
         if (data.bracket_type) {
-            const allowedBracketTypes = ['single_elimination', 'double_elimination'];
+            const allowedBracketTypes = ['single_elimination', 'double_elimination', 'swiss'];
             if (!allowedBracketTypes.includes(data.bracket_type)) {
-                errors.push('Неверный тип сетки. Допустимые: single_elimination, double_elimination');
+                errors.push('Неверный тип сетки. Допустимые: single_elimination, double_elimination, swiss');
             }
         }
 

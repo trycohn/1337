@@ -503,6 +503,11 @@ router.post('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmail
 router.get('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.getPreview);
 router.delete('/:id/fullmix/rounds/:round/preview', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.deletePreview);
 
+// 🆕 Управление выбывшими (админ)
+router.get('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.getEliminated);
+router.post('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.addEliminated);
+router.delete('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.deleteEliminated);
+
 // 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
 
 // 🔍 WebSocket статистика (только для разработки и администраторов)

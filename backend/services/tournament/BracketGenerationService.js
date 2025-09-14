@@ -61,7 +61,7 @@ class BracketGenerationService {
                 console.log(`🏆 [BracketGenerationService] Обновление типа сетки: ${tournament.bracket_type} → ${options.bracketType}`);
                 
                 // Валидация типа сетки
-                const validBracketTypes = ['single_elimination', 'double_elimination'];
+                const validBracketTypes = ['single_elimination', 'double_elimination', 'swiss'];
                 if (!validBracketTypes.includes(options.bracketType)) {
                     throw new Error(`Неподдерживаемый тип сетки: ${options.bracketType}`);
                 }
@@ -377,7 +377,11 @@ class BracketGenerationService {
                         fullDoubleElimination: tournament.full_double_elimination || false
                     }
                 );
-                
+            case 'swiss':
+                // Временный заглушка: Swiss = текущий Full Mix процесс (раунды по снапшотам)
+                // На этапе создания сетки для 'swiss' ничего не создаём, так как раунды генерируются FullMixService
+                return { success: true, matches: [], bracketMath: null, seedingInfo: { type: 'swiss' } };
+
             default:
                 throw new Error(`Неподдерживаемый тип турнирной сетки: ${bracketType}`);
         }

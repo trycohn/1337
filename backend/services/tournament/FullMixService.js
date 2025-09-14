@@ -73,6 +73,56 @@ class FullMixService {
             return false;
         }
     }
+
+    static async removeEliminated(tournamentId, ids) {
+        try {
+            const cur = await this.getCurrentRound(tournamentId);
+            if (!Number.isInteger(cur) || cur <= 0) return false;
+            const snap = await this.getSnapshot(tournamentId, cur);
+            if (!snap) return false;
+            const snapshot = snap.snapshot || {};
+            const meta = snapshot.meta || {};
+            const current = Array.isArray(meta.eliminated) ? meta.eliminated.slice() : [];
+            const removeSet = new Set((ids || []).map(v => parseInt(v, 10)).filter(Number.isInteger));
+            const next = current.filter(v => {
+                const n = parseInt(v, 10);
+                if (Number.isInteger(n)) return !removeSet.has(n);
+                if (v && typeof v === 'object') {
+                    const a = parseInt(v.user_id, 10);
+                    const b = parseInt(v.participant_id, 10);
+                    return !( (Number.isInteger(a) && removeSet.has(a)) || (Number.isInteger(b) && removeSet.has(b)) );
+                }
+                return true;
+            });
+            snapshot.meta = { ...(snapshot.meta || {}), eliminated: next };
+            await this.saveSnapshot(tournamentId, cur, snapshot);
+            return true;
+        } catch (e) { return false; }
+    }
+
+    static async getEliminatedDetailed(tournamentId) {
+        const cur = await this.getCurrentRound(tournamentId);
+        if (!Number.isInteger(cur) || cur <= 0) return [];
+        const snap = await this.getSnapshot(tournamentId, cur);
+        const list = Array.isArray(snap?.snapshot?.meta?.eliminated) ? snap.snapshot.meta.eliminated : [];
+        const ids = list.map(v => {
+            const n = parseInt(v, 10);
+            if (Number.isInteger(n)) return n;
+            if (v && typeof v === 'object') {
+                return Number.isInteger(parseInt(v.user_id, 10)) ? parseInt(v.user_id, 10) : (Number.isInteger(parseInt(v.participant_id, 10)) ? parseInt(v.participant_id, 10) : null);
+            }
+            return null;
+        }).filter(Number.isInteger);
+        if (ids.length === 0) return [];
+        const res = await pool.query(
+            `SELECT tp.id AS participant_id, COALESCE(u.id, tp.user_id) AS user_id, COALESCE(u.username, tp.name) AS username
+             FROM tournament_participants tp
+             LEFT JOIN users u ON u.id = tp.user_id
+             WHERE tp.tournament_id = $1 AND (COALESCE(u.id, tp.user_id)) = ANY($2::int[])`,
+            [tournamentId, ids]
+        );
+        return res.rows;
+    }
     static async getLatestEliminatedIds(tournamentId) {
         try {
             const res = await pool.query(

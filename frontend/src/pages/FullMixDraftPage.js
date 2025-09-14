@@ -21,6 +21,8 @@ function FullMixDraftPage() {
     const [matchesPreview, setMatchesPreview] = useState([]);
     const [matchTeamMap, setMatchTeamMap] = useState(new Map());
     const [matchesApproved, setMatchesApproved] = useState(false);
+    const [eliminated, setEliminated] = useState([]);
+    const [elimInput, setElimInput] = useState('');
 
     const loadMatchesPreview = useCallback(async (r) => {
         setLoading(true);
@@ -64,6 +66,15 @@ function FullMixDraftPage() {
         }
     }, [tournamentId]);
 
+    const loadEliminated = useCallback(async () => {
+        try {
+            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/eliminated`);
+            setEliminated(res.data?.items || []);
+        } catch (_) {
+            setEliminated([]);
+        }
+    }, [tournamentId]);
+
     const loadPreview = useCallback(async (r) => {
         setLoading(true);
         try {
@@ -92,6 +103,7 @@ function FullMixDraftPage() {
     useEffect(() => {
         if (!tournamentId) return;
         loadRounds();
+        loadEliminated();
     }, [tournamentId, loadRounds]);
 
     useEffect(() => {
@@ -108,7 +120,12 @@ function FullMixDraftPage() {
             if (!payload || payload.tournamentId !== tournamentId) return;
             if (payload.round && payload.round === round) loadPreview(round);
         };
+        const onElimUpdated = (payload) => {
+            if (!payload) return;
+            loadEliminated();
+        };
         socket.on && socket.on('fullmix_preview_updated', onPreviewUpdated);
+        socket.on && socket.on('fullmix_eliminated_updated', onElimUpdated);
         return () => socket.off && socket.off('fullmix_preview_updated', onPreviewUpdated);
     }, [tournamentId, round, loadPreview]);
 
@@ -312,6 +329,51 @@ function FullMixDraftPage() {
                                 ))}
                             </div>
                         )}
+                    </div>
+                    {/* Админ-блок: управление выбывшими */}
+                    <div className="fullmixdraft-eliminated" style={{ gridColumn: '1 / span 2', border: '1px solid #1f1f1f', borderRadius: 8, background: '#0a0a0a', padding: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <strong>Выбывшие</strong>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <input
+                                    type="text"
+                                    placeholder="ID через запятую"
+                                    value={elimInput}
+                                    onChange={(e) => setElimInput(e.target.value)}
+                                    style={{ background: '#000', color: '#fff', border: '1px solid #1f1f1f', borderRadius: 6, padding: '6px 8px', width: 220 }}
+                                />
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={async () => {
+                                        const ids = elimInput.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isInteger);
+                                        if (ids.length === 0) return;
+                                        try {
+                                            await api.post(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { user_ids: ids });
+                                            setElimInput('');
+                                            await loadEliminated();
+                                        } catch (_) {}
+                                    }}
+                                >Исключить</button>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={async () => {
+                                        const ids = elimInput.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isInteger);
+                                        if (ids.length === 0) return;
+                                        try {
+                                            await api.delete(`/api/tournaments/${tournamentId}/fullmix/eliminated`, { data: { user_ids: ids } });
+                                            setElimInput('');
+                                            await loadEliminated();
+                                        } catch (_) {}
+                                    }}
+                                >Вернуть</button>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {eliminated.length === 0 && <span style={{ color: '#888', fontSize: 12 }}>Список пуст</span>}
+                            {eliminated.map((p, i) => (
+                                <span key={i} style={{ background: '#111', border: '1px solid #1f1f1f', borderRadius: 999, padding: '4px 10px', color: '#ccc' }}>{p.username || `ID ${p.user_id || p.participant_id}`}</span>
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}

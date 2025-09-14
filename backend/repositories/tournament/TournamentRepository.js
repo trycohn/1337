@@ -20,6 +20,7 @@ class TournamentRepository {
                 -- Берём денормализованное поле: для не-MIX может быть 0
                 t.players_count AS players_count
             FROM tournaments t
+            WHERE COALESCE(t.is_hidden, FALSE) = FALSE
             ORDER BY t.created_at DESC
         `);
         
@@ -91,14 +92,15 @@ class TournamentRepository {
             require_faceit_linked = false,
             require_steam_linked = false,
             is_series_final = false,
-            access_type = 'open'
+            access_type = 'open',
+            is_hidden = false
         } = tournamentData;
 
         const result = await pool.query(
             `INSERT INTO tournaments
-             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, mix_type, full_double_elimination, require_faceit_linked, require_steam_linked, is_series_final, access_type)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
-            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null), full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open']
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, mix_type, full_double_elimination, require_faceit_linked, require_steam_linked, is_series_final, access_type, is_hidden)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null), full_double_elimination || false, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open', !!is_hidden]
         );
 
         return result.rows[0];
@@ -181,7 +183,9 @@ class TournamentRepository {
             params.push(status);
         }
 
-        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+        // Фильтруем скрытые турниры из публичного поиска
+        clauses.push('COALESCE(t.is_hidden, FALSE) = FALSE');
+        const where = `WHERE ${clauses.join(' AND ')}`;
         const sql = `
             SELECT t.id, t.name, t.status, t.game, t.format
             FROM tournaments t
