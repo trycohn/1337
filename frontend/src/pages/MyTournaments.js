@@ -6,6 +6,7 @@ import api from '../axios';
 
 function MyTournaments() {
     const [items, setItems] = useState([]);
+    const [showOnlyHidden, setShowOnlyHidden] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -84,11 +85,25 @@ function MyTournaments() {
             : displayedCount;
     };
 
+    const renderAccessCell = (t) => {
+        if (t.is_hidden) return 'Скрытый';
+        if ((t.access_type || '').toLowerCase() === 'closed') return 'Закрытый';
+        return 'Открытый';
+    };
+
+    const filtered = showOnlyHidden ? items.filter(t => t.is_hidden) : items;
+
     return (
         <section className="tournaments-list">
             <h2>Мои турниры</h2>
-            {items.length === 0 && <p>Нет турниров, где вы создатель или администратор.</p>}
-            {items.length > 0 && (
+            <div style={{display:'flex', alignItems:'center', gap:12, margin:'12px 0'}}>
+                <label style={{display:'inline-flex', alignItems:'center', gap:6}}>
+                    <input type="checkbox" checked={showOnlyHidden} onChange={(e)=>setShowOnlyHidden(e.target.checked)} />
+                    Показать только скрытые
+                </label>
+            </div>
+            {filtered.length === 0 && <p>Нет турниров, подходящих под выбранные условия.</p>}
+            {filtered.length > 0 && (
                 <table>
                     <thead>
                         <tr>
@@ -96,21 +111,24 @@ function MyTournaments() {
                             <th>Название</th>
                             <th>Участники</th>
                             <th>Формат</th>
+                            <th>Доступ</th>
                             <th>Дата</th>
                             <th>Статус</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {items.map((t) => (
+                        {filtered.map((t) => (
                             <tr key={t.id}>
                                 <td data-label="Игра" title={t.game}>
                                     <GameIcon game={t.game} size={24} className="tournament-game-icon" />
                                 </td>
                                 <td data-label="Название" title={t.name}>
+                                    {t.is_hidden && <span title="Скрытый турнир" style={{marginRight: 6}}>🔒</span>}
                                     <Link to={`/tournaments/${t.id}`}>{t.name}</Link>
                                 </td>
                                 <td data-label="Участники">{renderParticipantsCell(t)}</td>
                                 <td data-label="Формат" title={t.format}>{t.format}</td>
+                                <td data-label="Доступ">{renderAccessCell(t)}</td>
                                 <td data-label="Дата">{t.start_date ? new Date(t.start_date).toLocaleDateString('ru-RU') : '-'}</td>
                                 <td data-label="Статус">
                                     <span className={`tournament-status-badge ${
