@@ -19,7 +19,14 @@ class TournamentService {
     }
 
     // 🆕 Турниры пользователя: где он создатель или администратор
-    static async getMyTournaments(userId) {
+    static async getMyTournaments(userId, { hidden = null } = {}) {
+        const clauses = ['(t.created_by = $1 OR ta.user_id = $1)'];
+        const params = [userId];
+        if (hidden !== null) {
+            params.push(hidden === true || hidden === 'true');
+            clauses.push('COALESCE(t.is_hidden, FALSE) = $' + params.length);
+        }
+        const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
         const sql = `
             SELECT DISTINCT 
                 t.*,
@@ -35,10 +42,10 @@ class TournamentService {
                 t.players_count AS players_count
             FROM tournaments t
             LEFT JOIN tournament_admins ta ON ta.tournament_id = t.id
-            WHERE t.created_by = $1 OR ta.user_id = $1
+            ${where}
             ORDER BY t.start_date DESC NULLS LAST, t.created_at DESC
         `;
-        const result = await pool.query(sql, [userId]);
+        const result = await pool.query(sql, params);
         return result.rows;
     }
 

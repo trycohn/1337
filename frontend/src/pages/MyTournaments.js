@@ -15,7 +15,8 @@ function MyTournaments() {
         (async function load() {
             const startedAt = Date.now();
             try {
-                const { data } = await api.get('/api/tournaments/my');
+                const qs = showOnlyHidden ? '?hidden=true' : '';
+                const { data } = await api.get(`/api/tournaments/my${qs}`);
                 if (isMounted) setItems(Array.isArray(data) ? data : []);
             } catch (e) {
                 setError('Не удалось загрузить список ваших турниров');
@@ -31,7 +32,7 @@ function MyTournaments() {
             }
         })();
         return () => { isMounted = false; };
-    }, []);
+    }, [showOnlyHidden]);
 
     if (loading) return (
         <section className="tournaments-list">

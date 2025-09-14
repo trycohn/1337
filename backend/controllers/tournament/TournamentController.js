@@ -20,7 +20,14 @@ class TournamentController {
         if (!userId) {
             return res.status(401).json({ error: 'Неавторизован' });
         }
-        const items = await TournamentService.getMyTournaments(userId);
+        const hiddenParam = req.query?.hidden;
+        let hidden = null;
+        if (typeof hiddenParam === 'string') {
+            const v = hiddenParam.toLowerCase();
+            if (v === 'true') hidden = true;
+            else if (v === 'false') hidden = false;
+        }
+        const items = await TournamentService.getMyTournaments(userId, { hidden });
         res.json(items);
     });
 
