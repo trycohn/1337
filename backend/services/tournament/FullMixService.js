@@ -751,7 +751,6 @@ class FullMixService {
             loss_agg AS (
                 SELECT participant_id, COUNT(*)::int AS losses FROM losers GROUP BY participant_id
             ),
-            -- Текущие участники турнира
             base_current AS (
                 SELECT tp.id AS participant_id,
                        COALESCE(u.id, tp.user_id) AS user_id,
@@ -761,7 +760,6 @@ class FullMixService {
                 LEFT JOIN users u ON u.id = tp.user_id
                 WHERE tp.tournament_id = $1
             ),
-            -- Участники, игравшие хотя бы один матч (через команды из matches)
             teams_played AS (
                 SELECT DISTINCT unnest(ARRAY[m2.team1_id, m2.team2_id])::int AS team_id
                 FROM matches m2
@@ -779,10 +777,60 @@ class FullMixService {
                 LEFT JOIN users u ON u.id = ttm.user_id
                 WHERE ttm.participant_id IS NOT NULL
             ),
+            latest_snap AS (
+                SELECT snapshot
+                FROM full_mix_snapshots
+                WHERE tournament_id = $1
+                ORDER BY round_number DESC
+                LIMIT 1
+            ),
+            elim_raw AS (
+                SELECT jsonb_array_elements(COALESCE((snapshot->'meta'->'eliminated')::jsonb, '[]'::jsonb)) AS e
+                FROM latest_snap
+            ),
+            elim_users AS (
+                SELECT DISTINCT
+                    CASE
+                        WHEN jsonb_typeof(e) = 'number' THEN (e)::text::int
+                        WHEN jsonb_typeof(e) = 'object' AND (e->>'user_id') ~ '^\\d+$' THEN (e->>'user_id')::int
+                        ELSE NULL
+                    END AS user_id
+                FROM elim_raw
+            ),
+            elim_pids AS (
+                SELECT DISTINCT
+                    CASE WHEN jsonb_typeof(e) = 'object' AND (e->>'participant_id') ~ '^\\d+$' THEN (e->>'participant_id')::int ELSE NULL END AS participant_id
+                FROM elim_raw
+            ),
+            elim_user_from_pid AS (
+                SELECT DISTINCT COALESCE(u.id, ttm.user_id) AS user_id
+                FROM elim_pids ep
+                JOIN tournament_team_members ttm ON ttm.participant_id = ep.participant_id
+                LEFT JOIN users u ON u.id = ttm.user_id
+                WHERE ep.participant_id IS NOT NULL AND (ttm.user_id IS NOT NULL OR u.id IS NOT NULL)
+            ),
+            elim_all_users AS (
+                SELECT user_id FROM elim_users WHERE user_id IS NOT NULL
+                UNION
+                SELECT user_id FROM elim_user_from_pid WHERE user_id IS NOT NULL
+            ),
+            base_eliminated AS (
+                SELECT DISTINCT
+                    NULL::int AS participant_id,
+                    u.id AS user_id,
+                    u.username AS username,
+                    u.avatar_url
+                FROM elim_all_users eu
+                JOIN users u ON u.id = eu.user_id
+                WHERE NOT EXISTS (SELECT 1 FROM base_current bc WHERE bc.user_id = u.id)
+                  AND NOT EXISTS (SELECT 1 FROM base_played bp WHERE bp.user_id = u.id)
+            ),
             base AS (
                 SELECT * FROM base_current
                 UNION
                 SELECT * FROM base_played
+                UNION
+                SELECT * FROM base_eliminated
             )
             SELECT b.participant_id,
                    COALESCE(b.user_id, b.participant_id) AS uid,
