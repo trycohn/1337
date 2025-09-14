@@ -389,7 +389,7 @@ function FullMixDraftPage() {
                                         try {
                                             setLoading(true);
                                             await api.post(`/api/tournaments/${tournamentId}/fullmix/eliminated/recover`);
-                                            await loadEliminated();
+                                            await Promise.all([loadEliminated(), loadParticipants(), loadStandings()]);
                                             setMessage('Восстановление завершено');
                                         } catch (e) {
                                             setMessage(e?.response?.data?.error || 'Ошибка восстановления');

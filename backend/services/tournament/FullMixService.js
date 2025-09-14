@@ -114,11 +114,19 @@ class FullMixService {
             return null;
         }).filter(Number.isInteger);
         if (ids.length === 0) return [];
+        // Возвращаем даже если участник уже удален из tournament_participants: резолвим по users
         const res = await pool.query(
-            `SELECT tp.id AS participant_id, COALESCE(u.id, tp.user_id) AS user_id, COALESCE(u.username, tp.name) AS username
-             FROM tournament_participants tp
-             LEFT JOIN users u ON u.id = tp.user_id
-             WHERE tp.tournament_id = $1 AND (COALESCE(u.id, tp.user_id)) = ANY($2::int[])`,
+            `WITH ids AS (
+                SELECT UNNEST($2::int[]) AS user_id
+            )
+            SELECT DISTINCT
+                tp.id AS participant_id,
+                ids.user_id AS user_id,
+                COALESCE(u.username, tp.name) AS username
+            FROM ids
+            LEFT JOIN tournament_participants tp
+                ON tp.tournament_id = $1 AND tp.user_id = ids.user_id
+            LEFT JOIN users u ON u.id = ids.user_id`,
             [tournamentId, ids]
         );
         return res.rows;
