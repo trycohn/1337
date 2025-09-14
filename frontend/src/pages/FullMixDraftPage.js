@@ -421,13 +421,20 @@ function FullMixDraftPage() {
                                         const finSetPid = new Set(finalistsArr.map(v => Number(v.participant_id)).filter(Number.isFinite));
                                         const finSetUid = new Set(finalistsArr.map(v => Number(v.user_id)).filter(Number.isFinite));
                                         const presentByUid = new Set(participants.map(p => Number(p.user_id)).filter(Number.isFinite));
-                                        const extras = eliminated
+                                        const presentByPid = new Set(participants.map(p => Number(p.id)).filter(Number.isFinite));
+                                        const extrasUsers = eliminated
                                             .filter(e => {
                                                 const uid = Number(e.user_id);
                                                 return Number.isFinite(uid) && !presentByUid.has(uid);
                                             })
-                                            .map(e => ({ id: -Number(e.user_id), user_id: Number(e.user_id), username: e.username, avatar_url: null }));
-                                        const rowsAll = [...participants, ...extras];
+                                            .map(e => ({ id: -Math.abs(Number(e.user_id)), user_id: Number(e.user_id), username: e.username, avatar_url: null }));
+                                        const extrasParticipants = eliminated
+                                            .filter(e => {
+                                                const pid = Number(e.participant_id);
+                                                return Number.isFinite(pid) && !presentByPid.has(pid);
+                                            })
+                                            .map(e => ({ id: -100000 - Math.abs(Number(e.participant_id)), user_id: null, username: e.username, avatar_url: null, participant_id: Number(e.participant_id) }));
+                                        const rowsAll = [...participants, ...extrasUsers, ...extrasParticipants];
                                         const filtered = rowsAll.filter(p => {
                                             const name = (p.username || p.name || '').toString().toLowerCase();
                                             const q = searchName.trim().toLowerCase();
@@ -436,8 +443,9 @@ function FullMixDraftPage() {
                                         });
                                         return filtered.map(p => {
                                             const stat = standingsMap.get(p.id) || standingsByUser.get(p.user_id) || { wins: 0, losses: 0, games: 0 };
-                                            const isElim = elimSetByPid.has(p.id) || elimSetByUid.has(p.user_id);
-                                            const isFinal = finSetPid.has(p.id) || finSetUid.has(p.user_id);
+                                            const pidVal = Number(p.id ?? p.participant_id);
+                                            const isElim = elimSetByPid.has(pidVal) || elimSetByUid.has(p.user_id);
+                                            const isFinal = finSetPid.has(pidVal) || finSetUid.has(p.user_id);
                                             const status = isFinal ? 'финалист' : (isElim ? 'исключен' : 'играет');
                                             const onExclude = async () => {
                                                 try {
