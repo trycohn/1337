@@ -172,6 +172,14 @@ class FullMixService {
         const client = await pool.connect();
         try {
             const existingElimSet = await this.getLatestEliminatedIds(tournamentId);
+            // Прочтём последний снапшот для извлечения существующих participant_id в eliminated
+            const curRound = await this.getCurrentRound(tournamentId);
+            const latestSnap = curRound > 0 ? await this.getSnapshot(tournamentId, curRound) : null;
+            const existingElimParticipantIds = new Set(
+                (Array.isArray(latestSnap?.snapshot?.meta?.eliminated) ? latestSnap.snapshot.meta.eliminated : [])
+                    .map(v => (v && typeof v === 'object' ? parseInt(v.participant_id, 10) : null))
+                    .filter(Number.isInteger)
+            );
             // user_id из превью и снапшотов
             const jsonRes = await client.query(
                 `WITH p AS (
@@ -222,7 +230,55 @@ class FullMixService {
                 if (Number.isInteger(uid)) allUserIds.add(uid);
             }
 
-            if (allUserIds.size === 0) return { added_count: 0, added_ids: [] };
+            // Кандидаты participant_id из тех же источников
+            const pidRes = await client.query(
+                `WITH p AS (
+                    SELECT preview
+                    FROM full_mix_previews
+                    WHERE tournament_id = $1
+                ),
+                s AS (
+                    SELECT snapshot
+                    FROM full_mix_snapshots
+                    WHERE tournament_id = $1
+                ),
+                from_prev AS (
+                    SELECT DISTINCT (m->>'participant_id')::int AS participant_id
+                    FROM p
+                    CROSS JOIN LATERAL jsonb_array_elements(preview->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'participant_id') ~ '^\\d+$'
+                ),
+                from_snap AS (
+                    SELECT DISTINCT (m->>'participant_id')::int AS participant_id
+                    FROM s
+                    CROSS JOIN LATERAL jsonb_array_elements(snapshot->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'participant_id') ~ '^\\d+$'
+                ),
+                from_matches AS (
+                    SELECT DISTINCT ttm.participant_id::int AS participant_id
+                    FROM matches m
+                    JOIN tournament_team_members ttm ON ttm.team_id IN (m.team1_id, m.team2_id)
+                    WHERE m.tournament_id = $1 AND ttm.participant_id IS NOT NULL
+                )
+                SELECT DISTINCT participant_id
+                FROM (
+                    SELECT participant_id FROM from_prev
+                    UNION
+                    SELECT participant_id FROM from_snap
+                    UNION
+                    SELECT participant_id FROM from_matches
+                ) u
+                WHERE participant_id IS NOT NULL`,
+                [tournamentId]
+            );
+
+            const allParticipantIds = new Set();
+            for (const r of pidRes.rows || []) {
+                const pid = parseInt(r.participant_id, 10);
+                if (Number.isInteger(pid)) allParticipantIds.add(pid);
+            }
 
             // Исключим текущих участников турнира (по user_id)
             const curRes = await client.query(
@@ -233,13 +289,45 @@ class FullMixService {
                 [tournamentId]
             );
             const currentUserIds = new Set((curRes.rows || []).map(r => parseInt(r.user_id, 10)).filter(Number.isInteger));
+            const curPidRes = await client.query(
+                `SELECT tp.id AS participant_id FROM tournament_participants tp WHERE tp.tournament_id = $1`,
+                [tournamentId]
+            );
+            const currentParticipantIds = new Set((curPidRes.rows || []).map(r => parseInt(r.participant_id, 10)).filter(Number.isInteger));
 
             // Вычтем уже исключённых и текущих
-            const toAdd = Array.from(allUserIds).filter(uid => !existingElimSet.has(uid) && !currentUserIds.has(uid));
-            if (toAdd.length === 0) return { added_count: 0, added_ids: [] };
+            const toAddUsers = Array.from(allUserIds).filter(uid => !existingElimSet.has(uid) && !currentUserIds.has(uid));
+            const toAddParticipants = Array.from(allParticipantIds).filter(pid => !currentParticipantIds.has(pid) && !existingElimParticipantIds.has(pid));
 
-            await this.addEliminated(tournamentId, toAdd);
-            return { added_count: toAdd.length, added_ids: toAdd };
+            // Логирование диагностики
+            try {
+                console.log('[FullMix][recover] candidates:', {
+                    users: Array.from(allUserIds),
+                    participants: Array.from(allParticipantIds),
+                    existingElimUsers: Array.from(existingElimSet),
+                    existingElimParticipants: Array.from(existingElimParticipantIds),
+                    currentUsers: Array.from(currentUserIds),
+                    currentParticipants: Array.from(currentParticipantIds),
+                    toAddUsers,
+                    toAddParticipants
+                });
+            } catch (_) {}
+
+            if (toAddUsers.length === 0 && toAddParticipants.length === 0) return { added_count: 0, added_ids: [] };
+
+            // Обновим eliminated в снапшоте: числа = user_id, объекты = { participant_id }
+            const snapToUpdate = latestSnap || (curRound > 0 ? await this.getSnapshot(tournamentId, curRound) : null);
+            if (!snapToUpdate) return { added_count: 0, added_ids: [] };
+            const snapshot = snapToUpdate.snapshot || {};
+            const prevElim = Array.isArray(snapshot.meta?.eliminated) ? snapshot.meta.eliminated.slice() : [];
+            const nextElim = [
+                ...prevElim,
+                ...toAddUsers,
+                ...toAddParticipants.map(pid => ({ participant_id: pid }))
+            ];
+            snapshot.meta = { ...(snapshot.meta || {}), eliminated: nextElim };
+            await this.saveSnapshot(tournamentId, curRound, snapshot);
+            return { added_count: toAddUsers.length + toAddParticipants.length, added_ids: toAddUsers, added_participant_ids: toAddParticipants };
         } catch (e) {
             try { console.warn('[FullMix] recoverRemovedParticipants failed:', e.message || e); } catch (_) {}
             return { added_count: 0, added_ids: [] };

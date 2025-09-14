@@ -91,6 +91,41 @@ const TeamGenerator = ({
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+    // 🆕 Простейшая форма добавления участника для MIX турниров (админы/создатель)
+    const [addName, setAddName] = useState('');
+    const [addFaceit, setAddFaceit] = useState('');
+    const [addPremier, setAddPremier] = useState('');
+    const [addingParticipant, setAddingParticipant] = useState(false);
+
+    async function handleAddParticipant(e) {
+        e.preventDefault();
+        if (!isAdminOrCreator) return;
+        const name = (addName || '').trim();
+        if (!name) {
+            try { toast?.({ type: 'error', message: 'Укажите имя участника' }); } catch(_) {}
+            return;
+        }
+        if (!shouldMakeRequest('addParticipant')) return;
+        setAddingParticipant(true);
+        try {
+            const payload = { participantName: name };
+            const faceitVal = parseInt(addFaceit, 10);
+            const premierVal = parseInt(addPremier, 10);
+            if (!isNaN(faceitVal) && faceitVal > 0) payload.faceit_elo = faceitVal;
+            if (!isNaN(premierVal) && premierVal > 0) payload.cs2_premier_rank = premierVal;
+            await api.post(`/api/tournaments/${tournament.id}/add-participant`, payload);
+            setAddName(''); setAddFaceit(''); setAddPremier('');
+            try { toast?.({ type: 'success', message: 'Участник добавлен' }); } catch(_) {}
+            await onTeamsUpdated?.();
+        } catch (err) {
+            console.error('❌ Ошибка добавления участника:', err);
+            const m = err?.response?.data?.error || err?.message || 'Ошибка при добавлении участника';
+            try { toast?.({ type: 'error', message: m }); } catch(_) {}
+        } finally {
+            setAddingParticipant(false);
+        }
+    }
+
     // 🎯 ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ИМЕН УЧАСТНИКОВ КОМАНД (простая функция без useCallback)
     const formatMemberName = (memberName) => {
         if (!memberName) return { displayName: 'Неизвестный игрок', originalName: '', isLongName: false, isTruncated: false };
@@ -976,6 +1011,41 @@ const TeamGenerator = ({
                 <div className="mix-grid-right">
                     {isFullMix ? (
                         <div className="teams-display-participants2.0">
+                            {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
+                                <div className="mix-admin-add-participant" style={{marginBottom: 16, background: '#111', border: '1px solid #333', padding: 12, borderRadius: 8}}>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Full Mix)</div>
+                                    <form onSubmit={handleAddParticipant} className="add-participant-form" style={{display:'grid', gridTemplateColumns:'1fr 140px 140px auto', gap: 8}}>
+                                        <input
+                                            type="text"
+                                            placeholder="Никнейм участника"
+                                            value={addName}
+                                            onChange={(e)=>setAddName(e.target.value)}
+                                            disabled={addingParticipant}
+                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="FACEIT ELO"
+                                            value={addFaceit}
+                                            onChange={(e)=>setAddFaceit(e.target.value)}
+                                            disabled={addingParticipant}
+                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="CS2 Premier"
+                                            value={addPremier}
+                                            onChange={(e)=>setAddPremier(e.target.value)}
+                                            disabled={addingParticipant}
+                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                        />
+                                        <button type="submit" className="btn btn-primary" disabled={addingParticipant}>
+                                            {addingParticipant ? 'Добавление...' : 'Добавить'}
+                                        </button>
+                                    </form>
+                                    <div style={{marginTop: 6, fontSize: 12, color:'#bbb'}}>Поддерживается добавление незарегистрированных участников. Рейтинг — опционально.</div>
+                                </div>
+                            )}
                             <div className="referral-invite-card-participants2.0">
                                 <div className="referral-invite-content-participants2.0">
                                     <div className="referral-invite-text-participants2.0">
@@ -992,7 +1062,20 @@ const TeamGenerator = ({
                             </div>
                         </div>
                     ) : (
-                        renderTeamsList()
+                        <div className="teams-display-participants2.0">
+                            {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
+                                <div className="mix-admin-add-participant" style={{marginBottom: 16, background: '#111', border: '1px solid #333', padding: 12, borderRadius: 8}}>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Mix)</div>
+                                    <form onSubmit={handleAddParticipant} className="add-participant-form" style={{display:'grid', gridTemplateColumns:'1fr 140px 140px auto', gap: 8}}>
+                                        <input type="text" placeholder="Никнейм участника" value={addName} onChange={(e)=>setAddName(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
+                                        <input type="number" placeholder="FACEIT ELO" value={addFaceit} onChange={(e)=>setAddFaceit(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
+                                        <input type="number" placeholder="CS2 Premier" value={addPremier} onChange={(e)=>setAddPremier(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
+                                        <button type="submit" className="btn btn-primary" disabled={addingParticipant}>{addingParticipant ? 'Добавление...' : 'Добавить'}</button>
+                                    </form>
+                                </div>
+                            )}
+                            {renderTeamsList()}
+                        </div>
                     )}
                 </div>
             </div>
