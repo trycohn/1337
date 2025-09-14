@@ -23,7 +23,7 @@ function Layout() {
 
     // Ref для защиты от частых запросов
     const lastFetchTime = useRef(0);
-    const FETCH_COOLDOWN = 1000; // 1 секунда между запросами
+    const FETCH_COOLDOWN = 15000; // 15 секунд между запросами для снижения нагрузки
 
     // Создаем стабильную ссылку на функцию
     const fetchUnreadCountRef = useRef();
@@ -59,6 +59,10 @@ function Layout() {
             const token = localStorage.getItem('token');
             if (!token) {
                 console.log('📊 [Layout] Нет токена для получения счетчика');
+                return;
+            }
+            if (typeof document !== 'undefined' && document.hidden) {
+                console.log('📊 [Layout] Страница скрыта — пропускаем запрос unread-count');
                 return;
             }
             

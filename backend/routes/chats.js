@@ -540,6 +540,7 @@ router.delete('/messages/:messageId', authenticateToken, async (req, res) => {
 // Получение общего количества непрочитанных сообщений пользователя
 router.get('/unread-count', authenticateToken, async (req, res) => {
     try {
+        const start = Date.now();
         // Получаем информацию о пользователе включая last_notifications_seen
         const userResult = await pool.query(`
             SELECT last_notifications_seen FROM users WHERE id = $1
@@ -562,7 +563,16 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
         `, [req.user.id, lastNotificationsSeen]);
         
         const totalUnread = parseInt(result.rows[0].total_unread) || 0;
-        
+
+        // Короткое приватное кэширование и диагностика
+        res.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+        res.set('Vary', 'Authorization');
+        try {
+            res.set('ETag', `W/"unread-${req.user.id}-${lastNotificationsSeen?.getTime?.() || 0}-${totalUnread}"`);
+            res.set('X-Response-Time', `${Date.now() - start}ms`);
+        } catch (_) {}
+
+        console.log(`[unread-count] user=${req.user.id} count=${totalUnread} duration=${Date.now() - start}ms`);
         res.json({ unread_count: totalUnread });
     } catch (err) {
         console.error('Ошибка получения количества непрочитанных сообщений:', err);
