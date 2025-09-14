@@ -104,32 +104,123 @@ class FullMixService {
         const cur = await this.getCurrentRound(tournamentId);
         if (!Number.isInteger(cur) || cur <= 0) return [];
         const snap = await this.getSnapshot(tournamentId, cur);
-        const list = Array.isArray(snap?.snapshot?.meta?.eliminated) ? snap.snapshot.meta.eliminated : [];
-        const ids = list.map(v => {
-            const n = parseInt(v, 10);
-            if (Number.isInteger(n)) return n;
+        const listRaw = Array.isArray(snap?.snapshot?.meta?.eliminated) ? snap.snapshot.meta.eliminated : [];
+
+        const userIdSet = new Set();
+        const participantIdSet = new Set();
+        for (const v of listRaw) {
+            const asNum = parseInt(v, 10);
+            if (Number.isInteger(asNum)) { userIdSet.add(asNum); continue; }
             if (v && typeof v === 'object') {
-                return Number.isInteger(parseInt(v.user_id, 10)) ? parseInt(v.user_id, 10) : (Number.isInteger(parseInt(v.participant_id, 10)) ? parseInt(v.participant_id, 10) : null);
+                const u = parseInt(v.user_id, 10);
+                const p = parseInt(v.participant_id, 10);
+                if (Number.isInteger(u)) userIdSet.add(u);
+                if (Number.isInteger(p)) participantIdSet.add(p);
             }
-            return null;
-        }).filter(Number.isInteger);
-        if (ids.length === 0) return [];
-        // Возвращаем даже если участник уже удален из tournament_participants: резолвим по users
-        const res = await pool.query(
-            `WITH ids AS (
-                SELECT UNNEST($2::int[]) AS user_id
-            )
-            SELECT DISTINCT
-                tp.id AS participant_id,
-                ids.user_id AS user_id,
-                COALESCE(u.username, tp.name) AS username
-            FROM ids
-            LEFT JOIN tournament_participants tp
-                ON tp.tournament_id = $1 AND tp.user_id = ids.user_id
-            LEFT JOIN users u ON u.id = ids.user_id`,
-            [tournamentId, ids]
-        );
-        return res.rows;
+        }
+        if (userIdSet.size === 0 && participantIdSet.size === 0) return [];
+
+        // Имён из JSON (previews/snapshots) достаточно много — соберём карту id->name
+        const namesMapUser = new Map();
+        const namesMapParticipant = new Map();
+        try {
+            const jsonNames = await pool.query(
+                `WITH p AS (
+                    SELECT preview
+                    FROM full_mix_previews
+                    WHERE tournament_id = $1
+                ),
+                s AS (
+                    SELECT snapshot
+                    FROM full_mix_snapshots
+                    WHERE tournament_id = $1
+                ),
+                n1 AS (
+                    SELECT DISTINCT (m->>'user_id')::int AS user_id, COALESCE(m->>'username', m->>'name') AS username
+                    FROM p
+                    CROSS JOIN LATERAL jsonb_array_elements(preview->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'user_id') ~ '^\\d+$'
+                ),
+                n2 AS (
+                    SELECT DISTINCT (m->>'user_id')::int AS user_id, COALESCE(m->>'username', m->>'name') AS username
+                    FROM s
+                    CROSS JOIN LATERAL jsonb_array_elements(snapshot->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'user_id') ~ '^\\d+$'
+                ),
+                p1 AS (
+                    SELECT DISTINCT (m->>'participant_id')::int AS participant_id, COALESCE(m->>'username', m->>'name') AS username
+                    FROM p
+                    CROSS JOIN LATERAL jsonb_array_elements(preview->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'participant_id') ~ '^\\d+$'
+                ),
+                p2 AS (
+                    SELECT DISTINCT (m->>'participant_id')::int AS participant_id, COALESCE(m->>'username', m->>'name') AS username
+                    FROM s
+                    CROSS JOIN LATERAL jsonb_array_elements(snapshot->'teams') t(team)
+                    CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                    WHERE (m->>'participant_id') ~ '^\\d+$'
+                )
+                SELECT 'u' AS t, user_id::int AS id, username FROM n1
+                UNION ALL
+                SELECT 'u' AS t, user_id::int AS id, username FROM n2
+                UNION ALL
+                SELECT 'p' AS t, participant_id::int AS id, username FROM p1
+                UNION ALL
+                SELECT 'p' AS t, participant_id::int AS id, username FROM p2`,
+                [tournamentId]
+            );
+            for (const r of jsonNames.rows || []) {
+                if (r.t === 'u' && Number.isInteger(r.id) && r.username) {
+                    if (!namesMapUser.has(r.id)) namesMapUser.set(r.id, r.username);
+                }
+                if (r.t === 'p' && Number.isInteger(r.id) && r.username) {
+                    if (!namesMapParticipant.has(r.id)) namesMapParticipant.set(r.id, r.username);
+                }
+            }
+        } catch (_) {}
+
+        const users = [];
+        if (userIdSet.size > 0) {
+            const { rows } = await pool.query(
+                `SELECT u.id AS user_id, u.username
+                 FROM users u
+                 WHERE u.id = ANY($1::int[])`,
+                [Array.from(userIdSet)]
+            );
+            for (const r of rows || []) users.push({ user_id: parseInt(r.user_id, 10), username: r.username || namesMapUser.get(parseInt(r.user_id, 10)) || null });
+            // Добавим те, кого нет в users, но есть имя из JSON
+            for (const uid of userIdSet) {
+                if (!users.find(x => x.user_id === uid)) users.push({ user_id: uid, username: namesMapUser.get(uid) || null });
+            }
+        }
+
+        const participants = [];
+        if (participantIdSet.size > 0) {
+            const { rows } = await pool.query(
+                `SELECT tp.id AS participant_id, COALESCE(u.username, tp.name) AS username
+                 FROM tournament_participants tp
+                 LEFT JOIN users u ON u.id = tp.user_id
+                 WHERE tp.tournament_id = $1 AND tp.id = ANY($2::int[])`,
+                [tournamentId, Array.from(participantIdSet)]
+            );
+            for (const r of rows || []) participants.push({ participant_id: parseInt(r.participant_id, 10), username: r.username || namesMapParticipant.get(parseInt(r.participant_id, 10)) || null });
+            // Добавим тех, кого нет в tp, но есть имя из JSON
+            for (const pid of participantIdSet) {
+                if (!participants.find(x => x.participant_id === pid)) participants.push({ participant_id: pid, username: namesMapParticipant.get(pid) || null });
+            }
+        }
+
+        // Сведём в единый список: если есть user_id — вернём его; иначе participant_id
+        const result = [];
+        for (const u of users) result.push({ user_id: u.user_id, participant_id: null, username: u.username });
+        for (const p of participants) {
+            // пропускаем, если есть уже такой user_id с именем
+            result.push({ user_id: null, participant_id: p.participant_id, username: p.username });
+        }
+        return result;
     }
     static async getLatestEliminatedIds(tournamentId) {
         try {
