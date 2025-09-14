@@ -103,9 +103,11 @@ class MatchLobbyController {
             res.set('Vary', 'Authorization');
 
             const duration = Date.now() - start;
-            if (duration > 250) {
-                console.warn(`⚠️ [active-lobbies batch] slow=${duration}ms size=${matchIds.length}`);
-            }
+            try {
+                res.set('X-Batch-Size', String(matchIds.length));
+                res.set('X-Response-Time', `${duration}ms`);
+            } catch (_) {}
+            console.log(`[active-lobbies batch] user=${userId} t=${tournamentId} size=${matchIds.length} duration=${duration}ms`);
 
             return res.json({ success: true, byMatchId });
         } catch (error) {
