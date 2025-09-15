@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
+import './LiveParticipantSearch.css';
 
 const MIN_QUERY = 3;
 
@@ -57,22 +58,22 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
                 placeholder="Поиск по пользователям (минимум 3 символа)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6, width:'100%', marginBottom: 8}}
+                className="live-search-input"
             />
-            {loading && <div style={{fontSize:12, color:'#bbb'}}>Поиск...</div>}
-            {error && <div style={{fontSize:12, color:'#f66'}}>{error}</div>}
+            {loading && <div className="live-search-loading">Поиск...</div>}
+            {error && <div className="live-search-error">{error}</div>}
             {!loading && results && results.length > 0 && (
-                <div style={{maxHeight: 220, overflowY: 'auto', border:'1px solid #222', borderRadius: 6}}>
+                <div className="live-search-results">
                     {results.map((u) => (
-                        <div key={u.id} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderBottom:'1px solid #222'}}>
-                            <div style={{display:'flex', alignItems:'center', gap:8}}>
-                                <div style={{width:24, height:24, borderRadius:'50%', background:'#222', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff'}}>
+                        <div key={u.id} className="live-search-row">
+                            <div className="live-search-user">
+                                <div className="live-search-avatar">
                                     {(u.username || 'U').charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <div style={{color:'#fff'}}>{u.username || `User #${u.id}`}</div>
+                                    <div className="live-search-username">{u.username || `User #${u.id}`}</div>
                                     {(u.faceit_elo || u.cs2_premier_rank) && (
-                                        <div style={{fontSize:12, color:'#bbb'}}>
+                                        <div className="live-search-meta">
                                             {u.faceit_elo && `${u.faceit_elo} ELO`}
                                             {u.faceit_elo && u.cs2_premier_rank ? ' • ' : ''}
                                             {u.cs2_premier_rank && `Premier ${u.cs2_premier_rank}`}
@@ -88,7 +89,7 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
                 </div>
             )}
             {!loading && query.length >= MIN_QUERY && results.length === 0 && !error && (
-                <div style={{fontSize:12, color:'#bbb'}}>Ничего не найдено</div>
+                <div className="live-search-empty">Ничего не найдено</div>
             )}
         </div>
     );
