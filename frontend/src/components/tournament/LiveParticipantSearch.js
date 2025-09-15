@@ -52,7 +52,7 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
     };
 
     return (
-        <div>
+        <div className="live-search-container">
             <input
                 type="text"
                 placeholder="Поиск по пользователям (минимум 3 символа)"
