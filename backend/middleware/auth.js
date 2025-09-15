@@ -3,14 +3,18 @@ const pool = require('../db');
 
 // Middleware для проверки JWT-токена
 function authenticateToken(req, res, next) {
+    // Пропускаем Socket.IO транспортные запросы (аутентификация у них на уровне WS)
+    if (req.path && req.path.startsWith('/socket.io')) {
+        return next();
+    }
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
 
     console.log('Проверка пути:', req.path); // Отладка пути
     console.log('Query параметры:', req.query); // Отладка query
 
     // Проверяем query-параметр token для маршрута link-steam
-    if (!token && req.query.token) {
+    if (!token && req.query && req.query.token) {
         token = req.query.token;
         console.log('Токен найден в query:', token); // Отладка
     }

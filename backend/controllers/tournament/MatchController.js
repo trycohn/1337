@@ -112,8 +112,19 @@ class MatchController {
         console.log(`📋 [MatchController v4.0] Получение матчей турнира ${tournamentId}`);
         
         try {
+            const start = Date.now();
             const matches = await MatchService.getByTournamentId(tournamentId);
-            
+
+            // Короткий приватный кэш и ETag для снижения нагрузки при повторных заходах
+            try {
+                const crypto = require('crypto');
+                const hash = crypto.createHash('md5').update(JSON.stringify(matches)).digest('hex');
+                res.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+                res.set('Vary', 'Authorization');
+                res.set('ETag', `W/"matches-${tournamentId}-${matches?.length || 0}-${hash.substring(0, 12)}"`);
+                res.set('X-Response-Time', `${Date.now() - start}ms`);
+            } catch (_) {}
+
             res.json({
                 success: true,
                 data: matches

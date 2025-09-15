@@ -11,15 +11,17 @@ const SOCKET_CONFIG = {
   options: {
     path: '/socket.io/',
     
-    // 🔥 КРИТИЧЕСКИ ВАЖНО: Приоритет WebSocket с fallback на polling
-    transports: ['websocket', 'polling'],
+    // 🔥 Прод: чистый WebSocket без polling; Dev: WS с fallback на polling
+    transports: (process.env.NODE_ENV === 'production')
+      ? ['websocket']
+      : ['websocket', 'polling'],
     
-    // Автоматический retry всех транспортов
-    tryAllTransports: true,
+    // В проде не пробуем все транспорты, чтобы исключить лавину polling
+    tryAllTransports: (process.env.NODE_ENV !== 'production'),
     
     // Production настройки
     timeout: 20000,
-    forceNew: true,
+    forceNew: false,
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
@@ -93,12 +95,16 @@ export const getSocketInstance = () => {
 // Утилиты для авторизации
 export const authenticateSocket = (token) => {
   const socket = getSocketInstance();
-  socket.auth = { token };
-  
-  if (socket.connected) {
-    socket.disconnect();
+  // Избегаем лишних переподключений и каскада polling
+  const currentToken = socket.auth && socket.auth.token;
+  if (currentToken === token && (socket.connected || socket.connecting)) {
+    return socket;
   }
-  socket.connect();
+  socket.auth = { token };
+  if (!socket.connected) {
+    try { socket.connect(); } catch (_) {}
+  }
+  return socket;
 };
 
 // Утилиты для подписки на турниры

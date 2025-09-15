@@ -6,7 +6,9 @@ class MatchRepository {
      */
     static async getByTournamentId(tournamentId) {
         const result = await pool.query(`
-            SELECT * FROM matches 
+            SELECT id, tournament_id, round, match_number, team1_id, team2_id,
+                   score1, score2, winner_team_id, match_date, status, maps_data
+            FROM matches 
             WHERE tournament_id = $1 
             ORDER BY round, match_number
         `, [tournamentId]);
