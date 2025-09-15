@@ -505,6 +505,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     <table className="fullmix-standings-table">
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>Игрок</th>
                                 <th>G</th>
                                 <th>W</th>
@@ -518,6 +519,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                                 const isElim = (Number.isInteger(u) && eliminatedSet.has(u)) || (Number.isInteger(p) && eliminatedSet.has(p));
                                 return (
                                 <tr key={s.user_id || s.participant_id || idx} className={isElim ? 'fullmix-eliminated' : undefined}>
+                                    <td>{idx + 1}</td>
                                     <td>
                                         {s.avatar_url && (
                                             <img src={s.avatar_url} alt="" className="fullmix-standings-avatar" />
@@ -530,7 +532,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                                 </tr>
                             );})}
                             {sortedStandings.length === 0 && (
-                                <tr><td colSpan={4} className="fullmix-standings-empty">Нет данных</td></tr>
+                                <tr><td colSpan={5} className="fullmix-standings-empty">Нет данных</td></tr>
                             )}
                         </tbody>
                     </table>
