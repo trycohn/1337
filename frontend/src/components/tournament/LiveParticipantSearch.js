@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import './LiveParticipantSearch.css';
 
-const MIN_QUERY = 3;
+const MIN_QUERY = 2;
 
 function LiveParticipantSearch({ tournamentId, onAdded }) {
     const [query, setQuery] = useState('');
@@ -19,7 +19,7 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
         try {
             // Используем универсальный пользовательский поиск (предполагается /api/users/search?q=...)
             // Если есть другой ваш эндпоинт поиска — замените здесь
-            const { data } = await api.get(`/api/users/search?q=${encodeURIComponent(q)}&limit=20`);
+            const { data } = await api.get(`/api/users/search?query=${encodeURIComponent(q)}&limit=20`);
             setResults(Array.isArray(data) ? data : (data?.users || []));
         } catch (e) {
             setError('Ошибка поиска');

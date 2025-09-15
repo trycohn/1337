@@ -2172,7 +2172,8 @@ function getDaysWord(days) {
 
 // Поиск пользователей по никнейму
 router.get('/search', authenticateToken, async (req, res) => {
-    const { query } = req.query;
+    // Совместимость: поддерживаем и query, и q
+    const query = (req.query.query ?? req.query.q ?? '').toString();
     
     console.log('🔍 [Backend] ПОИСК ПОЛЬЗОВАТЕЛЕЙ - ЗАПРОС ПОЛУЧЕН');
     console.log('🔍 [Backend] Параметры запроса:', { query });
