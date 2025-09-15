@@ -2174,6 +2174,8 @@ function getDaysWord(days) {
 router.get('/search', authenticateToken, async (req, res) => {
     // Совместимость: поддерживаем и query, и q
     const query = (req.query.query ?? req.query.q ?? '').toString();
+    const limitRaw = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 20) : 10;
     
     console.log('🔍 [Backend] ПОИСК ПОЛЬЗОВАТЕЛЕЙ - ЗАПРОС ПОЛУЧЕН');
     console.log('🔍 [Backend] Параметры запроса:', { query });
@@ -2185,11 +2187,16 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
 
     try {
-        console.log('🔍 [Backend] Выполняем SQL запрос с паттерном:', `%${query}%`);
-        
+        console.log('🔍 [Backend] Выполняем SQL запрос с паттерном:', `%${query}%`, 'limit:', limit);
+        const likePattern = `%${query}%`;
+        // Быстрый и релевантный поиск с pg_trgm (ORDER BY similarity)
         const result = await pool.query(
-            'SELECT id, username, avatar_url, faceit_elo, cs2_premier_rank FROM users WHERE username ILIKE $1 OR email ILIKE $1 LIMIT 10',
-            [`%${query}%`]
+            `SELECT id, username, avatar_url, faceit_elo, cs2_premier_rank
+             FROM users
+             WHERE username ILIKE $1 OR email ILIKE $1
+             ORDER BY GREATEST(similarity(username, $2), similarity(email, $2)) DESC
+             LIMIT $3`,
+            [likePattern, query, limit]
         );
         
         console.log('🔍 [Backend] SQL запрос выполнен успешно');

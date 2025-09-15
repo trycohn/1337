@@ -1014,7 +1014,7 @@ const TeamGenerator = ({
                         <div className="teams-display-participants2.0">
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-add-participant">
-                                    <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Full Mix)</div>
+                                    <div className="mix-admin-add-title">Добавить участника (Full Mix)</div>
                                     <form onSubmit={handleAddParticipant} className="add-participant-form">
                                         <input
                                             type="text"
@@ -1049,7 +1049,7 @@ const TeamGenerator = ({
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-search-participant">
-                                    <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
+                                    <div className="mix-admin-search-title">Найти и добавить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}

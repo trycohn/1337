@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
 import './LiveParticipantSearch.css';
 
@@ -10,7 +10,8 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
     const [results, setResults] = useState([]);
     const [error, setError] = useState('');
     const [addingId, setAddingId] = useState(null);
-    const [debounce, setDebounce] = useState(null);
+    const debounceRef = useRef(null);
+    const lastRequestIdRef = useRef(0);
 
     const search = useCallback(async (q) => {
         if (!q || q.length < MIN_QUERY) { setResults([]); return; }
@@ -29,10 +30,15 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
     }, []);
 
     useEffect(() => {
-        if (debounce) clearTimeout(debounce);
-        const t = setTimeout(() => search(query), 300);
-        setDebounce(t);
-        return () => clearTimeout(t);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        const requestId = ++lastRequestIdRef.current;
+        debounceRef.current = setTimeout(async () => {
+            // защита от устаревших ответов
+            const q = query;
+            await search(q);
+            // если к этому времени появился новый запрос — просто игнорируем (search уже без побочных эффектов)
+        }, 400);
+        return () => debounceRef.current && clearTimeout(debounceRef.current);
     }, [query, search]);
 
     const handleAdd = async (user) => {
