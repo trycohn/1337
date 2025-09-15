@@ -56,14 +56,18 @@ export const useTournamentAuth = (tournament, tournamentId) => {
         const isAdmin = tournament.admins?.some(admin => admin.user_id === user.id);
         setIsAdminOrCreator(isCreatorCheck || isAdmin);
 
-        // Проверка статуса запроса на администрирование
-        if (localStorage.getItem('token')) {
-            api
-                .get(`/api/tournaments/${tournamentId}/admin-request-status`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                })
-                .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
-                .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
+        // Проверка статуса запроса на администрирование (отложенно и только при наличии связи)
+        const token = localStorage.getItem('token');
+        const isLinkedToTournament = isCreatorCheck || isAdmin || isParticipating;
+        if (token && isLinkedToTournament) {
+            setTimeout(() => {
+                api
+                    .get(`/api/tournaments/${tournamentId}/admin-request-status`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    })
+                    .then((statusResponse) => setAdminRequestStatus(statusResponse.data.status))
+                    .catch((error) => console.error('Ошибка загрузки статуса администратора:', error));
+            }, 300);
         }
     }, [user, tournament, tournamentId]);
 

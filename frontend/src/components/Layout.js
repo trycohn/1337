@@ -27,24 +27,33 @@ function Layout() {
 
     // Создаем стабильную ссылку на функцию
     const fetchUnreadCountRef = useRef();
-    // 🆕 Проверка наличия "Моих турниров" (создатель или админ)
-    useEffect(() => {
-        let cancelled = false;
-        async function checkMyTournaments() {
-            if (!user) {
-                setHasMyTournaments(false);
-                return;
-            }
-            try {
-                const { data } = await api.get('/api/tournaments/my');
-                if (!cancelled) setHasMyTournaments(Array.isArray(data) && data.length > 0);
-            } catch (e) {
-                if (!cancelled) setHasMyTournaments(false);
-            }
+    // 🆕 Ленивая проверка наличия "Моих турниров" (после first paint/по открытию меню)
+    const checkedMyTournamentsRef = useRef(false);
+    const checkMyTournaments = useCallback(async () => {
+        if (checkedMyTournamentsRef.current) return;
+        if (!user) { setHasMyTournaments(false); return; }
+        checkedMyTournamentsRef.current = true;
+        try {
+            const { data } = await api.get('/api/tournaments/my');
+            setHasMyTournaments(Array.isArray(data) && data.length > 0);
+        } catch (_) {
+            setHasMyTournaments(false);
         }
-        checkMyTournaments();
-        return () => { cancelled = true; };
     }, [user]);
+
+    // Отложенный запуск после первой отрисовки
+    useEffect(() => {
+        if (!user) return;
+        let cancelled = false;
+        const run = () => { if (!cancelled) checkMyTournaments(); };
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            const id = window.requestIdleCallback(run, { timeout: 1000 });
+            return () => { cancelled = true; window.cancelIdleCallback && window.cancelIdleCallback(id); };
+        } else {
+            const t = setTimeout(run, 300);
+            return () => { cancelled = true; clearTimeout(t); };
+        }
+    }, [user, checkMyTournaments]);
 
 
     // Функция для получения количества непрочитанных сообщений с защитой от частых запросов
