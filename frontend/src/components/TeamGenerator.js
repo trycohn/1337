@@ -1015,14 +1015,14 @@ const TeamGenerator = ({
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-add-participant" style={{marginBottom: 16, background: '#111', border: '1px solid #333', padding: 12, borderRadius: 8}}>
                                     <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Full Mix)</div>
-                                    <form onSubmit={handleAddParticipant} className="add-participant-form" style={{display:'grid', gridTemplateColumns:'1fr 140px 140px auto', gap: 8}}>
+                                    <form onSubmit={handleAddParticipant} className="add-participant-form">
                                         <input
                                             type="text"
                                             placeholder="Никнейм участника"
                                             value={addName}
                                             onChange={(e)=>setAddName(e.target.value)}
                                             disabled={addingParticipant}
-                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                            className="add-participant-input"
                                         />
                                         <input
                                             type="number"
@@ -1030,7 +1030,7 @@ const TeamGenerator = ({
                                             value={addFaceit}
                                             onChange={(e)=>setAddFaceit(e.target.value)}
                                             disabled={addingParticipant}
-                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                            className="add-participant-input"
                                         />
                                         <input
                                             type="number"
@@ -1038,13 +1038,13 @@ const TeamGenerator = ({
                                             value={addPremier}
                                             onChange={(e)=>setAddPremier(e.target.value)}
                                             disabled={addingParticipant}
-                                            style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}}
+                                            className="add-participant-input"
                                         />
                                         <button type="submit" className="btn btn-primary" disabled={addingParticipant}>
                                             {addingParticipant ? 'Добавление...' : 'Добавить'}
                                         </button>
                                     </form>
-                                    <div style={{marginTop: 6, fontSize: 12, color:'#bbb'}}>Поддерживается добавление незарегистрированных участников. Рейтинг — опционально.</div>
+                                    <div className="add-participant-hint">Поддерживается добавление незарегистрированных участников. Рейтинг — опционально.</div>
                                 </div>
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
@@ -1071,12 +1071,12 @@ const TeamGenerator = ({
                     ) : (
                         <div className="teams-display-participants2.0">
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
-                                <div className="mix-admin-add-participant" style={{marginBottom: 16, background: '#111', border: '1px solid #333', padding: 12, borderRadius: 8}}>
+                                <div className="mix-admin-add-participant">
                                     <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Mix)</div>
-                                    <form onSubmit={handleAddParticipant} className="add-participant-form" style={{display:'grid', gridTemplateColumns:'1fr 140px 140px auto', gap: 8}}>
-                                        <input type="text" placeholder="Никнейм участника" value={addName} onChange={(e)=>setAddName(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
-                                        <input type="number" placeholder="FACEIT ELO" value={addFaceit} onChange={(e)=>setAddFaceit(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
-                                        <input type="number" placeholder="CS2 Premier" value={addPremier} onChange={(e)=>setAddPremier(e.target.value)} disabled={addingParticipant} style={{background:'#000', color:'#fff', border:'1px solid #333', padding: '8px 10px', borderRadius: 6}} />
+                                    <form onSubmit={handleAddParticipant} className="add-participant-form">
+                                        <input type="text" placeholder="Никнейм участника" value={addName} onChange={(e)=>setAddName(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
+                                        <input type="number" placeholder="FACEIT ELO" value={addFaceit} onChange={(e)=>setAddFaceit(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
+                                        <input type="number" placeholder="CS2 Premier" value={addPremier} onChange={(e)=>setAddPremier(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
                                         <button type="submit" className="btn btn-primary" disabled={addingParticipant}>{addingParticipant ? 'Добавление...' : 'Добавить'}</button>
                                     </form>
                                 </div>
