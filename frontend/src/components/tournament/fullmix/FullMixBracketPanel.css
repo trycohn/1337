@@ -150,8 +150,16 @@
 .fullmix-standings-table tbody tr.fullmix-eliminated td { text-decoration: line-through !important; }
 
 /* Колонки: 1 — имя влево; 2..4 — центр и фикс. ширина */
+/* # колонка: как колонки счёта — центр и фиксированная ширина */
 .fullmix-standings-table th:nth-child(1),
 .fullmix-standings-table td:nth-child(1) {
+    text-align: center;
+    width: 56px;
+}
+
+/* Колонка Игрок (теперь вторая): лево и резиновая ширина */
+.fullmix-standings-table th:nth-child(2),
+.fullmix-standings-table td:nth-child(2) {
     text-align: left;
     max-width: 260px;
     white-space: nowrap;
@@ -168,8 +176,8 @@
     vertical-align: middle;
 }
 
-.fullmix-standings-table th:nth-child(n+2),
-.fullmix-standings-table td:nth-child(n+2) {
+.fullmix-standings-table th:nth-child(n+3),
+.fullmix-standings-table td:nth-child(n+3) {
     text-align: center;
     width: 56px;
 }
