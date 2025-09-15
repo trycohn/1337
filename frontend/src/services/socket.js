@@ -7,8 +7,10 @@ const SOCKET_CONFIG = {
     : 'http://localhost:3000',
   
   options: {
-    // 🚀 Простая конфигурация транспортов
-    transports: ['polling', 'websocket'],
+    // 🚀 Транспорт: в проде только WebSocket, в деве WS+polling
+    transports: (process.env.NODE_ENV === 'production')
+      ? ['websocket']
+      : ['websocket', 'polling'],
     
     // ⚙️ Таймауты
     timeout: 20000,
@@ -83,8 +85,8 @@ export const connectWithAuth = (token) => {
     return false;
   }
   
-  // Если уже подключен с тем же токеном, не переподключаемся
-  if (socketInstance.connected && socketInstance.auth?.token === token) {
+  // Если уже подключен или в процессе подключения с тем же токеном — не трогаем
+  if ((socketInstance.connected || socketInstance.connecting) && socketInstance.auth?.token === token) {
     console.log('ℹ️ [Socket.IO] Уже подключен с этим токеном');
     return true;
   }
@@ -95,7 +97,7 @@ export const connectWithAuth = (token) => {
   socketInstance.auth = { token };
   
   // Подключаемся только если не подключены
-  if (!socketInstance.connected) {
+  if (!socketInstance.connected && !socketInstance.connecting) {
     socketInstance.connect();
   }
   
