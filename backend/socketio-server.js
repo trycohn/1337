@@ -18,20 +18,27 @@ function createSocketServer(httpServer) {
       credentials: true
     },
     
-    // 🚀 Транспорты
-    transports: ['polling', 'websocket'],
+    // 🚀 Транспорты: в проде только WebSocket
+    transports: process.env.NODE_ENV === 'production' ? ['websocket'] : ['websocket', 'polling'],
     
     // ⚙️ Простые настройки
-    pingTimeout: 60000,
-    pingInterval: 25000,
+    pingTimeout: 30000,
+    pingInterval: 20000,
     maxHttpBufferSize: 1e6,
-    allowEIO3: true,
+    allowEIO3: false,
     
     // 🛡️ Безопасность
     serveClient: false,
     
     // 🔧 Путь
-    path: '/socket.io/'
+    path: '/socket.io/',
+
+    // 🔽 Сжатие ответа на HTTP handshake (даёт меньший вес /socket.io/?)
+    perMessageDeflate: {
+      threshold: 1024,
+      zlibDeflateOptions: { level: 6 },
+      zlibInflateOptions: { chunkSize: 16 * 1024 }
+    }
   });
 
   // 🔐 Middleware для авторизации

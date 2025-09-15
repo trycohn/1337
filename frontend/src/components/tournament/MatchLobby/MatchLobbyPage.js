@@ -33,7 +33,7 @@ function MatchLobbyPage() {
 
         const newSocket = io(API_URL, {
             auth: { token },
-            transports: ['polling', 'websocket']
+            transports: process.env.NODE_ENV === 'production' ? ['websocket'] : ['websocket', 'polling']
         });
 
         newSocket.on('connect', () => {

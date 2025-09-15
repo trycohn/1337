@@ -11,11 +11,11 @@ const SOCKET_CONFIG = {
   options: {
     path: '/socket.io/',
     
-    // 🔥 КРИТИЧЕСКИ ВАЖНО: Приоритет WebSocket с fallback на polling
-    transports: ['websocket', 'polling'],
+    // 🔥 В проде только WebSocket, в деве WS + fallback
+    transports: process.env.NODE_ENV === 'production' ? ['websocket'] : ['websocket', 'polling'],
     
-    // Автоматический retry всех транспортов
-    tryAllTransports: true,
+    // Без лишних ретраев всех транспортов
+    tryAllTransports: false,
     
     // Production настройки
     timeout: 20000,
