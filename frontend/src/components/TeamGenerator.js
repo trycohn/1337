@@ -1013,7 +1013,7 @@ const TeamGenerator = ({
                     {isFullMix ? (
                         <div className="teams-display-participants2.0">
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
-                                <div className="mix-admin-add-participant" style={{marginBottom: 16, background: '#111', border: '1px solid #333', padding: 12, borderRadius: 8}}>
+                                <div className="mix-admin-add-participant">
                                     <div style={{marginBottom: 8, fontWeight: 600}}>Добавить участника (Full Mix)</div>
                                     <form onSubmit={handleAddParticipant} className="add-participant-form">
                                         <input
@@ -1048,7 +1048,7 @@ const TeamGenerator = ({
                                 </div>
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
-                                <div className="mix-admin-search-participant" style={{marginBottom: 16, background: '#111', border: '1px dashed #333', padding: 12, borderRadius: 8}}>
+                                <div className="mix-admin-search-participant">
                                     <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
@@ -1082,7 +1082,7 @@ const TeamGenerator = ({
                                 </div>
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
-                                <div className="mix-admin-search-participant" style={{marginBottom: 16, background: '#111', border: '1px dashed #333', padding: 12, borderRadius: 8}}>
+                                <div className="mix-admin-search-participant">
                                     <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
