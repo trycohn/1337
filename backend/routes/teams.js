@@ -44,6 +44,7 @@ const upload = multer({
 router.get('/my-teams', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
+        const start = Date.now();
         
         const query = `
             SELECT 
@@ -86,6 +87,10 @@ router.get('/my-teams', authenticateToken, async (req, res) => {
         `;
         
         const result = await pool.query(query, [userId]);
+        // Приватный короткий кэш и метрики ответа
+        res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+        res.set('Vary', 'Authorization');
+        try { res.set('X-Response-Time', `${Date.now() - start}ms`); } catch (_) {}
         res.json(result.rows);
     } catch (error) {
         console.error('Ошибка при получении команд:', error);
