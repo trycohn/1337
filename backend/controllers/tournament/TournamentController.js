@@ -20,6 +20,7 @@ class TournamentController {
         if (!userId) {
             return res.status(401).json({ error: 'Неавторизован' });
         }
+        const start = Date.now();
         const hiddenParam = req.query?.hidden;
         let hidden = null;
         if (typeof hiddenParam === 'string') {
@@ -28,7 +29,13 @@ class TournamentController {
             else if (v === 'false') hidden = false;
         }
         const items = await TournamentService.getMyTournaments(userId, { hidden });
-        res.json(items);
+
+        // Приватный короткий кэш и диагностика
+        res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+        res.set('Vary', 'Authorization');
+        try { res.set('X-Response-Time', `${Date.now() - start}ms`); } catch (_) {}
+
+        return res.json(items);
     });
 
     // 🎯 Получение конкретного турнира

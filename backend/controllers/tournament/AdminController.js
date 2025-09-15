@@ -37,9 +37,12 @@ class AdminController {
     // 📊 Получение статуса запроса на администрирование
     static getAdminRequestStatus = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        
+        const start = Date.now();
         const status = await AdminService.getAdminRequestStatus(parseInt(id), req.user.id);
-        
+        // Короткий приватный кэш и метрики
+        res.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+        res.set('Vary', 'Authorization');
+        try { res.set('X-Response-Time', `${Date.now() - start}ms`); } catch (_) {}
         res.json({ status });
     });
 

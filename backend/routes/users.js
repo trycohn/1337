@@ -369,18 +369,27 @@ router.post('/login', async (req, res) => {
 
 // Получение данных текущего пользователя
 router.get('/me', authenticateToken, async (req, res) => {
+    const start = Date.now();
     try {
-        console.log('Получение данных пользователя, req.user:', req.user);
+        const userId = req.user.id;
         const result = await pool.query(
             'SELECT id, username, email, role, steam_id, faceit_id, full_name, birth_date, steam_url, avatar_url, is_verified, cs2_premier_rank ' +
             'FROM users WHERE id = $1',
-            [req.user.id]
+            [userId]
         );
-        console.log('Результат запроса:', result.rows);
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Пользователь не найден' });
         }
-        res.json(result.rows[0]);
+
+        // Короткое приватное кеширование, вариация по авторизации, метрики
+        res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+        res.set('Vary', 'Authorization');
+        try {
+            res.set('ETag', `W/"user-${userId}-${result.rows[0].username || ''}-${result.rows[0].avatar_url || ''}"`);
+            res.set('X-Response-Time', `${Date.now() - start}ms`);
+        } catch (_) {}
+
+        return res.json(result.rows[0]);
     } catch (err) {
         console.error('Ошибка в /me:', err);
         res.status(500).json({ error: err.message });

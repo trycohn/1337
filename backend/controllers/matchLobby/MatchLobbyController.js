@@ -120,7 +120,12 @@ class MatchLobbyController {
     static async getActiveLobbiesForUser(req, res) {
         try {
             const userId = req.user.id;
+            const start = Date.now();
             const lobbies = await MatchLobbyService.getActiveLobbiesForUser(userId);
+            // Приватный короткий кэш и метрики ответа
+            res.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=30');
+            res.set('Vary', 'Authorization');
+            try { res.set('X-Response-Time', `${Date.now() - start}ms`); } catch (_) {}
             res.json({ success: true, lobbies });
         } catch (error) {
             console.error('❌ Ошибка получения активных лобби пользователя:', error);
