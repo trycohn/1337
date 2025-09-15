@@ -64,6 +64,8 @@ const TeamGenerator = ({
     const [mixedTeams, setMixedTeams] = useState([]);
     const [originalParticipants, setOriginalParticipants] = useState([]);
     const [loadingParticipants, setLoadingParticipants] = useState(false);
+    const [eliminatedSet, setEliminatedSet] = useState(new Set());
+    const [winnerSet, setWinnerSet] = useState(new Set());
 
     // 🆕 СОСТОЯНИЯ ДЛЯ МОДАЛЬНОГО ОКНА ПЕРЕФОРМИРОВАНИЯ
     const [showReformModal, setShowReformModal] = useState(false);
@@ -414,6 +416,68 @@ const TeamGenerator = ({
         }
     }, [tournament?.id, ratingType]); // 🔧 УБИРАЕМ calculateTeamAverageRating ИЗ ЗАВИСИМОСТЕЙ
 
+    // Загрузка списка выбывших (Full Mix)
+    const fetchEliminated = useCallback(async () => {
+        try {
+            if (!isFullMix || !tournament?.id) { setEliminatedSet(new Set()); return; }
+            const res = await api.get(`/api/tournaments/${tournament.id}/fullmix/eliminated`);
+            const items = Array.isArray(res.data?.items) ? res.data.items : [];
+            const s = new Set();
+            items.forEach(e => {
+                if (e.user_id != null) s.add(Number(e.user_id));
+                if (e.participant_id != null) s.add(Number(e.participant_id));
+            });
+            setEliminatedSet(s);
+        } catch (_) {
+            setEliminatedSet(new Set());
+        }
+    }, [isFullMix, tournament?.id]);
+
+    // Загрузка победителей строго по финалу (раунд с meta.final_round = true)
+    const fetchWinners = useCallback(async () => {
+        try {
+            if (!isFullMix || !tournament?.id) { setWinnerSet(new Set()); return; }
+            // Найдём номер финального раунда по снапшотам (meta.final_round === true)
+            let finalRound = null;
+            try {
+                const snaps = await api.get(`/api/tournaments/${tournament.id}/fullmix/snapshots`);
+                const items = (snaps.data?.items || []).slice().sort((a,b) => (b.round_number - a.round_number));
+                for (const it of items) {
+                    const rn = it.round_number;
+                    try {
+                        const one = await api.get(`/api/tournaments/${tournament.id}/fullmix/rounds/${rn}`);
+                        const meta = one.data?.item?.snapshot?.meta || {};
+                        if (meta.final_round) { finalRound = rn; break; }
+                    } catch(_) {}
+                }
+            } catch(_) {}
+            if (!finalRound) { setWinnerSet(new Set()); return; }
+
+            // Берём победителя только среди матчей финального раунда
+            const res = await api.get(`/api/tournaments/${tournament.id}/matches`);
+            const matches = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.matches) ? res.data.matches : []);
+            const finalMatches = matches.filter(m => Number(m.round) === Number(finalRound));
+            const completed = finalMatches.filter(m => m.winner_team_id);
+            if (completed.length !== 1) { setWinnerSet(new Set()); return; }
+            const winTeamId = completed[0].winner_team_id;
+
+            // Собираем участников из команды-победителя финала
+            const teamRes = await api.get(`/api/tournaments/${tournament.id}/teams`);
+            const teams = Array.isArray(teamRes.data) ? teamRes.data : [];
+            const winnerTeam = teams.find(t => t.id === winTeamId);
+            const s = new Set();
+            if (winnerTeam && Array.isArray(winnerTeam.members)) {
+                winnerTeam.members.forEach(m => {
+                    if (m.participant_id != null) s.add(Number(m.participant_id));
+                    if (m.user_id != null) s.add(Number(m.user_id));
+                });
+            }
+            setWinnerSet(s);
+        } catch (_) {
+            setWinnerSet(new Set());
+        }
+    }, [isFullMix, tournament?.id]);
+
     // Функция для загрузки оригинальных участников
     const fetchOriginalParticipants = useCallback(async () => {
         if (!tournament || !tournament.id || !shouldMakeRequest('original-participants')) return;
@@ -458,8 +522,10 @@ const TeamGenerator = ({
     useEffect(() => {
         if (tournament?.id) {
             fetchTeams();
+            fetchEliminated();
+            fetchWinners();
         }
-    }, [fetchTeams, tournament?.id]);
+    }, [fetchTeams, fetchEliminated, fetchWinners, tournament?.id]);
 
     // 🧩 РЕАЛТАЙМ-ОБНОВЛЕНИЕ СТАТУСОВ КОМАНД ПО СОБЫТИЯМ SOCKET.IO
     useEffect(() => {
@@ -487,6 +553,8 @@ const TeamGenerator = ({
                 if (updateType === 'matches_update' || updateType === 'teams_update' || payload?.matches || payload?.teams || payload?.mixed_teams) {
                     // Перезагружаем команды для актуализации статусов (вылет/победа)
                     fetchTeams();
+                    fetchEliminated();
+                    fetchWinners();
                 }
             } catch (e) {
                 console.warn('⚠️ handleTournamentEvent error:', e);
@@ -502,7 +570,7 @@ const TeamGenerator = ({
             socketOff('tournament_update', handleTournamentEvent);
             socketOff('tournament_updated', handleTournamentEvent);
         };
-    }, [tournament?.id, fetchTeams]);
+    }, [tournament?.id, fetchTeams, fetchEliminated, fetchWinners]);
 
     // ⏱️ РЕЗЕРВНЫЙ ПОЛЛИНГ ДЛЯ АКТИВНЫХ ТУРНИРОВ
     useEffect(() => {
@@ -829,6 +897,18 @@ const TeamGenerator = ({
             return a.in_team ? 1 : -1;
         });
 
+        // Построим быстрый набор ID участников, входящих в текущие команды
+        const inTeamSet = (() => {
+            const s = new Set();
+            (teamsToShow || []).forEach(team => {
+                (team.members || []).forEach(m => {
+                    if (m.participant_id != null) s.add(Number(m.participant_id));
+                    if (m.user_id != null) s.add(Number(m.user_id));
+                });
+            });
+            return s;
+        })();
+
         return (
             <div className="original-participants-section-participants2.0">
                 <div className="original-participants-section-header-participants2.0">
@@ -851,8 +931,17 @@ const TeamGenerator = ({
                         {sortedParticipants.map((participant) => {
                             const ratingInfo = getParticipantRatingInfo(participant);
                             const hasRating = ratingInfo && ratingInfo.rating !== undefined && ratingInfo.rating !== null && `${ratingInfo.rating}` !== '';
+                            const pid = Number(participant.id);
+                            const uid = Number(participant.user_id);
+                            const isEliminated = eliminatedSet.has(pid) || eliminatedSet.has(uid);
+                            const isWinner = winnerSet.has(pid) || winnerSet.has(uid);
+                            const isInTeamNow = inTeamSet.has(pid) || inTeamSet.has(uid) || !!participant.in_team;
+                            let statusLabel = 'Не в команде';
+                            if (isEliminated) statusLabel = 'Выбыл';
+                            else if (isWinner) statusLabel = 'Победитель';
+                            else if (isInTeamNow) statusLabel = 'Участвует';
                             return (
-                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row-participants2.0${participant.in_team ? ' in-team' : ' not-in-team'}`}>
+                                <div key={participant?.id || `participant-${Math.random()}`} className={`participant-row-participants2.0${isInTeamNow ? ' in-team' : ' not-in-team'}`}>
                                     <div className="participant-row-left-participants2.0">
                                         <div className="participant-avatar-participants2.0">
                                             <img
@@ -877,7 +966,7 @@ const TeamGenerator = ({
                                         </div>
                                     </div>
                                     <div className="participant-row-right-participants2.0">
-                                        <span className="participant-status-participants2.0">{participant.in_team ? 'В команде' : 'Не в команде'}</span>
+                                        <span className="participant-status-participants2.0">{statusLabel}</span>
                                     </div>
                                     {isAdminOrCreator && tournament.participant_type === 'solo' && (
                                         <button className="remove-participant-participants2.0" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
