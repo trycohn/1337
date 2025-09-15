@@ -802,14 +802,21 @@ class FullMixService {
                     CASE WHEN jsonb_typeof(e) = 'object' AND (e->>'participant_id') ~ '^\\d+$' THEN (e->>'participant_id')::int ELSE NULL END AS participant_id
                 FROM elim_raw
             ),
-            -- Имена для participant_id из снапшота (fallback, если нет users/tp записей)
-            names_from_snapshot_pids AS (
+            -- Имена для participant_id из всех снапшотов и превью (fallback, если нет users/tp записей)
+            names_json_pids AS (
                 SELECT DISTINCT (m->>'participant_id')::int AS participant_id,
                                 COALESCE(m->>'username', m->>'name') AS username
-                FROM latest_snap
-                CROSS JOIN LATERAL jsonb_array_elements(snapshot->'teams') t(team)
+                FROM full_mix_snapshots s
+                CROSS JOIN LATERAL jsonb_array_elements(s.snapshot->'teams') t(team)
                 CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
-                WHERE (m->>'participant_id') ~ '^\\d+$'
+                WHERE s.tournament_id = $1 AND (m->>'participant_id') ~ '^\\d+$'
+                UNION
+                SELECT DISTINCT (m->>'participant_id')::int AS participant_id,
+                                COALESCE(m->>'username', m->>'name') AS username
+                FROM full_mix_previews p
+                CROSS JOIN LATERAL jsonb_array_elements(p.preview->'teams') t(team)
+                CROSS JOIN LATERAL jsonb_array_elements(t.team->'members') m(m)
+                WHERE p.tournament_id = $1 AND (m->>'participant_id') ~ '^\\d+$'
             ),
             elim_user_from_pid AS (
                 SELECT DISTINCT COALESCE(u.id, ttm.user_id) AS user_id
@@ -839,12 +846,12 @@ class FullMixService {
                 SELECT DISTINCT
                     ep.participant_id AS participant_id,
                     NULL::int AS user_id,
-                    COALESCE(u.username, tp.name, n.username) AS username,
+                    COALESCE(u.username, tp.name, n.username, CONCAT('ID ', ep.participant_id)) AS username,
                     COALESCE(u.avatar_url, NULL) AS avatar_url
                 FROM elim_pids ep
                 LEFT JOIN tournament_participants tp ON tp.id = ep.participant_id AND tp.tournament_id = $1
                 LEFT JOIN users u ON u.id = tp.user_id
-                LEFT JOIN names_from_snapshot_pids n ON n.participant_id = ep.participant_id
+                LEFT JOIN names_json_pids n ON n.participant_id = ep.participant_id
                 WHERE ep.participant_id IS NOT NULL
                   AND NOT EXISTS (SELECT 1 FROM base_current bc WHERE bc.participant_id = ep.participant_id)
                   AND NOT EXISTS (SELECT 1 FROM base_played bp WHERE bp.participant_id = ep.participant_id)
