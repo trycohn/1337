@@ -1536,8 +1536,21 @@ class FullMixService {
 
     static async createTeamsForRound(tournamentId, roundNumber, teams, ratingMode, client = pool) {
         const created = [];
+        // Подбор случайных названий из предустановленного списка
+        let namePool = [];
+        try {
+            const nres = await client.query(`SELECT name FROM full_mix_team_names WHERE active = TRUE`);
+            namePool = (nres.rows || []).map(r => r.name);
+        } catch (_) { namePool = []; }
+        const shuffledNames = [...namePool];
+        for (let i = shuffledNames.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j], shuffledNames[i]];
+        }
         for (const t of teams) {
-            const name = `R${roundNumber}-Team ${t.team_index}`;
+            const fallback = `R${roundNumber}-Team ${t.team_index}`;
+            const picked = shuffledNames.length > 0 ? shuffledNames.pop() : null;
+            const name = picked || fallback;
             const teamRes = await client.query(
                 `INSERT INTO tournament_teams (tournament_id, name, creator_id)
                  VALUES ($1, $2, NULL) RETURNING id`,
