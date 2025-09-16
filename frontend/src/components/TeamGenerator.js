@@ -308,6 +308,39 @@ const TeamGenerator = ({
     const [isReforming, setIsReforming] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
 
+    // 🔗 Реферальный интент для неавторизованных: после логина открыть модалку
+    useEffect(() => {
+        try {
+            const token = localStorage.getItem('token');
+            const intent = localStorage.getItem('referralIntent');
+            const intentTournamentId = localStorage.getItem('referralIntentTournamentId');
+            if (token && intent === '1' && String(intentTournamentId) === String(tournament?.id)) {
+                setShowReferralModal(true);
+                localStorage.removeItem('referralIntent');
+                localStorage.removeItem('referralIntentTournamentId');
+            }
+        } catch (_) {}
+    }, [tournament?.id, user?.id]);
+
+    // 🔗 Кнопка «Пригласить друга»: гостя ведем на авторизацию в новом окне
+    const handleReferralInviteClick = useCallback(() => {
+        if (!tournament?.id) return;
+        if (!user) {
+            const agreed = window.confirm('Чтобы создать реферальную ссылку, необходимо войти в аккаунт. Открыть авторизацию в новом окне?');
+            if (!agreed) return;
+            try {
+                localStorage.setItem('referralIntent', '1');
+                localStorage.setItem('referralIntentTournamentId', String(tournament.id));
+                localStorage.setItem('returnToTournament', String(tournament.id));
+                localStorage.setItem('tournamentAction', 'referral');
+            } catch (_) {}
+            const loginUrl = `/login?action=referral&tournamentId=${encodeURIComponent(tournament.id)}&redirect=${encodeURIComponent(`/tournaments/${tournament.id}?referral_intent=1`)}`;
+            window.open(loginUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        setShowReferralModal(true);
+    }, [user, tournament?.id]);
+
     // 🎯 УЛУЧШЕННАЯ ЛОГИКА УСТАНОВКИ КОМАНД ИЗ ТУРНИРА
     useEffect(() => {
         // 🎯 Не нужно устанавливать teamSize и ratingType, они берутся из турнира
@@ -760,7 +793,7 @@ const TeamGenerator = ({
                             </div>
                             <button 
                                 className="btn btn-secondary"
-                                onClick={() => setShowReferralModal(true)}
+                                onClick={handleReferralInviteClick}
                             >
                                 Пригласить друга
                             </button>
@@ -1162,7 +1195,7 @@ const TeamGenerator = ({
                                     </div>
                                     <button 
                                         className="btn btn-secondary"
-                                        onClick={() => setShowReferralModal(true)}
+                                        onClick={handleReferralInviteClick}
                                     >
                                         Пригласить друга
                                     </button>
