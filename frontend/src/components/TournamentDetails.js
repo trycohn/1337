@@ -1018,6 +1018,18 @@ function TournamentDetails() {
         console.log('Переключение на вкладку:', tabName);
     }, []);
 
+    // 🆕 Обработчик клика по ссылке-вкладке: SPA-навигация для левого клика, нативное поведение для модификаторов/правого клика
+    const handleTabLinkClick = useCallback((event, tabName) => {
+        // Если пользователь удерживает модификаторы или использует не левую кнопку — позволяем браузеру выполнить стандартное действие
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        // В React onClick срабатывает только на левую кнопку, но на всякий случай проверим
+        if (event.button !== undefined && event.button !== 0) return;
+
+        event.preventDefault();
+        navigate(`?tab=${tabName}`);
+        switchTab(tabName);
+    }, [navigate, switchTab]);
+
     // 🆕 Проверка, нужно ли показывать вкладку участников
     const shouldShowParticipantsTab = useMemo(() => {
         // Вкладка "Участники" должна отображаться всегда
@@ -2578,52 +2590,64 @@ function TournamentDetails() {
                         {/* 🆕 Навигация по вкладкам */}
                         <div className={`tabs-navigation-tournamentdetails ${hasHero ? 'offset-from-hero' : ''}`}>
                             {!isCS2 && (
-                                <button 
+                                <a
+                                    href={`/tournaments/${id}?tab=info`}
                                     className={`tab-button-tournamentdetails ${activeTab === 'info' ? 'active' : ''}`}
-                                    onClick={() => switchTab('info')}
+                                    onClick={(e) => handleTabLinkClick(e, 'info')}
+                                    role="tab"
                                 >
                                     <span className="tab-label-tournamentdetails">Главная</span>
-                                </button>
+                                </a>
                             )}
                             
                             {shouldShowParticipantsTab && (
-                                <button 
+                                <a
+                                    href={`/tournaments/${id}?tab=participants`}
                                     className={`tab-button-tournamentdetails ${activeTab === 'participants' ? 'active' : ''}`}
-                                    onClick={() => switchTab('participants')}
+                                    onClick={(e) => handleTabLinkClick(e, 'participants')}
+                                    role="tab"
                                 >
                                     <span className="tab-label-tournamentdetails">Участники</span>
-                                </button>
+                                </a>
                             )}
                             {isMixTournament && (
-                                <button 
+                                <a
+                                    href={`/tournaments/${id}?tab=mix_teams`}
                                     className={`tab-button-tournamentdetails ${activeTab === 'mix_teams' ? 'active' : ''}`}
-                                    onClick={() => switchTab('mix_teams')}
+                                    onClick={(e) => handleTabLinkClick(e, 'mix_teams')}
+                                    role="tab"
                                 >
                                     <span className="tab-label-tournamentdetails">MIX команды</span>
-                                </button>
+                                </a>
                             )}
                             
-                            <button 
+                            <a
+                                href={`/tournaments/${id}?tab=bracket`}
                                 className={`tab-button-tournamentdetails ${activeTab === 'bracket' ? 'active' : ''}`}
-                                onClick={() => switchTab('bracket')}
+                                onClick={(e) => handleTabLinkClick(e, 'bracket')}
+                                role="tab"
                             >
                                 <span className="tab-label-tournamentdetails">Сетка</span>
-                            </button>
+                            </a>
                             
-                            <button 
+                            <a
+                                href={`/tournaments/${id}?tab=results`}
                                 className={`tab-button-tournamentdetails ${activeTab === 'results' ? 'active' : ''}`}
-                                onClick={() => switchTab('results')}
+                                onClick={(e) => handleTabLinkClick(e, 'results')}
+                                role="tab"
                             >
                                 <span className="tab-label-tournamentdetails">Результаты</span>
-                            </button>
+                            </a>
                             
                             {isAdminOrCreator && (
-                                <button 
+                                <a
+                                    href={`/tournaments/${id}?tab=management`}
                                     className={`tab-button-tournamentdetails ${activeTab === 'management' ? 'active' : ''}`}
-                                    onClick={() => switchTab('management')}
+                                    onClick={(e) => handleTabLinkClick(e, 'management')}
+                                    role="tab"
                                 >
                                     <span className="tab-label-tournamentdetails">Управление</span>
-                                </button>
+                                </a>
                             )}
                         </div>
 
