@@ -191,6 +191,16 @@ function FullMixDraftPage() {
             setMessage('Сначала подтвердите составы команд');
             return;
         }
+        // Для SE/DE матчи не превьюятся — составы фиксированных команд меняются отдельно
+        try {
+            const t = window.__CURRENT_TOURNAMENT__ || null;
+            const bt = (t?.bracket_type || '').toString().toLowerCase();
+            if (bt === 'single_elimination' || bt === 'double_elimination') {
+                setMessage('Для SE/DE превью матчей не требуется — меняются только составы команд.');
+                setTimeout(() => setMessage(''), 3000);
+                return;
+            }
+        } catch (_) {}
         setMessage('Генерируем пары матчей...');
         setLoading(true);
         try {
@@ -210,6 +220,15 @@ function FullMixDraftPage() {
             setMessage('Сначала подтвердите составы команд');
             return;
         }
+        try {
+            const t = window.__CURRENT_TOURNAMENT__ || null;
+            const bt = (t?.bracket_type || '').toString().toLowerCase();
+            if (bt === 'single_elimination' || bt === 'double_elimination') {
+                setMessage('Для SE/DE подтверждение матчей не требуется.');
+                setTimeout(() => setMessage(''), 3000);
+                return;
+            }
+        } catch (_) {}
         if (!matchesPreview || matchesPreview.length === 0) {
             setMessage('Сгенерируйте пары матчей перед подтверждением');
             return;

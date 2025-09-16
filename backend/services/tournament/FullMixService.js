@@ -7,6 +7,59 @@ const MatchService = require('./MatchService');
  * Логика Full Mix (раунды, снапшоты, победитель по числу побед)
  */
 class FullMixService {
+    static async isSEorDEBracket(tournamentId) {
+        try {
+            const t = await TournamentService.getTournament(tournamentId);
+            const bt = (t?.bracket_type || '').toString().toLowerCase();
+            return bt === 'single_elimination' || bt === 'double_elimination';
+        } catch (_) { return false; }
+    }
+
+    static async getRoundTeamIdsFromBracket(tournamentId, roundNumber) {
+        const res = await pool.query(
+            `SELECT DISTINCT team_id FROM (
+                 SELECT team1_id AS team_id FROM matches WHERE tournament_id = $1 AND round = $2 AND team1_id IS NOT NULL
+                 UNION ALL
+                 SELECT team2_id AS team_id FROM matches WHERE tournament_id = $1 AND round = $2 AND team2_id IS NOT NULL
+             ) x
+             WHERE team_id IS NOT NULL
+             ORDER BY team_id ASC`,
+            [tournamentId, roundNumber]
+        );
+        return res.rows.map(r => parseInt(r.team_id, 10)).filter(Number.isInteger);
+    }
+
+    /**
+     * Для SE/DE: сформировать превью составов для фиксированных команд текущего раунда
+     */
+    static async generateRosterPreviewForFixedTeams(tournamentId, roundNumber, standings = null) {
+        // Получаем список команд, играющих в этом раунде
+        const teamIds = await this.getRoundTeamIdsFromBracket(tournamentId, roundNumber);
+        if (!Array.isArray(teamIds) || teamIds.length === 0) {
+            return { round: roundNumber, teams: [], matches: [], standings: standings || await this.calculateStandings(tournamentId) };
+        }
+        // Пул доступных участников
+        let participants = await this.getEligibleParticipants(tournamentId, 'random', standings);
+        const teamSize = await this.getTeamSize(tournamentId);
+        // Случайно перемешиваем и нарезаем по размеру команд
+        const shuffled = [...participants];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const neededPlayers = teamIds.length * teamSize;
+        const slice = shuffled.slice(0, neededPlayers);
+        const buckets = Array.from({ length: teamIds.length }, () => []);
+        for (let i = 0; i < slice.length; i++) {
+            buckets[i % teamIds.length].push(slice[i]);
+        }
+        // Сопоставляем с существующими командами из БД (названия)
+        const teamsRes = await pool.query(`SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND id = ANY($2::int[])`, [tournamentId, teamIds]);
+        const idToName = new Map((teamsRes.rows || []).map(r => [parseInt(r.id, 10), r.name]));
+        const previewTeams = teamIds.map((tid, idx) => ({ team_id: tid, name: idToName.get(tid) || `Team ${idx + 1}`, members: buckets[idx] || [] }));
+        const currentStandings = standings || await this.calculateStandings(tournamentId);
+        return { round: roundNumber, teams: previewTeams, matches: [], standings: currentStandings };
+    }
     static async getLatestFinalistsIds(tournamentId) {
         try {
             const res = await pool.query(
@@ -990,6 +1043,50 @@ class FullMixService {
         console.log(`🧩 [FullMix] approveRound: t=${tournamentId} r=${roundNumber} flags: {teams:${approveTeams}, matches:${approveMatches}}`);
         // Стадия 1: утверждение команд
         if (approveTeams) {
+            // Особый режим для SE/DE: обновляем составы фиксированных команд, не пересоздавая команды/матчи
+            if (await this.isSEorDEBracket(tournamentId)) {
+                const completed = await this.isRoundCompleted(tournamentId, roundNumber);
+                if (completed) throw new Error('Раунд уже завершён. Подтверждение составов недоступно.');
+                const preview = await this.getPreview(tournamentId, roundNumber);
+                if (!preview || !Array.isArray(preview.preview?.teams)) {
+                    throw new Error('Черновик составов не найден');
+                }
+                // Обновляем участников команд в БД
+                const client = await pool.connect();
+                try {
+                    await client.query('BEGIN');
+                    const teams = preview.preview.teams.filter(t => Number.isInteger(parseInt(t.team_id, 10)));
+                    for (const t of teams) {
+                        const teamId = parseInt(t.team_id, 10);
+                        await client.query(`DELETE FROM tournament_team_members WHERE team_id = $1`, [teamId]);
+                        for (const m of (t.members || [])) {
+                            await client.query(
+                                `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
+                                 VALUES ($1, $2, $3, FALSE, NULL)`,
+                                [teamId, m.user_id || null, m.participant_id || null]
+                            );
+                        }
+                    }
+                    // Сохраняем снапшот для аудита (не влияет на матчи)
+                    const standings = await this.calculateStandings(tournamentId);
+                    const snapshotToSave = { round: roundNumber, teams: preview.preview.teams, matches: [], standings, meta: (await this.getSnapshot(tournamentId, roundNumber))?.snapshot?.meta || {} };
+                    await client.query(
+                        `INSERT INTO full_mix_snapshots (tournament_id, round_number, snapshot, approved_teams, approved_matches)
+                         VALUES ($1,$2,$3, TRUE, COALESCE((SELECT approved_matches FROM full_mix_snapshots WHERE tournament_id=$1 AND round_number=$2), FALSE))
+                         ON CONFLICT (tournament_id, round_number)
+                         DO UPDATE SET snapshot = EXCLUDED.snapshot, approved_teams = TRUE`,
+                        [tournamentId, roundNumber, snapshotToSave]
+                    );
+                    await client.query('COMMIT');
+                    return { round: roundNumber, approved_teams: true, approved_matches: !!(await this.getSnapshot(tournamentId, roundNumber))?.approved_matches };
+                } catch (e) {
+                    try { await client.query('ROLLBACK'); } catch (_) {}
+                    console.error('❌ [FullMix] approveTeams (SE/DE) error:', e.stack || e.message || e);
+                    throw e;
+                } finally {
+                    client.release();
+                }
+            }
             const completed = await this.isRoundCompleted(tournamentId, roundNumber);
             if (completed) throw new Error('Раунд уже завершён. Подтверждение составов недоступно.');
             const preview = await this.getPreview(tournamentId, roundNumber);

@@ -202,6 +202,13 @@ class FullMixController {
             return res.status(400).json({ success: false, error: 'Раунд завершён. Переформирование запрещено.' });
         }
         const snap = await FullMixService.getSnapshot(tournamentId, round);
+        // Для SE/DE: генерим только составы для фиксированных команд, матчи не формируем
+        if (await FullMixService.isSEorDEBracket(tournamentId)) {
+            const standings = await FullMixService.calculateStandings(tournamentId);
+            const snapshot = await FullMixService.generateRosterPreviewForFixedTeams(tournamentId, round, standings);
+            const saved = await FullMixService.savePreview(tournamentId, round, snapshot, userId);
+            return res.json({ success: true, item: saved });
+        }
         if (mode === 'matches') {
             if (snap && snap.approved_matches === true) {
                 return res.status(400).json({ success: false, error: 'Матчи уже подтверждены. Переформирование запрещено.' });
