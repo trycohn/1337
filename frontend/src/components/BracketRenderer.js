@@ -692,7 +692,7 @@ const BracketRenderer = ({
                 {...effectiveHandlers}
             >
                 <div 
-                    className="bracket-rounds-container bracket-full-bleed"
+                    className={`bracket-rounds-container bracket-full-bleed${isSwiss ? ' is-swiss' : ''}`}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >

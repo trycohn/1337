@@ -321,6 +321,11 @@
     /* Все колонки раундов будут одинаковой высоты */
 }
 
+/* Швейцарка: визуально инвертируем направление колонок (последний раунд слева) */
+.bracket-rounds-container.is-swiss {
+    flex-direction: row-reverse;
+}
+
 .bracket-round-column {
     display: flex;
     flex-direction: column;
