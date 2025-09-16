@@ -701,7 +701,13 @@ const BracketRenderer = ({
                             const item = orderedRounds[currentIndex];
                             if (!item || item.type !== 'se') return null;
                             const context = getRoundContext(parseInt(item.round), item.data, 'regular');
-                            const roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
+                            let roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
+                            if (isSwiss) {
+                                try {
+                                    const maxRound = Math.max(...Object.keys(groupedMatches || {}).map(Number));
+                                    if (parseInt(item.round) === maxRound) roundName = 'Финал';
+                                } catch (_) {}
+                            }
                             return (
                                 <div key={item.key} className={`bracket-mobile-round-slide slide-${animationDir}`}>
                                     {renderSingleEliminationRound(item.round, item.data, roundName)}
@@ -713,7 +719,13 @@ const BracketRenderer = ({
                             .sort(([a], [b]) => (isSwiss ? (parseInt(b) - parseInt(a)) : (parseInt(a) - parseInt(b))))
                             .map(([round, roundData]) => {
                                 const context = getRoundContext(parseInt(round), roundData, 'regular');
-                                const roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                let roundName = tournamentFormat.getRoundName(parseInt(round), context);
+                                if (isSwiss) {
+                                    try {
+                                        const maxRound = Math.max(...Object.keys(groupedMatches || {}).map(Number));
+                                        if (parseInt(round) === maxRound) roundName = 'Финал';
+                                    } catch (_) {}
+                                }
                                 return renderSingleEliminationRound(round, roundData, roundName);
                             })
                     )}
