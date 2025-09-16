@@ -28,6 +28,39 @@ function AuthPage() {
   const location = useLocation();
   const { login } = useAuth();
 
+  // 🆕 Целевая страница после аутентификации (учет реферального интента)
+  function getPostAuthRedirect() {
+    try {
+      const params = new URLSearchParams(location.search || '');
+      const redirectParam = params.get('redirect');
+
+      const intent = localStorage.getItem('referralIntent');
+      const intentTournamentId = localStorage.getItem('referralIntentTournamentId');
+      const returnToTournament = localStorage.getItem('returnToTournament');
+      const tournamentAction = localStorage.getItem('tournamentAction');
+
+      const targetTournamentId = intentTournamentId || returnToTournament;
+      const isReferral = intent === '1' || tournamentAction === 'referral' || params.get('action') === 'referral';
+
+      let target = redirectParam;
+      if (!target && isReferral && targetTournamentId) {
+        target = `/tournaments/${targetTournamentId}?referral_intent=1`;
+      }
+
+      // Очистка одноразовых флагов
+      if (target) {
+        localStorage.removeItem('referralIntent');
+        localStorage.removeItem('referralIntentTournamentId');
+        localStorage.removeItem('tournamentAction');
+        // returnToTournament оставляем, его может использовать страница турнира для других сценариев
+      }
+
+      return target || '/';
+    } catch (_) {
+      return '/';
+    }
+  }
+
   // 🆕 ФУНКЦИЯ ДЛЯ ПОКАЗА ТУЛТИПА
   const showTooltip = (form, message, type = 'error') => {
     setTooltips(prev => ({
@@ -70,7 +103,7 @@ function AuthPage() {
       showTooltip('login', 'Вы успешно вошли через Steam!', 'success');
       window.history.replaceState({}, document.title, '/login');
       setTimeout(() => {
-        navigate('/');
+        navigate(getPostAuthRedirect());
       }, 1500);
     }
     
@@ -181,7 +214,7 @@ function AuthPage() {
       showTooltip('login', 'Вы успешно вошли в систему!', 'success');
       
       setTimeout(() => {
-        navigate('/');
+        navigate(getPostAuthRedirect());
       }, 1500);
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Ошибка входа';
@@ -230,11 +263,11 @@ function AuthPage() {
       if (response.data.token) {
         setTimeout(() => {
           setShowWelcomeModal(false);
-          navigate('/');
+          navigate(getPostAuthRedirect());
         }, 4000); // 4 секунды для чтения сообщения
       } else {
         setTimeout(() => {
-          navigate('/');
+          navigate(getPostAuthRedirect());
         }, 2000);
       }
     } catch (err) {

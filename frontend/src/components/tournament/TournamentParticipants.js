@@ -38,6 +38,42 @@ const TournamentParticipants = ({
     // Хук для управления турниром
     const tournamentManagement = useTournamentManagement(tournament?.id);
 
+    // 🔗 Реферальный интент: открыть модалку после авторизации
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const intent = localStorage.getItem('referralIntent');
+        const intentTournamentId = localStorage.getItem('referralIntentTournamentId');
+
+        if (token && intent === '1' && intentTournamentId && String(intentTournamentId) === String(tournament?.id)) {
+            setReferralModal(true);
+            localStorage.removeItem('referralIntent');
+            localStorage.removeItem('referralIntentTournamentId');
+        }
+    }, [tournament?.id, user?.id]);
+
+    // 🔗 Клик по «Пригласить друзей»: неавторизованному — предложить вход в новом окне
+    const handleReferralInviteClick = useCallback(() => {
+        if (!tournament?.id) return;
+
+        if (!user) {
+            const agreed = window.confirm('Чтобы создать реферальную ссылку, необходимо войти в аккаунт. Открыть авторизацию в новом окне?');
+            if (!agreed) return;
+
+            // Запоминаем интент и турнир, чтобы после входа автоматически открыть модалку
+            localStorage.setItem('referralIntent', '1');
+            localStorage.setItem('referralIntentTournamentId', String(tournament.id));
+            localStorage.setItem('returnToTournament', String(tournament.id));
+            localStorage.setItem('tournamentAction', 'referral');
+
+            // Открываем окно авторизации. Передаем подсказочные параметры (если страница логина их поддерживает)
+            const loginUrl = `/login?action=referral&tournamentId=${encodeURIComponent(tournament.id)}&redirect=${encodeURIComponent(`/tournaments/${tournament.id}?referral_intent=1`)}`;
+            window.open(loginUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        setReferralModal(true);
+    }, [user, tournament?.id]);
+
     // Получаем список участников в зависимости от статуса турнира
     const getParticipantsList = useCallback(() => {
         // Для MIX турниров показываем соло‑список из originalParticipants, если он передан; иначе — из tournament.participants
@@ -568,19 +604,21 @@ const TournamentParticipants = ({
             )}
 
             {/* 🔗 КНОПКА ПРИГЛАШЕНИЯ ДРУЗЕЙ - скрыта для закрытых и финальных турниров */}
-            {user && tournament?.status === 'active' && tournament?.access_type !== 'closed' && !tournament?.is_series_final && (
+            {tournament?.status === 'active' && tournament?.access_type !== 'closed' && !tournament?.is_series_final && (
                 <div className="referral-invite-panel">
                     <h4>Пригласить друзей</h4>
                     <div className="referral-actions">
                         <button 
                             className="btn btn-secondary"
-                            onClick={() => setReferralModal(true)}
+                            onClick={handleReferralInviteClick}
                             title="Создать реферальную ссылку для приглашения друзей"
                         >
                             Зови друзей — делите бонусы
                         </button>
                         <p className="referral-description">
-                            Поделитесь ссылкой с друзьями и получайте бонусы за каждого нового игрока!
+                            {user 
+                                ? 'Поделитесь ссылкой с друзьями и получайте бонусы за каждого нового игрока!'
+                                : 'Войдите и получите персональную ссылку, чтобы пригласить друзей!'}
                         </p>
                     </div>
                 </div>
