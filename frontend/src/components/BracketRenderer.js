@@ -92,6 +92,7 @@ const BracketRenderer = ({
         const formatType = tournament?.bracket_type || 'single_elimination';
         return formatManager.getFormat(formatType);
     }, [tournament?.bracket_type]);
+    const isSwiss = useMemo(() => (tournament?.bracket_type || '').toString().toLowerCase() === 'swiss', [tournament?.bracket_type]);
     
     // Группируем матчи используя систему плагинов
     const groupedMatches = useMemo(() => {
@@ -119,7 +120,10 @@ const BracketRenderer = ({
     // Раунды и индексы для свайпа
     const winnerRounds = useMemo(() => Object.keys(groupedMatches.winners || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.winners]);
     const loserRounds = useMemo(() => Object.keys(groupedMatches.losers || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.losers]);
-    const seRounds    = useMemo(() => Object.keys(groupedMatches || {}).map(Number).sort((a,b)=>a-b), [groupedMatches]);
+    const seRounds    = useMemo(() => {
+        const arr = Object.keys(groupedMatches || {}).map(Number).sort((a,b)=>a-b);
+        return isSwiss ? arr.reverse() : arr;
+    }, [groupedMatches, isSwiss]);
 
     // Единые слайды для мобильного режима
     // DE: пара (W_i над L_i). SE: один раунд на слайд
@@ -706,7 +710,7 @@ const BracketRenderer = ({
                         })()
                     ) : (
                         Object.entries(groupedMatches)
-                            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                            .sort(([a], [b]) => (isSwiss ? (parseInt(b) - parseInt(a)) : (parseInt(a) - parseInt(b))))
                             .map(([round, roundData]) => {
                                 const context = getRoundContext(parseInt(round), roundData, 'regular');
                                 const roundName = tournamentFormat.getRoundName(parseInt(round), context);
