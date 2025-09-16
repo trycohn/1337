@@ -618,6 +618,59 @@ function TournamentDetails() {
         }
     }, [tournament?.participants]);
 
+    // Удаление участника (крестик в TeamGenerator)
+    const handleRemoveParticipant = useCallback(async (participantId) => {
+        try {
+            if (!tournament?.id || !participantId) return;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            // Оптимистично обновляем локальное состояние
+            setTournament(prev => prev ? ({
+                ...prev,
+                participants: (prev.participants || []).filter(p => p.id !== participantId)
+            }) : prev);
+            setOriginalParticipants(prev => prev.filter(p => p.id !== participantId));
+
+            // Чистим кеш
+            const cacheKey = `tournament_cache_${tournament.id}`;
+            const cacheTimestampKey = `tournament_cache_timestamp_${tournament.id}`;
+            localStorage.removeItem(cacheKey);
+            localStorage.removeItem(cacheTimestampKey);
+
+            // Запрос на бэкенд
+            await api.delete(`/api/tournaments/${tournament.id}/participants/${participantId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // Фоновая синхронизация
+            setTimeout(() => { fetchTournamentData(); }, 500);
+        } catch (e) {
+            console.error('❌ Ошибка удаления участника:', e);
+            // Откатим данные с сервера при ошибке
+            fetchTournamentData();
+        }
+    }, [tournament?.id, fetchTournamentData]);
+
+    // Подтверждение удаления с учетом статуса турнира
+    const confirmAndRemoveParticipant = useCallback(async (participantId) => {
+        const status = (tournament?.status || '').toLowerCase();
+        const isFullMix = (tournament?.format === 'full_mix') || ((tournament?.format === 'mix') && (tournament?.mix_type || '').toLowerCase() === 'full');
+
+        let confirmText = 'Удалить участника из списка турнира?';
+        if (status === 'in_progress') {
+            if (isFullMix) {
+                confirmText = 'Турнир уже идет. Участник будет добавлен в список выбывших (Full Mix). Продолжить?';
+            } else {
+                confirmText = 'Турнир уже идет. Участнику будут засчитаны поражения во всех незавершенных матчах. Продолжить?';
+            }
+        }
+
+        const confirmed = window.confirm(confirmText);
+        if (!confirmed) return;
+        await handleRemoveParticipant(participantId);
+    }, [tournament?.status, tournament?.format, tournament?.mix_type, handleRemoveParticipant]);
+
     // 🔧 ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ИНФОРМАЦИИ ОБ УЧАСТНИКЕ (вынесена на уровень компонента)
     const getParticipantInfo = useCallback((teamId) => {
         if (!teamId) return null;
@@ -1080,6 +1133,7 @@ function TournamentDetails() {
                                     onTeamsUpdated={fetchTournamentData}
                                     isAdminOrCreator={isAdminOrCreator}
                                     hideMixSettings={!((tournament?.status || '').toString().trim().toLowerCase() === 'active')}
+                                    onRemoveParticipant={confirmAndRemoveParticipant}
                                 />
                             </div>
                         )}

@@ -968,8 +968,20 @@ const TeamGenerator = ({
                                     <div className="participant-row-right-participants2.0">
                                         <span className="participant-status-participants2.0">{statusLabel}</span>
                                     </div>
-                                    {isAdminOrCreator && tournament.participant_type === 'solo' && (
-                                        <button className="remove-participant-participants2.0" onClick={() => onRemoveParticipant(participant.id)}>✕</button>
+                                    {isAdminOrCreator && participant?.id && (
+                                        <button 
+                                            className="remove-participant-participants2.0" 
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (typeof onRemoveParticipant === 'function') {
+                                                    onRemoveParticipant(participant.id);
+                                                }
+                                            }}
+                                            title="Удалить участника"
+                                        >
+                                            ✕
+                                        </button>
                                     )}
                                 </div>
                             );

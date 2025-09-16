@@ -227,47 +227,109 @@ class ParticipantService {
      * Удаление участника (для администраторов)
      */
     static async removeParticipant(tournamentId, participantId, adminUserId) {
-        console.log(`🛡️ ParticipantService: Удаление участника ${participantId} из турнира ${tournamentId}`);
+        console.log(`🛡️ ParticipantService: Удаление/обработка участника ${participantId} из турнира ${tournamentId}`);
 
         // Проверка прав администратора
         await this._checkAdminAccess(tournamentId, adminUserId);
 
         const tournament = await TournamentRepository.getById(tournamentId);
-        if (tournament.status !== 'active') {
-            throw new Error('Нельзя удалить участника из неактивного турнира');
+        if (!tournament) throw new Error('Турнир не найден');
+
+        // Получаем участника (нужны user_id/имя)
+        const participant = await ParticipantRepository.getById(participantId);
+        if (!participant) throw new Error('Участник не найден');
+
+        const status = (tournament.status || '').toLowerCase();
+        const isFullMix = (tournament.format === 'full_mix') || (tournament.format === 'mix' && (tournament.mix_type || '').toLowerCase() === 'full');
+
+        // 1) До старта (active) — обычное удаление
+        if (status === 'active') {
+            const removedParticipant = await ParticipantRepository.removeById(participantId);
+
+            // Лог
+            await logTournamentEvent(tournamentId, adminUserId, 'participant_removed_by_admin', {
+                removedParticipantId: participantId,
+                removedParticipantName: removedParticipant?.name || participant?.name || null
+            });
+
+            // WS обновление
+            await this._broadcastParticipantUpdate(tournamentId, 'removed', removedParticipant || participant, adminUserId);
+
+            console.log('✅ ParticipantService: Участник удален (до старта турнира)');
+            return { message: 'Участник удален', action: 'removed' };
         }
 
-        // Удаляем участника
-        const removedParticipant = await ParticipantRepository.removeById(participantId);
-        if (!removedParticipant) {
-            throw new Error('Участник не найден');
-        }
+        // 2) Во время турнира (in_progress)
+        if (status === 'in_progress') {
+            // 2.a) Исключение: Full Mix — переносим в список выбывших
+            if (isFullMix) {
+                try {
+                    const FullMixService = require('./FullMixService');
+                    const elimId = participant.user_id || participant.id;
+                    if (elimId) await FullMixService.addEliminated(tournamentId, [elimId]);
 
-        // 🆕 Если турнир MIX типа full и уже стартовал — считаем участника выбывшим в FullMix
-        try {
-            if ((tournament.format === 'full_mix') || (tournament.format === 'mix' && (tournament.mix_type || '').toLowerCase() === 'full')) {
-                const FullMixService = require('./FullMixService');
-                // Помечаем как eliminated (по user_id, fallback по participant_id)
-                const elimId = removedParticipant.user_id || removedParticipant.id;
-                if (elimId) {
-                    await FullMixService.addEliminated(tournamentId, [elimId]);
+                    await logTournamentEvent(tournamentId, adminUserId, 'participant_marked_eliminated', {
+                        participantId,
+                        participantName: participant.name
+                    });
+
+                    console.log('✅ ParticipantService: Участник помечен как выбывший (Full Mix)');
+                    return { message: 'Участник помечен как выбывший (Full Mix)', action: 'eliminated' };
+                } catch (e) {
+                    console.warn('⚠️ Ошибка переноса участника в список выбывших (Full Mix):', e.message || e);
+                    throw new Error('Не удалось пометить участника как выбывшего');
                 }
             }
-        } catch (e) {
-            console.warn('⚠️ Не удалось отметить участника как выбывшего в FullMix:', e.message || e);
+
+            // 2.b) Обычные турниры — засчитываем поражения во всех незавершенных матчах участника
+            const pool = require('../../db');
+            const MatchService = require('./MatchService');
+            const client = await pool.connect();
+            let affected = 0;
+            try {
+                const { rows } = await client.query(
+                    `SELECT id, team1_id, team2_id, winner_team_id
+                     FROM matches
+                     WHERE tournament_id = $1
+                       AND (team1_id = $2 OR team2_id = $2)
+                       AND (winner_team_id IS NULL)`,
+                    [tournamentId, participantId]
+                );
+
+                for (const m of rows) {
+                    const opponentId = (m.team1_id === participantId) ? m.team2_id : m.team1_id;
+                    if (!opponentId) continue; // нет соперника — пропускаем
+
+                    const score1 = (m.team1_id === opponentId) ? 1 : 0;
+                    const score2 = (m.team2_id === opponentId) ? 1 : 0;
+                    try {
+                        await MatchService.updateSpecificMatchResult(m.id, {
+                            winner_team_id: opponentId,
+                            score1,
+                            score2,
+                            maps_data: []
+                        }, adminUserId);
+                        affected++;
+                    } catch (e) {
+                        console.warn(`[forfeit] Не удалось обновить матч ${m.id}:`, e.message || e);
+                    }
+                }
+            } finally {
+                client.release();
+            }
+
+            await logTournamentEvent(tournamentId, adminUserId, 'participant_forfeited_matches', {
+                participantId,
+                participantName: participant.name,
+                affectedMatches: affected
+            });
+
+            console.log(`✅ ParticipantService: Засчитаны поражения во всех незавершенных матчах (${affected})`);
+            return { message: `Участнику засчитаны поражения в ${affected} незавершенных матчах`, action: 'forfeited', affectedMatches: affected };
         }
 
-        // Логируем событие
-        await logTournamentEvent(tournamentId, adminUserId, 'participant_removed_by_admin', {
-            removedParticipantId: participantId,
-            removedParticipantName: removedParticipant.name
-        });
-
-        // 🆕 Отправляем специальное WebSocket событие
-        await this._broadcastParticipantUpdate(tournamentId, 'removed', removedParticipant, adminUserId);
-
-        console.log('✅ ParticipantService: Участник удален администратором');
-        return removedParticipant;
+        // 3) Иные статусы — запрещено
+        throw new Error('Удаление участника доступно до старта турнира. Во время турнира применяются специальные правила.');
     }
 
     /**
