@@ -1,7 +1,7 @@
 # 🏗️ АРХИТЕКТУРА ПРОЕКТА: 1337 Community Tournament System
 
-**Версия**: 4.24.0  
-**Дата обновления**: 14 сентября 2025  
+**Версия**: 4.24.1  
+**Дата обновления**: 16 сентября 2025  
 **Статус**: Продакшн
 
 ## 🎯 ОБЗОР ПРОЕКТА
@@ -42,6 +42,34 @@
 - **Nginx** - веб-сервер и reverse proxy
 - **PM2** - менеджер процессов
 - **Git** - система контроля версий
+
+## ♻️ Последние изменения (v4.24.1)
+
+- Backend: лёгкое приватное кеширование и метрики времени ответа
+  - `GET /api/users/me` — `Cache-Control: private, max-age=30, stale-while-revalidate=60`, `Vary: Authorization`, `ETag`, `X-Response-Time`.
+  - `GET /api/tournaments/my` — `Cache-Control: private, max-age=30, stale-while-revalidate=60`, `Vary: Authorization`, `X-Response-Time`.
+  - `GET /api/tournaments/lobbies/active` — `Cache-Control: private, max-age=15, stale-while-revalidate=30`, `Vary: Authorization`, `X-Response-Time`.
+  - `GET /api/tournaments/:id/admin-request-status` — `Cache-Control: private, max-age=15, stale-while-revalidate=30`, `Vary: Authorization`, `X-Response-Time`.
+  - `GET /api/teams/my-teams` — `Cache-Control: private, max-age=30, stale-while-revalidate=60`, `Vary: Authorization`, `X-Response-Time`.
+
+- Frontend: снижение нагрузки при авторизованной загрузке
+  - Ленивая загрузка `GET /api/tournaments/my` в `Layout` (после первого рендера/idle; без блокировки FCP/LCP).
+  - Отложенный `GET /api/tournaments/:id/admin-request-status` в `useTournamentAuth` — вызывается только если пользователь связан с турниром (создатель/админ/участник), с небольшой задержкой.
+
+- Socket.IO: ускорение соединения и стабильность в продакшене
+  - Сервер (`backend/socketio-server.js`): в проде `transports: ['websocket']`, `allowEIO3: false`, `pingInterval: 20000`, `pingTimeout: 30000`, включён `perMessageDeflate`.
+  - Клиент (`frontend/src/services/socketClient_v5.js`, `frontend/src/components/tournament/MatchLobby/MatchLobbyPage.js`): в проде `transports: ['websocket']`, отключён `tryAllTransports`. В dev сохраняется fallback `['websocket','polling']`.
+  - Live‑функциональность лобби сохранена (комнаты/события без изменений), уменьшены накладные расходы на старт/поддержание соединения.
+
+- Ожидаемый эффект
+  - Быстрее «первая волна» загрузки под авторизацией, меньше конкуренция за сеть/CPU.
+  - Стабильный WebSocket без HTTP‑polling, меньше лог‑шума и TTFB повторных запросов.
+
+### Быстрая проверка (QA)
+- DevTools → Network: одна линия WebSocket, нет `transport=polling`.
+- В Headers приватных эндпоинтов видны `Cache-Control`, `Vary: Authorization`, `X-Response-Time` (и `ETag` для `/users/me`).
+
+---
 
 ## ♻️ Последние изменения (v4.24.0)
 
