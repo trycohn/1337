@@ -239,12 +239,11 @@ function HomePage() {
 
         {/* CTA: Create your own tournaments */}
         <section className="create-tournaments-cta">
-          {(() => {
-            const ctaSloganUrl = `${process.env.PUBLIC_URL}/images/slogan/Welcome to the 1337 level.png`;
-            return (
-              <div className="cta-bg" aria-hidden="true" style={{ background: `url('${ctaSloganUrl}') center/contain no-repeat` }} />
-            );
-          })()}
+          <div
+            className="cta-bg"
+            aria-hidden="true"
+            style={{ background: `url('${process.env.PUBLIC_URL}/images/slogan/Welcome%20to%20the%201337%20level.png') center/contain no-repeat` }}
+          />
           <div className="container cta-inner">
             <div className="cta-copy">
               <h3 className="cta-head">Создавай свои турниры</h3>
