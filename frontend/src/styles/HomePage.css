@@ -413,7 +413,7 @@
 .create-tournaments-cta .cta-bg {
   position: absolute;
   inset: 0;
-  background: url('/images/@Welcome to the 1337 level.png') center/contain no-repeat;
+  background: url('/images/slogan/Welcome%20to%20the%201337%20level.png') center/contain no-repeat;
   opacity: 0.12;
   pointer-events: none;
 }
