@@ -741,6 +741,23 @@
   justify-content: center;
   padding: 0;
 }
+.steam-nav:hover,
+.steam-nav:focus,
+.steam-nav:focus-visible,
+.steam-nav:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.steam-nav img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
 .steam-nav.left { 
   left: -30px; 
@@ -750,8 +767,8 @@
 }
 
 .steam-nav:hover { opacity: 0.9; }
-.steam-nav:active { transform: translateY(-50%) scale(0.96); }
-.steam-nav:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,0.25); }
+.steam-nav:active { transform: translateY(-50%) scale(1); }
+.steam-nav:focus-visible { outline: none; box-shadow: none; }
 
 .steam-dots {
   display: flex;
