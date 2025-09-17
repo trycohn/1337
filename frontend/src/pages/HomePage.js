@@ -320,11 +320,16 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     return '🎮';
   };
 
-  const gameImage = (game) => {
-    const g = String(game || '').toLowerCase();
+  function getTournamentArtwork(t) {
+    // Приоритет: banner_url → logo_url → game image → fallback
+    const banner = t?.banner_url || t?.banner || t?.cover_url || t?.cover;
+    if (banner && typeof banner === 'string' && banner.trim()) return banner;
+    const logo = t?.logo_url || t?.logo;
+    if (logo && typeof logo === 'string' && logo.trim()) return logo;
+    const g = String(t?.game || '').toLowerCase();
     if (g.includes('counter') || g.includes('cs')) return '/images/games/counter%20strike%202.jpg';
     return '/images/1337%20black%20logo.svg';
-  };
+  }
 
   const statusText = (s) => {
     if (s === 'active') return 'Идёт';
@@ -347,7 +352,9 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
   return (
     <section className="steam-carousel steam-carousel--tournaments">
       <div className="steam-carousel-inner">
-        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
+        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">
+          <img src={'/images/icons/Play white left.png'} alt="prev" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red left.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white left.png'; }} />
+        </button>
         <div className="steam-track">
           <div className="steam-slide">
             <div className="steam-slide-grid">
@@ -357,10 +364,10 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                     {/* FRONT */}
                     <div className="steam-card-front">
                       <div className="steam-card-header">
-                        <h3 className="steam-title" title={t.name}>{t.name}</h3>
+                        <h3 className="steam-title steam-title--tournament" title={t.name}>{t.name}</h3>
                       </div>
                       <div className="steam-art-wrap">
-                        <img className="steam-game-art" src={gameImage(t.game)} alt={t.game || 'game'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
+                        <img className="steam-game-art" src={getTournamentArtwork(t)} alt={t.game || 'tournament'} onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }} />
                       </div>
                       <div className="steam-status-strip">
                         <span className={`steam-status-pill ${t.status || 'unknown'}`}>
@@ -379,12 +386,8 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
                         <span className="steam-meta-value">{t.status === 'active' ? 'Идёт' : t.status === 'registration' ? 'Регистрация' : t.status === 'completed' ? 'Завершён' : (t.status || '—')}</span>
                       </div>
                       <div className="steam-meta-row">
-                        <span className="steam-meta-label">Тип</span>
-                        <span className="steam-meta-value">{t.format === 'mix' ? 'Микс' : t.format === 'single_elimination' ? 'SE' : t.format === 'double_elimination' ? 'DE' : (t.format || '—')}</span>
-                      </div>
-                      <div className="steam-meta-row">
-                        <span className="steam-meta-label">Участники</span>
-                        <span className="steam-meta-value">{t.participant_type === 'solo' ? 'Solo' : t.participant_type === 'team' ? 'Team' : (t.participant_type || '—')}</span>
+                        <span className="steam-meta-label">Участников</span>
+                        <span className="steam-meta-value">{Number.isInteger(t.participant_count) ? t.participant_count : (t.players_count || 0)}</span>
                       </div>
                     </div>
                   </div>
@@ -393,7 +396,9 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
             </div>
           </div>
         </div>
-        <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
+        <button className="steam-nav right" onClick={next} aria-label="Следующий">
+          <img src={'/images/icons/Play white right.png'} alt="next" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red right.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white right.png'; }} />
+        </button>
       </div>
       <div className="steam-dots">
         {Array.from({ length: Math.max(items.length, 1) }).map((_, i) => (
@@ -446,7 +451,9 @@ function WinnersSteamCarousel({ winners }) {
   return (
     <section className="steam-carousel steam-carousel--winners">
       <div className="steam-carousel-inner">
-        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">‹</button>
+        <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">
+          <img src={'/images/icons/Play white left.png'} alt="prev" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red left.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white left.png'; }} />
+        </button>
         <div className="steam-track">
           <div className="steam-slide">
             <div className="steam-slide-grid">
@@ -466,7 +473,9 @@ function WinnersSteamCarousel({ winners }) {
             </div>
           </div>
         </div>
-        <button className="steam-nav right" onClick={next} aria-label="Следующий">›</button>
+        <button className="steam-nav right" onClick={next} aria-label="Следующий">
+          <img src={'/images/icons/Play white right.png'} alt="next" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red right.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white right.png'; }} />
+        </button>
       </div>
       <div className="steam-dots">
         {Array.from({ length: Math.max(shuffled.length, 1) }).map((_, i) => (
