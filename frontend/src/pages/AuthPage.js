@@ -61,6 +61,23 @@ function AuthPage() {
     }
   }
 
+  // 🆕 Централизованный пост-редирект после успешной аутентификации
+  function completeAuthAndRedirect() {
+    const target = getPostAuthRedirect();
+    try {
+      if (window.opener && !window.opener.closed) {
+        // Сообщаем родительскому окну об успешной аутентификации (для открытия реферал-модалки)
+        try {
+          window.opener.postMessage({ type: 'REFERRAL_AUTH_SUCCESS', target }, window.location.origin);
+        } catch (_) {}
+        try { window.opener.focus(); } catch (_) {}
+        window.close();
+        return; // Не выполняем navigate в этом окне
+      }
+    } catch (_) {}
+    navigate(target);
+  }
+
   // 🆕 ФУНКЦИЯ ДЛЯ ПОКАЗА ТУЛТИПА
   const showTooltip = (form, message, type = 'error') => {
     setTooltips(prev => ({
@@ -103,7 +120,7 @@ function AuthPage() {
       showTooltip('login', 'Вы успешно вошли через Steam!', 'success');
       window.history.replaceState({}, document.title, '/login');
       setTimeout(() => {
-        navigate(getPostAuthRedirect());
+        completeAuthAndRedirect();
       }, 1500);
     }
     
@@ -214,7 +231,7 @@ function AuthPage() {
       showTooltip('login', 'Вы успешно вошли в систему!', 'success');
       
       setTimeout(() => {
-        navigate(getPostAuthRedirect());
+        completeAuthAndRedirect();
       }, 1500);
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Ошибка входа';
@@ -263,11 +280,11 @@ function AuthPage() {
       if (response.data.token) {
         setTimeout(() => {
           setShowWelcomeModal(false);
-          navigate(getPostAuthRedirect());
+          completeAuthAndRedirect();
         }, 4000); // 4 секунды для чтения сообщения
       } else {
         setTimeout(() => {
-          navigate(getPostAuthRedirect());
+          completeAuthAndRedirect();
         }, 2000);
       }
     } catch (err) {
