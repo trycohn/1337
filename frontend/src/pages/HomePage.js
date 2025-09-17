@@ -227,8 +227,8 @@ function HomePage() {
               <div className="about-photos">
                 <img
                   className="about-photo"
-                  src={aboutPhotos[aboutPhotoIndex] || '/images/1337%20black%20logo.svg'}
-                  alt="1337 tournament"
+                  src={`${process.env.PUBLIC_URL}/images/slogan/Welcome%20to%20the%201337%20level.png`}
+                  alt="Welcome to the 1337 level"
                   onError={(e) => { e.currentTarget.src = '/images/1337%20black%20logo.svg'; }}
                 />
                 <div className="about-photo-overlay"></div>
@@ -242,10 +242,10 @@ function HomePage() {
           <div className="container cta-inner cta-grid">
             <div className="cta-media" aria-hidden="true">
               <img
-                src={`${process.env.PUBLIC_URL}/images/slogan/Welcome%20to%20the%201337%20level.png`}
-                alt="Welcome to the 1337 level"
+                src={aboutPhotos[aboutPhotoIndex] || '/images/1337%20black%20logo.svg'}
+                alt="1337 tournament"
                 className="cta-slogan-img"
-                onError={(e)=>{ e.currentTarget.style.display='none'; }}
+                onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }}
               />
             </div>
             <div className="cta-copy">
