@@ -404,6 +404,51 @@
   padding: 80px 0;
 }
 
+.create-tournaments-cta {
+  position: relative;
+  background: #000;
+  padding: 80px 0;
+  overflow: hidden;
+}
+.create-tournaments-cta .cta-bg {
+  position: absolute;
+  inset: 0;
+  background: url('/images/@Welcome to the 1337 level.png') center/contain no-repeat;
+  opacity: 0.12;
+  pointer-events: none;
+}
+.create-tournaments-cta .cta-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.create-tournaments-cta .cta-head {
+  font-family: Play, Arial, sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 110%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #FF3838;
+  margin: 0 0 12px 0;
+}
+.create-tournaments-cta .cta-sub {
+  color: #ffffff;
+  opacity: 0.85;
+  margin: 0 0 20px 0;
+}
+.create-tournaments-cta .cta-actions {
+  display: inline-flex;
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .create-tournaments-cta { padding: 56px 0; }
+  .create-tournaments-cta .cta-head { font-size: 22px; }
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;

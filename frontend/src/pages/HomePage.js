@@ -236,6 +236,21 @@ function HomePage() {
           </div>
         </section>
 
+        {/* CTA: Create your own tournaments */}
+        <section className="create-tournaments-cta">
+          <div className="cta-bg" aria-hidden="true" />
+          <div className="container cta-inner">
+            <div className="cta-copy">
+              <h3 className="cta-head">Создавай свои турниры</h3>
+              <p className="cta-sub">Профессиональные инструменты, монохромный стиль, результаты в реальном времени.</p>
+              <div className="cta-actions">
+                <a href="/create" className="btn btn-primary">Создать турнир</a>
+                <a href="/tournaments" className="btn btn-secondary">Смотреть турниры</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Steam-like Carousel Section (замена hero) */}
         <section className="tournaments-carousel-section">
           <div className="container">
