@@ -413,7 +413,8 @@
 .create-tournaments-cta .cta-bg {
   position: absolute;
   inset: 0;
-  background: url('/images/slogan/Welcome%20to%20the%201337%20level.png') center/contain no-repeat;
+  /* Фон задаётся инлайн через JSX (PUBLIC_URL) для корректного билда */
+  background: none;
   opacity: 0.12;
   pointer-events: none;
 }
