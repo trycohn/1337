@@ -421,11 +421,11 @@
 .create-tournaments-cta .cta-inner {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
 }
+.create-tournaments-cta .cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+.create-tournaments-cta .cta-media { display: flex; align-items: center; justify-content: center; }
+.create-tournaments-cta .cta-slogan-img { max-width: 100%; height: auto; object-fit: contain; }
+.create-tournaments-cta .cta-copy { text-align: left; }
 .create-tournaments-cta .cta-head {
   font-family: Play, Arial, sans-serif;
   font-weight: 800;
@@ -447,6 +447,8 @@
 }
 @media (max-width: 768px) {
   .create-tournaments-cta { padding: 56px 0; }
+  .create-tournaments-cta .cta-grid { grid-template-columns: 1fr; }
+  .create-tournaments-cta .cta-copy { text-align: center; }
   .create-tournaments-cta .cta-head { font-size: 22px; }
 }
 
