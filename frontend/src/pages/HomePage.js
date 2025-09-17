@@ -27,6 +27,7 @@ function HomePage() {
   const [statsLoaded, setStatsLoaded] = useState(false);
   const aboutPhotos = useMemo(() => ([
     '/images/home%20photos%20tournament/1337%20league%201.jpg',
+    '/images/home%20photos%20tournament/1337%20open%20ekb%202024.jpg',
     '/images/home%20photos%20tournament/raznoe%202.jpg',
     '/images/home%20photos%20tournament/raznoe.jpg',
     '/images/home%20photos%20tournament/shuffle%20showdown%201.jpg',
