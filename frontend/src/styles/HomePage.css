@@ -730,8 +730,8 @@
   position: absolute;
   top: 135px;
   transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -785,9 +785,10 @@
   transition: transform 0.2s ease;
 }
 
-.steam-dot:not(.active):hover::after { transform: translate(-50%, -50%) scale(1); }
-.steam-dot:hover { border-color: rgba(255,255,255,0.9); }
-.steam-dot:active { transform: scale(0.95); }
+/* Отключаем подсветку границ/точки при наведении */
+.steam-dot:not(.active):hover::after { transform: translate(-50%, -50%) scale(0); }
+.steam-dot:hover { border-color: rgba(255,255,255,0.6); }
+.steam-dot:active { transform: none; }
 .steam-dot.active { background: #fff; border-color: #fff; }
 
 .hero-background {
