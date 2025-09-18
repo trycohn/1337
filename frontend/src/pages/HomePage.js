@@ -214,7 +214,6 @@ function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">О платформе 1337</h2>
-              <div className="title-underline"></div>
             </div>
             
             <div className="about-content about-grid">
@@ -273,7 +272,6 @@ function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Последние турниры</h2>
-              <div className="title-underline"></div>
             </div>
           </div>
           <TournamentSteamCarousel recentTournaments={recentTournaments} onOpen={(id) => navigate(`/tournaments/${id}`)} />
@@ -287,7 +285,6 @@ function HomePage() {
             <div className="container">
               <div className="section-header">
                 <h2 className="section-title">Чемпионы 1337</h2>
-                <div className="title-underline"></div>
               </div>
             </div>
             <WinnersSteamCarousel winners={winners} />
