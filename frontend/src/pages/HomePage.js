@@ -259,6 +259,9 @@ function HomePage() {
           </div>
         </section>
 
+        {/* Full-width pattern divider between CTA and cards */}
+        <div className="pattern-divider pattern-divider--cards-cta" aria-hidden="true" />
+
         {/* Steam-like Carousel Section (замена hero) */}
         <section className="tournaments-carousel-section">
           <div className="container">

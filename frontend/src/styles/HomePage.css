@@ -551,6 +551,24 @@
   background: #000;
 }
 
+/* Full-width pattern divider between sections */
+.pattern-divider {
+  position: relative;
+  width: 100vw;
+  height: 56px;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  background: #000 url('/images/@Pattern-horizontal-white-red.png') repeat-x center;
+  background-size: auto 56px;
+}
+
+.pattern-divider--cards-cta {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .steam-carousel-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -707,6 +725,13 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #FF3838;
+  /* Разрешаем две строки с многоточием */
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .winner-name-fit {
@@ -737,6 +762,15 @@
   flex: 1;
   position: relative;
   background: #111;
+}
+
+/* Убираем фон только у передней стороны карточек турниров в карусели */
+.tournament-card-carousel .steam-card-front .steam-card-header {
+  border-top: 1px solid transparent;
+  background: transparent;
+}
+.tournament-card-carousel .steam-card-front .steam-art-wrap {
+  background: transparent;
 }
 
 .steam-game-art {
