@@ -569,6 +569,9 @@
 .pattern-divider--cards-cta {
   margin-top: 0;
   margin-bottom: 0;
+  /* страхуемся от перекрытия родительских паддингов */
+  display: block;
+  z-index: 1;
 }
 
 .steam-carousel-inner {

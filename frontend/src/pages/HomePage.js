@@ -264,7 +264,7 @@ function HomePage() {
           className="pattern-divider pattern-divider--cards-cta"
           aria-hidden="true"
           style={{
-            backgroundImage: `url(${process.env.PUBLIC_URL}/images/@Pattern-horizontal-white-red.png)`
+            backgroundImage: `url(${process.env.PUBLIC_URL}/images/Elements/Pattern-horizontal-white-red.png)`
           }}
         />
 
