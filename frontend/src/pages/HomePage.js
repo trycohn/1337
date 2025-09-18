@@ -250,7 +250,7 @@ function HomePage() {
             </div>
             <div className="cta-copy">
               <h3 className="cta-head">Создавай свои турниры</h3>
-              <p className="cta-sub">Профессиональные инструменты, монохромный стиль, результаты в реальном времени.</p>
+              <p className="cta-sub">Профессиональные инструменты, гибкие настройки, легкий старт, результаты в реальном времени.</p>
               <div className="cta-actions">
                 <a href="/create" className="btn btn-primary">Создать турнир</a>
                 <a href="/tournaments" className="btn btn-secondary">Смотреть турниры</a>

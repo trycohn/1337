@@ -5,6 +5,7 @@
   color: #fff;
   min-height: 100vh;
   overflow-x: hidden;
+  font-family: Play, Arial, sans-serif;
 }
 
 .homepage.loading {
@@ -425,21 +426,35 @@
 .create-tournaments-cta .cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
 .create-tournaments-cta .cta-media { display: flex; align-items: center; justify-content: center; }
 .create-tournaments-cta .cta-slogan-img { max-width: 100%; height: auto; object-fit: contain; }
-.create-tournaments-cta .cta-copy { text-align: left; }
+.create-tournaments-cta .cta-copy { 
+  text-align: center; 
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 32px;
+}
+
+
 .create-tournaments-cta .cta-head {
   font-family: Play, Arial, sans-serif;
-  font-weight: 800;
   font-size: 32px;
-  line-height: 110%;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: #FF3838;
   margin: 0 0 12px 0;
+  font-weight: 700;
+  letter-spacing: normal;
+  line-height: 100%;
+  text-transform: uppercase;
 }
 .create-tournaments-cta .cta-sub {
   color: #ffffff;
-  opacity: 0.85;
+  opacity: 0.9;
   margin: 0 0 20px 0;
+  font-size: 24px;
+  line-height: 1.8;
+  margin-bottom: 30px;
+
 }
 .create-tournaments-cta .cta-actions {
   display: inline-flex;
@@ -1096,6 +1111,7 @@
 .about-content {
   display: grid;
   grid-template-columns: 2fr 1fr;
+  align-items: center;
   gap: 30px;
 }
 
