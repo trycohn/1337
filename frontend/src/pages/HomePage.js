@@ -231,7 +231,6 @@ function HomePage() {
                   alt="Welcome to the 1337 level"
                   onError={(e) => { e.currentTarget.src = '/images/1337%20black%20logo.svg'; }}
                 />
-                <div className="about-photo-overlay"></div>
               </div>
             </div>
           </div>
@@ -247,6 +246,7 @@ function HomePage() {
                 className="cta-slogan-img"
                 onError={(e)=>{ e.currentTarget.src='/images/1337%20black%20logo.svg'; }}
               />
+              <div className="cta-photo-overlay"></div>
             </div>
             <div className="cta-copy">
               <h3 className="cta-head">Создавай свои турниры</h3>

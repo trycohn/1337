@@ -452,6 +452,15 @@
   .create-tournaments-cta .cta-head { font-size: 22px; }
 }
 
+/* Оверлей для фотогалереи в CTA */
+.create-tournaments-cta .cta-media { position: relative; }
+.create-tournaments-cta .cta-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.20);
+  pointer-events: none;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
