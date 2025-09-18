@@ -102,8 +102,8 @@ class FullMixController {
                 if (needNames || teamsNeedNames) {
                     const db = require('../../db');
                     const { rows } = await db.query(
-                        `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND (name LIKE $2 OR id = ANY($3::int[]))`,
-                        [tournamentId, `R${round}-%`, matches.flatMap(m => [m.team1_id, m.team2_id]).filter(v => Number.isInteger(v))]
+                        `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND (round_number = $2 OR id = ANY($3::int[]))`,
+                        [tournamentId, round, matches.flatMap(m => [m.team1_id, m.team2_id]).filter(v => Number.isInteger(v))]
                     );
                     const idToName = new Map((rows || []).map(r => [r.id, r.name]));
                     // Обновляем имена команд внутри снапшота (не пишем в БД, только отдача)

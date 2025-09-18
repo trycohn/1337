@@ -998,7 +998,7 @@ class FullMixService {
             const formed = this.formTeams(participants, ratingMode, teamSize);
             const previewTeams = formed.map((t, idx) => ({
                 team_index: t.team_index || (idx + 1),
-                name: `R${roundNumber}-Team ${t.team_index || (idx + 1)}`,
+                name: `Team ${t.team_index || (idx + 1)}`,
                 members: t.members || []
             }));
             const currentStandings = standings || await this.calculateStandings(tournamentId);
@@ -1107,8 +1107,8 @@ class FullMixService {
                 // Удаляем матчи и команды этого раунда (если были)
                 await client.query(`DELETE FROM matches WHERE tournament_id = $1 AND round = $2`, [tournamentId, roundNumber]);
                 const toDelete = await client.query(
-                    `SELECT id FROM tournament_teams WHERE tournament_id = $1 AND name LIKE $2`,
-                    [tournamentId, `R${roundNumber}-%`]
+                    `SELECT id FROM tournament_teams WHERE tournament_id = $1 AND round_number = $2`,
+                    [tournamentId, roundNumber]
                 );
                 const teamIds = (toDelete.rows || []).map(r => r.id);
                 if (teamIds.length > 0) {
@@ -1208,8 +1208,8 @@ class FullMixService {
                 }
                 // Маппинг имён команд к фактическим DB id для данного раунда (R{round}-Team N)
                 const dbTeamsRes = await client.query(
-                    `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND name LIKE $2`,
-                    [tournamentId, `R${roundNumber}-%`]
+                    `SELECT id, name FROM tournament_teams WHERE tournament_id = $1 AND round_number = $2`,
+                    [tournamentId, roundNumber]
                 );
                 const dbNameToId = new Map();
                 const dbIndexToId = new Map();
@@ -1548,13 +1548,13 @@ class FullMixService {
             [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j], shuffledNames[i]];
         }
         for (const t of teams) {
-            const fallback = `R${roundNumber}-Team ${t.team_index}`;
+            const fallback = `Team ${t.team_index}`;
             const picked = shuffledNames.length > 0 ? shuffledNames.pop() : null;
             const name = picked || fallback;
             const teamRes = await client.query(
-                `INSERT INTO tournament_teams (tournament_id, name, creator_id)
-                 VALUES ($1, $2, NULL) RETURNING id`,
-                [tournamentId, name]
+                `INSERT INTO tournament_teams (tournament_id, name, creator_id, round_number)
+                 VALUES ($1, $2, NULL, $3) RETURNING id`,
+                [tournamentId, name, roundNumber]
             );
             const teamId = teamRes.rows[0].id;
             const captain = this.chooseCaptain(t.members, ratingMode);
