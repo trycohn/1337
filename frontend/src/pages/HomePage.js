@@ -260,7 +260,13 @@ function HomePage() {
         </section>
 
         {/* Full-width pattern divider between CTA and cards */}
-        <div className="pattern-divider pattern-divider--cards-cta" aria-hidden="true" />
+        <div
+          className="pattern-divider pattern-divider--cards-cta"
+          aria-hidden="true"
+          style={{
+            backgroundImage: `url(${process.env.PUBLIC_URL}/images/@Pattern-horizontal-white-red.png)`
+          }}
+        />
 
         {/* Steam-like Carousel Section (замена hero) */}
         <section className="tournaments-carousel-section">
