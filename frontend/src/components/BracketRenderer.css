@@ -70,25 +70,21 @@
     position: absolute;
     top: 0;
     left: 0;
-    /* Размеры контента - может быть больше контейнера */
     width: auto;
     height: auto;
     min-width: 100%;
-    min-height: 100%;
+    /* убираем min-height:100%, чтобы оболочка могла тянуться по рассчитанной высоте */
     transform-origin: top left;
     will-change: transform;
-    /* Улучшенная производительность перетаскивания */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     perspective: 1000px;
     -webkit-perspective: 1000px;
-    /* Только этот элемент двигается при перетаскивании */
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
     padding: 40px;
     box-sizing: border-box;
-    /* Отключаем выделение текста */
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;

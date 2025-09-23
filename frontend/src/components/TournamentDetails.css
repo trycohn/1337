@@ -1120,11 +1120,10 @@ div.score-container input {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;   /* горизонтальный скролл */
-    overflow-y: visible; /* высота растёт по содержимому */
+    overflow-y: hidden; /* высоту держим оболочкой */
     background: #000;
     border-radius: 8px;
-    height: auto;           /* авто‑высота по вложенной сетке */
-    min-height: 420px;      /* базовый минимум для UX */
+    height: clamp(420px, 70vh, 2000px); /* оболочка управляет высотой */
     grid-area: bracket;
 }
 

@@ -550,7 +550,6 @@ const BracketRenderer = ({
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
                 ref={containerRef}
-                style={containerDynamicStyle}
             >
                 {renderNavigationPanel()}
                 {isMobile && orderedRounds.length > 0 && (
@@ -737,7 +736,6 @@ const BracketRenderer = ({
         <div 
             className={`bracket-renderer-container bracket-single-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
             ref={containerRef}
-            style={containerDynamicStyle}
         >
             {renderNavigationPanel()}
             
