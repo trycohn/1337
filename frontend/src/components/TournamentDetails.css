@@ -1098,6 +1098,14 @@ div.score-container input {
     margin-bottom: 20px;
 }
 
+.tab-content-bracket.mix-swiss {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 12px;
+    grid-template-areas: 'standings bracket';
+
+  }
+
 /* Переиспользуем родительский контейнер для раскладки fullmix + swiss */
 
 @media (max-width: 992px) {
@@ -1116,6 +1124,7 @@ div.score-container input {
     border: 1px solid #333;
     border-radius: 8px;
     height: clamp(420px, 70vh, 1000px);
+    grid-area: bracket;
 }
 
 /* Внутренний контейнер рендера заполняет высоту вьюпорта */
