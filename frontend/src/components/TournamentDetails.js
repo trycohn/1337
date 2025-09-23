@@ -1203,7 +1203,7 @@ function TournamentDetails() {
 
             case 'bracket':
                 return (
-                    <div className="tab-content-bracket">
+                    <div className={`tab-content-bracket${(tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full' && (tournament?.bracket_type || '').toLowerCase() === 'swiss') ? ' mix-swiss' : ''}`}>
                         {!(tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full') && (
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 12 }}>
                                 {tournament?.id && (
@@ -1309,10 +1309,10 @@ function TournamentDetails() {
                             );
 
                             return swapOrder ? (
-                                <div className="bracket-mix-swiss-layout">
+                                <>
                                     {panelNode}
                                     {bracketNode}
-                                </div>
+                                </>
                             ) : (
                                 <>
                                     {panelNode}

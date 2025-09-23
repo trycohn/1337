@@ -1098,8 +1098,8 @@ div.score-container input {
     margin-bottom: 20px;
 }
 
-/* Горизонтальная раскладка для fullmix + swiss: слева панель, справа сетка */
-.bracket-mix-swiss-layout {
+/* Переиспользуем родительский контейнер для раскладки fullmix + swiss */
+.tab-content-bracket.mix-swiss {
   display: grid;
   grid-template-columns: minmax(280px, 420px) 1fr;
   gap: 12px;
@@ -1107,7 +1107,7 @@ div.score-container input {
 }
 
 @media (max-width: 992px) {
-  .bracket-mix-swiss-layout {
+  .tab-content-bracket.mix-swiss {
     grid-template-columns: 1fr;
   }
 }
