@@ -1,5 +1,5 @@
 // frontend/src/components/BracketRenderer.js
-import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import './BracketRenderer.css';
 import { getSocketInstance, authenticateSocket } from '../services/socketClient_v5_simplified';
 import { formatManager } from '../utils/tournament/bracketFormats';
@@ -102,15 +102,32 @@ const BracketRenderer = ({
     });
 
     // Пересчёт размеров при монтировании/resize/смене макета
+    useLayoutEffect(() => {
+        // первичный пересчёт после монтирования
+        requestAnimationFrame(recomputeContainerSize);
+    }, [recomputeContainerSize]);
+
     useEffect(() => {
-        recomputeContainerSize();
         const onResize = () => requestAnimationFrame(recomputeContainerSize);
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
     }, [recomputeContainerSize]);
 
+    // отслеживаем изменения размеров содержимого
+    useEffect(() => {
+        if (!rendererRef.current || typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver(() => requestAnimationFrame(recomputeContainerSize));
+        ro.observe(rendererRef.current);
+        return () => ro.disconnect();
+    }, [recomputeContainerSize]);
+
+    // пересчитываем при смене набора матчей
+    useEffect(() => {
+        requestAnimationFrame(recomputeContainerSize);
+    }, [matches, recomputeContainerSize]);
+
     const containerDynamicStyle = useMemo(() => (
-        containerHeight ? { minHeight: `${Math.max(420, containerHeight)}px` } : { minHeight: '420px' }
+        containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }
     ), [containerHeight]);
 
     const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;
