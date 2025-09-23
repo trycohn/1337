@@ -1119,22 +1119,29 @@ div.score-container input {
     position: relative;
     width: 100%;
     max-width: 100%;
-    overflow: auto; /* Горизонтальный/вертикальный скролл внутри */
+    overflow-x: auto; /* горизонтальный скролл внутри */
+    overflow-y: visible; /* высота растет от содержимого */
     background: #000;
     border: 1px solid #333;
     border-radius: 8px;
-    height: clamp(420px, 70vh, 1000px);
+    height: auto;          /* авто‑высота по содержимому */
+    min-height: 420px;     /* базовый минимум для UX */
     grid-area: bracket;
 }
 
 /* Внутренний контейнер рендера заполняет высоту вьюпорта */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer-container {
-    height: 100% !important;
+    height: auto !important; /* позволяем контенту задавать высоту */
 }
 
 /* Вариант B: позиционируем внутренний слой так, чтобы колесо давало скролл */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer {
     position: relative;
+}
+
+/* Присваиваем область сетки для панели fullmix при mix+swiss */
+.tab-content-bracket.mix-swiss .fullmix-panel {
+  grid-area: standings;
 }
 
 .tabs-navigation-tournamentdetails .tab-button-tournamentdetails {

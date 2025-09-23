@@ -28,11 +28,24 @@ const BracketRenderer = ({
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
     const rendererRef = useRef(null);
+    const containerRef = useRef(null);
     const winnersSectionRef = useRef(null);
     const losersSectionRef = useRef(null);
     const grandFinalSectionRef = useRef(null);
     const touchStartXRef = useRef(null);
     const SWIPE_THRESHOLD = 50;
+
+    // Авто‑подгон высоты контейнера под фактический размер (с учётом zoom/transform)
+    const [containerHeight, setContainerHeight] = useState(null);
+    const recomputeContainerSize = useCallback(() => {
+        try {
+            if (!rendererRef.current) return;
+            const rect = rendererRef.current.getBoundingClientRect();
+            const paddingReserve = 80; // запас под внутренние отступы/панель
+            const newHeight = Math.max(0, Math.ceil(rect.height + paddingReserve));
+            setContainerHeight(newHeight);
+        } catch (_) {}
+    }, []);
 
     // Мобильный режим
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
@@ -83,8 +96,22 @@ const BracketRenderer = ({
         onZoomChange: (data) => {
             // eslint-disable-next-line no-console
             console.log('🔍 Изменение масштаба:', data.zoom);
+            // Обновляем подгон высоты под текущий масштаб
+            requestAnimationFrame(recomputeContainerSize);
         }
     });
+
+    // Пересчёт размеров при монтировании/resize/смене макета
+    useEffect(() => {
+        recomputeContainerSize();
+        const onResize = () => requestAnimationFrame(recomputeContainerSize);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [recomputeContainerSize]);
+
+    const containerDynamicStyle = useMemo(() => (
+        containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : undefined
+    ), [containerHeight]);
 
     const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;
     
@@ -499,6 +526,8 @@ const BracketRenderer = ({
         return (
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
+                ref={containerRef}
+                style={containerDynamicStyle}
             >
                 {renderNavigationPanel()}
                 {isMobile && orderedRounds.length > 0 && (
@@ -684,6 +713,8 @@ const BracketRenderer = ({
     return (
         <div 
             className={`bracket-renderer-container bracket-single-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
+            ref={containerRef}
+            style={containerDynamicStyle}
         >
             {renderNavigationPanel()}
             
