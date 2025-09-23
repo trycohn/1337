@@ -824,6 +824,24 @@ function TournamentDetails() {
             .filter(game => game !== null); // Удаляем null значения после map
 
         console.log('Безопасные игры для BracketRenderer созданы:', safeGames.length);
+
+        // 🧮 Нумерация для Swiss: глобальная последовательность по всем матчам
+        try {
+            const isSwiss = (tournament?.bracket_type || '').toString().toLowerCase() === 'swiss';
+            if (isSwiss) {
+                const ordered = [...safeGames].sort((a, b) => {
+                    const ra = Number(a.round || 0), rb = Number(b.round || 0);
+                    if (ra !== rb) return ra - rb;
+                    const ia = Number(a.id), ib = Number(b.id);
+                    return ia - ib;
+                });
+                const idToSeq = new Map();
+                ordered.forEach((g, i) => idToSeq.set(String(g.id), i + 1));
+                const withSequence = safeGames.map(g => ({ ...g, display_sequence: idToSeq.get(String(g.id)) }));
+                return withSequence;
+            }
+        } catch (_) {}
+
         return safeGames;
     }, [matches, tournament]);
 
