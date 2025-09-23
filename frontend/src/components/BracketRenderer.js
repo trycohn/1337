@@ -58,7 +58,8 @@ const BracketRenderer = ({
         minZoom: 0.3,
         maxZoom: 3,
         zoomStep: 0.05,
-        requireCtrl: false,
+        // Вариант B: колесо мыши скроллит, зум только с Ctrl
+        requireCtrl: true,
         excludeSelectors: [
             '.bracket-navigation-panel',
             '.bracket-nav-icon-button',

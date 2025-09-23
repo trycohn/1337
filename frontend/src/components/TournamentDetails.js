@@ -1239,7 +1239,7 @@ function TournamentDetails() {
                             />
                         )}
 
-                        <div className="bracket-stage-wrapper bracket-full-bleed" style={{ overscrollBehavior: 'contain' }}>
+                        <div className="bracket-stage-wrapper bracket-viewport" style={{ overscrollBehavior: 'contain' }}>
 
                             {games.length > 0 ? (
                                 <TournamentErrorBoundary>
@@ -1293,7 +1293,7 @@ function TournamentDetails() {
                                                     window.location.href = `/tournaments/${id}/match/${match.id}`;
                                                 }
                                             }}
-                                            readOnly
+                                            readOnly={false}
                                         />
                                     </Suspense>
                                 </TournamentErrorBoundary>

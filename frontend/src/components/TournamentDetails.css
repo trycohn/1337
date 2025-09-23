@@ -1098,6 +1098,28 @@ div.score-container input {
     margin-bottom: 20px;
 }
 
+/* Ограниченный вьюпорт для блока сетки на вкладке "Сетка" */
+.bracket-stage-wrapper.bracket-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: auto; /* Горизонтальный/вертикальный скролл внутри */
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    height: clamp(420px, 70vh, 1000px);
+}
+
+/* Внутренний контейнер рендера заполняет высоту вьюпорта */
+.bracket-stage-wrapper.bracket-viewport .bracket-renderer-container {
+    height: 100% !important;
+}
+
+/* Вариант B: позиционируем внутренний слой так, чтобы колесо давало скролл */
+.bracket-stage-wrapper.bracket-viewport .bracket-renderer {
+    position: relative;
+}
+
 .tabs-navigation-tournamentdetails .tab-button-tournamentdetails {
   display: inline-flex;
   align-items: center;
@@ -1909,5 +1931,12 @@ div.score-container input {
     min-width: 140px;
     padding: 8px 12px;
     font-size: 12px;
+  }
+
+  /* Мобайл: сохраняем свайпы раундов — отключаем горизонтальный скролл вьюпорта */
+  .bracket-stage-wrapper.bracket-viewport {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
