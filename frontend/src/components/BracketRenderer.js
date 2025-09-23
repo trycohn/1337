@@ -40,9 +40,15 @@ const BracketRenderer = ({
     const recomputeContainerSize = useCallback(() => {
         try {
             if (!rendererRef.current) return;
-            const rect = rendererRef.current.getBoundingClientRect();
+            const el = rendererRef.current;
+            const rect = el.getBoundingClientRect();
+            const intrinsic = Math.max(
+                rect.height || 0,
+                el.scrollHeight || 0,
+                el.offsetHeight || 0
+            );
             const paddingReserve = 80; // запас под внутренние отступы/панель
-            const newHeight = Math.max(0, Math.ceil(rect.height + paddingReserve));
+            const newHeight = Math.max(0, Math.ceil(intrinsic + paddingReserve));
             setContainerHeight(newHeight);
         } catch (_) {}
     }, []);
