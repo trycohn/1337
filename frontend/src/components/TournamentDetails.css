@@ -1122,7 +1122,6 @@ div.score-container input {
     overflow-x: auto; /* горизонтальный скролл внутри */
     overflow-y: visible; /* высота растет от содержимого */
     background: #000;
-    border: 1px solid #333;
     border-radius: 8px;
     height: auto;          /* авто‑высота по содержимому */
     min-height: 420px;     /* базовый минимум для UX */
@@ -1137,6 +1136,8 @@ div.score-container input {
 /* Вариант B: позиционируем внутренний слой так, чтобы колесо давало скролл */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer {
     position: relative;
+    display: inline-flex; /* позволяет контенту расширять ширину */
+    width: max-content;   /* ширина по содержимому → горизонтальный скролл */
 }
 
 /* Присваиваем область сетки для панели fullmix при mix+swiss */
