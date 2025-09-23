@@ -110,7 +110,7 @@ const BracketRenderer = ({
     }, [recomputeContainerSize]);
 
     const containerDynamicStyle = useMemo(() => (
-        containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : undefined
+        containerHeight ? { minHeight: `${Math.max(420, containerHeight)}px` } : { minHeight: '420px' }
     ), [containerHeight]);
 
     const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;

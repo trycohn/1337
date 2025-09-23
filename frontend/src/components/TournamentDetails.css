@@ -1099,9 +1099,13 @@ div.score-container input {
 }
 
 .tab-content-bracket.mix-swiss {
-    display: flex;
+    display: grid;
     gap: 12px;
-    align-items: flex-start;
+    grid-template-columns: 1fr 3fr;
+    grid-template-areas:
+        "header header"
+        "standings bracket";
+    align-items: start;
 }
 
 /* Переиспользуем родительский контейнер для раскладки fullmix + swiss */
@@ -1115,11 +1119,12 @@ div.score-container input {
     position: relative;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;   /* добавляем горизонтальный скролл */
-    overflow-y: hidden; /* высоту держим фиксированной оболочкой */
+    overflow-x: auto;   /* горизонтальный скролл */
+    overflow-y: visible; /* высота растёт по содержимому */
     background: #000;
     border-radius: 8px;
-    height: clamp(420px, 70vh, 1000px);
+    height: auto;           /* авто‑высота по вложенной сетке */
+    min-height: 420px;      /* базовый минимум для UX */
     grid-area: bracket;
 }
 
