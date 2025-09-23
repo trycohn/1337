@@ -1309,10 +1309,10 @@ function TournamentDetails() {
                             );
 
                             return swapOrder ? (
-                                <>
-                                    {bracketNode}
+                                <div className="bracket-mix-swiss-layout">
                                     {panelNode}
-                                </>
+                                    {bracketNode}
+                                </div>
                             ) : (
                                 <>
                                     {panelNode}
