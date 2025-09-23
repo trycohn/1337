@@ -1216,94 +1216,110 @@ function TournamentDetails() {
                                 )}
                             </div>
                         )}
-                        {/* Новая система управления сеткой */}
-                        {tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full' ? (
-                            <FullMixBracketPanel tournament={tournament} isAdminOrCreator={isAdminOrCreator} />
-                        ) : (
-                            <BracketManagementPanel
-                                tournament={tournament}
-                                user={user}
-                                matches={matches}
-                                isAdminOrCreator={isAdminOrCreator}
-                                onBracketUpdate={async (updateData) => {
-                                    console.log('🔄 Обновление сетки:', updateData);
-                                    const cacheKey = `tournament_cache_${id}`;
-                                    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-                                    localStorage.removeItem(cacheKey);
-                                    localStorage.removeItem(cacheTimestampKey);
-                                    await fetchTournamentData();
-                                    if (updateData.type === 'generated') setMessage('Турнирная сетка успешно сгенерирована!');
-                                    else if (updateData.type === 'regenerated') setMessage('Турнирная сетка успешно регенерирована!');
-                                    setTimeout(() => setMessage(''), 5000);
-                                }}
-                            />
-                        )}
+                        {(() => {
+                            const isFullMix = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
+                            const isSwiss = (tournament?.bracket_type || '').toLowerCase() === 'swiss';
+                            const swapOrder = isFullMix && isSwiss;
 
-                        <div className="bracket-stage-wrapper bracket-viewport" style={{ overscrollBehavior: 'contain' }}>
-
-                            {games.length > 0 ? (
-                                <TournamentErrorBoundary>
-                                    <Suspense fallback={
-                                        <div className="bracket-loading" data-testid="bracket-loading" style={{ padding: 16 }}>
-                                            <div style={{ display: 'grid', gap: 12 }}>
-                                                {[...Array(4)].map((_, i) => (
-                                                    <div key={i} style={{ display: 'flex', gap: 8 }}>
-                                                        <div style={{ width: 120, height: 16, background: '#2a2a2a' }} />
-                                                        <div style={{ flex: 1, height: 16, background: '#3a3a3a' }} />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    }>
-                                        <LazyBracketRenderer
-                                            games={games}
-                                            tournament={tournament}
-                                            canEditMatches={false}
-                                            selectedMatch={selectedMatch}
-                                            setSelectedMatch={(match) => {
-                                                if (match === null || match === undefined) {
-                                                    setSelectedMatch(null);
-                                                    return;
-                                                }
-                                                
-                                                const matchId = typeof match === 'object' && match !== null ? match.id : match;
-                                                
-                                                if (matchId) {
-                                                    const fullMatch = matches.find(m => m.id === parseInt(matchId));
-                                                    if (fullMatch && false) {
-                                                        setSelectedMatch(fullMatch);
-                                                        setMatchResultData({
-                                                            score1: fullMatch.score1 || 0,
-                                                            score2: fullMatch.score2 || 0,
-                                                            maps_data: fullMatch.maps_data || []
-                                                        });
-                                                        openModal('matchResult');
-                                                    } else {
-                                                        setSelectedMatch(matchId);
-                                                    }
-                                                } else {
-                                                    setSelectedMatch(null);
-                                                }
-                                            }}
-                                            handleTeamClick={() => {}}
-                                            format={tournament.format}
-                                            isAdminOrCreator={isAdminOrCreator}
-                                            onMatchClick={(match) => {
-                                                if (match && match.id) {
-                                                    window.location.href = `/tournaments/${id}/match/${match.id}`;
-                                                }
-                                            }}
-                                            readOnly={false}
-                                        />
-                                    </Suspense>
-                                </TournamentErrorBoundary>
+                            const panelNode = isFullMix ? (
+                                <FullMixBracketPanel tournament={tournament} isAdminOrCreator={isAdminOrCreator} />
                             ) : (
-                                <div className="no-bracket">
-                                    <p>Турнирная сетка еще не создана</p>
-                                    <small>Используйте панель управления выше для создания турнирной сетки</small>
+                                <BracketManagementPanel
+                                    tournament={tournament}
+                                    user={user}
+                                    matches={matches}
+                                    isAdminOrCreator={isAdminOrCreator}
+                                    onBracketUpdate={async (updateData) => {
+                                        console.log('🔄 Обновление сетки:', updateData);
+                                        const cacheKey = `tournament_cache_${id}`;
+                                        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                        localStorage.removeItem(cacheKey);
+                                        localStorage.removeItem(cacheTimestampKey);
+                                        await fetchTournamentData();
+                                        if (updateData.type === 'generated') setMessage('Турнирная сетка успешно сгенерирована!');
+                                        else if (updateData.type === 'regenerated') setMessage('Турнирная сетка успешно регенерирована!');
+                                        setTimeout(() => setMessage(''), 5000);
+                                    }}
+                                />
+                            );
+
+                            const bracketNode = (
+                                <div className="bracket-stage-wrapper bracket-viewport" style={{ overscrollBehavior: 'contain' }}>
+                                    {games.length > 0 ? (
+                                        <TournamentErrorBoundary>
+                                            <Suspense fallback={
+                                                <div className="bracket-loading" data-testid="bracket-loading" style={{ padding: 16 }}>
+                                                    <div style={{ display: 'grid', gap: 12 }}>
+                                                        {[...Array(4)].map((_, i) => (
+                                                            <div key={i} style={{ display: 'flex', gap: 8 }}>
+                                                                <div style={{ width: 120, height: 16, background: '#2a2a2a' }} />
+                                                                <div style={{ flex: 1, height: 16, background: '#3a3a3a' }} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            }>
+                                                <LazyBracketRenderer
+                                                    games={games}
+                                                    tournament={tournament}
+                                                    canEditMatches={false}
+                                                    selectedMatch={selectedMatch}
+                                                    setSelectedMatch={(match) => {
+                                                        if (match === null || match === undefined) {
+                                                            setSelectedMatch(null);
+                                                            return;
+                                                        }
+                                                        const matchId = typeof match === 'object' && match !== null ? match.id : match;
+                                                        if (matchId) {
+                                                            const fullMatch = matches.find(m => m.id === parseInt(matchId));
+                                                            if (fullMatch && false) {
+                                                                setSelectedMatch(fullMatch);
+                                                                setMatchResultData({
+                                                                    score1: fullMatch.score1 || 0,
+                                                                    score2: fullMatch.score2 || 0,
+                                                                    maps_data: fullMatch.maps_data || []
+                                                                });
+                                                                openModal('matchResult');
+                                                            } else {
+                                                                setSelectedMatch(matchId);
+                                                            }
+                                                        } else {
+                                                            setSelectedMatch(null);
+                                                        }
+                                                    }}
+                                                    handleTeamClick={() => {}}
+                                                    format={tournament.format}
+                                                    isAdminOrCreator={isAdminOrCreator}
+                                                    onMatchClick={(match) => {
+                                                        if (match && match.id) {
+                                                            window.location.href = `/tournaments/${id}/match/${match.id}`;
+                                                        }
+                                                    }}
+                                                    readOnly={false}
+                                                />
+                                            </Suspense>
+                                        </TournamentErrorBoundary>
+                                    ) : (
+                                        <div className="no-bracket">
+                                            <p>Турнирная сетка еще не создана</p>
+                                            <small>Используйте панель управления выше для создания турнирной сетки</small>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            );
+
+                            return swapOrder ? (
+                                <>
+                                    {bracketNode}
+                                    {panelNode}
+                                </>
+                            ) : (
+                                <>
+                                    {panelNode}
+                                    {bracketNode}
+                                </>
+                            );
+                        })()}
                     </div>
                 );
 
