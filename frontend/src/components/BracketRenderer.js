@@ -41,12 +41,11 @@ const BracketRenderer = ({
         try {
             if (!rendererRef.current) return;
             const el = rendererRef.current;
-            const rect = el.getBoundingClientRect();
-            const intrinsic = Math.max(
-                rect.height || 0,
-                el.scrollHeight || 0,
-                el.offsetHeight || 0
-            );
+            // находим главный контентный блок (rounds container)
+            const rounds = el.querySelector('.bracket-rounds-container');
+            const target = rounds || el;
+            const rect = target.getBoundingClientRect();
+            const intrinsic = Math.max(rect.height || 0, target.scrollHeight || 0, target.offsetHeight || 0);
             const paddingReserve = 80; // запас под внутренние отступы/панель
             const newHeight = Math.max(0, Math.ceil(intrinsic + paddingReserve));
             setContainerHeight(newHeight);
