@@ -1119,8 +1119,8 @@ div.score-container input {
     position: relative;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto; /* горизонтальный скролл внутри */
-    overflow-y: visible; /* высота растет от содержимого */
+    overflow-x: auto !important; /* горизонтальный скролл внутри */
+    overflow-y: visible !important; /* высота растет от содержимого */
     background: #000;
     border-radius: 8px;
     height: auto;          /* авто‑высота по содержимому */
@@ -1131,13 +1131,17 @@ div.score-container input {
 /* Внутренний контейнер рендера заполняет высоту вьюпорта */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer-container {
     height: auto !important; /* позволяем контенту задавать высоту */
+    overflow: visible !important;        /* не обрезаем ширину контента */
+    width: auto !important;              /* пусть занимает ширину вьюпорта */
+    display: block !important;           /* базовый блочный контейнер */
 }
 
 /* Вариант B: позиционируем внутренний слой так, чтобы колесо давало скролл */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer {
-    position: relative;
-    display: inline-flex; /* позволяет контенту расширять ширину */
-    width: max-content;   /* ширина по содержимому → горизонтальный скролл */
+    position: relative !important;
+    display: inline-flex !important; /* позволяет контенту расширять ширину */
+    width: max-content !important;   /* ширина по содержимому → горизонтальный скролл */
+    min-width: 100% !important;      /* защита от схлопывания до 0 при пустых колонках */
 }
 
 /* Присваиваем область сетки для панели fullmix при mix+swiss */
@@ -1960,7 +1964,7 @@ div.score-container input {
 
   /* Мобайл: сохраняем свайпы раундов — отключаем горизонтальный скролл вьюпорта */
   .bracket-stage-wrapper.bracket-viewport {
-    overflow-x: hidden;
+    overflow-x: hidden; /* свайпы сохраняем */
     overflow-y: auto;
     overscroll-behavior: contain;
   }
