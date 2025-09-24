@@ -460,20 +460,6 @@
     min-height: 0;
 }
 
-.bracket-matches-list.many-matches {
-    /* Для многих матчей - выравнивание по началу */
-    justify-content: flex-start;
-}
-
-.bracket-matches-list.few-matches {
-    /* Для немногих матчей - центрирование */
-    justify-content: center;
-}
-
-.bracket-matches-list.single-match {
-    /* Для одного матча - центрирование */
-    justify-content: center;
-}
 
 /* ===== КОНТЕЙНЕРЫ МАТЧЕЙ ===== */
 .bracket-match-container {
@@ -895,6 +881,7 @@
 /* Нижняя сетка (Losers Bracket) */
 .bracket-render-lower-section {
     width: max-content;
+    margin-top: 40px;
     margin-bottom: 16px;
     padding: 30px;
     border-radius: 15px;
@@ -986,6 +973,13 @@
     border-radius: 6px;
     padding: 6px 8px;
     z-index: 3;
+}
+
+/* Центрирование списков матчей вне зависимости от количества */
+.bracket-matches-list.many-matches,
+.bracket-matches-list.few-matches,
+.bracket-matches-list.single-match {
+    justify-content: center;
 }
 
 /* Кнопки действий в карточке матча */

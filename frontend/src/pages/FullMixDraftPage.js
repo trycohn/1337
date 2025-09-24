@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import { getSocketInstance } from '../services/socketClient_v5_simplified';
 import './FullMixDraftPage.css';
@@ -8,6 +8,18 @@ function FullMixDraftPage() {
     const { id } = useParams();
     const tournamentId = parseInt(id);
     const navigate = useNavigate();
+    const location = useLocation();
+    const initializedRef = useRef(false);
+
+    const urlRound = useMemo(() => {
+        try {
+            const params = new URLSearchParams(location.search);
+            const r = parseInt(params.get('round'), 10);
+            return Number.isInteger(r) ? r : null;
+        } catch (_) {
+            return null;
+        }
+    }, [location.search]);
 
     const [round, setRound] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -51,11 +63,18 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/snapshots`);
             const items = (res.data?.items || []).sort((a, b) => a.round_number - b.round_number);
             setRounds(items);
-            if (items.length > 0) setRound(items[0].round_number);
+            if (items.length > 0 && !initializedRef.current) {
+                const numbers = items.map(i => i.round_number);
+                const target = (Number.isInteger(urlRound) && numbers.includes(urlRound))
+                    ? urlRound
+                    : items[0].round_number;
+                setRound(target);
+                initializedRef.current = true;
+            }
         } catch (_) {
             setRounds([]);
         }
-    }, [tournamentId]);
+    }, [tournamentId, urlRound]);
 
     const loadSnapshot = useCallback(async (r) => {
         try {
@@ -150,6 +169,12 @@ function FullMixDraftPage() {
         // Одновременно пытаемся подтянуть превью матчей, если оно есть
         loadMatchesPreview(round);
     }, [tournamentId, round, loadPreview, loadMatchesPreview]);
+
+    // Реакция на смену параметра ?round= в URL (например, при навигации из панели)
+    useEffect(() => {
+        if (Number.isInteger(urlRound) && urlRound !== round) setRound(urlRound);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlRound]);
 
     useEffect(() => {
         const socket = getSocketInstance && getSocketInstance();

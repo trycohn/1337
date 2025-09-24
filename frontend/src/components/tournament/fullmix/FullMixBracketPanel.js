@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
 import { getSocketInstance, authenticateSocket } from '../../../services/socketClient_v5_simplified';
 import BracketRenderer from '../../BracketRenderer';
@@ -6,6 +7,7 @@ import './FullMixBracketPanel.css';
 
 function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
     const tournamentId = tournament?.id;
+    const navigate = useNavigate();
     const [rounds, setRounds] = useState([]); // [{round_number, approved_teams, approved_matches}]
     const [currentRound, setCurrentRound] = useState(1);
     const [snapshot, setSnapshot] = useState(null); // {teams, matches, standings, meta}
@@ -472,7 +474,7 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     )}
                     {rounds.length > 0 && (
                         <>
-                            <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft`, '_blank')}>Открыть черновик</button>
+                            <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournamentId}/fullmix/draft?round=${settings?.current_round || currentRound || 1}`, '_blank')}>Открыть черновик</button>
                             <button className="btn btn-primary" onClick={() => setConfirmFinishOpen(true)}>Завершить текущий раунд</button>
                             <button className="btn btn-secondary" onClick={() => window.open(`/tournaments/${tournament.id}/bracket`, '_blank', 'noopener,noreferrer')}>Открыть в отдельном окне</button>
                         </>
@@ -576,7 +578,9 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                             <button className="btn btn-secondary" onClick={() => { setSuggestSwitchOpen(false); localStorage.setItem(`fm_declined_jump_${tournamentId}_${suggestedRound}`, '1'); }}>Нет</button>
                             <button className="btn btn-primary" onClick={() => {
                                 setSuggestSwitchOpen(false);
-                                setCurrentRound(suggestedRound);
+                                // Переходим в черновик следующего раунда
+                                try { localStorage.setItem(`fm_declined_jump_${tournamentId}_${suggestedRound}`, '0'); } catch (_) {}
+                                navigate(`/tournaments/${tournamentId}/fullmix/draft?round=${suggestedRound}`);
                             }}>Да</button>
                         </div>
                     </div>
