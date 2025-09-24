@@ -1133,7 +1133,7 @@ div.score-container input {
 
 /* Вариант B: позиционируем внутренний слой так, чтобы колесо давало скролл */
 .bracket-stage-wrapper.bracket-viewport .bracket-renderer {
-    position: absolute !important;
+    position: relative;
     display: flex !important;
     width: auto !important;
     min-width: 100% !important;
