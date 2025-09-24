@@ -27,27 +27,47 @@ export class DoubleEliminationFormat extends TournamentFormat {
       grandFinal: []
     };
     
+    const normalizeType = (m) => {
+      const raw = (m.bracket_type || m.bracketType || m.bracket || m.type || m.section || '').toString().toLowerCase();
+      const pos = (m.bracket_position || m.position || '').toString().toUpperCase();
+      const flags = {
+        isLower: m.is_lower_bracket === true || m.isLoserMatch === true || m.lower_bracket === true,
+        isUpper: m.is_upper_bracket === true || m.upper_bracket === true
+      };
+
+      if (raw) {
+        if (['loser','losers','lower','lb','lower_bracket','loser_semifinal','loser_final'].includes(raw)) return 'loser';
+        if (['winner','winners','upper','ub','upper_bracket'].includes(raw)) return 'winner';
+        if (['grand_final','grand-final','grandfinal','gf','grand_final_reset'].includes(raw)) return raw === 'grand_final_reset' ? 'grand_final_reset' : 'grand_final';
+      }
+
+      if (pos.includes('LB')) return 'loser';
+      if (pos.includes('WB')) return 'winner';
+      if (pos.includes('GF')) return 'grand_final';
+
+      if (flags.isLower) return 'loser';
+      if (flags.isUpper) return 'winner';
+
+      // default: считаем как winners
+      return 'winner';
+    };
+
     matches.forEach(match => {
-      const bracketType = match.bracket_type || 'winner';
-      
+      const bracketType = normalizeType(match);
       switch (bracketType) {
         case 'winner':
           grouped.winners.push(match);
           break;
-        
         case 'loser':
-        case 'loser_semifinal':    // 🆕 Малый финал лузеров
-        case 'loser_final':        // 🆕 Финал лузеров
+        case 'loser_semifinal':
+        case 'loser_final':
           grouped.losers.push(match);
           break;
-          
         case 'grand_final':
         case 'grand_final_reset':
           grouped.grandFinal.push(match);
           break;
-          
         default:
-          // По умолчанию добавляем в winners
           grouped.winners.push(match);
       }
     });
