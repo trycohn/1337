@@ -96,3 +96,15 @@
 .btn:hover {
 	background: #111111;
 }
+
+/* Убрать любые псевдо-иконки/спиннеры у кнопок в черновике */
+.fullmixdraft-page .btn::before,
+.fullmixdraft-page .btn:disabled::before,
+.fullmixdraft-page .btn-primary::before,
+.fullmixdraft-page .btn-primary:disabled::before,
+.fullmixdraft-page .btn-secondary::before,
+.fullmixdraft-page .btn-secondary:disabled::before {
+	content: none !important;
+	animation: none !important;
+	margin: 0 !important;
+}
