@@ -124,17 +124,43 @@ const BracketRenderer = ({
 
     const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;
     
-    // Получаем формат турнира
+    // Получаем формат турнира (нормализуем тип + DE fallback по данным матчей)
     const tournamentFormat = useMemo(() => {
-        const formatType = tournament?.bracket_type || 'single_elimination';
-        return formatManager.getFormat(formatType);
-    }, [tournament?.bracket_type]);
+        const raw = (tournament?.bracket_type || '').toString().toLowerCase();
+        let normalized = 'single_elimination';
+        if (raw.includes('double') || raw.includes('de') || raw === 'double_elimination' || raw === 'doubleelimination') {
+            normalized = 'double_elimination';
+        } else if (raw === 'single_elimination' || raw.includes('single')) {
+            normalized = 'single_elimination';
+        }
+        // если по данным матчей есть явные признаки DE — форсируем DE
+        const hasDeClues = (matches || []).some(m => {
+            const t = (m?.bracket_type || m?.bracketType || m?.bracket || m?.type || '').toString().toLowerCase();
+            const pos = (m?.bracket_position || m?.position || '').toString().toUpperCase();
+            const isLower = m?.is_lower_bracket === true || m?.lower_bracket === true || m?.isLoserMatch === true;
+            return t.includes('loser') || t.includes('lower') || pos.includes('LB') || isLower;
+        });
+        if (hasDeClues) normalized = 'double_elimination';
+        return formatManager.getFormat(normalized);
+    }, [tournament?.bracket_type, matches]);
     const isSwiss = useMemo(() => (tournament?.bracket_type || '').toString().toLowerCase() === 'swiss', [tournament?.bracket_type]);
     
     // Группируем матчи используя систему плагинов
     const groupedMatches = useMemo(() => {
         if (!matches || matches.length === 0) return {};
-        return tournamentFormat.groupMatches(matches);
+        const base = tournamentFormat.groupMatches(matches) || {};
+        const losersEmpty = !base?.losers || Object.keys(base.losers || {}).length === 0;
+        const gfEmpty = !base?.grandFinal || base.grandFinal.length === 0;
+        if (!losersEmpty || !gfEmpty) return base;
+        // Fallback: попробовать явную группировку Double Elimination
+        try {
+            const de = new DoubleEliminationFormat();
+            const alt = de.groupMatches(matches) || {};
+            if ((alt?.losers && Object.keys(alt.losers).length > 0) || (alt?.grandFinal && alt.grandFinal.length > 0)) {
+                return alt;
+            }
+        } catch (_) {}
+        return base;
     }, [matches, tournamentFormat]);
 
     // Убрали автоматическое выравнивание ширин секций

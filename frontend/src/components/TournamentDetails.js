@@ -787,6 +787,18 @@ function TournamentDetails() {
                 const team1Result = match.score1 !== null ? match.score1 : null;
                 const team2Result = match.score2 !== null ? match.score2 : null;
 
+                // Нормализуем тип сетки матча (winner/loser/grand_final)
+                const rawType = (match.bracket_type || match.bracketType || match.bracket || match.type || '').toString().toLowerCase();
+                const posMark = (match.bracket_position || match.position || '').toString().toUpperCase();
+                const isLower = match.is_lower_bracket === true || match.lower_bracket === true || match.isLoserMatch === true;
+                let normalizedType = 'winner';
+                if (rawType === 'grand_final_reset') normalizedType = 'grand_final_reset';
+                else if (['grand_final','grand-final','grandfinal','gf'].includes(rawType)) normalizedType = 'grand_final';
+                else if (['loser','losers','lower','lb','lower_bracket','loser_semifinal','loser_final'].includes(rawType)) normalizedType = 'loser';
+                else if (['winner','winners','upper','ub','upper_bracket'].includes(rawType)) normalizedType = 'winner';
+                else if (posMark.includes('LB') || isLower) normalizedType = 'loser';
+                else if (posMark.includes('WB')) normalizedType = 'winner';
+
                 return {
                     id: String(match.id),
                     nextMatchId: match.next_match_id ? String(match.next_match_id) : null,
@@ -796,7 +808,11 @@ function TournamentDetails() {
                     // 🆕 ДОБАВЛЕНО: Передаем оригинальный статус из БД для BYE матчей
                     status: match.status,
                     name: match.name || `Матч ${match.tournament_match_number || match.match_number || match.id}`,
-                    bracket_type: match.bracket_type || 'winner',
+                    bracket_type: normalizedType,
+                    // Доп. поля для более точной группировки в формате DE
+                    bracket_position: match.bracket_position || match.position || null,
+                    bracketType: match.bracketType || match.bracket || null,
+                    is_lower_bracket: isLower,
                     round: match.round !== undefined ? match.round : 0,
                     // 🔧 ИСПРАВЛЕНО: Добавляем проверку bracket_type перед использованием
                     is_third_place_match: (match.bracket_type && match.bracket_type === 'placement') || false,
