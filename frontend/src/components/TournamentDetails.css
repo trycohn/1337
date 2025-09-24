@@ -1126,6 +1126,7 @@ div.score-container input {
     min-height: 420px; /* минимум как раньше */
     height: auto; /* высота определяется содержимым (renderer-container) */
     grid-area: bracket;
+    padiing-top: 12px;
 }
 
 /* Внутренний контейнер рендера заполняет высоту вьюпорта */
