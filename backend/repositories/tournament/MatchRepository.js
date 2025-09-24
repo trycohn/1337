@@ -6,8 +6,34 @@ class MatchRepository {
      */
     static async getByTournamentId(tournamentId) {
         const result = await pool.query(`
-            SELECT id, tournament_id, round, match_number, team1_id, team2_id,
-                   score1, score2, winner_team_id, match_date, status, maps_data
+            SELECT 
+                id,
+                tournament_id,
+                round,
+                match_number,
+                tournament_match_number,
+                team1_id,
+                team2_id,
+                score1,
+                score2,
+                winner_team_id,
+                match_date,
+                status,
+                maps_data,
+                -- ключевые поля для Double Elimination
+                bracket_type,
+                next_match_id,
+                loser_next_match_id,
+                -- доп. метаданные для UI
+                is_third_place_match,
+                is_preliminary_round,
+                bye_match,
+                target_slot,
+                position_in_round,
+                source_match1_id,
+                source_match2_id,
+                round_name,
+                match_title
             FROM matches 
             WHERE tournament_id = $1 
             ORDER BY round, match_number
