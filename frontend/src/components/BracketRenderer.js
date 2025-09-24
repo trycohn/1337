@@ -5,12 +5,14 @@ import { getSocketInstance, authenticateSocket } from '../services/socketClient_
 import { formatManager } from '../utils/tournament/bracketFormats';
 import { SingleEliminationFormat } from '../utils/tournament/formats/SingleEliminationFormat';
 import { DoubleEliminationFormat } from '../utils/tournament/formats/DoubleEliminationFormat';
+import { SwissFormat } from '../utils/tournament/formats/SwissFormat';
 import useDragAndZoom from '../hooks/useDragAndZoom';
 import { useAuth } from '../context/AuthContext';
 
 // Регистрируем форматы
 formatManager.register(new SingleEliminationFormat());
 formatManager.register(new DoubleEliminationFormat());
+formatManager.register(new SwissFormat());
 
 const BracketRenderer = ({ 
     games, 
@@ -127,23 +129,25 @@ const BracketRenderer = ({
     // Получаем формат турнира (нормализуем тип + DE fallback по данным матчей)
     const tournamentFormat = useMemo(() => {
         const raw = (tournament?.bracket_type || '').toString().toLowerCase();
-        let normalized = 'single_elimination';
+        // Явный выбор формата
+        if (raw === 'swiss' || raw.includes('swiss')) return formatManager.getFormat('swiss');
         if (raw.includes('double') || raw.includes('de') || raw === 'double_elimination' || raw === 'doubleelimination') {
-            normalized = 'double_elimination';
-        } else if (raw === 'single_elimination' || raw.includes('single')) {
-            normalized = 'single_elimination';
+            return formatManager.getFormat('double_elimination');
         }
-        // если по данным матчей есть явные признаки DE — форсируем DE
+        if (raw === 'single_elimination' || raw.includes('single')) {
+            return formatManager.getFormat('single_elimination');
+        }
+        // эвристика: если видим признаки DE — выбираем DE
         const hasDeClues = (matches || []).some(m => {
             const t = (m?.bracket_type || m?.bracketType || m?.bracket || m?.type || '').toString().toLowerCase();
             const pos = (m?.bracket_position || m?.position || '').toString().toUpperCase();
             const isLower = m?.is_lower_bracket === true || m?.lower_bracket === true || m?.isLoserMatch === true;
             return t.includes('loser') || t.includes('lower') || pos.includes('LB') || isLower;
         });
-        if (hasDeClues) normalized = 'double_elimination';
-        return formatManager.getFormat(normalized);
+        if (hasDeClues) return formatManager.getFormat('double_elimination');
+        return formatManager.getFormat('single_elimination');
     }, [tournament?.bracket_type, matches]);
-    const isSwiss = useMemo(() => (tournament?.bracket_type || '').toString().toLowerCase() === 'swiss', [tournament?.bracket_type]);
+    const isSwiss = useMemo(() => (tournament?.bracket_type || '').toString().toLowerCase().includes('swiss'), [tournament?.bracket_type]);
     
     // Группируем матчи используя систему плагинов
     const groupedMatches = useMemo(() => {
@@ -380,8 +384,18 @@ const BracketRenderer = ({
     
     // Получение контекста раунда с расширенной информацией
     const getRoundContext = (round, roundData, bracketType) => {
-        const groupedRounds = Object.keys(groupedMatches[bracketType] || {}).map(Number);
-        const totalRounds = Math.max(...groupedRounds);
+        // Универсально считаем список раундов для нужной секции
+        let groupedRounds = [];
+        try {
+            if (bracketType === 'regular') {
+                groupedRounds = Object.keys(groupedMatches || {}).map(Number);
+            } else if (groupedResolved && groupedResolved[bracketType]) {
+                groupedRounds = Object.keys(groupedResolved[bracketType] || {}).map(Number);
+            } else if (groupedMatches && groupedMatches[bracketType]) {
+                groupedRounds = Object.keys(groupedMatches[bracketType] || {}).map(Number);
+            }
+        } catch (_) {}
+        const totalRounds = groupedRounds.length > 0 ? Math.max(...groupedRounds) : 0;
         const matchesInRound = Array.isArray(roundData) ? roundData.length : Object.keys(roundData).length;
         const isLastRound = round === totalRounds;
         
@@ -800,13 +814,7 @@ const BracketRenderer = ({
                             const item = orderedRounds[currentIndex];
                             if (!item || item.type !== 'se') return null;
                             const context = getRoundContext(parseInt(item.round), item.data, 'regular');
-                            let roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
-                            if (isSwiss) {
-                                try {
-                                    const maxRound = Math.max(...Object.keys(groupedMatches || {}).map(Number));
-                                    if (parseInt(item.round) === maxRound) roundName = 'Финал';
-                                } catch (_) {}
-                            }
+                                const roundName = tournamentFormat.getRoundName(parseInt(item.round), context);
                             return (
                                 <div key={item.key} className={`bracket-mobile-round-slide slide-${animationDir}`}>
                                     {renderSingleEliminationRound(item.round, item.data, roundName)}
@@ -818,13 +826,7 @@ const BracketRenderer = ({
                             .sort(([a], [b]) => (isSwiss ? (parseInt(b) - parseInt(a)) : (parseInt(a) - parseInt(b))))
                             .map(([round, roundData]) => {
                                 const context = getRoundContext(parseInt(round), roundData, 'regular');
-                                let roundName = tournamentFormat.getRoundName(parseInt(round), context);
-                                if (isSwiss) {
-                                    try {
-                                        const maxRound = Math.max(...Object.keys(groupedMatches || {}).map(Number));
-                                        if (parseInt(round) === maxRound) roundName = 'Финал';
-                                    } catch (_) {}
-                                }
+                                const roundName = tournamentFormat.getRoundName(parseInt(round), context);
                                 return renderSingleEliminationRound(round, roundData, roundName);
                             })
                     )}

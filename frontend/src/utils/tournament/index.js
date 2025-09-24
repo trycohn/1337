@@ -6,6 +6,7 @@
 import { formatManager } from './bracketFormats';
 import { SingleEliminationFormat } from './formats/SingleEliminationFormat';
 import { DoubleEliminationFormat } from './formats/DoubleEliminationFormat';
+import { SwissFormat } from './formats/SwissFormat';
 
 // Экспортируем менеджер форматов
 export { formatManager };
@@ -27,6 +28,9 @@ const registerFormats = () => {
   
   // Регистрируем Double Elimination
   formatManager.register(new DoubleEliminationFormat());
+  
+  // Регистрируем Swiss (обратная совместимость для старых турниров)
+  formatManager.register(new SwissFormat());
   
   console.log('✅ Зарегистрированы форматы турниров:', {
     formats: formatManager.getAvailableFormats(),

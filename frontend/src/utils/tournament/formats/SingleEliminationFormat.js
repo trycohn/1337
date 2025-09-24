@@ -52,39 +52,14 @@ export class SingleEliminationFormat extends TournamentFormat {
    * Получение правильного названия раунда
    */
   getRoundName(round, context) {
-    const { totalRounds, isFinalsRound, hasThirdPlace } = context;
+    const { totalRounds, isFinalsRound } = context;
     
-    // Предварительный раунд
-    if (round === -1 || round === 0) {
-      return 'Предварительный раунд';
-    }
+    // Унификация для всех сеток: Round N / Semifinal / Final
+    if (round === -1 || round === 0) return 'Round 0';
+    if (round === totalRounds) return 'Final';
+    if (round === totalRounds - 1) return 'Semifinal';
     
-    // Финальный раунд (содержит финал и/или матч за 3-е место)
-    if (isFinalsRound) {
-      return 'Финальная стадия';
-    }
-    
-    // Расчет от конца
-    const roundsFromEnd = totalRounds - round;
-    
-    switch (roundsFromEnd) {
-      case 0:
-        return 'Финал';
-      case 1:
-        return 'Полуфинал';
-      case 2:
-        return 'Четвертьфинал';
-      case 3:
-        return '1/8 финала';
-      case 4:
-        return '1/16 финала';
-      case 5:
-        return '1/32 финала';
-      case 6:
-        return '1/64 финала';
-      default:
-        return round === 1 ? 'Первый раунд' : `Раунд ${round}`;
-    }
+    return `Round ${round}`;
   }
 
   /**
