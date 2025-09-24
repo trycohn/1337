@@ -101,35 +101,18 @@ const BracketRenderer = ({
         onZoomChange: (data) => {
             // eslint-disable-next-line no-console
             console.log('🔍 Изменение масштаба:', data.zoom);
-            // Обновляем подгон высоты под текущий масштаб
-            requestAnimationFrame(recomputeContainerSize);
+            // Упростили: без авто‑растягивания при зуме
         }
     });
 
-    // Пересчёт размеров при монтировании/resize/смене макета
+    // Пересчёт только на монтировании и при первом приходе матчей
     useLayoutEffect(() => {
-        // первичный пересчёт после монтирования
         requestAnimationFrame(recomputeContainerSize);
     }, [recomputeContainerSize]);
 
     useEffect(() => {
-        const onResize = () => requestAnimationFrame(recomputeContainerSize);
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, [recomputeContainerSize]);
-
-    // отслеживаем изменения размеров содержимого
-    useEffect(() => {
-        if (!rendererRef.current || typeof ResizeObserver === 'undefined') return;
-        const ro = new ResizeObserver(() => requestAnimationFrame(recomputeContainerSize));
-        ro.observe(rendererRef.current);
-        return () => ro.disconnect();
-    }, [recomputeContainerSize]);
-
-    // пересчитываем при смене набора матчей
-    useEffect(() => {
-        requestAnimationFrame(recomputeContainerSize);
-    }, [matches, recomputeContainerSize]);
+        if (containerHeight == null) requestAnimationFrame(recomputeContainerSize);
+    }, [matches, containerHeight, recomputeContainerSize]);
 
     const containerDynamicStyle = useMemo(() => (
         containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }
@@ -549,6 +532,7 @@ const BracketRenderer = ({
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
                 ref={containerRef}
+                style={containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }}
             >
                 {renderNavigationPanel()}
                 {isMobile && orderedRounds.length > 0 && (
@@ -735,6 +719,7 @@ const BracketRenderer = ({
         <div 
             className={`bracket-renderer-container bracket-single-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
             ref={containerRef}
+            style={containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }}
         >
             {renderNavigationPanel()}
             

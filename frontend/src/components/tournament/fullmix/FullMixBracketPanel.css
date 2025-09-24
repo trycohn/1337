@@ -1,10 +1,6 @@
-.tab-content-bracket {
-    display: grid;
-    gap: 48px;
-    grid-template-columns: minmax(280px, 1fr) 1fr 1fr;
-    grid-template-areas: 'header header header'
-                         'standings bracket bracket';
-}
+/* Отключаем глобальную перенастройку гридов здесь — используется версия из TournamentDetails.css */
+/* .tab-content-bracket { }
+   Грид-раскладка задаётся классом .tab-content-bracket.mix-swiss в TournamentDetails.css */
 
 
 .fullmix-panel {

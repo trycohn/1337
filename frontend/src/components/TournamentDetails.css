@@ -1123,7 +1123,8 @@ div.score-container input {
     overflow-y: hidden; /* высоту держим оболочкой */
     background: #000;
     border-radius: 8px;
-    height: clamp(420px, 70vh, 2000px); /* оболочка управляет высотой */
+    min-height: 420px; /* минимум как раньше */
+    height: auto; /* высота определяется содержимым (renderer-container) */
     grid-area: bracket;
 }
 
