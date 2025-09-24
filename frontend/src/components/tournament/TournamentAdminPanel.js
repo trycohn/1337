@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
 import TournamentSettingsPanel from './TournamentSettingsPanel';
 import './TournamentAdminPanel.css';
+import { getSocketInstance } from '../../services/socketClient_v5_simplified';
 
 const TournamentAdminPanel = ({
     tournament,
@@ -73,6 +74,97 @@ const TournamentAdminPanel = ({
     const [statusFilter, setStatusFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const hasFinalControls = !!tournament?.is_series_final && isCreatorOrAdmin;
+
+    // ✏️ Инлайн-редактирование имени участника (только для незарегистрированных)
+    const [localParticipants, setLocalParticipants] = useState(participants || []);
+    const [editingParticipantId, setEditingParticipantId] = useState(null);
+    const [editingName, setEditingName] = useState('');
+    const [isSavingName, setIsSavingName] = useState(false);
+    const [flashParticipantId, setFlashParticipantId] = useState(null);
+
+    useEffect(() => {
+        setLocalParticipants(participants || []);
+    }, [participants]);
+
+    const beginEditParticipantName = useCallback((p) => {
+        if (!p || p.user_id) return; // Только для незарегистрированных
+        setEditingParticipantId(p.id);
+        setEditingName(p.name || '');
+    }, []);
+
+    const cancelEditParticipantName = useCallback(() => {
+        setEditingParticipantId(null);
+        setEditingName('');
+    }, []);
+
+    const saveParticipantName = useCallback(async () => {
+        if (!editingParticipantId || !tournament?.id) return;
+        const name = (editingName || '').trim();
+        if (name.length < 2 || name.length > 50) {
+            alert('Имя участника должно содержать от 2 до 50 символов');
+            return;
+        }
+        try {
+            setIsSavingName(true);
+            const token = localStorage.getItem('token');
+            const res = await axios.put(`/api/tournaments/${tournament.id}/participants/${editingParticipantId}/name`, { name }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const updated = res.data?.participant;
+            if (updated) {
+                setLocalParticipants((prev) => prev.map(p => p.id === updated.id ? { ...p, name: updated.name } : p));
+                // Локальная подсветка до прихода WS‑события
+                setFlashParticipantId(updated.id);
+                setTimeout(() => {
+                    setFlashParticipantId((curr) => curr === updated.id ? null : curr);
+                }, 2500);
+            } else {
+                // На всякий случай обновим страницу, если ответ нетипичный
+                window.location.reload();
+            }
+            cancelEditParticipantName();
+        } catch (e) {
+            console.error('Ошибка сохранения имени участника:', e);
+            alert(e.response?.data?.error || 'Не удалось сохранить имя участника');
+        } finally {
+            setIsSavingName(false);
+        }
+    }, [editingParticipantId, editingName, tournament?.id, cancelEditParticipantName]);
+
+    // Подписка на WS‑события обновления участников
+    useEffect(() => {
+        const socket = getSocketInstance && getSocketInstance();
+        if (!socket || !tournament?.id) return;
+
+        const onParticipantUpdate = (updateData) => {
+            try {
+                const tId = parseInt(updateData?.tournamentId);
+                if (isNaN(tId) || tId !== parseInt(tournament.id)) return;
+                const p = updateData?.participant;
+                const pid = p?.id;
+                if (!pid) return;
+
+                // Подсветка карточки
+                setFlashParticipantId(pid);
+                setTimeout(() => {
+                    setFlashParticipantId((curr) => curr === pid ? null : curr);
+                }, 2500);
+
+                // Мягкая синхронизация локального списка
+                const action = updateData?.action;
+                if (action === 'updated') {
+                    setLocalParticipants((prev) => prev.map(item => item.id === pid ? { ...item, ...p } : item));
+                } else if (action === 'added') {
+                    setLocalParticipants((prev) => (prev.some(item => item.id === pid) ? prev : [...prev, p]));
+                } else if (action === 'removed') {
+                    setLocalParticipants((prev) => prev.filter(item => item.id !== pid));
+                }
+            } catch (_) {}
+        };
+
+        socket.on('participant_update', onParticipantUpdate);
+        return () => socket.off('participant_update', onParticipantUpdate);
+    }, [tournament?.id]);
 
     const fetchQualifiers = async () => {
         if (!tournament?.id) return;
@@ -347,10 +439,10 @@ const TournamentAdminPanel = ({
                 </div>
 
                 {/* 🎯 МИНИМАЛИСТИЧНЫЙ СПИСОК УЧАСТНИКОВ */}
-                {participants && participants.length > 0 && (
+                {localParticipants && localParticipants.length > 0 && (
                     <div className="participants-section-v2">
                         <div className="section-header">
-                            <h4>Участники ({participants.length})</h4>
+                            <h4>Участники ({localParticipants.length})</h4>
                             {tournament?.status === 'active' && !hasBracket && (
                                 <div className="section-controls">
                                     <button 
@@ -374,8 +466,8 @@ const TournamentAdminPanel = ({
                         </div>
 
                         <div className="participants-grid-v2">
-                            {participants.map((participant, index) => (
-                                <div key={participant.id || index} className="participant-card-v2">
+                            {localParticipants.map((participant, index) => (
+                                <div key={participant.id || index} className={`participant-card-v2 ${flashParticipantId === participant.id ? 'participant-card-flash' : ''}`}>
                                     <div className="participant-info-v2">
                                         {/* АВАТАР УЧАСТНИКА */}
                                         <div className="participant-avatar-v2">
@@ -402,9 +494,53 @@ const TournamentAdminPanel = ({
                                                     {participant.name || participant.username || 'Участник'}
                                                 </Link>
                                             ) : (
-                                                <span className="participant-name-v2 unregistered">
-                                                    {participant.name || 'Незарегистрированный участник'}
-                                                </span>
+                                                <div className="participant-name-edit-wrap">
+                                                    {editingParticipantId === participant.id ? (
+                                                        <div className="participant-name-edit-row">
+                                                            <input
+                                                                className="participant-name-edit-input"
+                                                                type="text"
+                                                                value={editingName}
+                                                                onChange={(e) => setEditingName(e.target.value)}
+                                                                maxLength={50}
+                                                                autoFocus
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') saveParticipantName();
+                                                                    if (e.key === 'Escape') cancelEditParticipantName();
+                                                                }}
+                                                            />
+                                                            <div className="participant-name-edit-actions">
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-primary btn-xs"
+                                                                    onClick={saveParticipantName}
+                                                                    disabled={isSavingName}
+                                                                    title="Сохранить имя"
+                                                                >
+                                                                    Сохранить
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-secondary btn-xs"
+                                                                    onClick={cancelEditParticipantName}
+                                                                    disabled={isSavingName}
+                                                                    title="Отмена"
+                                                                >
+                                                                    Отмена
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="participant-name-v2 unregistered as-button"
+                                                            onClick={() => beginEditParticipantName(participant)}
+                                                            title="Изменить имя участника"
+                                                        >
+                                                            {participant.name || 'Незарегистрированный участник'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                             
                                             {/* ELO РЕЙТИНГ */}

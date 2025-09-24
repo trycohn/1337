@@ -335,6 +335,9 @@ router.post('/:id/add-participant', authenticateToken, verifyEmailRequired, veri
 // 🗑️ Удаление участника (для администраторов)
 router.delete('/:id/participants/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.removeParticipant);
 
+// ✏️ Обновление имени незарегистрированного участника (для администраторов)
+router.put('/:id/participants/:participantId/name', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.updateParticipantName);
+
 // 📧 Отправка приглашения в турнир (для администраторов)
 router.post('/:id/invite', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.inviteToTournament);
 

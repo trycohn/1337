@@ -1,4 +1,7 @@
 const ParticipantService = require('../../services/tournament/ParticipantService');
+const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
+const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
+const { logTournamentEvent } = require('../../utils/tournament/logger');
 const InvitationService = require('../../services/tournament/InvitationService');
 const TournamentValidator = require('../../validators/tournament/TournamentValidator');
 const { asyncHandler } = require('../../utils/asyncHandler');
@@ -106,6 +109,51 @@ class ParticipantController {
         );
         
         res.json({ message: result.message });
+    });
+
+    // ✏️ Обновление имени незарегистрированного участника (только для admin/creator)
+    static updateParticipantName = asyncHandler(async (req, res) => {
+        const { id, participantId } = req.params;
+        const { name } = req.body || {};
+
+        // Валидации
+        const idCheck = TournamentValidator.validateTournamentId(id);
+        if (!idCheck.isValid) return res.status(400).json({ error: idCheck.errors.join(', ') });
+
+        const pId = parseInt(participantId);
+        if (isNaN(pId) || pId <= 0) return res.status(400).json({ error: 'Неверный ID участника' });
+
+        const nameCheck = TournamentValidator.validateString(name, 'Имя участника', true, 2, 50);
+        if (!nameCheck.isValid) return res.status(400).json({ error: nameCheck.errors.join(', ') });
+
+        // Проверяем турнир и участника
+        const tournamentId = idCheck.value;
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) return res.status(404).json({ error: 'Турнир не найден' });
+
+        const participant = await ParticipantRepository.getById(pId);
+        if (!participant || participant.tournament_id !== tournamentId) {
+            return res.status(404).json({ error: 'Участник не найден в данном турнире' });
+        }
+
+        // Разрешаем изменять только незарегистрированным (добавленным вручную) — без user_id
+        if (participant.user_id) {
+            return res.status(400).json({ error: 'Нельзя изменить имя у зарегистрированного пользователя' });
+        }
+
+        // Обновляем имя
+        const updated = await ParticipantRepository.update(pId, { name: nameCheck.value });
+
+        // Лог и WS-оповещение
+        await logTournamentEvent(tournamentId, req.user.id, 'participant_name_updated', {
+            participantId: pId,
+            oldName: participant.name,
+            newName: nameCheck.value
+        });
+
+        await ParticipantService._broadcastParticipantUpdate(tournamentId, 'updated', updated, req.user.id);
+
+        return res.json({ success: true, participant: updated });
     });
 
     // 🎲 Генерация команд для микс-турнира
