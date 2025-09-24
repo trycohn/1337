@@ -577,8 +577,17 @@ const BracketRenderer = ({
     // Основной рендер с поддержкой разных форматов
     
     if (isDoubleElimination) {
+        try {
+            const wKeys = Object.keys((groupedResolved && groupedResolved.winners) || {});
+            const lKeys = Object.keys((groupedResolved && groupedResolved.losers) || {});
+            const gfIds = Array.isArray(groupedResolved?.grandFinal) ? groupedResolved.grandFinal.map(m => m.id) : [];
+            // eslint-disable-next-line no-console
+            console.log('🎯 [DE] Группировка:', { winnersRounds: wKeys, losersRounds: lKeys, grandFinalIds: gfIds });
+            // eslint-disable-next-line no-console
+            console.log('🎯 [DE] Матчи типов:', (matches || []).reduce((acc, m) => { const t=(m?.bracket_type||'').toString(); acc[t]=(acc[t]||0)+1; return acc; }, {}));
+        } catch (_) {}
         // Подготовка данных для боковой колонки (Grand Final/Reset и 3-е место)
-        const grandFinalMatches = Array.isArray(groupedMatches.grandFinal) ? groupedMatches.grandFinal : [];
+        const grandFinalMatches = Array.isArray(groupedResolved?.grandFinal) ? groupedResolved.grandFinal : [];
 
         // Рендер Double Elimination с Winners + боковая колонка справа
         return (

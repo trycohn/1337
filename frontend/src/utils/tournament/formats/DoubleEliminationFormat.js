@@ -86,6 +86,11 @@ export class DoubleEliminationFormat extends TournamentFormat {
         // Если есть цели loser_next_match_id — считаем их матчами нижней сетки
         if (loserTargets.size > 0) {
           const losersSet = new Set(loserTargets);
+          // Поддержка явных типов loser* в качестве начальных узлов
+          matches.forEach(m => {
+            const t = (m.bracket_type || '').toString().toLowerCase();
+            if (t.startsWith('loser')) losersSet.add(Number(m.id));
+          });
           // Протягиваем по next_match_id вперёд, чтобы собрать всю цепочку низов
           const queue = Array.from(losersSet);
           while (queue.length) {
