@@ -40,17 +40,23 @@ const BracketRenderer = ({
     const recomputeContainerSize = useCallback(() => {
         try {
             if (!rendererRef.current) return;
-            const el = rendererRef.current;
-            // находим главный контентный блок (rounds container)
-            const rounds = el.querySelector('.bracket-rounds-container');
-            const target = rounds || el;
+            // Меряем сам .bracket-renderer (по факту — максимальный вложенный элемент)
+            const target = rendererRef.current;
             const rect = target.getBoundingClientRect();
-            const intrinsic = Math.max(rect.height || 0, target.scrollHeight || 0, target.offsetHeight || 0);
-            const paddingReserve = 80; // запас под внутренние отступы/панель
-            const newHeight = Math.max(0, Math.ceil(intrinsic + paddingReserve));
-            setContainerHeight(newHeight);
+            const h = Math.max(rect.height || 0, target.scrollHeight || 0, target.offsetHeight || 0);
+            const paddingReserve = 40; // небольшой запас под внутренние отступы
+            const newHeight = Math.max(0, Math.ceil(h + paddingReserve));
+            setContainerHeight((prev) => (prev == null ? newHeight : Math.max(prev, newHeight)));
         } catch (_) {}
     }, []);
+
+    // Несколько отложенных замеров на старте, чтобы поймать финальную высоту после рендеринга
+    const scheduleInitialMeasurements = useCallback(() => {
+        const run = () => requestAnimationFrame(recomputeContainerSize);
+        run();
+        setTimeout(run, 50);
+        setTimeout(run, 120);
+    }, [recomputeContainerSize]);
 
     // Мобильный режим
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
@@ -107,16 +113,14 @@ const BracketRenderer = ({
 
     // Пересчёт только на монтировании и при первом приходе матчей
     useLayoutEffect(() => {
-        requestAnimationFrame(recomputeContainerSize);
-    }, [recomputeContainerSize]);
+        scheduleInitialMeasurements();
+    }, [scheduleInitialMeasurements]);
 
     useEffect(() => {
-        if (containerHeight == null) requestAnimationFrame(recomputeContainerSize);
-    }, [matches, containerHeight, recomputeContainerSize]);
+        scheduleInitialMeasurements();
+    }, [matches, scheduleInitialMeasurements]);
 
-    const containerDynamicStyle = useMemo(() => (
-        containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }
-    ), [containerHeight]);
+    
 
     const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;
     
@@ -532,7 +536,7 @@ const BracketRenderer = ({
             <div 
                 className={`bracket-renderer-container bracket-double-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
                 ref={containerRef}
-                style={containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }}
+                style={containerHeight != null ? { height: `${containerHeight}px` } : undefined}
             >
                 {renderNavigationPanel()}
                 {isMobile && orderedRounds.length > 0 && (
@@ -719,7 +723,7 @@ const BracketRenderer = ({
         <div 
             className={`bracket-renderer-container bracket-single-elimination ${readOnly ? 'bracket-readonly' : ''} ${isDragging ? 'dragging' : ''}`}
             ref={containerRef}
-            style={containerHeight ? { height: `${Math.max(420, containerHeight)}px` } : { height: '420px' }}
+            style={containerHeight != null ? { height: `${containerHeight}px` } : undefined}
         >
             {renderNavigationPanel()}
             
@@ -982,11 +986,11 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     return (
         <div 
-            className={`bracket-match-card ${getBracketTypeStyle()}`}
+            className={`bracket-match-card ${getBracketTypeStyle()}${onMatchClick ? '' : ' not-clickable'}`}
             onClick={handleMatchClick}
-            style={{ cursor: onMatchClick ? 'pointer' : 'default', position: 'relative' }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            style={{ position: 'relative' }}
         >
             <div className="bracket-match-info">
                 <span className="bracket-match-title">{getMatchTitle()}</span>
@@ -1041,97 +1045,42 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 <div
                     className="bracket-match-actions"
                     onClick={(e) => e.stopPropagation()}
-                    style={{
-                        position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        display: 'flex',
-                        gap: 6,
-                        background: 'rgba(0,0,0,0.85)',
-                        border: '1px solid #ff0000',
-                        borderRadius: 6,
-                        padding: '6px 8px',
-                        zIndex: 3
-                    }}
                 >
                     <button
                         type="button"
+                        className="bracket-action-btn bracket-action-btn--neutral"
                         onClick={(e) => { e.stopPropagation(); const url = `/tournaments/${tournament.id}/match/${match.id}`; window.location.href = url; }}
-                        style={{
-                            background: '#111',
-                            color: '#fff',
-                            border: '1px solid #333',
-                            borderRadius: 4,
-                            padding: '4px 8px',
-                            cursor: 'pointer'
-                        }}
                     >
                         Открыть матч
                     </button>
                     {activeLobbyId && (
                         <button
                             type="button"
+                            className="bracket-action-btn bracket-action-btn--accent"
                             onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
-                            style={{
-                                background: '#111',
-                                color: '#fff',
-                                border: '1px solid #ff0000',
-                                borderRadius: 4,
-                                padding: '4px 8px',
-                                cursor: 'pointer'
-                            }}
                             title="Перейти в лобби"
                         >
                             Перейти в лобби
                         </button>
                     )}
-                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <div className="bracket-format-menu-wrapper">
                         <button
                             type="button"
                             disabled={isCreatingLobby}
+                            className={`bracket-action-btn bracket-action-btn--primary${isCreatingLobby ? ' is-disabled' : ''}`}
                             onClick={handleCreateLobby}
-                            style={{
-                                background: isCreatingLobby ? '#222' : '#ff0000',
-                                color: '#fff',
-                                border: '1px solid #ff0000',
-                                borderRadius: 4,
-                                padding: '4px 8px',
-                                cursor: isCreatingLobby ? 'default' : 'pointer'
-                            }}
                             title="Создать лобби"
                         >
                             {isCreatingLobby ? 'Создание…' : 'Создать лобби'}
                         </button>
                         {isFormatMenuOpen && (
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    right: 0,
-                                    background: '#000',
-                                    border: '1px solid #ff0000',
-                                    borderRadius: 6,
-                                    padding: 6,
-                                    marginTop: 6,
-                                    display: 'flex',
-                                    gap: 6,
-                                    zIndex: 10
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                            >
+                            <div className="bracket-format-menu" onClick={(e) => e.stopPropagation()}>
                                 {['bo1','bo3','bo5'].map(fmt => (
                                     <button
                                         key={fmt}
                                         type="button"
+                                        className="bracket-format-menu-btn"
                                         onClick={() => createLobbyWithFormat(fmt)}
-                                        style={{
-                                            background: '#111',
-                                            color: '#fff',
-                                            border: '1px solid #333',
-                                            borderRadius: 4,
-                                            padding: '4px 8px',
-                                            cursor: 'pointer'
-                                        }}
                                         title={`Создать лобби (${fmt.toUpperCase()})`}
                                     >
                                         {fmt.toUpperCase()}
@@ -1146,30 +1095,11 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 <div
                     className="bracket-match-actions"
                     onClick={(e) => e.stopPropagation()}
-                    style={{
-                        position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        display: 'flex',
-                        gap: 6,
-                        background: 'rgba(0,0,0,0.85)',
-                        border: '1px solid #ff0000',
-                        borderRadius: 6,
-                        padding: '6px 8px',
-                        zIndex: 3
-                    }}
                 >
                     <button
                         type="button"
+                        className="bracket-action-btn bracket-action-btn--accent"
                         onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
-                        style={{
-                            background: '#111',
-                            color: '#fff',
-                            border: '1px solid #ff0000',
-                            borderRadius: 4,
-                            padding: '4px 8px',
-                            cursor: 'pointer'
-                        }}
                         title="Перейти в лобби"
                     >
                         Перейти в лобби

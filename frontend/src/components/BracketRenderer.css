@@ -975,9 +975,63 @@
 }
 
 .bracket-match-actions {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 3;
 }
+
+/* Кнопки действий в карточке матча */
+.bracket-action-btn {
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+.bracket-action-btn--neutral { border-color: #333; }
+.bracket-action-btn--accent { border-color: #ff0000; }
+.bracket-action-btn--primary { background: #ff0000; border-color: #ff0000; }
+.bracket-action-btn[disabled] { background: #222; cursor: default; }
+
+/* Выпадающее меню выбора формата лобби */
+.bracket-format-menu-wrapper { position: relative; display: inline-flex; align-items: center; }
+.bracket-format-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #000;
+    border: 1px solid #ff0000;
+    border-radius: 6px;
+    padding: 6px;
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+}
+.bracket-format-menu-btn {
+    background: #111;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+/* Курсор для некликабельной карточки */
+.bracket-match-card.not-clickable { cursor: default; }
+
+/* Центрирование содержимого контейнера раундов */
+.bracket-rounds-container.center-rows { justify-content: center; }
 
 .bracket-render-section-header .bracket-render-grand-final-title {
     font-size: 24px;
