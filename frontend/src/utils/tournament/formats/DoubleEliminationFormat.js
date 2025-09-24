@@ -72,6 +72,50 @@ export class DoubleEliminationFormat extends TournamentFormat {
       }
     });
     
+    // Fallback: если losers пуст, пробуем вывести нижнюю сетку из графа связей
+    const losersIsEmpty = grouped.losers.length === 0;
+    if (losersIsEmpty && Array.isArray(matches) && matches.length > 0) {
+      try {
+        const idToMatch = new Map();
+        matches.forEach(m => idToMatch.set(Number(m.id), m));
+        const loserTargets = new Set(
+          matches
+            .map(m => Number(m.loser_next_match_id))
+            .filter(v => !!v)
+        );
+        // Если есть цели loser_next_match_id — считаем их матчами нижней сетки
+        if (loserTargets.size > 0) {
+          const losersSet = new Set(loserTargets);
+          // Протягиваем по next_match_id вперёд, чтобы собрать всю цепочку низов
+          const queue = Array.from(losersSet);
+          while (queue.length) {
+            const curId = queue.shift();
+            const cur = idToMatch.get(curId);
+            if (!cur) continue;
+            const nextId = Number(cur.next_match_id);
+            if (nextId && !losersSet.has(nextId)) {
+              const next = idToMatch.get(nextId);
+              // Исключим grand final из низов
+              const t = (next?.bracket_type || '').toString().toLowerCase();
+              if (t !== 'grand_final' && t !== 'grand_final_reset') {
+                losersSet.add(nextId);
+                queue.push(nextId);
+              }
+            }
+          }
+          // Пересобираем группы: то, что в losersSet → losers; GF остаётся как есть; остальное → winners
+          grouped.winners = [];
+          grouped.losers = [];
+          grouped.grandFinal = [];
+          matches.forEach(m => {
+            const t = (m.bracket_type || '').toString().toLowerCase();
+            if (t === 'grand_final' || t === 'grand_final_reset') { grouped.grandFinal.push(m); return; }
+            if (losersSet.has(Number(m.id))) grouped.losers.push(m); else grouped.winners.push(m);
+          });
+        }
+      } catch (_) {}
+    }
+
     // Сортируем матчи по раундам внутри каждой группы
     Object.keys(grouped).forEach(key => {
       grouped[key].sort((a, b) => {

@@ -163,6 +163,29 @@ const BracketRenderer = ({
         return base;
     }, [matches, tournamentFormat]);
 
+    // ДополнительныйFallback: если низы пустые — строим из loser_next_match_id и типов
+    const groupedResolved = useMemo(() => {
+        const g = groupedMatches || {};
+        const losersEmpty = !g?.losers || Object.keys(g.losers || {}).length === 0;
+        if (!losersEmpty) return g;
+        try {
+            const loserTargets = new Set((matches || []).map(m => Number(m?.loser_next_match_id)).filter(Boolean));
+            const losersByRound = {};
+            (matches || []).forEach(m => {
+                const type = (m?.bracket_type || '').toString().toLowerCase();
+                const isLoser = type.includes('loser') || loserTargets.has(Number(m.id));
+                if (!isLoser) return;
+                const r = parseInt(m.round || 0);
+                if (!losersByRound[r]) losersByRound[r] = [];
+                losersByRound[r].push(m);
+            });
+            if (Object.keys(losersByRound).length > 0) {
+                return { ...g, losers: losersByRound };
+            }
+        } catch (_) {}
+        return g;
+    }, [groupedMatches, matches]);
+
     // Убрали автоматическое выравнивание ширин секций
     
     // Предрасчет матчей за 3-е место на верхнем уровне (хуки должны вызываться до ранних return)
@@ -176,13 +199,13 @@ const BracketRenderer = ({
         tournament?.bracket_type === 'double_elimination' ||
         tournament?.bracket_type === 'doubleElimination' ||
         tournament?.bracket_type === 'DOUBLE_ELIMINATION' ||
-        ((groupedMatches?.losers && Object.keys(groupedMatches.losers).length > 0) ||
-         (groupedMatches?.grandFinal && groupedMatches.grandFinal.length > 0))
-    ), [tournament?.bracket_type, groupedMatches?.losers, groupedMatches?.grandFinal]);
+        ((groupedResolved?.losers && Object.keys(groupedResolved.losers).length > 0) ||
+         (groupedResolved?.grandFinal && groupedResolved.grandFinal.length > 0))
+    ), [tournament?.bracket_type, groupedResolved?.losers, groupedResolved?.grandFinal]);
 
     // Раунды и индексы для свайпа
-    const winnerRounds = useMemo(() => Object.keys(groupedMatches.winners || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.winners]);
-    const loserRounds = useMemo(() => Object.keys(groupedMatches.losers || {}).map(Number).sort((a,b)=>a-b), [groupedMatches.losers]);
+    const winnerRounds = useMemo(() => Object.keys((groupedResolved && groupedResolved.winners) || {}).map(Number).sort((a,b)=>a-b), [groupedResolved?.winners]);
+    const loserRounds = useMemo(() => Object.keys((groupedResolved && groupedResolved.losers) || {}).map(Number).sort((a,b)=>a-b), [groupedResolved?.losers]);
     const seRounds    = useMemo(() => {
         const arr = Object.keys(groupedMatches || {}).map(Number).sort((a,b)=>a-b);
         return isSwiss ? arr.reverse() : arr;
@@ -198,8 +221,8 @@ const BracketRenderer = ({
             for (let i = 0; i < maxLen; i++) {
                 const wRoundNum = winnerRounds[i];
                 const lRoundNum = loserRounds[i];
-                const wData = wRoundNum != null ? ((groupedMatches.winners || {})[wRoundNum] || []) : null;
-                const lData = lRoundNum != null ? ((groupedMatches.losers || {})[lRoundNum] || []) : null;
+                const wData = wRoundNum != null ? (((groupedResolved && groupedResolved.winners) || {})[wRoundNum] || []) : null;
+                const lData = lRoundNum != null ? (((groupedResolved && groupedResolved.losers) || {})[lRoundNum] || []) : null;
                 list.push({
                     key: `pair-${i}`,
                     type: 'pair',
@@ -208,7 +231,7 @@ const BracketRenderer = ({
                 });
             }
             // Grand final(s)
-            const grandFinalMatches = Array.isArray(groupedMatches.grandFinal) ? groupedMatches.grandFinal : [];
+            const grandFinalMatches = Array.isArray(groupedResolved?.grandFinal) ? groupedResolved.grandFinal : [];
             grandFinalMatches.forEach((m, idx) => {
                 list.push({ key: `grand_final-${idx}`, type: 'grand_final', round: 1, data: [m] });
             });
@@ -594,7 +617,7 @@ const BracketRenderer = ({
                 >
                     <div className="bracket-upper-and-finals-row bracket-full-bleed">
                         {/* ===== UPPER BRACKET (WINNERS) ===== */}
-                        {groupedMatches.winners && Object.keys(groupedMatches.winners).length > 0 && (
+                        {groupedResolved?.winners && Object.keys(groupedResolved.winners).length > 0 && (
                             <div 
                                 className="bracket-render-upper-section"
                                 ref={winnersSectionRef}
@@ -637,7 +660,7 @@ const BracketRenderer = ({
                                             return null;
                                         })()
                                     ) : (
-                                        Object.entries(groupedMatches.winners)
+                                        Object.entries(groupedResolved.winners)
                                             .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                             .map(([round, matches]) => {
                                                 const context = getRoundContext(parseInt(round), matches, 'winner');
@@ -685,7 +708,7 @@ const BracketRenderer = ({
                     </div>
                     
                     {/* ===== LOWER BRACKET (LOSERS) ===== */}
-                    {groupedMatches.losers && Object.keys(groupedMatches.losers).length > 0 && (
+                    {groupedResolved?.losers && Object.keys(groupedResolved.losers).length > 0 && (
                         <div 
                             className="bracket-render-lower-section"
                             ref={losersSectionRef}
@@ -726,7 +749,7 @@ const BracketRenderer = ({
                                         return null;
                                     })()
                                 ) : (
-                                    Object.entries(groupedMatches.losers)
+                                    Object.entries(groupedResolved.losers)
                                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
                                         .map(([round, matches]) => {
                                             const context = getRoundContext(parseInt(round), matches, 'loser');
