@@ -438,7 +438,7 @@ const BracketRenderer = ({
         return (
             <div className="bracket-renderer-container">
                 <div className="bracket-empty-message">
-                    🎯 Турнирная сетка пока не создана
+                    Турнирная сетка пока не создана
                 </div>
             </div>
         );

@@ -117,10 +117,10 @@ const useDragAndZoom = ({
         return {
             ref: containerRef,
             style: {
-                ...dragHandlers.style,
                 transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
                 transformOrigin: 'top left',
-                touchAction: 'auto'
+                touchAction: 'auto',
+                cursor: 'default'
             },
             // Объединяем обработчики drag и zoom
             // Не навешиваем drag мышью: оставляем только зум и жесты, чтобы не блокировать прокрутку

@@ -71,14 +71,12 @@ const useDrag = ({
         
         setIsDragging(true);
         
-        // Предотвращаем выделение текста
-        e.preventDefault();
+        // Не блокируем стандартный скролл/поведение — только убираем выделение текста через CSS
         
         // Добавляем обработчики к документу
         const mouseMove = (e) => {
             if (!dragStateRef.current.isDragging) return;
-            
-            e.preventDefault();
+            // Не блокируем скролл страницы при перемещении курсора
             
             // Отменяем предыдущую анимацию
             if (dragStateRef.current.animationId) {
@@ -136,8 +134,8 @@ const useDrag = ({
             }
         };
         
-        document.addEventListener('mousemove', mouseMove, { passive: false });
-        document.addEventListener('mouseup', mouseUp, { passive: false });
+        document.addEventListener('mousemove', mouseMove, { passive: true });
+        document.addEventListener('mouseup', mouseUp, { passive: true });
         
         // Колбэк начала перетаскивания
         if (onDragStart) {
