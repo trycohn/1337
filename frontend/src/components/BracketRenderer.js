@@ -536,8 +536,16 @@ const BracketRenderer = ({
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
                                             {/* Ростеры команд под карточкой */}
-                                            {renderRosterList(match?.participants?.[0]?.id ? null : match.team1_id)}
-                                            {renderRosterList(match?.participants?.[1]?.id ? null : match.team2_id)}
+                                            {(() => {
+                                                const p1 = parseInt(match?.participants?.[0]?.id, 10);
+                                                const p2 = parseInt(match?.participants?.[1]?.id, 10);
+                                                return (
+                                                    <>
+                                                        {renderRosterList(Number.isFinite(p1) ? p1 : null)}
+                                                        {renderRosterList(Number.isFinite(p2) ? p2 : null)}
+                                                    </>
+                                                );
+                                            })()}
                         </div>
                     ))}
                 </div>
@@ -616,8 +624,16 @@ const BracketRenderer = ({
                                 customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
-                            {renderRosterList(match.team1_id)}
-                            {renderRosterList(match.team2_id)}
+                            {(() => {
+                                const p1 = parseInt(match?.participants?.[0]?.id, 10);
+                                const p2 = parseInt(match?.participants?.[1]?.id, 10);
+                                return (
+                                    <>
+                                        {renderRosterList(Number.isFinite(p1) ? p1 : null)}
+                                        {renderRosterList(Number.isFinite(p2) ? p2 : null)}
+                                    </>
+                                );
+                            })()}
                         </div>
                     ))}
                 </div>
