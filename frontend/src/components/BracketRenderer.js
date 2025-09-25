@@ -502,6 +502,8 @@ const BracketRenderer = ({
                                 customLabel={match.bracket_type === 'placement' ? '3rd Place' : null}
                                 matchType={match.bracket_type}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
+                                showRosters={showRosters}
+                                rostersByTeamId={rostersByTeamId}
                             />
                         </div>
                     ))}
