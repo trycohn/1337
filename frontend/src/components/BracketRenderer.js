@@ -25,7 +25,8 @@ const BracketRenderer = ({
     onMatchClick,
     readOnly = false,
     focusMatchId = null,
-    isAdminOrCreator = false
+    isAdminOrCreator = false,
+    allowRosterToggleInReadOnly = false
 }) => {
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
@@ -593,67 +594,84 @@ const BracketRenderer = ({
     };
 
     // Рендер панели навигации
-    const renderNavigationPanel = () => (
-        readOnly ? null : (
-            <div className="bracket-navigation-panel">
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={zoomOut}
-                    disabled={!canZoomOut}
-                    title="Уменьшить масштаб"
-                >
-                    <span className="bracket-nav-icon">−</span>
-                </button>
+    const renderNavigationPanel = () => {
+        if (!readOnly) {
+            return (
+                <div className="bracket-navigation-panel">
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={zoomOut}
+                        disabled={!canZoomOut}
+                        title="Уменьшить масштаб"
+                    >
+                        <span className="bracket-nav-icon">−</span>
+                    </button>
 
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={zoomIn}
-                    disabled={!canZoomIn}
-                    title="Увеличить масштаб"
-                >
-                    <span className="bracket-nav-icon">+</span>
-                </button>
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={zoomIn}
+                        disabled={!canZoomIn}
+                        title="Увеличить масштаб"
+                    >
+                        <span className="bracket-nav-icon">+</span>
+                    </button>
 
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={resetAll}
-                    title="Восстановить"
-                >
-                    <span className="bracket-nav-icon">⌂</span>
-                </button>
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={resetAll}
+                        title="Восстановить"
+                    >
+                        <span className="bracket-nav-icon">⌂</span>
+                    </button>
 
-                {/* 🆕 Toggle составов команд */}
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={toggleRosters}
-                    title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
-                    disabled={loadingRosters}
-                >
-                    <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
-                </button>
+                    {/* 🆕 Toggle составов команд */}
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={toggleRosters}
+                        title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
+                        disabled={loadingRosters}
+                    >
+                        <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
+                    </button>
 
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={centerView}
-                    title="Центрировать"
-                >
-                    <span className="bracket-nav-icon">⊙</span>
-                </button>
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={centerView}
+                        title="Центрировать"
+                    >
+                        <span className="bracket-nav-icon">⊙</span>
+                    </button>
 
-                <button 
-                    className="bracket-nav-icon-button"
-                    onClick={() => {
-                        const matchParam = focusMatchId ? String(focusMatchId) : (selectedMatch ? (typeof selectedMatch === 'object' ? selectedMatch.id : selectedMatch) : null);
-                        const url = `/tournaments/${tournament?.id}/bracket${matchParam ? `?match=${matchParam}` : ''}`;
-                        window.open(url, '_blank', 'noopener');
-                    }}
-                    title="Открыть в новой вкладке"
-                >
-                    <span className="bracket-nav-icon">↗</span>
-                </button>
-            </div>
-        )
-    );
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={() => {
+                            const matchParam = focusMatchId ? String(focusMatchId) : (selectedMatch ? (typeof selectedMatch === 'object' ? selectedMatch.id : selectedMatch) : null);
+                            const url = `/tournaments/${tournament?.id}/bracket${matchParam ? `?match=${matchParam}` : ''}`;
+                            window.open(url, '_blank', 'noopener');
+                        }}
+                        title="Открыть в новой вкладке"
+                    >
+                        <span className="bracket-nav-icon">↗</span>
+                    </button>
+                </div>
+            );
+        }
+        if (readOnly && allowRosterToggleInReadOnly) {
+            return (
+                <div className="bracket-navigation-panel">
+                    <button 
+                        className="bracket-nav-icon-button"
+                        onClick={toggleRosters}
+                        title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
+                        disabled={loadingRosters}
+                    >
+                        <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
+                    </button>
+                </div>
+            );
+        }
+        return null;
+    };
 
     // Основной рендер с поддержкой разных форматов
     

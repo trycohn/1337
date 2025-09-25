@@ -160,6 +160,7 @@ function BracketSharePage() {
                 onMatchClick={null}
                 readOnly
                 focusMatchId={focusMatchId}
+              allowRosterToggleInReadOnly
               />
             )}
           </div>

@@ -646,10 +646,18 @@
 }
 
 .bracket-team-roster {
-    font-size: 10px;
-    font-weight: 400;
     color: #ddd;
-    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    margin-bottom: 6px;
+    align-items: flex-start;
+    background: #1d1d1d;
+    border-bottom: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 16px;
+    line-height: 1.5em;
+
 }
 
 .bracket-team-roster__item {
