@@ -106,7 +106,10 @@ const useDragAndZoom = ({
                     setPosition((prev) => ({ x: prev.x - primaryDelta, y: prev.y }));
                     return;
                 }
-                if (typeof zoomHandlers.onWheel === 'function') zoomHandlers.onWheel(e);
+                // Вертикальный скролл страницы по умолчанию; зумим только при нажатом Ctrl
+                if (typeof zoomHandlers.onWheel === 'function' && e.ctrlKey) {
+                    zoomHandlers.onWheel(e);
+                }
             } catch (_) {}
         };
 

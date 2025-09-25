@@ -14,7 +14,7 @@
     font-family: 'Play', Arial, sans-serif;
     color: #fff;
     /* Контейнер остается неподвижным */
-    cursor: grab;
+    cursor: default;
     user-select: none;
     /* Оптимизация для перетаскивания */
     -webkit-touch-callout: none;
@@ -56,13 +56,8 @@
 }
 
 
-.bracket-renderer-container:active {
-    cursor: grabbing;
-}
-
-.bracket-renderer-container.dragging {
-    cursor: grabbing;
-}
+.bracket-renderer-container:active { cursor: default; }
+.bracket-renderer-container.dragging { cursor: default; }
 
 .bracket-renderer {
     position: absolute;
