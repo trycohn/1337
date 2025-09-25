@@ -645,6 +645,27 @@
     white-space: nowrap;
 }
 
+.bracket-team-roster {
+    font-size: 10px;
+    font-weight: 400;
+    color: #ddd;
+    margin-top: 4px;
+}
+
+.bracket-team-roster__item {
+    margin-right: 8px;
+}
+
+.bracket-team-roster__name {
+    color: inherit;
+    text-decoration: none;
+}
+
+.bracket-team-roster__name.is-captain {
+    font-weight: 700;
+    color: rgb(167, 125, 42);
+}
+
 .bracket-participant-score {
     font-family: 'Play', Arial, sans-serif;
     font-weight: 700;

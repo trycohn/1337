@@ -1052,18 +1052,18 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
         if (members.length === 0) return null;
         const captainUserId = roster?.captain_user_id || null;
         return (
-            <div className="bracket-team-roster" style={{ fontSize: 10, fontWeight: 400, color: '#ddd', marginTop: 4 }}>
+            <div className="bracket-team-roster">
                 {members.map((m, idx) => {
                     const isCaptain = (m.is_captain === true) || (captainUserId && Number(m.user_id) === Number(captainUserId));
                     const name = m.name || m.username || `Игрок ${idx + 1}`;
-                    const style = isCaptain ? { fontWeight: 700, color: 'rgb(167, 125, 42)' } : undefined;
                     const hasProfile = Number.isInteger(Number(m.user_id));
+                    const nameCls = `bracket-team-roster__name${isCaptain ? ' is-captain' : ''}`;
                     return (
-                        <span key={m.id || `${teamId}-${idx}`} style={{ marginRight: 8 }}>
+                        <span key={m.id || `${teamId}-${idx}`} className="bracket-team-roster__item">
                             {hasProfile ? (
-                                <a href={`/profile?userId=${m.user_id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={style}>{name}</a>
+                                <a href={`/profile?userId=${m.user_id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className={nameCls}>{name}</a>
                             ) : (
-                                <span style={style}>{name}</span>
+                                <span className={nameCls}>{name}</span>
                             )}
                         </span>
                     );
