@@ -101,13 +101,14 @@ const useDragAndZoom = ({
             try {
                 if (enableShiftWheelPan && e.shiftKey && !e.ctrlKey) {
                     // Горизонтальный скролл: сдвигаем содержимое по оси X
-                    e.preventDefault();
+                    // Не блокируем вертикальный скролл страницы: модифицируем только X
                     const primaryDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
                     setPosition((prev) => ({ x: prev.x - primaryDelta, y: prev.y }));
                     return;
                 }
                 // Вертикальный скролл страницы по умолчанию; зумим только при нажатом Ctrl
                 if (typeof zoomHandlers.onWheel === 'function' && e.ctrlKey) {
+                    e.preventDefault();
                     zoomHandlers.onWheel(e);
                 }
             } catch (_) {}

@@ -179,15 +179,14 @@ const BracketRenderer = ({
 
     
 
-    const effectiveHandlers = (readOnly || isMobile)
-        ? {}
-        : (() => {
-            try {
-                if (!handlers) return {};
-                const { onMouseDown, ...rest } = handlers;
-                return rest; // убираем drag, сохраняем зум/transform
-            } catch (_) { return {}; }
-        })();
+    const effectiveHandlers = useMemo(() => {
+        if (readOnly || isMobile) return {};
+        try {
+            if (!handlers) return {};
+            const { onMouseDown, ...rest } = handlers;
+            return rest; // убираем drag, сохраняем зум/transform/колесо
+        } catch (_) { return {}; }
+    }, [readOnly, isMobile, handlers]);
     
     // Получаем формат турнира (нормализуем тип + DE fallback по данным матчей)
     const tournamentFormat = useMemo(() => {

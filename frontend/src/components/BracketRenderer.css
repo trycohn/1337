@@ -28,9 +28,7 @@
     -moz-user-drag: none;
     -ms-user-drag: none;
 }
-.bracket-renderer-container {
-    overscroll-behavior: contain;
-}
+.bracket-renderer-container { overscroll-behavior: auto; }
 .bracket-renderer-container.bracket-readonly {
     /* В режиме отдельной страницы: снимаем любые ограничения контейнера */
     cursor: default;
@@ -124,7 +122,7 @@
 .triangle-right {
     border-left: 12px solid #fff;
 }
-.bracket-renderer { overscroll-behavior: contain; }
+.bracket-renderer { overscroll-behavior: auto; }
 
 .bracket-double-elimination {
     flex-direction: column;
