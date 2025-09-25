@@ -283,6 +283,20 @@ class TeamRepository {
                     bestRating = rating;
                     bestMember = member;
                     bestMember.usedManualRating = usedManualRating; // 🆕 Сохраняем флаг
+                } else if (rating === bestRating) {
+                    // 🔧 Тай-брейк: приоритет зарегистрированным пользователям; иначе случайный выбор
+                    const candidateRegistered = !!member.user_id;
+                    const currentRegistered = !!(bestMember && bestMember.user_id);
+                    if (candidateRegistered && !currentRegistered) {
+                        bestMember = member;
+                        bestMember.usedManualRating = usedManualRating;
+                    } else if (candidateRegistered === currentRegistered) {
+                        // Случайно выбираем одного из равных по рейтингу
+                        if (Math.random() < 0.5) {
+                            bestMember = member;
+                            bestMember.usedManualRating = usedManualRating;
+                        }
+                    }
                 }
             }
             
@@ -659,6 +673,19 @@ class TeamRepository {
                             bestRating = rating;
                             bestMember = member;
                             bestMember.usedManualRating = usedManualRating;
+                        } else if (rating === bestRating) {
+                            // 🔧 Тай-брейк: приоритет зарегистрированным пользователям; иначе случайный выбор
+                            const candidateRegistered = !!member.user_id;
+                            const currentRegistered = !!(bestMember && bestMember.user_id);
+                            if (candidateRegistered && !currentRegistered) {
+                                bestMember = member;
+                                bestMember.usedManualRating = usedManualRating;
+                            } else if (candidateRegistered === currentRegistered) {
+                                if (Math.random() < 0.5) {
+                                    bestMember = member;
+                                    bestMember.usedManualRating = usedManualRating;
+                                }
+                            }
                         }
                     }
                     

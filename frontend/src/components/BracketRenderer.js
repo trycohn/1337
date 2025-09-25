@@ -39,6 +39,59 @@ const BracketRenderer = ({
 
     // Авто‑подгон высоты контейнера под фактический размер (с учётом zoom/transform)
     const [containerHeight, setContainerHeight] = useState(null);
+    // 🆕 РОСТЕРЫ КОМАНД ДЛЯ РАСКРЫТИЯ СОСТАВОВ
+    const [showRosters, setShowRosters] = useState(false);
+    const [rostersByTeamId, setRostersByTeamId] = useState({}); // { [teamId]: { team_id, team_name, captain_user_id, members: [] } }
+    const [loadingRosters, setLoadingRosters] = useState(false);
+
+    const fetchTeamRosters = useCallback(async () => {
+        if (!tournament?.id) return;
+        setLoadingRosters(true);
+        try {
+            let api;
+            try { api = require('../axios').default; } catch (_) { api = require('../utils/api').default; }
+            const res = await api.get(`/api/tournaments/${tournament.id}/team-rosters`);
+            const data = res?.data?.rosters || {};
+            setRostersByTeamId(data);
+        } catch (_) {
+            setRostersByTeamId({});
+        } finally {
+            setLoadingRosters(false);
+        }
+    }, [tournament?.id]);
+
+    // Инвалидация кэша на teams_update
+    useEffect(() => {
+        if (!tournament?.id) return;
+        let socket;
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            if (token) authenticateSocket(token);
+            socket = getSocketInstance();
+        } catch (_) { return; }
+        const handleTournamentUpdate = (payload) => {
+            try {
+                if (!payload) return;
+                const tid = Number(payload.tournamentId || payload.id || tournament?.id);
+                if (tid !== Number(tournament?.id)) return;
+                if (payload._metadata?.updateType === 'teams_update') {
+                    // Если раскрыто — рефетч
+                    if (showRosters) fetchTeamRosters();
+                }
+            } catch (_) {}
+        };
+        socket.on('tournament_update', handleTournamentUpdate);
+        return () => { try { socket.off('tournament_update', handleTournamentUpdate); } catch (_) {} };
+    }, [tournament?.id, showRosters, fetchTeamRosters]);
+
+    const toggleRosters = useCallback(async () => {
+        if (!showRosters) {
+            await fetchTeamRosters();
+            setShowRosters(true);
+        } else {
+            setShowRosters(false);
+        }
+    }, [showRosters, fetchTeamRosters]);
     const recomputeContainerSize = useCallback(() => {
         try {
             if (!rendererRef.current) return;
@@ -410,6 +463,38 @@ const BracketRenderer = ({
     };
 
     // Рендер раунда для Single Elimination
+    const renderRosterList = (teamId) => {
+        if (!showRosters || !teamId) return null;
+        const roster = rostersByTeamId[Number(teamId)];
+        const members = Array.isArray(roster?.members) ? roster.members : [];
+        if (members.length === 0) return null;
+        const captainUserId = roster?.captain_user_id || null;
+        return (
+            <div style={{ fontSize: 10, fontWeight: 400, color: '#ddd', marginTop: 4 }}>
+                {members.map((m, idx) => {
+                    const isCaptain = (m.is_captain === true) || (captainUserId && Number(m.user_id) === Number(captainUserId));
+                    const name = m.name || m.username || `Игрок ${idx + 1}`;
+                    const style = isCaptain ? { fontWeight: 700, color: 'rgb(167, 125, 42)' } : undefined;
+                    const hasProfile = Number.isInteger(Number(m.user_id));
+                    const Node = (
+                        <span style={style}>
+                            {hasProfile ? (
+                                <a href={`/profile?userId=${m.user_id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={style}>{name}</a>
+                            ) : (
+                                <span>{name}</span>
+                            )}
+                        </span>
+                    );
+                    return (
+                        <span key={m.id || `${teamId}-${idx}`} style={{ marginRight: 8 }}>
+                            {Node}
+                        </span>
+                    );
+                })}
+            </div>
+        );
+    };
+
     const renderSingleEliminationRound = (round, roundData, roundName) => {
         const matchesArray = Array.isArray(roundData) ? roundData : Object.values(roundData).flat();
         const matchesCount = matchesArray.length;
@@ -431,7 +516,7 @@ const BracketRenderer = ({
                 <div className="bracket-round-header">
                     {roundName}
                 </div>
-                <div className={`bracket-matches-list ${matchesClass}`}>
+                                <div className={`bracket-matches-list ${matchesClass}`}>
                     {matchesArray.map(match => (
                         <div
                             key={match.id}
@@ -450,6 +535,9 @@ const BracketRenderer = ({
                                 matchType={match.bracket_type}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
+                                            {/* Ростеры команд под карточкой */}
+                                            {renderRosterList(match?.participants?.[0]?.id ? null : match.team1_id)}
+                                            {renderRosterList(match?.participants?.[1]?.id ? null : match.team2_id)}
                         </div>
                     ))}
                 </div>
@@ -528,6 +616,8 @@ const BracketRenderer = ({
                                 customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
+                            {renderRosterList(match.team1_id)}
+                            {renderRosterList(match.team2_id)}
                         </div>
                     ))}
                 </div>
@@ -563,6 +653,16 @@ const BracketRenderer = ({
                     title="Восстановить"
                 >
                     <span className="bracket-nav-icon">⌂</span>
+                </button>
+
+                {/* 🆕 Toggle составов команд */}
+                <button 
+                    className="bracket-nav-icon-button"
+                    onClick={toggleRosters}
+                    title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
+                    disabled={loadingRosters}
+                >
+                    <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
                 </button>
 
                 <button 
