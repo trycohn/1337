@@ -140,6 +140,7 @@ const BracketRenderer = ({
         zoomStep: 0.05,
         // Вариант B: колесо мыши скроллит, зум только с Ctrl
         requireCtrl: true,
+        enableShiftWheelPan: true,
         excludeSelectors: [
             '.bracket-navigation-panel',
             '.bracket-nav-icon-button',
@@ -178,7 +179,15 @@ const BracketRenderer = ({
 
     
 
-    const effectiveHandlers = (readOnly || isMobile) ? {} : handlers;
+    const effectiveHandlers = (readOnly || isMobile)
+        ? {}
+        : (() => {
+            try {
+                if (!handlers) return {};
+                const { onMouseDown, ...rest } = handlers;
+                return rest; // убираем drag, сохраняем зум/transform
+            } catch (_) { return {}; }
+        })();
     
     // Получаем формат турнира (нормализуем тип + DE fallback по данным матчей)
     const tournamentFormat = useMemo(() => {

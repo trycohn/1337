@@ -39,7 +39,8 @@ const useDragAndZoom = ({
     onDragStart = null,
     onDragMove = null,
     onDragEnd = null,
-    onZoomChange = null
+    onZoomChange = null,
+    enableShiftWheelPan = true
 } = {}) => {
     // Единый контейнер для обоих функций
     const containerRef = useRef(null);
@@ -96,6 +97,19 @@ const useDragAndZoom = ({
     
     // Комбинированные обработчики для DOM элемента
     const combinedHandlers = useMemo(() => {
+        const handleWheel = (e) => {
+            try {
+                if (enableShiftWheelPan && e.shiftKey && !e.ctrlKey) {
+                    // Горизонтальный скролл: сдвигаем содержимое по оси X
+                    e.preventDefault();
+                    const primaryDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                    setPosition((prev) => ({ x: prev.x - primaryDelta, y: prev.y }));
+                    return;
+                }
+                if (typeof zoomHandlers.onWheel === 'function') zoomHandlers.onWheel(e);
+            } catch (_) {}
+        };
+
         return {
             ref: containerRef,
             style: {
@@ -105,12 +119,12 @@ const useDragAndZoom = ({
             },
             // Объединяем обработчики drag и zoom
             onMouseDown: dragHandlers.onMouseDown,
-            onWheel: zoomHandlers.onWheel,
+            onWheel: handleWheel,
             onTouchStart: zoomHandlers.onTouchStart,
             onTouchMove: zoomHandlers.onTouchMove,
             onTouchEnd: zoomHandlers.onTouchEnd
         };
-    }, [dragHandlers, zoomHandlers, position, zoom]);
+    }, [dragHandlers, zoomHandlers, position, zoom, enableShiftWheelPan, setPosition]);
     
     // Утилиты для работы с координатами
     const getTransformedCoordinates = useCallback((clientX, clientY) => {
