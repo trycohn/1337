@@ -399,6 +399,74 @@ class MixTeamController {
     });
 
     /**
+     * 🆕 Получение карты составов команд турнира (team_id -> roster)
+     * GET /api/tournaments/:id/team-rosters
+     */
+    static getTeamRosters = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+
+        console.log(`🔍 [MixTeamController] Получение карты составов команд турнира ${tournamentId}`);
+
+        try {
+            // 🔒 Backend‑gate для Full Mix: скрываем команды до approve
+            const baseTournament = await TournamentService.getTournament(tournamentId);
+            const fmt = (baseTournament?.format || '').toString().trim().toLowerCase();
+            const mixType = (baseTournament?.mix_type || '').toString().trim().toLowerCase();
+            const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+            if (isFullMix) {
+                const snapRes = await pool.query(
+                    `SELECT approved_teams
+                     FROM full_mix_snapshots
+                     WHERE tournament_id = $1
+                     ORDER BY round_number DESC
+                     LIMIT 1`,
+                    [tournamentId]
+                );
+                const lastApproved = snapRes.rows.length > 0 ? (snapRes.rows[0].approved_teams === true) : false;
+                if (!lastApproved) {
+                    console.log(`🛡️ [MixTeamController] Full Mix not approved → скрываем составы`);
+                    return res.status(200).json({ rosters: {} });
+                }
+            }
+
+            const teams = await TeamRepository.getByTournamentId(tournamentId);
+            const rosters = {};
+            for (const team of teams) {
+                const teamId = team.id;
+                const captainUserId = team.captain_user_id || null;
+                const captainParticipantId = team.captain_participant_id || null;
+                const members = Array.isArray(team.members) ? team.members.map(m => ({
+                    id: m.id,
+                    user_id: m.user_id,
+                    participant_id: m.participant_id,
+                    is_captain: m.is_captain === true,
+                    username: m.username || null,
+                    name: m.name || m.username || null,
+                    avatar_url: m.avatar_url || null
+                })) : [];
+                rosters[teamId] = {
+                    team_id: teamId,
+                    team_name: team.name,
+                    captain_user_id: captainUserId,
+                    captain_participant_id: captainParticipantId,
+                    members
+                };
+            }
+
+            res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.set('Pragma', 'no-cache');
+            res.set('Expires', '0');
+            res.set('Vary', 'Authorization');
+            res.status(200).json({ rosters });
+        } catch (error) {
+            console.error(`❌ [MixTeamController] Ошибка получения карты составов:`, error);
+            res.status(500).json({
+                error: error.message || 'Ошибка при получении составов команд'
+            });
+        }
+    });
+
+    /**
      * Обновление размера команды для микс турнира
      * PATCH /api/tournaments/:id/team-size
      */

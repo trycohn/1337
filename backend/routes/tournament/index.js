@@ -361,6 +361,9 @@ router.patch('/:id/mix-team-size', authenticateToken, verifyAdminOrCreator, MixT
 // 🏆 Получение команд турнира
 router.get('/:id/teams', MixTeamController.getTeams);
 
+// 🆕 Карта составов команд для сетки (team_id -> roster)
+router.get('/:id/team-rosters', MixTeamController.getTeamRosters);
+
 // Получение оригинальных участников
 router.get('/:id/original-participants', MixTeamController.getOriginalParticipants);
 
