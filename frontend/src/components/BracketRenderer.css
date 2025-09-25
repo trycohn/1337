@@ -630,6 +630,7 @@
 
 .bracket-participant:not(.winner):not(.tbd) .bracket-participant-score {
     color: #757575;
+    padding-right: 8px;
 }
 
 .bracket-participant-name {
