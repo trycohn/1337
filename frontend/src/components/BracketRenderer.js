@@ -1143,7 +1143,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             onClick={handleMatchClick}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ position: 'relative' }}
+            style={showRosters ? { position: 'relative', height: 'auto', overflow: 'visible' } : { position: 'relative' }}
         >
             <div className="bracket-match-info">
                 <span className="bracket-match-title">{getMatchTitle()}</span>
