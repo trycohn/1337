@@ -228,6 +228,13 @@
     -ms-user-select: none;
 }
 
+.bracket-nav-icon-img {
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    filter: invert(100%);
+}
+
 .bracket-nav-icon-button:hover {
     background: linear-gradient(145deg, #333, #111);
     border-color: #ff0000;

@@ -631,7 +631,11 @@ const BracketRenderer = ({
                         title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
                         disabled={loadingRosters}
                     >
-                        <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
+                        {showRosters ? (
+                            <span className="bracket-nav-icon">−</span>
+                        ) : (
+                            <img src="/images/svg/bars-solid-full.svg" alt="Раскрыть команды" className="bracket-nav-icon-img" />
+                        )}
                     </button>
 
                     <button 
@@ -665,7 +669,11 @@ const BracketRenderer = ({
                         title={showRosters ? 'Свернуть команды' : 'Раскрыть команды'}
                         disabled={loadingRosters}
                     >
-                        <span className="bracket-nav-icon">{showRosters ? '−' : '+'}</span>
+                        {showRosters ? (
+                            <span className="bracket-nav-icon">−</span>
+                        ) : (
+                            <img src="/images/svg/bars-solid-full.svg" alt="Раскрыть команды" className="bracket-nav-icon-img" />
+                        )}
                     </button>
                 </div>
             );
