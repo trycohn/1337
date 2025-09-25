@@ -1166,13 +1166,19 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                     <span className="bracket-participant-name">{participant1.name}</span>
                     <span className="bracket-participant-score">{participant1.score || '-'}</span>
                 </div>
-                {renderTeamRosterInline(match.team1_id)}
+                {(() => {
+                    const tid1 = Number(match?.participants?.[0]?.id);
+                    return Number.isFinite(tid1) ? renderTeamRosterInline(tid1) : null;
+                })()}
                 
                 <div className={`bracket-participant ${participant2.name === 'TBD' ? 'tbd' : ''} ${participant2.isWinner ? 'winner' : ''} ${participant2.name && participant2.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant2.name}</span>
                     <span className="bracket-participant-score">{participant2.score || '-'}</span>
                 </div>
-                {renderTeamRosterInline(match.team2_id)}
+                {(() => {
+                    const tid2 = Number(match?.participants?.[1]?.id);
+                    return Number.isFinite(tid2) ? renderTeamRosterInline(tid2) : null;
+                })()}
             </div>
             
             <div className="bracket-match-status">
