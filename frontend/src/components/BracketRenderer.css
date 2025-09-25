@@ -226,6 +226,7 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+    padding: 0;
 }
 
 .bracket-nav-icon-img {
