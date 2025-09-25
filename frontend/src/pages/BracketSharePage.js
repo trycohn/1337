@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import BracketRenderer from '../components/BracketRenderer';
 import BracketCompactView from '../components/BracketCompactView';
 import { useTournamentData } from '../hooks/tournament/useTournamentData';
+import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
 import './BracketSharePage.css';
 
 function useQuery() {
@@ -18,7 +19,7 @@ function BracketSharePage() {
   const query = useQuery();
   const focusMatchId = query.get('match');
   const viewMode = (query.get('view') || 'classic').toLowerCase();
-  const { tournament, matches, loading, error } = useTournamentData(id);
+  const { tournament, matches, loading, error, fetchTournamentData } = useTournamentData(id);
 
   // Разрешаем имена участников/команд из данных турнира, если в match.*_name отсутствуют
   const idToDisplayName = useMemo(() => {
@@ -127,6 +128,45 @@ function BracketSharePage() {
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     }
   }, [focusMatchId, viewMode]);
+
+  // Live обновления через Socket.IO + резервный поллинг
+  useEffect(() => {
+    if (!id) return;
+    let socket;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) authenticateSocket(token);
+      socket = getSocketInstance();
+      // Подписываемся на обновления по текущему турниру
+      try { watchTournament(id); } catch (_) {}
+
+      const handleTournamentUpdate = (payload) => {
+        try {
+          const tid = Number(payload?.tournamentId || payload?.id);
+          if (tid && tid === Number(id)) {
+            // Простая стратегия: обновляем данные турнира
+            fetchTournamentData();
+          }
+        } catch (_) {}
+      };
+      socket.on('tournament_update', handleTournamentUpdate);
+
+      return () => {
+        try { socket.off('tournament_update', handleTournamentUpdate); } catch (_) {}
+        try { unwatchTournament(id); } catch (_) {}
+      };
+    } catch (_) {
+      // no-op
+    }
+  }, [id, fetchTournamentData]);
+
+  useEffect(() => {
+    if (!id) return;
+    const interval = setInterval(() => {
+      try { fetchTournamentData(); } catch (_) {}
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [id, fetchTournamentData]);
 
   return (
     <div className="2.0-bracket-share-page" style={{ background: '#000', minHeight: '100vh' }}>
