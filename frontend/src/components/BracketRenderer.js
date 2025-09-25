@@ -1023,8 +1023,8 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 if (wins1 + wins2 > 0) return [wins1, wins2];
             }
         }
-        const s1 = (typeof m?.score1 === 'number') ? m.score1 : 0;
-        const s2 = (typeof m?.score2 === 'number') ? m.score2 : 0;
+        const s1 = (typeof m?.score1 === 'number') ? m.score1 : null;
+        const s2 = (typeof m?.score2 === 'number') ? m.score2 : null;
         return [s1, s2];
     };
 
@@ -1182,7 +1182,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
             <div className="bracket-match-participants">
                 <div className={`bracket-participant ${participant1.name === 'TBD' ? 'tbd' : ''} ${participant1.isWinner ? 'winner' : ''} ${participant1.name && participant1.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant1.name}</span>
-                    <span className="bracket-participant-score">{participant1.score || '-'}</span>
+                    <span className="bracket-participant-score">{(participant1.score !== null && participant1.score !== undefined) ? participant1.score : '-'}</span>
                 </div>
                 {(() => {
                     const tid1 = Number(match?.participants?.[0]?.id);
@@ -1191,7 +1191,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 
                 <div className={`bracket-participant ${participant2.name === 'TBD' ? 'tbd' : ''} ${participant2.isWinner ? 'winner' : ''} ${participant2.name && participant2.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant2.name}</span>
-                    <span className="bracket-participant-score">{participant2.score || '-'}</span>
+                    <span className="bracket-participant-score">{(participant2.score !== null && participant2.score !== undefined) ? participant2.score : '-'}</span>
                 </div>
                 {(() => {
                     const tid2 = Number(match?.participants?.[1]?.id);
