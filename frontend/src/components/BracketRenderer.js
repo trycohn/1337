@@ -463,38 +463,6 @@ const BracketRenderer = ({
     };
 
     // Рендер раунда для Single Elimination
-    const renderRosterList = (teamId) => {
-        if (!showRosters || !teamId) return null;
-        const roster = rostersByTeamId[Number(teamId)];
-        const members = Array.isArray(roster?.members) ? roster.members : [];
-        if (members.length === 0) return null;
-        const captainUserId = roster?.captain_user_id || null;
-        return (
-            <div style={{ fontSize: 10, fontWeight: 400, color: '#ddd', marginTop: 4 }}>
-                {members.map((m, idx) => {
-                    const isCaptain = (m.is_captain === true) || (captainUserId && Number(m.user_id) === Number(captainUserId));
-                    const name = m.name || m.username || `Игрок ${idx + 1}`;
-                    const style = isCaptain ? { fontWeight: 700, color: 'rgb(167, 125, 42)' } : undefined;
-                    const hasProfile = Number.isInteger(Number(m.user_id));
-                    const Node = (
-                        <span style={style}>
-                            {hasProfile ? (
-                                <a href={`/profile?userId=${m.user_id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={style}>{name}</a>
-                            ) : (
-                                <span>{name}</span>
-                            )}
-                        </span>
-                    );
-                    return (
-                        <span key={m.id || `${teamId}-${idx}`} style={{ marginRight: 8 }}>
-                            {Node}
-                        </span>
-                    );
-                })}
-            </div>
-        );
-    };
-
     const renderSingleEliminationRound = (round, roundData, roundName) => {
         const matchesArray = Array.isArray(roundData) ? roundData : Object.values(roundData).flat();
         const matchesCount = matchesArray.length;
@@ -535,17 +503,6 @@ const BracketRenderer = ({
                                 matchType={match.bracket_type}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
                             />
-                                            {/* Ростеры команд под карточкой */}
-                                            {(() => {
-                                                const p1 = parseInt(match?.participants?.[0]?.id, 10);
-                                                const p2 = parseInt(match?.participants?.[1]?.id, 10);
-                                                return (
-                                                    <>
-                                                        {renderRosterList(Number.isFinite(p1) ? p1 : null)}
-                                                        {renderRosterList(Number.isFinite(p2) ? p2 : null)}
-                                                    </>
-                                                );
-                                            })()}
                         </div>
                     ))}
                 </div>
@@ -623,17 +580,9 @@ const BracketRenderer = ({
                                 matchType={match.bracket_type}
                                 customLabel={roundType === 'losers-small-final' ? 'Small Final' : null}
                                 activeLobbyId={activeLobbyByMatchId[Number(match.id)] || null}
+                                showRosters={showRosters}
+                                rostersByTeamId={rostersByTeamId}
                             />
-                            {(() => {
-                                const p1 = parseInt(match?.participants?.[0]?.id, 10);
-                                const p2 = parseInt(match?.participants?.[1]?.id, 10);
-                                return (
-                                    <>
-                                        {renderRosterList(Number.isFinite(p1) ? p1 : null)}
-                                        {renderRosterList(Number.isFinite(p2) ? p2 : null)}
-                                    </>
-                                );
-                            })()}
                         </div>
                     ))}
                 </div>
@@ -953,7 +902,7 @@ const BracketRenderer = ({
 };
 
 // MatchCard компонент с поддержкой bracket_type и кастомных меток
-const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false, activeLobbyId: activeLobbyIdFromParent = null }) => {
+const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClick, customLabel, matchType = 'regular', isAdminOrCreator = false, activeLobbyId: activeLobbyIdFromParent = null, showRosters = false, rostersByTeamId = {} }) => {
     const { user } = useAuth();
     const [isHovered, setIsHovered] = useState(false);
     const [isCreatingLobby, setIsCreatingLobby] = useState(false);
@@ -1094,6 +1043,32 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
 
     const participant1 = getParticipantData(0);
     const participant2 = getParticipantData(1);
+    const renderTeamRosterInline = (teamId) => {
+        if (!showRosters || !teamId) return null;
+        const roster = rostersByTeamId[Number(teamId)];
+        const members = Array.isArray(roster?.members) ? roster.members : [];
+        if (members.length === 0) return null;
+        const captainUserId = roster?.captain_user_id || null;
+        return (
+            <div className="bracket-team-roster" style={{ fontSize: 10, fontWeight: 400, color: '#ddd', marginTop: 4 }}>
+                {members.map((m, idx) => {
+                    const isCaptain = (m.is_captain === true) || (captainUserId && Number(m.user_id) === Number(captainUserId));
+                    const name = m.name || m.username || `Игрок ${idx + 1}`;
+                    const style = isCaptain ? { fontWeight: 700, color: 'rgb(167, 125, 42)' } : undefined;
+                    const hasProfile = Number.isInteger(Number(m.user_id));
+                    return (
+                        <span key={m.id || `${teamId}-${idx}`} style={{ marginRight: 8 }}>
+                            {hasProfile ? (
+                                <a href={`/profile?userId=${m.user_id}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={style}>{name}</a>
+                            ) : (
+                                <span style={style}>{name}</span>
+                            )}
+                        </span>
+                    );
+                })}
+            </div>
+        );
+    };
 
     // 🔧 ИСПРАВЛЕНО: Функция определения статуса матча
     const getMatchStatus = () => {
@@ -1184,16 +1159,18 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                 </div>
             </div>
             
-                <div className="bracket-match-participants">
+            <div className="bracket-match-participants">
                 <div className={`bracket-participant ${participant1.name === 'TBD' ? 'tbd' : ''} ${participant1.isWinner ? 'winner' : ''} ${participant1.name && participant1.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant1.name}</span>
                     <span className="bracket-participant-score">{participant1.score || '-'}</span>
                 </div>
+                {renderTeamRosterInline(match.team1_id)}
                 
                 <div className={`bracket-participant ${participant2.name === 'TBD' ? 'tbd' : ''} ${participant2.isWinner ? 'winner' : ''} ${participant2.name && participant2.name.length > 18 ? 'score-tight' : ''}`}>
                     <span className="bracket-participant-name">{participant2.name}</span>
                     <span className="bracket-participant-score">{participant2.score || '-'}</span>
                 </div>
+                {renderTeamRosterInline(match.team2_id)}
             </div>
             
             <div className="bracket-match-status">
