@@ -1278,7 +1278,7 @@ function TournamentDetails() {
                             );
 
                             const bracketNode = (
-                                <div className="bracket-stage-wrapper bracket-viewport" style={{ overscrollBehavior: 'contain' }}>
+                                <div className="bracket-stage-wrapper bracket-viewport" style={{ overscrollBehavior: 'auto' }}>
                                     {games.length > 0 ? (
                                         <TournamentErrorBoundary>
                                             <Suspense fallback={

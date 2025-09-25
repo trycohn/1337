@@ -81,6 +81,8 @@
     -moz-user-select: none;
     -ms-user-select: none;
     flex-direction: column;
+    /* Разрешаем нативные жесты/скролл */
+    touch-action: auto;
 }
 
 /* Стрелки навигации по раундам (мобайл) */
