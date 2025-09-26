@@ -64,7 +64,7 @@ function HomeGate() {
     }
 
     // Гости и авторизованные не-админы идут на список турниров
-    if (!user || (user && user.role !== 'admin')) {
+    if (!user || (user && String(user.role || '').toLowerCase() !== 'admin')) {
         return <Navigate to="/tournaments" replace />;
     }
 

@@ -1156,13 +1156,16 @@ router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req,
             [lobbyId]
         );
         const invRes = await client.query(
-            `SELECT user_id, team, accepted FROM admin_lobby_invitations WHERE lobby_id = $1`,
+            `SELECT i.user_id, i.team, i.accepted, u.username, u.avatar_url
+             FROM admin_lobby_invitations i
+             JOIN users u ON u.id = i.user_id
+             WHERE i.lobby_id = $1`,
             [lobbyId]
         );
         // Группируем участников
-        const team1_members = invRes.rows.filter(r => r.team === 1 && r.accepted).map(r => r.user_id);
-        const team2_members = invRes.rows.filter(r => r.team === 2 && r.accepted).map(r => r.user_id);
-        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_members, team2_members });
+        const team1_users = invRes.rows.filter(r => r.team === 1 && r.accepted).map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        const team2_users = invRes.rows.filter(r => r.team === 2 && r.accepted).map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users });
     } catch (e) {
         console.error('Ошибка получения админ-лобби', e);
         return res.status(500).json({ success: false, error: 'Ошибка сервера' });

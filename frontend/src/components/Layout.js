@@ -336,7 +336,7 @@ function Layout() {
                         >
                             {
                                 <>
-                                    {user && user.role === 'admin' && (
+                                    {user && String(user.role || '').toLowerCase() === 'admin' && (
                                         <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                                     )}
                                     <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
@@ -356,7 +356,7 @@ function Layout() {
                                                 </Link>
                                             )}
                                             <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
-                                            {user.role === 'admin' && (
+                                            {String(user.role || '').toLowerCase() === 'admin' && (
                                                 <>
                                                     <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
                                                         Админ панель

@@ -14,6 +14,8 @@ function AdminMatchPage() {
     const [lobby, setLobby] = useState(null);
     const [availableMaps, setAvailableMaps] = useState([]);
     const [selections, setSelections] = useState([]);
+    const [team1Users, setTeam1Users] = useState([]);
+    const [team2Users, setTeam2Users] = useState([]);
     const [loading, setLoading] = useState(false);
     const searchDebounce = useRef(null);
 
@@ -131,19 +133,19 @@ function AdminMatchPage() {
                         const token = localStorage.getItem('token');
                         await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo1' }, { headers: { Authorization: `Bearer ${token}` } });
                         const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); }
+                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                     }}>BO1</button>
                     <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
                         const token = localStorage.getItem('token');
                         await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo3' }, { headers: { Authorization: `Bearer ${token}` } });
                         const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); }
+                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                     }}>BO3</button>
                     <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
                         const token = localStorage.getItem('token');
                         await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo5' }, { headers: { Authorization: `Bearer ${token}` } });
                         const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); }
+                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                     }}>BO5</button>
                 </div>
             </div>
@@ -173,7 +175,7 @@ function AdminMatchPage() {
                                             // По умолчанию кидаем в команду 1
                                             await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
                                             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); }
+                                            if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                                         }}>Пригласить</button>
                                 </div>
                             </div>
@@ -199,7 +201,7 @@ function AdminMatchPage() {
                                     const token = localStorage.getItem('token');
                                     await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
                                     const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                    if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); }
+                                    if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                                 }}>В команду 2</button>
                         </div>
                     </div>
@@ -286,6 +288,8 @@ function AdminMatchPage() {
                                     setLobby(r.data.lobby);
                                     setSelections(r.data.selections || []);
                                     setAvailableMaps(r.data.available_maps || []);
+                                    setTeam1Users(r.data.team1_users || []);
+                                    setTeam2Users(r.data.team2_users || []);
                                 }
                                 if (data.completed) {
                                     setConnectInfo({ connect: data.connect, gotv: data.gotv });
@@ -294,6 +298,39 @@ function AdminMatchPage() {
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}
                     />
+                </div>
+            )}
+
+            {/* Составы команд */}
+            {(team1Users.length > 0 || team2Users.length > 0) && (
+                <div style={{ marginTop: 16 }}>
+                    <h3>Состав команд</h3>
+                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                        <div>
+                            <h4>{lobby?.team1_name || 'Команда 1'}</h4>
+                            {team1Users.length === 0 && <div style={{ opacity: .7 }}>Нет игроков</div>}
+                            {team1Users.map(u => (
+                                <div key={`t1-${u.id}`} className="list-row">
+                                    <div className="list-row-left">
+                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                        <span style={{ marginLeft: 8 }}>{u.username}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div>
+                            <h4>{lobby?.team2_name || 'Команда 2'}</h4>
+                            {team2Users.length === 0 && <div style={{ opacity: .7 }}>Нет игроков</div>}
+                            {team2Users.map(u => (
+                                <div key={`t2-${u.id}`} className="list-row">
+                                    <div className="list-row-left">
+                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                        <span style={{ marginLeft: 8 }}>{u.username}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
 
