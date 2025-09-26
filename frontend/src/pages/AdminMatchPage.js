@@ -97,7 +97,10 @@ function AdminMatchPage() {
             setLoading(true);
             const token = localStorage.getItem('token');
             const body = {
-                steam_ids: selected.map(u => u.steam_id).filter(Boolean)
+                steam_ids: [
+                    ...team1Users.map(u => u.steam_id).filter(Boolean),
+                    ...team2Users.map(u => u.steam_id).filter(Boolean)
+                ]
             };
             await api.post('/api/admin/match/test-lobby/whitelist', body, {
                 headers: { Authorization: `Bearer ${token}` }
