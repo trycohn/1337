@@ -1618,7 +1618,6 @@ color: #ffffff;
 .mix-admin-add-participant {
   margin-bottom: 16px;
   background: #1d1d1d;
-  border: 1px solid #1d1d1d;
   padding: 16px 32px;
   border-radius: 8px;
 }
@@ -1632,7 +1631,7 @@ color: #ffffff;
   display: grid;
   grid-template-columns: 1fr 140px 140px auto;
   gap: 8px;
-  padding: 16px;
+  padding: 16px 0px;
 }
 
 .add-participant-input {
