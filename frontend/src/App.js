@@ -28,6 +28,7 @@ import MyTournaments from './pages/MyTournaments';
 import TournamentRulesPage from './pages/TournamentRulesPage';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import AdminMatchPage from './pages/AdminMatchPage';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -103,6 +104,7 @@ function App() {
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
+                                <Route path="/admin/match" element={<PrivateRoute component={AdminMatchPage} />} />
                             </Route>
                             {/* Страница шеринга сетки без Layout (без хедера) */}
                             <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />

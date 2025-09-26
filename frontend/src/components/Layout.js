@@ -357,9 +357,14 @@ function Layout() {
                                             )}
                                             <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>
                                             {user.role === 'admin' && (
-                                                <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
-                                                    Админ панель
-                                                </Link>
+                                                <>
+                                                    <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
+                                                        Админ панель
+                                                    </Link>
+                                                    <Link to="/admin/match" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
+                                                        МАТЧ
+                                                    </Link>
+                                                </>
                                             )}
                                             {isMobile && (
                                                 <Link to="/create" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>

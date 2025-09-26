@@ -969,4 +969,372 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
     }
 });
 
+// =============================
+//  CS2: Тестовое лобби (админ)
+// =============================
+router.get('/match/test-lobby', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        // Заглушка: читаем базовые переменные окружения для формирования ссылок
+        const host = process.env.CS2_TEST_HOST || '127.0.0.1';
+        const port = Number(process.env.CS2_TEST_PORT || 27015);
+        const pass = process.env.CS2_TEST_PASSWORD || 'test1337';
+        const gotvHost = process.env.CS2_GOTV_HOST || host;
+        const gotvPort = Number(process.env.CS2_GOTV_PORT || 27020);
+        const gotvPass = process.env.CS2_GOTV_PASSWORD || 'gotv1337';
+
+        const connect = `steam://rungameid/730//+connect ${host}:${port};+password ${pass}`;
+        const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+
+        return res.json({ success: true, connect, gotv });
+    } catch (e) {
+        console.error('Ошибка GET /match/test-lobby', e);
+        return res.status(500).json({ success: false, error: 'Не удалось получить тестовое лобби' });
+    }
+});
+
+router.post('/match/test-lobby', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { players = [], settings = {} } = req.body || {};
+        if (!Array.isArray(players) || players.length === 0) {
+            return res.status(400).json({ success: false, error: 'Нужен непустой список игроков' });
+        }
+        // В реальной интеграции здесь: создание сервера через Pterodactyl, конфиг MatchZy, вайтлист SteamID и т.д.
+        const host = process.env.CS2_TEST_HOST || '127.0.0.1';
+        const port = Number(process.env.CS2_TEST_PORT || 27015);
+        const pass = process.env.CS2_TEST_PASSWORD || 'test1337';
+        const gotvHost = process.env.CS2_GOTV_HOST || host;
+        const gotvPort = Number(process.env.CS2_GOTV_PORT || 27020);
+        const gotvPass = process.env.CS2_GOTV_PASSWORD || 'gotv1337';
+
+        // Возвращаем строки подключения
+        const connect = `steam://rungameid/730//+connect ${host}:${port};+password ${pass}`;
+        const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+        return res.json({ success: true, connect, gotv, applied: { players: players.length, settings } });
+    } catch (e) {
+        console.error('Ошибка POST /match/test-lobby', e);
+        return res.status(500).json({ success: false, error: 'Не удалось создать тестовое лобби' });
+    }
+});
+
+router.post('/match/test-lobby/whitelist', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { players = [], steam_ids = [] } = req.body || {};
+        const ids = Array.isArray(players) && players.length > 0
+            ? players.map(p => p.steam_id).filter(Boolean)
+            : (Array.isArray(steam_ids) ? steam_ids.filter(Boolean) : []);
+
+        if (ids.length === 0) {
+            return res.status(400).json({ success: false, error: 'Нужен список steam_id' });
+        }
+
+        // В реальной интеграции: отправить команды в консоль сервера/Pterodactyl или RCON
+        // Здесь — заглушка успешной синхронизации
+        return res.json({ success: true, whitelisted: ids.length });
+    } catch (e) {
+        console.error('Ошибка POST /match/test-lobby/whitelist', e);
+        return res.status(500).json({ success: false, error: 'Не удалось синхронизировать whitelist' });
+    }
+});
+
+// =============================
+//  ADMIN LOBBY (отдельное лобби под админ-матч)
+// =============================
+async function ensureAdminLobbyTables() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_match_lobbies (
+            id SERIAL PRIMARY KEY,
+            status VARCHAR(16) NOT NULL DEFAULT 'waiting',
+            match_format VARCHAR(8), -- bo1|bo3|bo5
+            team1_name VARCHAR(64) DEFAULT 'Команда 1',
+            team2_name VARCHAR(64) DEFAULT 'Команда 2',
+            team1_ready BOOLEAN DEFAULT FALSE,
+            team2_ready BOOLEAN DEFAULT FALSE,
+            first_picker_team SMALLINT, -- 1|2
+            current_turn_team SMALLINT, -- 1|2
+            created_by INTEGER NOT NULL,
+            connect_url TEXT,
+            gotv_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_lobby_invitations (
+            id SERIAL PRIMARY KEY,
+            lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL,
+            team SMALLINT, -- 1|2
+            accepted BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_map_selections (
+            id SERIAL PRIMARY KEY,
+            lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
+            map_name VARCHAR(64) NOT NULL,
+            action_type VARCHAR(8) NOT NULL, -- pick|ban
+            team SMALLINT NOT NULL, -- 1|2
+            action_order INTEGER NOT NULL,
+            UNIQUE(lobby_id, map_name)
+        );
+    `);
+}
+
+function determineNextTurnForFormat(matchFormat, actionIndex, firstPickerTeam) {
+    const sequences = {
+        bo1: ['ban', 'ban', 'ban', 'ban', 'ban', 'ban', 'pick'],
+        bo3: ['ban', 'ban', 'pick', 'pick', 'ban', 'ban', 'pick'],
+        bo5: ['pick', 'pick', 'ban', 'ban', 'pick', 'pick', 'pick']
+    };
+    const seq = sequences[matchFormat] || [];
+    if (actionIndex >= seq.length) return { completed: true };
+    const isFirstPickerTurn = actionIndex % 2 === 0;
+    const nextTeam = isFirstPickerTurn ? firstPickerTeam : (firstPickerTeam === 1 ? 2 : 1);
+    return { completed: false, teamId: nextTeam, actionType: seq[actionIndex] };
+}
+
+// Создать админ-лобби (одно активное на пользователя)
+router.post('/match-lobby', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureDefaultMapPool();
+    await ensureAdminLobbyTables();
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        // Пытаемся найти последнее незавершённое лобби автора
+        const existing = await client.query(
+            `SELECT * FROM admin_match_lobbies 
+             WHERE created_by = $1 AND status IN ('waiting','ready','picking')
+             ORDER BY created_at DESC LIMIT 1`,
+            [req.user.id]
+        );
+        let lobby;
+        if (existing.rows[0]) {
+            lobby = existing.rows[0];
+        } else {
+            const ins = await client.query(
+                `INSERT INTO admin_match_lobbies(created_by) VALUES($1) RETURNING *`,
+                [req.user.id]
+            );
+            lobby = ins.rows[0];
+        }
+        // Доступные карты из default_map_pool
+        const mapsRes = await client.query(
+            `SELECT concat('de_', map_name) as map_name, display_order
+             FROM default_map_pool WHERE game = $1 ORDER BY display_order ASC, map_name ASC`,
+            ['Counter-Strike 2']
+        );
+        await client.query('COMMIT');
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка создания админ-лобби', e);
+        return res.status(500).json({ success: false, error: 'Не удалось создать лобби' });
+    } finally {
+        client.release();
+    }
+});
+
+// Получить состояние админ-лобби
+router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    await ensureDefaultMapPool();
+    const { lobbyId } = req.params;
+    const client = await pool.connect();
+    try {
+        const lobbyRes = await client.query(`SELECT * FROM admin_match_lobbies WHERE id = $1`, [lobbyId]);
+        if (!lobbyRes.rows[0]) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const lobby = lobbyRes.rows[0];
+        const mapsRes = await client.query(
+            `SELECT concat('de_', map_name) as map_name, display_order
+             FROM default_map_pool WHERE game = $1 ORDER BY display_order ASC, map_name ASC`,
+            ['Counter-Strike 2']
+        );
+        const selRes = await client.query(
+            `SELECT map_name, action_type, team as team_id, action_order
+             FROM admin_map_selections WHERE lobby_id = $1 ORDER BY action_order ASC`,
+            [lobbyId]
+        );
+        const invRes = await client.query(
+            `SELECT user_id, team, accepted FROM admin_lobby_invitations WHERE lobby_id = $1`,
+            [lobbyId]
+        );
+        // Группируем участников
+        const team1_members = invRes.rows.filter(r => r.team === 1 && r.accepted).map(r => r.user_id);
+        const team2_members = invRes.rows.filter(r => r.team === 2 && r.accepted).map(r => r.user_id);
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_members, team2_members });
+    } catch (e) {
+        console.error('Ошибка получения админ-лобби', e);
+        return res.status(500).json({ success: false, error: 'Ошибка сервера' });
+    } finally {
+        client.release();
+    }
+});
+
+// Пригласить пользователя в команду
+router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { user_id, team, accept } = req.body || {};
+    if (!user_id || ![1,2].includes(Number(team))) return res.status(400).json({ success: false, error: 'user_id и team обязательны' });
+    try {
+        await pool.query(
+            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT DO NOTHING`,
+            [lobbyId, user_id, Number(team), Boolean(accept)]
+        );
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка приглашения', e);
+        return res.status(500).json({ success: false, error: 'Не удалось пригласить' });
+    }
+});
+
+// Админ вступает в команду
+router.post('/match-lobby/:lobbyId/join', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { team } = req.body || {};
+    if (![1,2].includes(Number(team))) return res.status(400).json({ success: false, error: 'team должен быть 1 или 2' });
+    try {
+        await pool.query(
+            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
+             VALUES ($1, $2, $3, TRUE)
+             ON CONFLICT DO NOTHING`,
+            [lobbyId, req.user.id, Number(team)]
+        );
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка join', e);
+        return res.status(500).json({ success: false, error: 'Не удалось вступить' });
+    }
+});
+
+// Установить формат
+router.post('/match-lobby/:lobbyId/format', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { format } = req.body || {};
+    if (!['bo1','bo3','bo5'].includes(format)) return res.status(400).json({ success: false, error: 'Неверный формат' });
+    try {
+        const r = await pool.query(
+            `UPDATE admin_match_lobbies SET match_format = $1, status = 'waiting', updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+            [format, lobbyId]
+        );
+        return res.json({ success: true, lobby: r.rows[0] });
+    } catch (e) {
+        console.error('Ошибка установки формата', e);
+        return res.status(500).json({ success: false, error: 'Не удалось установить формат' });
+    }
+});
+
+// Готовность команд
+router.post('/match-lobby/:lobbyId/ready', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { team, ready } = req.body || {};
+    if (![1,2].includes(Number(team))) return res.status(400).json({ success: false, error: 'team должен быть 1 или 2' });
+    const t = Number(team);
+    const col = t === 1 ? 'team1_ready' : 'team2_ready';
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const upd = await client.query(
+            `UPDATE admin_match_lobbies SET ${col} = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+            [Boolean(ready), lobbyId]
+        );
+        let lobby = upd.rows[0];
+        if (lobby.team1_ready && lobby.team2_ready && lobby.status === 'waiting') {
+            const firstPicker = Math.random() < 0.5 ? 1 : 2;
+            lobby = (await client.query(
+                `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+                [firstPicker, lobbyId]
+            )).rows[0];
+        }
+        await client.query('COMMIT');
+        return res.json({ success: true, lobby });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка ready', e);
+        return res.status(500).json({ success: false, error: 'Не удалось обновить готовность' });
+    } finally {
+        client.release();
+    }
+});
+
+// Пик/бан карты
+router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { mapName, action } = req.body || {};
+    if (!['pick','ban'].includes(action)) return res.status(400).json({ success: false, error: 'action: pick|ban' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const lobRes = await client.query('SELECT * FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        const lobby = lobRes.rows[0];
+        if (!lobby) throw new Error('Лобби не найдено');
+        if (lobby.status !== 'picking') throw new Error('Пики/баны ещё не начались');
+        // Проверка, не выбрана ли карта
+        const exists = await client.query('SELECT 1 FROM admin_map_selections WHERE lobby_id = $1 AND map_name = $2', [lobbyId, mapName]);
+        if (exists.rows[0]) throw new Error('Карта уже выбрана или забанена');
+        // Определяем чей ход
+        const countRes = await client.query('SELECT COUNT(*)::int AS c FROM admin_map_selections WHERE lobby_id = $1', [lobbyId]);
+        const actionIndex = countRes.rows[0].c;
+        const turnTeam = lobby.current_turn_team;
+        // Сохраняем действие
+        await client.query(
+            `INSERT INTO admin_map_selections(lobby_id, map_name, action_type, team, action_order)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [lobbyId, mapName, action, turnTeam, actionIndex + 1]
+        );
+        // Следующий ход
+        const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
+        if (next.completed) {
+            // Завершено — готовим ссылки подключения
+            const host = process.env.CS2_TEST_HOST || '127.0.0.1';
+            const port = Number(process.env.CS2_TEST_PORT || 27015);
+            const pass = process.env.CS2_TEST_PASSWORD || 'test1337';
+            const gotvHost = process.env.CS2_GOTV_HOST || host;
+            const gotvPort = Number(process.env.CS2_GOTV_PORT || 27020);
+            const gotvPass = process.env.CS2_GOTV_PASSWORD || 'gotv1337';
+            const connect = `steam://rungameid/730//+connect ${host}:${port};+password ${pass}`;
+            const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+            await client.query(
+                `UPDATE admin_match_lobbies SET status = 'completed', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+                [connect, gotv, lobbyId]
+            );
+            await client.query('COMMIT');
+            return res.json({ success: true, completed: true, connect, gotv });
+        } else {
+            const upd = await client.query(
+                `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+                [next.teamId, lobbyId]
+            );
+            await client.query('COMMIT');
+            return res.json({ success: true, completed: false, lobby: upd.rows[0] });
+        }
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка select-map', e);
+        return res.status(400).json({ success: false, error: e.message || 'Не удалось выполнить действие' });
+    } finally {
+        client.release();
+    }
+});
+
+// Получить ссылки подключения по завершению
+router.get('/match-lobby/:lobbyId/connect', authenticateToken, requireAdmin, async (req, res) => {
+    const { lobbyId } = req.params;
+    try {
+        const r = await pool.query('SELECT connect_url, gotv_url FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        if (!r.rows[0]) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        return res.json({ success: true, connect: r.rows[0].connect_url, gotv: r.rows[0].gotv_url });
+    } catch (e) {
+        console.error('Ошибка connect', e);
+        return res.status(500).json({ success: false, error: 'Ошибка сервера' });
+    }
+});
+
 module.exports = router; 

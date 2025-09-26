@@ -2200,7 +2200,7 @@ router.get('/search', authenticateToken, async (req, res) => {
         const likePattern = `%${query}%`;
         // Быстрый и релевантный поиск с pg_trgm (ORDER BY similarity)
         const result = await pool.query(
-            `SELECT id, username, avatar_url, faceit_elo, cs2_premier_rank
+            `SELECT id, username, avatar_url, faceit_elo, cs2_premier_rank, steam_id
              FROM users
              WHERE username ILIKE $1 OR email ILIKE $1
              ORDER BY GREATEST(similarity(username, $2), similarity(email, $2)) DESC
