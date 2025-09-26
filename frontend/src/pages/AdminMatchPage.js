@@ -218,6 +218,23 @@ function AdminMatchPage() {
                 <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={syncWhitelist} disabled={loading || selected.length === 0}>
                     Синхронизировать whitelist
                 </button>
+                {/* Очистка лобби — только создатель */}
+                <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                    onClick={async () => {
+                        try {
+                            const token = localStorage.getItem('token');
+                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                            if (data?.success) {
+                                setLobby(data.lobby);
+                                setSelections([]);
+                                setTeam1Users([]);
+                                setTeam2Users([]);
+                                setConnectInfo(null);
+                            }
+                        } catch (_) {}
+                    }}>
+                    Очистить лобби
+                </button>
             </div>
 
             {connectInfo && (

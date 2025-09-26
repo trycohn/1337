@@ -1398,4 +1398,44 @@ router.get('/match-lobby/:lobbyId/connect', authenticateToken, requireAdmin, asy
     }
 });
 
+// Очистить лобби (создатель)
+router.post('/match-lobby/:lobbyId/clear', authenticateToken, requireAdmin, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const userId = req.user.id;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const r = await client.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (!r.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
+        if (Number(r.rows[0].created_by) !== Number(userId)) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ success: false, error: 'Только создатель лобби может выполнять очистку' });
+        }
+        await client.query('DELETE FROM admin_map_selections WHERE lobby_id = $1', [lobbyId]);
+        await client.query('DELETE FROM admin_lobby_invitations WHERE lobby_id = $1', [lobbyId]);
+        const upd = await client.query(
+            `UPDATE admin_match_lobbies
+             SET status = 'waiting', match_format = NULL,
+                 team1_ready = FALSE, team2_ready = FALSE,
+                 first_picker_team = NULL, current_turn_team = NULL,
+                 connect_url = NULL, gotv_url = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1 RETURNING *`,
+            [lobbyId]
+        );
+        await client.query('COMMIT');
+        return res.json({ success: true, lobby: upd.rows[0] });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка очистки лобби', e);
+        return res.status(500).json({ success: false, error: 'Не удалось очистить лобби' });
+    } finally {
+        client.release();
+    }
+});
+
 module.exports = router; 
