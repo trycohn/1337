@@ -12,7 +12,7 @@ function MatchLobbyNotification({ socket, user }) {
     useEffect(() => {
         if (!socket || !user) return;
 
-        // Слушаем приглашения в лобби
+        // Слушаем приглашения в лобби (турнирные)
         const handleLobbyInvite = (data) => {
             console.log('📨 Получено приглашение в лобби:', data);
             setLobbyInvites(prev => [...prev, data]);
@@ -21,8 +21,17 @@ function MatchLobbyNotification({ socket, user }) {
 
         socket.on('match_lobby_invite', handleLobbyInvite);
 
+        // Слушаем приглашения в админ-лобби
+        const handleAdminLobbyInvite = (data) => {
+            console.log('📨 Получено приглашение в админ-лобби:', data);
+            setLobbyInvites(prev => [...prev, data]);
+            setShowNotification(true);
+        };
+        socket.on('admin_match_lobby_invite', handleAdminLobbyInvite);
+
         return () => {
             socket.off('match_lobby_invite', handleLobbyInvite);
+            socket.off('admin_match_lobby_invite', handleAdminLobbyInvite);
         };
     }, [socket, user]);
 
@@ -38,6 +47,15 @@ function MatchLobbyNotification({ socket, user }) {
                 if (!cancelled && res?.data?.success && Array.isArray(res.data.lobbies) && res.data.lobbies.length > 0) {
                     const invites = res.data.lobbies.map(l => ({ lobbyId: l.id }));
                     setLobbyInvites(invites);
+                    setShowNotification(true);
+                }
+                // Также подхватим админ-приглашения
+                const res2 = await axios.get('/api/admin/match-lobbies/my-invites', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!cancelled && res2?.data?.success && Array.isArray(res2.data.invites) && res2.data.invites.length > 0) {
+                    const invites2 = res2.data.invites.map(l => ({ lobbyId: l.lobby_id }));
+                    setLobbyInvites(prev => [...prev, ...invites2]);
                     setShowNotification(true);
                 }
             } catch (e) {

@@ -1069,6 +1069,16 @@ async function ensureAdminLobbyTables() {
         );
     `);
     await pool.query(`
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_indexes WHERE indexname = 'admin_lobby_inv_unique'
+            ) THEN
+                CREATE UNIQUE INDEX admin_lobby_inv_unique ON admin_lobby_invitations(lobby_id, user_id);
+            END IF;
+        END$$;
+    `);
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS admin_map_selections (
             id SERIAL PRIMARY KEY,
             lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
@@ -1156,10 +1166,13 @@ router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req,
             [lobbyId]
         );
         const invRes = await client.query(
-            `SELECT i.user_id, i.team, i.accepted, u.username, u.avatar_url, u.steam_id
+            `SELECT DISTINCT ON (i.user_id)
+                    i.user_id, i.team, i.accepted, i.created_at,
+                    u.username, u.avatar_url, u.steam_id
              FROM admin_lobby_invitations i
              JOIN users u ON u.id = i.user_id
-             WHERE i.lobby_id = $1`,
+             WHERE i.lobby_id = $1
+             ORDER BY i.user_id, i.created_at DESC`,
             [lobbyId]
         );
         // Группируем участников
@@ -1188,13 +1201,54 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, asy
         await pool.query(
             `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
              VALUES ($1, $2, $3, $4)
-             ON CONFLICT DO NOTHING`,
+             ON CONFLICT (lobby_id, user_id)
+             DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted`,
             [lobbyId, user_id, Number(team), Boolean(accept)]
         );
+        // WS-уведомление приглашенному
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`user_${user_id}`).emit('admin_match_lobby_invite', { lobbyId: Number(lobbyId) });
+            }
+        } catch (_) {}
         return res.json({ success: true });
     } catch (e) {
         console.error('Ошибка приглашения', e);
         return res.status(500).json({ success: false, error: 'Не удалось пригласить' });
+    }
+});
+
+// Принять приглашение пользователем
+router.post('/match-lobby/:lobbyId/accept', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const userId = req.user.id;
+    try {
+        const r = await pool.query(
+            `UPDATE admin_lobby_invitations SET accepted = TRUE WHERE lobby_id = $1 AND user_id = $2 RETURNING *`,
+            [lobbyId, userId]
+        );
+        if (r.rows.length === 0) return res.status(404).json({ success: false, error: 'Приглашение не найдено' });
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка принятия приглашения', e);
+        return res.status(500).json({ success: false, error: 'Не удалось принять приглашение' });
+    }
+});
+
+// Мои приглашения в админ-лобби (pending)
+router.get('/match-lobbies/my-invites', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    try {
+        const r = await pool.query(
+            `SELECT lobby_id, team, accepted, created_at FROM admin_lobby_invitations WHERE user_id = $1 AND accepted = FALSE ORDER BY created_at DESC LIMIT 10`,
+            [req.user.id]
+        );
+        return res.json({ success: true, invites: r.rows });
+    } catch (e) {
+        console.error('Ошибка получения приглашений', e);
+        return res.status(500).json({ success: false, error: 'Не удалось получить приглашения' });
     }
 });
 
