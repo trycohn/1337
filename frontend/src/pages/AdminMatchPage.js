@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import api from '../utils/api';
+import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
 import '../styles/components.css';
 
@@ -38,8 +38,18 @@ function AdminMatchPage() {
         const { data } = await api.post('/api/admin/match-lobby', {}, { headers: { Authorization: `Bearer ${token}` } });
         if (data?.success) {
             setLobbyId(data.lobby.id);
-            setLobby(data.lobby);
-            setAvailableMaps(data.available_maps || []);
+            // сразу подгрузим полный state лобби
+            const r = await api.get(`/api/admin/match-lobby/${data.lobby.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (r?.data?.success) {
+                setLobby(r.data.lobby);
+                setSelections(r.data.selections || []);
+                setAvailableMaps(r.data.available_maps || []);
+                setTeam1Users(r.data.team1_users || []);
+                setTeam2Users(r.data.team2_users || []);
+            } else {
+                setLobby(data.lobby);
+                setAvailableMaps(data.available_maps || []);
+            }
         }
     }, []);
 
@@ -65,10 +75,23 @@ function AdminMatchPage() {
         }, 250);
     }
 
-    function addToSelection(u) {
+    async function addToSelection(u) {
         if (!u || !u.id) return;
         if (selected.some(s => s.id === u.id)) return;
         setSelected(prev => [...prev, u]);
+        try {
+            if (!lobbyId) await ensureAdminLobby();
+            const token = localStorage.getItem('token');
+            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (r?.data?.success) {
+                setLobby(r.data.lobby);
+                setSelections(r.data.selections || []);
+                setAvailableMaps(r.data.available_maps || []);
+                setTeam1Users(r.data.team1_users || []);
+                setTeam2Users(r.data.team2_users || []);
+            }
+        } catch (_) {}
     }
 
     function removeFromSelection(id) {
@@ -171,7 +194,7 @@ function AdminMatchPage() {
                                     {u.steam_id ? <span style={{ marginLeft: 8, opacity: .7 }}>SteamID: {u.steam_id}</span> : <span style={{ marginLeft: 8, color: '#ff6666' }}>нет Steam</span>}
                                 </div>
                                 <div className="list-row-right">
-                                    <button className="btn btn-secondary" onClick={() => addToSelection(u)} disabled={!canInvite}>Добавить</button>
+                                    <button className="btn btn-secondary" onClick={() => addToSelection(u)} disabled={!canInvite}>Пригласить в Команду 1</button>
                                     <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
                                         onClick={async () => {
                                             const token = localStorage.getItem('token');
@@ -202,6 +225,13 @@ function AdminMatchPage() {
                             <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
                                 onClick={async () => {
                                     const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
+                                }}>В команду 1</button>
+                            <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
+                                onClick={async () => {
+                                    const token = localStorage.getItem('token');
                                     await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
                                     const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                     if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
@@ -215,7 +245,7 @@ function AdminMatchPage() {
                 <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
                     {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
                 </button>
-                <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={syncWhitelist} disabled={loading || selected.length === 0}>
+                <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
                     Синхронизировать whitelist
                 </button>
                 {/* Очистка лобби — только создатель */}
