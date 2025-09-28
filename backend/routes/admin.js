@@ -1135,6 +1135,13 @@ router.post('/match-lobby', authenticateToken, requireAdmin, async (req, res) =>
             ['Counter-Strike 2']
         );
         await client.query('COMMIT');
+        // Уведомление создателю (персональная комната), чтобы можно было вернуться в активное лобби
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`user_${req.user.id}`).emit('admin_match_lobby_invite', { lobbyId: Number(lobby.id) });
+            }
+        } catch (_) {}
         return res.json({ success: true, lobby, available_maps: mapsRes.rows });
     } catch (e) {
         await client.query('ROLLBACK');
@@ -1306,11 +1313,11 @@ router.post('/match-lobby/:lobbyId/ready', authenticateToken, requireAdmin, asyn
             [Boolean(ready), lobbyId]
         );
         let lobby = upd.rows[0];
+        // Если обе команды готовы — помечаем статус как 'ready', старт отдельной кнопкой
         if (lobby.team1_ready && lobby.team2_ready && lobby.status === 'waiting') {
-            const firstPicker = Math.random() < 0.5 ? 1 : 2;
             lobby = (await client.query(
-                `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
-                [firstPicker, lobbyId]
+                `UPDATE admin_match_lobbies SET status = 'ready', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
+                [lobbyId]
             )).rows[0];
         }
         await client.query('COMMIT');
@@ -1353,21 +1360,13 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin,
         // Следующий ход
         const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
         if (next.completed) {
-            // Завершено — готовим ссылки подключения
-            const host = process.env.CS2_TEST_HOST || '127.0.0.1';
-            const port = Number(process.env.CS2_TEST_PORT || 27015);
-            const pass = process.env.CS2_TEST_PASSWORD || 'test1337';
-            const gotvHost = process.env.CS2_GOTV_HOST || host;
-            const gotvPort = Number(process.env.CS2_GOTV_PORT || 27020);
-            const gotvPass = process.env.CS2_GOTV_PASSWORD || 'gotv1337';
-            const connect = `steam://rungameid/730//+connect ${host}:${port};+password ${pass}`;
-            const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+            // Завершено — ждём ручного запуска создания матча админом
             await client.query(
-                `UPDATE admin_match_lobbies SET status = 'completed', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
-                [connect, gotv, lobbyId]
+                `UPDATE admin_match_lobbies SET status = 'ready_to_create', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+                [lobbyId]
             );
             await client.query('COMMIT');
-            return res.json({ success: true, completed: true, connect, gotv });
+            return res.json({ success: true, completed: true });
         } else {
             const upd = await client.query(
                 `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
@@ -1385,6 +1384,78 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin,
     }
 });
 
+// Старт стадии пик/бан (только создатель)
+router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, requireAdmin, async (req, res) => {
+    const { lobbyId } = req.params;
+    const { firstPicker } = req.body || {};
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const r = await client.query('SELECT * FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        const lobby = r.rows[0];
+        if (!lobby) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, error: 'Лобби не найдено' }); }
+        if (Number(lobby.created_by) !== Number(req.user.id)) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Только создатель может начать пик/бан' }); }
+        if (!lobby.match_format) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Не выбран формат матча' }); }
+        if (!(lobby.team1_ready && lobby.team2_ready)) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Обе команды должны быть готовы' }); }
+        const fp = firstPicker === 1 || firstPicker === 2 ? firstPicker : (Math.random() < 0.5 ? 1 : 2);
+        const upd = await client.query(
+            `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+            [fp, lobbyId]
+        );
+        await client.query('COMMIT');
+        return res.json({ success: true, lobby: upd.rows[0] });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка старта пик/бан', e);
+        return res.status(500).json({ success: false, error: 'Не удалось начать пик/бан' });
+    } finally {
+        client.release();
+    }
+});
+
+// Создать матч (генерируем ссылки подключения), только создатель
+router.post('/match-lobby/:lobbyId/create-match', authenticateToken, requireAdmin, async (req, res) => {
+    const { lobbyId } = req.params;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const r = await client.query('SELECT * FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        const lobby = r.rows[0];
+        if (!lobby) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, error: 'Лобби не найдено' }); }
+        if (Number(lobby.created_by) !== Number(req.user.id)) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Только создатель может создать матч' }); }
+        if (lobby.status !== 'ready_to_create') { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Пики/баны должны быть завершены' }); }
+        const host = process.env.CS2_TEST_HOST || '127.0.0.1';
+        const port = Number(process.env.CS2_TEST_PORT || 27015);
+        const pass = process.env.CS2_TEST_PASSWORD || 'test1337';
+        const gotvHost = process.env.CS2_GOTV_HOST || host;
+        const gotvPort = Number(process.env.CS2_GOTV_PORT || 27020);
+        const gotvPass = process.env.CS2_GOTV_PASSWORD || 'gotv1337';
+        const connect = `steam://rungameid/730//+connect ${host}:${port};+password ${pass}`;
+        const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+        const upd = await client.query(
+            `UPDATE admin_match_lobbies SET status = 'match_created', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *`,
+            [connect, gotv, lobbyId]
+        );
+        await client.query('COMMIT');
+        // Уведомление приглашённым (если подключены)
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                const inv = await pool.query('SELECT user_id FROM admin_lobby_invitations WHERE lobby_id = $1 AND accepted = TRUE', [lobbyId]);
+                for (const row of inv.rows) {
+                    io.to(`user_${row.user_id}`).emit('admin_match_created', { lobbyId: Number(lobbyId), connect, gotv });
+                }
+            }
+        } catch (_) {}
+        return res.json({ success: true, lobby: upd.rows[0], connect, gotv });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка create-match', e);
+        return res.status(500).json({ success: false, error: 'Не удалось создать матч' });
+    } finally {
+        client.release();
+    }
+});
 // Получить ссылки подключения по завершению
 router.get('/match-lobby/:lobbyId/connect', authenticateToken, requireAdmin, async (req, res) => {
     const { lobbyId } = req.params;

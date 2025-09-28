@@ -173,6 +173,16 @@ function AdminMatchPage() {
                         const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                         if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                     }}>BO5</button>
+                    {/* Старт пик/бан (после готовности обеих команд) */}
+                    <button className="btn btn-secondary" disabled={!lobbyId || !(lobby?.status === 'ready')}
+                        onClick={async () => {
+                            const token = localStorage.getItem('token');
+                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                            if (data?.success) {
+                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
+                            }
+                        }}>Начать ban/pick</button>
                 </div>
             </div>
             <div style={{ marginTop: 12, maxWidth: 640 }}>
@@ -385,11 +395,20 @@ function AdminMatchPage() {
             )}
 
             {/* Кнопка подключиться после завершения */}
-            {connectInfo?.connect && (
+            {(connectInfo?.connect || lobby?.status === 'match_created') && (
                 <div style={{ marginTop: 16 }}>
-                    <a className="btn btn-primary" href={connectInfo.connect} target="_blank" rel="noreferrer">
-                        Подключиться к матчу
-                    </a>
+                    {lobby?.status === 'ready_to_create' && Number(lobby?.created_by) === Number(user?.id) && (
+                        <button className="btn btn-primary" onClick={async () => {
+                            const token = localStorage.getItem('token');
+                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/create-match`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                            if (data?.success) setConnectInfo({ connect: data.connect, gotv: data.gotv });
+                        }}>СОЗДАЕМ МАТЧ?</button>
+                    )}
+                    {connectInfo?.connect && (
+                        <a className="btn btn-primary" style={{ marginLeft: 8 }} href={connectInfo.connect} target="_blank" rel="noreferrer">
+                            Подключиться к матчу
+                        </a>
+                    )}
                 </div>
             )}
         </div>
