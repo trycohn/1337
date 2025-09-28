@@ -19,6 +19,7 @@ function AdminMatchPage() {
     const [team2Users, setTeam2Users] = useState([]);
     const [loading, setLoading] = useState(false);
     const [unassignedUsers, setUnassignedUsers] = useState([]);
+    const [invitedPendingUsers, setInvitedPendingUsers] = useState([]);
     const searchDebounce = useRef(null);
 
     useEffect(() => {
@@ -49,6 +50,7 @@ function AdminMatchPage() {
                 setTeam1Users(r.data.team1_users || []);
                 setTeam2Users(r.data.team2_users || []);
                 setUnassignedUsers(r.data.unassigned_users || []);
+                setInvitedPendingUsers(r.data.invited_pending_users || []);
             } else {
                 setLobby(data.lobby);
                 setAvailableMaps(data.available_maps || []);
@@ -81,6 +83,7 @@ function AdminMatchPage() {
     async function addToSelection(u) {
         if (!u || !u.id) return;
         if (selected.some(s => s.id === u.id)) return;
+        if (!isAdmin) return;
         setSelected(prev => [...prev, u]);
         try {
             if (!lobbyId) await ensureAdminLobby();
@@ -94,9 +97,37 @@ function AdminMatchPage() {
                 setTeam1Users(r.data.team1_users || []);
                 setTeam2Users(r.data.team2_users || []);
                 setUnassignedUsers(r.data.unassigned_users || []);
+                setInvitedPendingUsers(r.data.invited_pending_users || []);
             }
         } catch (_) {}
     }
+
+    // Автозагрузка лобби по параметру ?lobby= для приглашенных
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const params = new URLSearchParams(window.location.search || '');
+        const qLobby = params.get('lobby');
+        if (qLobby && !lobbyId) {
+            const idNum = Number(qLobby);
+            if (Number.isInteger(idNum) && idNum > 0) {
+                (async () => {
+                    try {
+                        const r = await api.get(`/api/admin/match-lobby/${idNum}`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (r?.data?.success) {
+                            setLobbyId(idNum);
+                            setLobby(r.data.lobby);
+                            setSelections(r.data.selections || []);
+                            setAvailableMaps(r.data.available_maps || []);
+                            setTeam1Users(r.data.team1_users || []);
+                            setTeam2Users(r.data.team2_users || []);
+                            setUnassignedUsers(r.data.unassigned_users || []);
+                            setInvitedPendingUsers(r.data.invited_pending_users || []);
+                        }
+                    } catch (_) {}
+                })();
+            }
+        }
+    }, [lobbyId]);
 
     function removeFromSelection(id) {
         setSelected(prev => prev.filter(u => u.id !== id));
@@ -239,6 +270,7 @@ function AdminMatchPage() {
                                         setTeam1Users(r.data.team1_users || []);
                                         setTeam2Users(r.data.team2_users || []);
                                         setUnassignedUsers(r.data.unassigned_users || []);
+                                        setInvitedPendingUsers(r.data.invited_pending_users || []);
                                     }
                                 }}>В Команду 1</button>
                                 <button className="btn btn-secondary ml-8" onClick={async () => {
@@ -252,8 +284,27 @@ function AdminMatchPage() {
                                         setTeam1Users(r.data.team1_users || []);
                                         setTeam2Users(r.data.team2_users || []);
                                         setUnassignedUsers(r.data.unassigned_users || []);
+                                        setInvitedPendingUsers(r.data.invited_pending_users || []);
                                     }
                                 }}>В Команду 2</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Приглашённые участники (ожидают принятия) */}
+            {invitedPendingUsers.length > 0 && (
+                <div className="mt-16">
+                    <h3>Приглашённые участники</h3>
+                    {invitedPendingUsers.map(u => (
+                        <div key={`pending-${u.id}`} className="list-row">
+                            <div className="list-row-left">
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                <span className="ml-8">{u.username}</span>
+                            </div>
+                            <div className="list-row-right">
+                                <span className="muted">ожидает принятия…</span>
                             </div>
                         </div>
                     ))}

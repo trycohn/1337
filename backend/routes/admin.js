@@ -1205,9 +1205,12 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
             .filter(r => r.team === 2 && r.accepted)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
         const unassigned_users = invRes.rows
-            .filter(r => (r.team === null || r.accepted === false))
+            .filter(r => r.accepted === true && r.team === null)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
-        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users });
+        const invited_pending_users = invRes.rows
+            .filter(r => r.accepted === false)
+            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users });
     } catch (e) {
         console.error('Ошибка получения админ-лобби', e);
         return res.status(500).json({ success: false, error: 'Ошибка сервера' });
