@@ -15,7 +15,8 @@ function MatchLobbyNotification({ socket, user }) {
         // Слушаем приглашения в лобби (турнирные)
         const handleLobbyInvite = (data) => {
             console.log('📨 Получено приглашение в лобби:', data);
-            setLobbyInvites(prev => [...prev, data]);
+            const payload = { lobbyId: data?.lobbyId || data?.id, type: 'tournament' };
+            setLobbyInvites(prev => [...prev, payload]);
             setShowNotification(true);
         };
 
@@ -24,7 +25,8 @@ function MatchLobbyNotification({ socket, user }) {
         // Слушаем приглашения в админ-лобби
         const handleAdminLobbyInvite = (data) => {
             console.log('📨 Получено приглашение в админ-лобби:', data);
-            setLobbyInvites(prev => [...prev, data]);
+            const payload = { lobbyId: data?.lobbyId || data?.lobby_id || data?.id, type: 'admin' };
+            setLobbyInvites(prev => [...prev, payload]);
             setShowNotification(true);
         };
         socket.on('admin_match_lobby_invite', handleAdminLobbyInvite);
@@ -45,7 +47,7 @@ function MatchLobbyNotification({ socket, user }) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (!cancelled && res?.data?.success && Array.isArray(res.data.lobbies) && res.data.lobbies.length > 0) {
-                    const invites = res.data.lobbies.map(l => ({ lobbyId: l.id }));
+                    const invites = res.data.lobbies.map(l => ({ lobbyId: l.id, type: 'tournament' }));
                     setLobbyInvites(invites);
                     setShowNotification(true);
                 }
@@ -54,7 +56,7 @@ function MatchLobbyNotification({ socket, user }) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (!cancelled && res2?.data?.success && Array.isArray(res2.data.invites) && res2.data.invites.length > 0) {
-                    const invites2 = res2.data.invites.map(l => ({ lobbyId: l.lobby_id }));
+                    const invites2 = res2.data.invites.map(l => ({ lobbyId: l.lobby_id, type: 'admin' }));
                     setLobbyInvites(prev => [...prev, ...invites2]);
                     setShowNotification(true);
                 }
@@ -70,8 +72,11 @@ function MatchLobbyNotification({ socket, user }) {
     const handleNotificationClick = () => {
         if (lobbyInvites.length > 0) {
             const latestInvite = lobbyInvites[lobbyInvites.length - 1];
-            // Открываем в новом окне
-            window.open(`/lobby/${latestInvite.lobbyId}`, '_blank');
+            // Открываем в новом окне (админ/турнирное лобби)
+            const targetUrl = latestInvite.type === 'admin'
+                ? `/admin/match?lobby=${latestInvite.lobbyId}`
+                : `/lobby/${latestInvite.lobbyId}`;
+            window.open(targetUrl, '_blank');
             // Очищаем приглашения
             setLobbyInvites([]);
             setShowNotification(false);
