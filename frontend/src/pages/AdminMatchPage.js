@@ -174,16 +174,13 @@ function AdminMatchPage() {
         navigator.clipboard?.writeText(text).catch(() => {});
     }
 
-    useEffect(() => { ensureAdminLobby().catch(() => {}); }, [ensureAdminLobby]);
+    useEffect(() => {
+        if (isAdmin && !lobbyId) {
+            ensureAdminLobby().catch(() => {});
+        }
+    }, [isAdmin, lobbyId, ensureAdminLobby]);
 
-    if (!isAdmin) {
-        return (
-            <div className="admin-match-page">
-                <h2>МАТЧ (доступ только администраторам)</h2>
-                <p>Недостаточно прав.</p>
-            </div>
-        );
-    }
+    // Не блокируем страницу для приглашенных не-админов
 
     return (
         <div className="admin-match-page">
