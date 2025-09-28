@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
 import '../styles/components.css';
+import './AdminMatchPage.css';
 
 function AdminMatchPage() {
     const [user, setUser] = useState(null);
@@ -17,6 +18,7 @@ function AdminMatchPage() {
     const [team1Users, setTeam1Users] = useState([]);
     const [team2Users, setTeam2Users] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [unassignedUsers, setUnassignedUsers] = useState([]);
     const searchDebounce = useRef(null);
 
     useEffect(() => {
@@ -46,6 +48,7 @@ function AdminMatchPage() {
                 setAvailableMaps(r.data.available_maps || []);
                 setTeam1Users(r.data.team1_users || []);
                 setTeam2Users(r.data.team2_users || []);
+                setUnassignedUsers(r.data.unassigned_users || []);
             } else {
                 setLobby(data.lobby);
                 setAvailableMaps(data.available_maps || []);
@@ -82,7 +85,7 @@ function AdminMatchPage() {
         try {
             if (!lobbyId) await ensureAdminLobby();
             const token = localStorage.getItem('token');
-            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id }, { headers: { Authorization: `Bearer ${token}` } });
             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (r?.data?.success) {
                 setLobby(r.data.lobby);
@@ -90,6 +93,7 @@ function AdminMatchPage() {
                 setAvailableMaps(r.data.available_maps || []);
                 setTeam1Users(r.data.team1_users || []);
                 setTeam2Users(r.data.team2_users || []);
+                setUnassignedUsers(r.data.unassigned_users || []);
             }
         } catch (_) {}
     }
@@ -143,7 +147,7 @@ function AdminMatchPage() {
 
     if (!isAdmin) {
         return (
-            <div style={{ padding: 16 }}>
+            <div className="admin-match-page">
                 <h2>МАТЧ (доступ только администраторам)</h2>
                 <p>Недостаточно прав.</p>
             </div>
@@ -151,10 +155,10 @@ function AdminMatchPage() {
     }
 
     return (
-        <div style={{ padding: 16 }}>
+        <div className="admin-match-page">
             <h2>МАТЧ — тестовое лобби</h2>
-            <div style={{ marginTop: 8 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="mt-8">
+                <div className="row">
                     <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
                         const token = localStorage.getItem('token');
                         await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo1' }, { headers: { Authorization: `Bearer ${token}` } });
@@ -185,7 +189,7 @@ function AdminMatchPage() {
                         }}>Начать ban/pick</button>
                 </div>
             </div>
-            <div style={{ marginTop: 12, maxWidth: 640 }}>
+            <div className="mt-12" style={{ maxWidth: 640 }}>
                 <label className="sr-only" htmlFor="user-search">Поиск пользователей</label>
                 <input
                     id="user-search"
@@ -195,24 +199,17 @@ function AdminMatchPage() {
                     onChange={onSearchChange}
                 />
                 {!!results.length && (
-                    <div style={{ marginTop: 8 }}>
+                    <div className="mt-8">
                         {results.map(u => (
                             <div key={u.id} className="list-row">
                                 <div className="list-row-left">
                                     <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                    <span style={{ marginLeft: 8 }}>{u.username}</span>
-                                    {u.steam_id ? <span style={{ marginLeft: 8, opacity: .7 }}>SteamID: {u.steam_id}</span> : <span style={{ marginLeft: 8, color: '#ff6666' }}>нет Steam</span>}
+                                    <span className="ml-8">{u.username}</span>
+                                    {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
                                 </div>
                                 <div className="list-row-right">
-                                    <button className="btn btn-secondary" onClick={() => addToSelection(u)} disabled={!canInvite}>Пригласить в Команду 1</button>
-                                    <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
-                                        onClick={async () => {
-                                            const token = localStorage.getItem('token');
-                                            // По умолчанию кидаем в команду 1
-                                            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
-                                            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                                        }}>Пригласить</button>
+                                    <button className="btn btn-secondary" disabled={!lobbyId}
+                                        onClick={() => addToSelection(u)}>Пригласить</button>
                                 </div>
                             </div>
                         ))}
@@ -220,26 +217,69 @@ function AdminMatchPage() {
                 )}
             </div>
 
-            <div style={{ marginTop: 16 }}>
+            {/* Участники не в командах */}
+            {unassignedUsers.length > 0 && (
+                <div className="mt-16">
+                    <h3>Участники не в командах</h3>
+                    {unassignedUsers.map(u => (
+                        <div key={`un-${u.id}`} className="list-row">
+                            <div className="list-row-left">
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                <span className="ml-8">{u.username}</span>
+                            </div>
+                            <div className="list-row-right">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) {
+                                        setLobby(r.data.lobby);
+                                        setSelections(r.data.selections || []);
+                                        setAvailableMaps(r.data.available_maps || []);
+                                        setTeam1Users(r.data.team1_users || []);
+                                        setTeam2Users(r.data.team2_users || []);
+                                        setUnassignedUsers(r.data.unassigned_users || []);
+                                    }
+                                }}>В Команду 1</button>
+                                <button className="btn btn-secondary ml-8" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) {
+                                        setLobby(r.data.lobby);
+                                        setSelections(r.data.selections || []);
+                                        setAvailableMaps(r.data.available_maps || []);
+                                        setTeam1Users(r.data.team1_users || []);
+                                        setTeam2Users(r.data.team2_users || []);
+                                        setUnassignedUsers(r.data.unassigned_users || []);
+                                    }
+                                }}>В Команду 2</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="mt-16">
                 <h3>Выбранные игроки</h3>
-                {selected.length === 0 && <div style={{ opacity: .7 }}>Никого не выбрано</div>}
+                {selected.length === 0 && <div className="muted">Никого не выбрано</div>}
                 {selected.map(u => (
                     <div key={u.id} className="list-row">
                         <div className="list-row-left">
                             <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                            <span style={{ marginLeft: 8 }}>{u.username}</span>
-                            {u.steam_id ? <span style={{ marginLeft: 8, opacity: .7 }}>SteamID: {u.steam_id}</span> : <span style={{ marginLeft: 8, color: '#ff6666' }}>нет Steam</span>}
+                            <span className="ml-8">{u.username}</span>
+                            {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
                         </div>
                         <div className="list-row-right">
                             <button className="btn btn-secondary" onClick={() => removeFromSelection(u.id)}>Убрать</button>
-                            <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
+                            <button className="btn btn-secondary ml-8" disabled={!lobbyId}
                                 onClick={async () => {
                                     const token = localStorage.getItem('token');
                                     await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
                                     const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                     if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                                 }}>В команду 1</button>
-                            <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId}
+                            <button className="btn btn-secondary ml-8" disabled={!lobbyId}
                                 onClick={async () => {
                                     const token = localStorage.getItem('token');
                                     await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
@@ -251,15 +291,15 @@ function AdminMatchPage() {
                 ))}
             </div>
 
-            <div style={{ marginTop: 16 }}>
+            <div className="mt-16">
                 <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
                     {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
                 </button>
-                <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
+                <button className="btn btn-secondary ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
                     Синхронизировать whitelist
                 </button>
                 {/* Очистка лобби — только создатель */}
-                <button className="btn btn-secondary" style={{ marginLeft: 8 }} disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                <button className="btn btn-secondary ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
                     onClick={async () => {
                         try {
                             const token = localStorage.getItem('token');
@@ -278,13 +318,13 @@ function AdminMatchPage() {
             </div>
 
             {connectInfo && (
-                <div style={{ marginTop: 16 }}>
+                <div className="mt-16">
                     <h3>Подключение</h3>
                     {connectInfo.connect && (
                         <div className="list-row">
                             <div className="list-row-left">
                                 <span>Игроки:</span>
-                                <code style={{ marginLeft: 8 }}>{connectInfo.connect}</code>
+                                <code className="code-inline">{connectInfo.connect}</code>
                             </div>
                             <div className="list-row-right">
                                 <button className="btn btn-secondary" onClick={() => copy(connectInfo.connect)}>Копировать</button>
@@ -292,10 +332,10 @@ function AdminMatchPage() {
                         </div>
                     )}
                     {connectInfo.gotv && (
-                        <div className="list-row" style={{ marginTop: 8 }}>
+                        <div className="list-row mt-8">
                             <div className="list-row-left">
                                 <span>GOTV:</span>
-                                <code style={{ marginLeft: 8 }}>{connectInfo.gotv}</code>
+                                <code className="code-inline">{connectInfo.gotv}</code>
                             </div>
                             <div className="list-row-right">
                                 <button className="btn btn-secondary" onClick={() => copy(connectInfo.gotv)}>Копировать</button>
@@ -307,8 +347,8 @@ function AdminMatchPage() {
 
             {/* Панель готовности и вступления админа */}
             {lobbyId && (
-                <div style={{ marginTop: 16 }}>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="mt-16">
+                    <div className="row">
                         <button className="btn btn-secondary" onClick={async () => {
                             const token = localStorage.getItem('token');
                             await api.post(`/api/admin/match-lobby/${lobbyId}/join`, { team: 1 }, { headers: { Authorization: `Bearer ${token}` } });
@@ -331,7 +371,7 @@ function AdminMatchPage() {
 
             {/* Доска выбора карт */}
             {lobby && lobby.match_format && availableMaps?.length > 0 && (
-                <div style={{ marginTop: 16 }}>
+                <div className="mt-16">
                     <MapSelectionBoard
                         maps={availableMaps}
                         selections={selections}
@@ -350,10 +390,9 @@ function AdminMatchPage() {
                                     setAvailableMaps(r.data.available_maps || []);
                                     setTeam1Users(r.data.team1_users || []);
                                     setTeam2Users(r.data.team2_users || []);
+                                    setUnassignedUsers(r.data.unassigned_users || []);
                                 }
-                                if (data.completed) {
-                                    setConnectInfo({ connect: data.connect, gotv: data.gotv });
-                                }
+                                // после завершения пиков ждём явное «СОЗДАЕМ МАТЧ?»
                             }
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}
@@ -363,29 +402,29 @@ function AdminMatchPage() {
 
             {/* Составы команд */}
             {(team1Users.length > 0 || team2Users.length > 0) && (
-                <div style={{ marginTop: 16 }}>
+                <div className="mt-16">
                     <h3>Состав команд</h3>
-                    <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                    <div className="row-lg">
                         <div>
                             <h4>{lobby?.team1_name || 'Команда 1'}</h4>
-                            {team1Users.length === 0 && <div style={{ opacity: .7 }}>Нет игроков</div>}
+                            {team1Users.length === 0 && <div className="muted">Нет игроков</div>}
                             {team1Users.map(u => (
                                 <div key={`t1-${u.id}`} className="list-row">
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                        <span style={{ marginLeft: 8 }}>{u.username}</span>
+                                        <span className="ml-8">{u.username}</span>
                                     </div>
                                 </div>
                             ))}
                         </div>
                         <div>
                             <h4>{lobby?.team2_name || 'Команда 2'}</h4>
-                            {team2Users.length === 0 && <div style={{ opacity: .7 }}>Нет игроков</div>}
+                            {team2Users.length === 0 && <div className="muted">Нет игроков</div>}
                             {team2Users.map(u => (
                                 <div key={`t2-${u.id}`} className="list-row">
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                        <span style={{ marginLeft: 8 }}>{u.username}</span>
+                                        <span className="ml-8">{u.username}</span>
                                     </div>
                                 </div>
                             ))}
@@ -395,8 +434,8 @@ function AdminMatchPage() {
             )}
 
             {/* Кнопка подключиться после завершения */}
-            {(connectInfo?.connect || lobby?.status === 'match_created') && (
-                <div style={{ marginTop: 16 }}>
+            {(connectInfo?.connect || lobby?.status === 'match_created' || lobby?.status === 'ready_to_create') && (
+                <div className="mt-16">
                     {lobby?.status === 'ready_to_create' && Number(lobby?.created_by) === Number(user?.id) && (
                         <button className="btn btn-primary" onClick={async () => {
                             const token = localStorage.getItem('token');
@@ -405,7 +444,7 @@ function AdminMatchPage() {
                         }}>СОЗДАЕМ МАТЧ?</button>
                     )}
                     {connectInfo?.connect && (
-                        <a className="btn btn-primary" style={{ marginLeft: 8 }} href={connectInfo.connect} target="_blank" rel="noreferrer">
+                        <a className="btn btn-primary ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
                             Подключиться к матчу
                         </a>
                     )}

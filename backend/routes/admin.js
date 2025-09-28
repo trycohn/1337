@@ -1063,20 +1063,22 @@ async function ensureAdminLobbyTables() {
             id SERIAL PRIMARY KEY,
             lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
             user_id INTEGER NOT NULL,
-            team SMALLINT, -- 1|2
+            team SMALLINT, -- 1|2 (NULL = без команды)
             accepted BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    // Дедупликация и уникальный индекс
     await pool.query(`
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_indexes WHERE indexname = 'admin_lobby_inv_unique'
-            ) THEN
-                CREATE UNIQUE INDEX admin_lobby_inv_unique ON admin_lobby_invitations(lobby_id, user_id);
-            END IF;
-        END$$;
+        WITH dup AS (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY lobby_id, user_id ORDER BY created_at DESC, id DESC) rn
+            FROM admin_lobby_invitations
+        )
+        DELETE FROM admin_lobby_invitations a USING dup
+        WHERE a.id = dup.id AND dup.rn > 1;
+    `);
+    await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS admin_lobby_inv_unique ON admin_lobby_invitations(lobby_id, user_id);
     `);
     await pool.query(`
         CREATE TABLE IF NOT EXISTS admin_map_selections (
@@ -1189,7 +1191,10 @@ router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req,
         const team2_users = invRes.rows
             .filter(r => r.team === 2 && r.accepted)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
-        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users });
+        const unassigned_users = invRes.rows
+            .filter(r => (r.team === null || r.accepted === false))
+            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users });
     } catch (e) {
         console.error('Ошибка получения админ-лобби', e);
         return res.status(500).json({ success: false, error: 'Ошибка сервера' });
@@ -1202,15 +1207,15 @@ router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req,
 router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
-    const { user_id, team, accept } = req.body || {};
-    if (!user_id || ![1,2].includes(Number(team))) return res.status(400).json({ success: false, error: 'user_id и team обязательны' });
+    const { user_id, team = null, accept = false } = req.body || {};
+    if (!user_id) return res.status(400).json({ success: false, error: 'user_id обязателен' });
     try {
         await pool.query(
             `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
              VALUES ($1, $2, $3, $4)
              ON CONFLICT (lobby_id, user_id)
              DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted`,
-            [lobbyId, user_id, Number(team), Boolean(accept)]
+            [lobbyId, user_id, (team === null ? null : Number(team)), Boolean(accept)]
         );
         // WS-уведомление приглашенному
         try {
