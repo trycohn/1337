@@ -1173,6 +1173,12 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
             );
             const isCreator = Number(lobby.created_by) === Number(req.user.id);
             if (!(invited.rows[0] || isCreator)) {
+                console.warn('[ADMIN_LOBBY][ACCESS_DENIED]', {
+                    lobbyId: Number(lobbyId),
+                    requesterId: Number(req.user.id),
+                    isCreator,
+                    invitedFound: !!invited.rows[0]
+                });
                 await client.query('ROLLBACK');
                 return res.status(403).json({ success: false, error: 'Нет доступа к этому лобби' });
             }
