@@ -1210,6 +1210,13 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, asy
     const { user_id, team = null, accept = false } = req.body || {};
     if (!user_id) return res.status(400).json({ success: false, error: 'user_id обязателен' });
     try {
+        console.log('[ADMIN_LOBBY][INVITE] request', {
+            lobbyId: Number(lobbyId),
+            inviterId: req.user?.id,
+            targetUserId: Number(user_id),
+            team,
+            accept
+        });
         await pool.query(
             `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
              VALUES ($1, $2, $3, $4)
@@ -1221,10 +1228,22 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, asy
         try {
             const io = req.app.get('io');
             if (io) {
+                const roomName = `user_${user_id}`;
+                let socketsCount = 0;
+                try {
+                    const sockets = await io.in(roomName).allSockets();
+                    socketsCount = sockets ? sockets.size : 0;
+                } catch (_) {}
+                console.log('[ADMIN_LOBBY][INVITE] emit admin_match_lobby_invite', {
+                    lobbyId: Number(lobbyId),
+                    room: roomName,
+                    socketsInRoom: socketsCount
+                });
                 io.to(`user_${user_id}`).emit('admin_match_lobby_invite', { lobbyId: Number(lobbyId) });
+                return res.json({ success: true, debug: { room: roomName, socketsInRoom: socketsCount } });
             }
         } catch (_) {}
-        return res.json({ success: true });
+        return res.json({ success: true, debug: { room: `user_${user_id}`, socketsInRoom: 0 } });
     } catch (e) {
         console.error('Ошибка приглашения', e);
         return res.status(500).json({ success: false, error: 'Не удалось пригласить' });
@@ -1253,10 +1272,18 @@ router.post('/match-lobby/:lobbyId/accept', authenticateToken, async (req, res) 
 router.get('/match-lobbies/my-invites', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     try {
+        console.log('[ADMIN_LOBBY][MY_INVITES] request', { userId: req.user?.id });
         const r = await pool.query(
-            `SELECT lobby_id, team, accepted, created_at FROM admin_lobby_invitations WHERE user_id = $1 AND accepted = FALSE ORDER BY created_at DESC LIMIT 10`,
+            `SELECT i.lobby_id, i.team, i.accepted, i.created_at,
+                    aml.status as lobby_status, aml.created_by
+             FROM admin_lobby_invitations i
+             JOIN admin_match_lobbies aml ON aml.id = i.lobby_id
+             WHERE i.user_id = $1 AND COALESCE(i.accepted,false) = false
+             ORDER BY i.created_at DESC NULLS LAST
+             LIMIT 20`,
             [req.user.id]
         );
+        console.log('[ADMIN_LOBBY][MY_INVITES] rows', { count: r.rows.length });
         return res.json({ success: true, invites: r.rows });
     } catch (e) {
         console.error('Ошибка получения приглашений', e);

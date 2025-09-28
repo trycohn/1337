@@ -86,7 +86,12 @@ function createSocketServer(httpServer) {
     // 👤 Присоединение к персональной комнате для уведомлений
     const userRoomName = `user_${socket.userId}`;
     socket.join(userRoomName);
-    console.log(`👤 [Socket.IO] ${socket.user.username} присоединился к персональной комнате ${userRoomName}`);
+    io.in(userRoomName).allSockets().then((set) => {
+      const size = set ? set.size : 0;
+      console.log(`👤 [Socket.IO] ${socket.user.username} присоединился к персональной комнате ${userRoomName}; клиентов: ${size}`);
+    }).catch(() => {
+      console.log(`👤 [Socket.IO] ${socket.user.username} присоединился к персональной комнате ${userRoomName}`);
+    });
     
     // 🏆 Присоединение к турниру
     socket.on('join_tournament', (tournamentId) => {
