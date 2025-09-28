@@ -1155,7 +1155,7 @@ router.post('/match-lobby', authenticateToken, requireAdmin, async (req, res) =>
 });
 
 // Получить состояние админ-лобби
-router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     await ensureDefaultMapPool();
     const { lobbyId } = req.params;
@@ -1164,6 +1164,19 @@ router.get('/match-lobby/:lobbyId', authenticateToken, requireAdmin, async (req,
         const lobbyRes = await client.query(`SELECT * FROM admin_match_lobbies WHERE id = $1`, [lobbyId]);
         if (!lobbyRes.rows[0]) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
         const lobby = lobbyRes.rows[0];
+
+        // 🛡️ Доступ: админ ИЛИ создатель ИЛИ приглашённый пользователь
+        if (req.user.role !== 'admin') {
+            const invited = await client.query(
+                `SELECT 1 FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2 LIMIT 1`,
+                [lobbyId, req.user.id]
+            );
+            const isCreator = Number(lobby.created_by) === Number(req.user.id);
+            if (!(invited.rows[0] || isCreator)) {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ success: false, error: 'Нет доступа к этому лобби' });
+            }
+        }
         const mapsRes = await client.query(
             `SELECT concat('de_', map_name) as map_name, display_order
              FROM default_map_pool WHERE game = $1 ORDER BY display_order ASC, map_name ASC`,
@@ -1308,6 +1321,33 @@ router.post('/match-lobby/:lobbyId/join', authenticateToken, requireAdmin, async
     } catch (e) {
         console.error('Ошибка join', e);
         return res.status(500).json({ success: false, error: 'Не удалось вступить' });
+    }
+});
+
+// Пользователь (приглашённый) выбирает команду и принимает приглашение
+router.post('/match-lobby/:lobbyId/self-assign', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { team } = req.body || {};
+    if (![1,2,null].includes(team === null ? null : Number(team))) {
+        return res.status(400).json({ success: false, error: 'team должен быть 1, 2 или null' });
+    }
+    try {
+        // Проверяем, что пользователь приглашён в это лобби
+        const r = await pool.query(
+            `SELECT 1 FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2 LIMIT 1`,
+            [lobbyId, req.user.id]
+        );
+        if (r.rows.length === 0) return res.status(403).json({ success: false, error: 'Вы не приглашены в это лобби' });
+        // Обновляем команду и принимаем
+        await pool.query(
+            `UPDATE admin_lobby_invitations SET team = $1, accepted = TRUE WHERE lobby_id = $2 AND user_id = $3`,
+            [team === null ? null : Number(team), lobbyId, req.user.id]
+        );
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка self-assign', e);
+        return res.status(500).json({ success: false, error: 'Не удалось присоединиться' });
     }
 });
 
@@ -1489,11 +1529,19 @@ router.post('/match-lobby/:lobbyId/create-match', authenticateToken, requireAdmi
     }
 });
 // Получить ссылки подключения по завершению
-router.get('/match-lobby/:lobbyId/connect', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/match-lobby/:lobbyId/connect', authenticateToken, async (req, res) => {
     const { lobbyId } = req.params;
     try {
-        const r = await pool.query('SELECT connect_url, gotv_url FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        // Доступ: админ/создатель/приглашённый
+        const r = await pool.query('SELECT connect_url, gotv_url, created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
         if (!r.rows[0]) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        if (req.user.role !== 'admin' && Number(r.rows[0].created_by) !== Number(req.user.id)) {
+            const invited = await pool.query(
+                `SELECT 1 FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2 LIMIT 1`,
+                [lobbyId, req.user.id]
+            );
+            if (invited.rows.length === 0) return res.status(403).json({ success: false, error: 'Нет доступа' });
+        }
         return res.json({ success: true, connect: r.rows[0].connect_url, gotv: r.rows[0].gotv_url });
     } catch (e) {
         console.error('Ошибка connect', e);
