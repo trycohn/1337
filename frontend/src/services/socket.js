@@ -7,10 +7,8 @@ const SOCKET_CONFIG = {
     : 'http://localhost:3000',
   
   options: {
-    // 🚀 Транспорт: в проде только WebSocket, в деве WS+polling
-    transports: (process.env.NODE_ENV === 'production')
-      ? ['websocket']
-      : ['websocket', 'polling'],
+    // 🚀 Разрешаем WS + polling для корректного рукопожатия (upgrade → WebSocket)
+    transports: ['websocket', 'polling'],
     
     // ⚙️ Таймауты
     timeout: 20000,
