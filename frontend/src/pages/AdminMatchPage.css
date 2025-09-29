@@ -29,3 +29,12 @@
 .status-pending::before { background-color: #999; border-color: #999; }
 .status-declined::before { background-color: #ff3b30; border-color: #ff3b30; }
 
+/* DnD визуал */
+.dropzone { border: 1px dashed #333; padding: 8px; border-radius: 6px; }
+.list-row[draggable="true"] { cursor: grab; }
+.list-row[draggable="true"]:active { cursor: grabbing; }
+
+/* Hover actions for pending invites */
+.row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
+.list-row:hover .row-actions { opacity: 1; }
+

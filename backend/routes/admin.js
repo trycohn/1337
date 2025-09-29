@@ -1334,6 +1334,26 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, asy
     }
 });
 
+// Отменить приглашение пользователя в админ-лобби
+router.delete('/match-lobby/:lobbyId/invite/:userId', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId, userId } = req.params;
+    try {
+        // Разрешаем: админ или создатель лобби
+        const r = await pool.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        if (r.rows.length === 0) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const isCreator = Number(r.rows[0].created_by) === Number(req.user.id);
+        if (!(req.user.role === 'admin' || isCreator)) {
+            return res.status(403).json({ success: false, error: 'Нет прав на отмену приглашения' });
+        }
+        await pool.query('DELETE FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2', [lobbyId, userId]);
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка отмены приглашения', e);
+        return res.status(500).json({ success: false, error: 'Не удалось отменить приглашение' });
+    }
+});
+
 // Принять приглашение пользователем
 router.post('/match-lobby/:lobbyId/accept', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();

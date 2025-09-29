@@ -84,11 +84,9 @@ function AdminMatchPage() {
         }, 250);
     }
 
-    async function addToSelection(u) {
+    async function inviteUser(u) {
         if (!u || !u.id) return;
-        if (selected.some(s => s.id === u.id)) return;
         if (!isAdmin) return;
-        setSelected(prev => [...prev, u]);
         try {
             if (!lobbyId) await ensureAdminLobby();
             const token = localStorage.getItem('token');
@@ -102,6 +100,8 @@ function AdminMatchPage() {
                 setTeam2Users(r.data.team2_users || []);
                 setUnassignedUsers(r.data.unassigned_users || []);
                 setInvitedPendingUsers(r.data.invited_pending_users || []);
+                setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                setOnlineUserIds(r.data.online_user_ids || []);
             }
         } catch (_) {}
     }
@@ -161,9 +161,7 @@ function AdminMatchPage() {
         return () => { if (timer) clearTimeout(timer); };
     }, [user, lobbyId]);
 
-    function removeFromSelection(id) {
-        setSelected(prev => prev.filter(u => u.id !== id));
-    }
+    function removeFromSelection(id) {}
 
     async function createTestLobby() {
         try {
@@ -260,69 +258,45 @@ function AdminMatchPage() {
                 />
                 {!!results.length && (
                     <div className="mt-8">
-                        {results.map(u => (
-                            <div key={u.id} className="list-row">
-                                <div className="list-row-left">
-                                    <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                    <span className="ml-8">{u.username}</span>
-                                    {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
+                        {(() => {
+                            const activeSet = new Set([
+                                ...invitedPendingUsers.map(x => x.id),
+                                ...unassignedUsers.map(x => x.id),
+                                ...team1Users.map(x => x.id),
+                                ...team2Users.map(x => x.id)
+                            ]);
+                            return results.map(u => (
+                                <div key={u.id} className="list-row">
+                                    <div className="list-row-left">
+                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                        <span className="ml-8">{u.username}</span>
+                                        {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
+                                    </div>
+                                    <div className="list-row-right">
+                                        {!activeSet.has(u.id) && isAdmin && (
+                                            <button className="btn btn-secondary" disabled={!lobbyId}
+                                                onClick={() => inviteUser(u)}>Пригласить</button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="list-row-right">
-                                    <button className="btn btn-secondary" disabled={!lobbyId}
-                                        onClick={() => addToSelection(u)}>Пригласить</button>
-                                </div>
-                            </div>
-                        ))}
+                            ));
+                        })()}
                     </div>
                 )}
             </div>
 
-            {/* Участники не в командах */}
+            {/* Участники не в командах (dropzone) */}
             {unassignedUsers.length > 0 && (
-                <div className="mt-16">
+                <div className="mt-16 dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(null)}>
                     <h3>Участники не в командах</h3>
                     {unassignedUsers.map(u => (
-                        <div key={`un-${u.id}`} className="list-row">
+                        <div key={`un-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                             <div className="list-row-left">
                                 <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                 <span className="ml-8">{u.username}</span>
                                 <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
                                     {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
                                 </span>
-                            </div>
-                            <div className="list-row-right">
-                                <button className="btn btn-secondary" onClick={async () => {
-                                    const token = localStorage.getItem('token');
-                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
-                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                    if (r?.data?.success) {
-                                        setLobby(r.data.lobby);
-                                        setSelections(r.data.selections || []);
-                                        setAvailableMaps(r.data.available_maps || []);
-                                        setTeam1Users(r.data.team1_users || []);
-                                        setTeam2Users(r.data.team2_users || []);
-                                        setUnassignedUsers(r.data.unassigned_users || []);
-                                        setInvitedPendingUsers(r.data.invited_pending_users || []);
-                                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
-                                        setOnlineUserIds(r.data.online_user_ids || []);
-                                    }
-                                }}>В Команду 1</button>
-                                <button className="btn btn-secondary ml-8" onClick={async () => {
-                                    const token = localStorage.getItem('token');
-                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
-                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                    if (r?.data?.success) {
-                                        setLobby(r.data.lobby);
-                                        setSelections(r.data.selections || []);
-                                        setAvailableMaps(r.data.available_maps || []);
-                                        setTeam1Users(r.data.team1_users || []);
-                                        setTeam2Users(r.data.team2_users || []);
-                                        setUnassignedUsers(r.data.unassigned_users || []);
-                                        setInvitedPendingUsers(r.data.invited_pending_users || []);
-                                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
-                                        setOnlineUserIds(r.data.online_user_ids || []);
-                                    }
-                                }}>В Команду 2</button>
                             </div>
                         </div>
                     ))}
@@ -334,14 +308,25 @@ function AdminMatchPage() {
                 <div className="mt-16">
                     <h3>Приглашённые участники</h3>
                     {invitedPendingUsers.map(u => (
-                        <div key={`pending-${u.id}`} className="list-row">
+                        <div key={`pending-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                             <div className="list-row-left">
                                 <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                 <span className="ml-8">{u.username}</span>
                                 <span className="ml-8 muted status-dot status-pending">ожидает принятия…</span>
                             </div>
-                            <div className="list-row-right">
-                                <span className="muted">ожидает принятия…</span>
+                            <div className="list-row-right row-actions">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id }, { headers: { Authorization: `Bearer ${token}` } });
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) setInvitedPendingUsers(r.data.invited_pending_users || []);
+                                }}>Отправить ещё раз</button>
+                                <button className="btn btn-secondary ml-8" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.delete(`/api/admin/match-lobby/${lobbyId}/invite/${u.id}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) setInvitedPendingUsers(r.data.invited_pending_users || []);
+                                }}>Удалить</button>
                             </div>
                         </div>
                     ))}
@@ -504,16 +489,16 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {/* Составы команд */}
+            {/* Составы команд (dropzones) */}
             {(team1Users.length > 0 || team2Users.length > 0) && (
                 <div className="mt-16">
                     <h3>Состав команд</h3>
                     <div className="row-lg">
-                        <div>
+                        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
                             <h4>{lobby?.team1_name || 'Команда 1'}</h4>
                             {team1Users.length === 0 && <div className="muted">Нет игроков</div>}
                             {team1Users.map(u => (
-                                <div key={`t1-${u.id}`} className="list-row">
+                                <div key={`t1-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                         <span className="ml-8">{u.username}</span>
@@ -524,11 +509,11 @@ function AdminMatchPage() {
                                 </div>
                             ))}
                         </div>
-                        <div>
+                        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
                             <h4>{lobby?.team2_name || 'Команда 2'}</h4>
                             {team2Users.length === 0 && <div className="muted">Нет игроков</div>}
                             {team2Users.map(u => (
-                                <div key={`t2-${u.id}`} className="list-row">
+                                <div key={`t2-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                         <span className="ml-8">{u.username}</span>
