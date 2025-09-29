@@ -18,14 +18,16 @@ function createSocketServer(httpServer) {
       credentials: true
     },
     
-    // 🚀 Транспорты: в проде разрешаем polling как fallback для рукопожатия
-    transports: process.env.NODE_ENV === 'production' ? ['websocket', 'polling'] : ['websocket', 'polling'],
+    // 🚀 Транспорты: временно только polling, чтобы убрать WS-ошибки без ребилда фронта
+    transports: ['polling'],
     
     // ⚙️ Простые настройки
     pingTimeout: 30000,
     pingInterval: 20000,
     maxHttpBufferSize: 1e6,
     allowEIO3: false,
+    // ❌ Запрещаем upgrade до WebSocket — клиент не будет пытаться перейти на WS
+    allowUpgrades: false,
     
     // 🛡️ Безопасность
     serveClient: false,
