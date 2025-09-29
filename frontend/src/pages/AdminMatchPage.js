@@ -544,6 +544,9 @@ function AdminMatchPage() {
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                         <span className="ml-8">{u.username}</span>
+                                        <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
+                                            {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
+                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -556,6 +559,9 @@ function AdminMatchPage() {
                                     <div className="list-row-left">
                                         <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                         <span className="ml-8">{u.username}</span>
+                                        <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
+                                            {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
+                                        </span>
                                     </div>
                                 </div>
                             ))}

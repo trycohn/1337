@@ -1206,6 +1206,22 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
              ORDER BY i.user_id, i.created_at DESC`,
             [lobbyId]
         );
+        // Включаем создателя лобби как приглашенного участника (если нет записи)
+        if (!invRes.rows.some(r => Number(r.user_id) === Number(lobby.created_by))) {
+            const owner = await client.query('SELECT id, username, avatar_url, steam_id FROM users WHERE id = $1', [lobby.created_by]);
+            if (owner.rows[0]) {
+                invRes.rows.unshift({
+                    user_id: owner.rows[0].id,
+                    team: null,
+                    accepted: true,
+                    declined: false,
+                    created_at: lobby.created_at,
+                    username: owner.rows[0].username,
+                    avatar_url: owner.rows[0].avatar_url,
+                    steam_id: owner.rows[0].steam_id
+                });
+            }
+        }
         // Группируем участников
         const team1_users = invRes.rows
             .filter(r => r.team === 1 && r.accepted)
