@@ -18,8 +18,8 @@ function createSocketServer(httpServer) {
       credentials: true
     },
     
-    // 🚀 Транспорты: в проде только WebSocket
-    transports: process.env.NODE_ENV === 'production' ? ['websocket'] : ['websocket', 'polling'],
+    // 🚀 Транспорты: в проде разрешаем polling как fallback для рукопожатия
+    transports: process.env.NODE_ENV === 'production' ? ['websocket', 'polling'] : ['websocket', 'polling'],
     
     // ⚙️ Простые настройки
     pingTimeout: 30000,
