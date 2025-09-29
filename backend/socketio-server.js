@@ -30,8 +30,8 @@ function createSocketServer(httpServer) {
     // 🛡️ Безопасность
     serveClient: false,
     
-    // 🔧 Путь
-    path: '/socket.io/',
+    // 🔧 Путь (канонический без хвостового слэша)
+    path: '/socket.io',
 
     // 🔽 Сжатие ответа на HTTP handshake (даёт меньший вес /socket.io/?)
     perMessageDeflate: {
