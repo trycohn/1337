@@ -1065,9 +1065,12 @@ async function ensureAdminLobbyTables() {
             user_id INTEGER NOT NULL,
             team SMALLINT, -- 1|2 (NULL = без команды)
             accepted BOOLEAN DEFAULT FALSE,
+            declined BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    // Безопасно добавляем недостающую колонку declined
+    await pool.query(`ALTER TABLE admin_lobby_invitations ADD COLUMN IF NOT EXISTS declined BOOLEAN DEFAULT FALSE`);
     // Дедупликация и уникальный индекс
     await pool.query(`
         WITH dup AS (
@@ -1195,7 +1198,7 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         );
         const invRes = await client.query(
             `SELECT DISTINCT ON (i.user_id)
-                    i.user_id, i.team, i.accepted, i.created_at,
+                    i.user_id, i.team, i.accepted, i.declined, i.created_at,
                     u.username, u.avatar_url, u.steam_id
              FROM admin_lobby_invitations i
              JOIN users u ON u.id = i.user_id
@@ -1211,12 +1214,27 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
             .filter(r => r.team === 2 && r.accepted)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
         const unassigned_users = invRes.rows
-            .filter(r => r.accepted === true && r.team === null)
+            .filter(r => r.accepted === true && r.team === null && r.declined === false)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
         const invited_pending_users = invRes.rows
-            .filter(r => r.accepted === false)
+            .filter(r => r.accepted === false && r.declined === false)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
-        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users });
+        const invited_declined_users = invRes.rows
+            .filter(r => r.declined === true)
+            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+
+        // Онлайн‑присутствие (по комнате Socket.IO)
+        let online_user_ids = [];
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                const sockets = await io.in(`admin_lobby_${lobbyId}`).fetchSockets();
+                const ids = new Set();
+                for (const s of sockets) { if (s.userId) ids.add(Number(s.userId)); }
+                online_user_ids = Array.from(ids);
+            }
+        } catch (_) {}
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users, invited_declined_users, online_user_ids });
     } catch (e) {
         console.error('Ошибка получения админ-лобби', e);
         return res.status(500).json({ success: false, error: 'Ошибка сервера' });
@@ -1279,7 +1297,7 @@ router.post('/match-lobby/:lobbyId/accept', authenticateToken, async (req, res) 
     const userId = req.user.id;
     try {
         const r = await pool.query(
-            `UPDATE admin_lobby_invitations SET accepted = TRUE WHERE lobby_id = $1 AND user_id = $2 RETURNING *`,
+            `UPDATE admin_lobby_invitations SET accepted = TRUE, declined = FALSE WHERE lobby_id = $1 AND user_id = $2 RETURNING *`,
             [lobbyId, userId]
         );
         if (r.rows.length === 0) return res.status(404).json({ success: false, error: 'Приглашение не найдено' });
@@ -1287,6 +1305,24 @@ router.post('/match-lobby/:lobbyId/accept', authenticateToken, async (req, res) 
     } catch (e) {
         console.error('Ошибка принятия приглашения', e);
         return res.status(500).json({ success: false, error: 'Не удалось принять приглашение' });
+    }
+});
+
+// Отказ от приглашения
+router.post('/match-lobby/:lobbyId/decline', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const userId = req.user.id;
+    try {
+        const r = await pool.query(
+            `UPDATE admin_lobby_invitations SET declined = TRUE, accepted = FALSE WHERE lobby_id = $1 AND user_id = $2 RETURNING *`,
+            [lobbyId, userId]
+        );
+        if (r.rows.length === 0) return res.status(404).json({ success: false, error: 'Приглашение не найдено' });
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('Ошибка отказа от приглашения', e);
+        return res.status(500).json({ success: false, error: 'Не удалось отказаться' });
     }
 });
 

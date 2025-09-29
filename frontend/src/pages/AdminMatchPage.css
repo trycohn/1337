@@ -10,3 +10,22 @@
 .code-inline { margin-left: 8px; }
 .avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
 
+/* Статусы участников */
+.status-dot { position: relative; padding-left: 18px; }
+.status-dot::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background-color: transparent;
+    border: 2px solid #666;
+}
+.status-online::before { background-color: #00c853; border-color: #00c853; }
+.status-offline::before { background-color: transparent; border-color: #666; }
+.status-pending::before { background-color: #999; border-color: #999; }
+.status-declined::before { background-color: #ff3b30; border-color: #ff3b30; }
+

@@ -265,6 +265,15 @@ function createSocketServer(httpServer) {
         socket.join(roomName);
         console.log(`🎮 [Socket.IO] ${socket.user.username} присоединился к лобби ${roomName}`);
         socket.emit('lobby_state', lobby);
+
+        // Отдельная админ‑комната для админ‑лобби состояния присутствия
+        const adminRoom = `admin_lobby_${lobbyId}`;
+        socket.join(adminRoom);
+        try {
+          const io = socket.server;
+          const sockets = await io.in(adminRoom).allSockets();
+          io.to(adminRoom).emit('admin_lobby_presence', { lobbyId: Number(lobbyId), onlineCount: sockets.size });
+        } catch (_) {}
       } catch (error) {
         console.error('❌ [Socket.IO] Ошибка подключения к лобби:', error);
         socket.emit('error', { message: error.message || 'Ошибка подключения к лобби' });
@@ -277,6 +286,14 @@ function createSocketServer(httpServer) {
       if (lobbyId) {
         socket.leave(`lobby_${lobbyId}`);
         console.log(`👋 [Socket.IO] ${socket.user.username} покинул лобби ${lobbyId}`);
+        const adminRoom = `admin_lobby_${lobbyId}`;
+        socket.leave(adminRoom);
+        try {
+          const io = socket.server;
+          io.in(adminRoom).allSockets().then((s) => {
+            io.to(adminRoom).emit('admin_lobby_presence', { lobbyId: Number(lobbyId), onlineCount: s.size });
+          });
+        } catch (_) {}
       }
     });
 

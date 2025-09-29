@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { io } from 'socket.io-client';
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
 import '../styles/components.css';
@@ -20,6 +21,9 @@ function AdminMatchPage() {
     const [loading, setLoading] = useState(false);
     const [unassignedUsers, setUnassignedUsers] = useState([]);
     const [invitedPendingUsers, setInvitedPendingUsers] = useState([]);
+    const [invitedDeclinedUsers, setInvitedDeclinedUsers] = useState([]);
+    const [onlineUserIds, setOnlineUserIds] = useState([]);
+    const socketRef = useRef(null);
     const searchDebounce = useRef(null);
 
     useEffect(() => {
@@ -122,12 +126,67 @@ function AdminMatchPage() {
                             setTeam2Users(r.data.team2_users || []);
                             setUnassignedUsers(r.data.unassigned_users || []);
                             setInvitedPendingUsers(r.data.invited_pending_users || []);
+                            setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                            setOnlineUserIds(r.data.online_user_ids || []);
                         }
                     } catch (_) {}
                 })();
             }
         }
     }, [lobbyId]);
+
+    // Live Socket.IO подключение и авто‑accept для приглашенных
+    useEffect(() => {
+        if (!user || !lobbyId) return;
+        const token = localStorage.getItem('token');
+        const s = io('/', { auth: { token }, transports: ['websocket'] });
+        socketRef.current = s;
+        s.on('connect', () => {
+            try { s.emit('join_lobby', { lobbyId }); } catch (_) {}
+        });
+        s.on('lobby_update', (payload) => {
+            if (!payload || Number(payload.id) !== Number(lobbyId)) return;
+            // Получаем свежее состояние из API, чтобы иметь дополнительные поля
+            (async () => {
+                try {
+                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                    if (r?.data?.success) {
+                        setLobby(r.data.lobby);
+                        setSelections(r.data.selections || []);
+                        setAvailableMaps(r.data.available_maps || []);
+                        setTeam1Users(r.data.team1_users || []);
+                        setTeam2Users(r.data.team2_users || []);
+                        setUnassignedUsers(r.data.unassigned_users || []);
+                        setInvitedPendingUsers(r.data.invited_pending_users || []);
+                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                        setOnlineUserIds(r.data.online_user_ids || []);
+                    }
+                } catch (_) {}
+            })();
+        });
+        s.on('admin_lobby_presence', (data) => {
+            if (Number(data?.lobbyId) !== Number(lobbyId)) return;
+            // При изменении присутствия подтягиваем онлайн‑список через API для точности
+            (async () => {
+                try {
+                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                    if (r?.data?.success) setOnlineUserIds(r.data.online_user_ids || []);
+                } catch (_) {}
+            })();
+        });
+
+        // Автопринятие приглашения для приглашенных (не админ) при входе в лобби
+        if (user && user.role !== 'admin') {
+            (async () => {
+                try { await api.post(`/api/admin/match-lobby/${lobbyId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } }); } catch (_) {}
+            })();
+        }
+
+        return () => {
+            try { s.emit('leave_lobby', { lobbyId }); } catch (_) {}
+            s.disconnect();
+        };
+    }, [user, lobbyId]);
 
     function removeFromSelection(id) {
         setSelected(prev => prev.filter(u => u.id !== id));
@@ -254,6 +313,9 @@ function AdminMatchPage() {
                             <div className="list-row-left">
                                 <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                 <span className="ml-8">{u.username}</span>
+                                <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
+                                    {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
+                                </span>
                             </div>
                             <div className="list-row-right">
                                 <button className="btn btn-secondary" onClick={async () => {
@@ -268,6 +330,8 @@ function AdminMatchPage() {
                                         setTeam2Users(r.data.team2_users || []);
                                         setUnassignedUsers(r.data.unassigned_users || []);
                                         setInvitedPendingUsers(r.data.invited_pending_users || []);
+                                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                                        setOnlineUserIds(r.data.online_user_ids || []);
                                     }
                                 }}>В Команду 1</button>
                                 <button className="btn btn-secondary ml-8" onClick={async () => {
@@ -282,6 +346,8 @@ function AdminMatchPage() {
                                         setTeam2Users(r.data.team2_users || []);
                                         setUnassignedUsers(r.data.unassigned_users || []);
                                         setInvitedPendingUsers(r.data.invited_pending_users || []);
+                                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                                        setOnlineUserIds(r.data.online_user_ids || []);
                                     }
                                 }}>В Команду 2</button>
                             </div>
@@ -299,9 +365,26 @@ function AdminMatchPage() {
                             <div className="list-row-left">
                                 <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
                                 <span className="ml-8">{u.username}</span>
+                                <span className="ml-8 muted status-dot status-pending">ожидает принятия…</span>
                             </div>
                             <div className="list-row-right">
                                 <span className="muted">ожидает принятия…</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Отказавшиеся участники */}
+            {invitedDeclinedUsers.length > 0 && (
+                <div className="mt-16">
+                    <h3>Отказавшиеся</h3>
+                    {invitedDeclinedUsers.map(u => (
+                        <div key={`declined-${u.id}`} className="list-row">
+                            <div className="list-row-left">
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
+                                <span className="ml-8">{u.username}</span>
+                                <span className="ml-8 muted status-dot status-declined">Отказ</span>
                             </div>
                         </div>
                     ))}
