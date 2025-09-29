@@ -41,6 +41,29 @@ function createSocketServer(httpServer) {
     }
   });
 
+  // Дополнительное логирование handshake / transport
+  io.engine.on('connection', (rawSocket) => {
+    try {
+      const transport = rawSocket.transport && rawSocket.transport.name;
+      const sid = rawSocket.id;
+      const url = rawSocket.request && rawSocket.request.url;
+      console.log(`[ENGINE.IO] connection sid=${sid} transport=${transport} url=${url}`);
+
+      rawSocket.on('upgrade', (to) => {
+        console.log(`[ENGINE.IO] upgrade sid=${sid} -> ${to && to.name}`);
+      });
+      rawSocket.on('close', (reason) => {
+        console.log(`[ENGINE.IO] close sid=${sid} reason=${reason}`);
+      });
+    } catch (e) {
+      console.log('[ENGINE.IO] connection log error:', e.message);
+    }
+  });
+
+  io.engine.on('connection_error', (err) => {
+    console.log('[ENGINE.IO] connection_error', err && err.code, err && err.message);
+  });
+
   // 🔐 Middleware для авторизации
   io.use(async (socket, next) => {
     try {

@@ -44,6 +44,20 @@ app.set('trust proxy', 1);
 // Создаем HTTP сервер на основе Express-приложения
 const server = http.createServer(app);
 
+// 🔎 Логирование всех HTTP-запросов к Socket.IO (handshake/polling/upgrade)
+app.use((req, res, next) => {
+  if (req.path && req.path.startsWith('/socket.io')) {
+    const ua = req.headers['user-agent'] || '-';
+    const up = req.headers['upgrade'] || '-';
+    const conn = req.headers['connection'] || '-';
+    const sid = (req.query && (req.query.sid || req.query.SID)) || '-';
+    console.log(
+      `[SOCKET.IO HTTP] ${req.method} ${req.originalUrl} status=? ua=${ua} upgrade=${up} connection=${conn} sid=${sid}`
+    );
+  }
+  next();
+});
+
 // 🔌 Инициализация WebSocket сервера для real-time статистики
 let realTimeStatsService = null;
 try {
