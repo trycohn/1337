@@ -106,6 +106,36 @@ function AdminMatchPage() {
         } catch (_) {}
     }
 
+    // DnD helpers
+    function handleDragStart(e, userId) {
+        try { e.dataTransfer.setData('text/plain', String(userId)); } catch (_) {}
+    }
+    function handleDrop(team) {
+        return async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            let raw = '';
+            try { raw = e.dataTransfer.getData('text/plain'); } catch (_) {}
+            const userId = Number(raw);
+            if (!userId || !lobbyId) return;
+            try {
+                await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: userId, team, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                if (r?.data?.success) {
+                    setLobby(r.data.lobby);
+                    setSelections(r.data.selections || []);
+                    setAvailableMaps(r.data.available_maps || []);
+                    setTeam1Users(r.data.team1_users || []);
+                    setTeam2Users(r.data.team2_users || []);
+                    setUnassignedUsers(r.data.unassigned_users || []);
+                    setInvitedPendingUsers(r.data.invited_pending_users || []);
+                    setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                    setOnlineUserIds(r.data.online_user_ids || []);
+                }
+            } catch (_) {}
+        };
+    }
+
     // Автозагрузка лобби по параметру ?lobby= для приглашенных
     useEffect(() => {
         const token = localStorage.getItem('token');
