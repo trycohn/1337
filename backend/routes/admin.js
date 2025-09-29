@@ -1071,6 +1071,17 @@ async function ensureAdminLobbyTables() {
     `);
     // Безопасно добавляем недостающую колонку declined
     await pool.query(`ALTER TABLE admin_lobby_invitations ADD COLUMN IF NOT EXISTS declined BOOLEAN DEFAULT FALSE`);
+
+    // Присутствие пользователей в админ-лобби (heartbeats)
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS admin_lobby_presence (
+            lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL,
+            last_seen TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (lobby_id, user_id)
+        );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_admin_lobby_presence_lobby_seen ON admin_lobby_presence(lobby_id, last_seen)`);
     // Дедупликация и уникальный индекс
     await pool.query(`
         WITH dup AS (
@@ -1186,6 +1197,16 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
                 return res.status(403).json({ success: false, error: 'Нет доступа к этому лобби' });
             }
         }
+        // 💓 Обновляем heartbeat присутствия для текущего пользователя
+        try {
+            await client.query(
+                `INSERT INTO admin_lobby_presence(lobby_id, user_id, last_seen)
+                 VALUES ($1, $2, CURRENT_TIMESTAMP)
+                 ON CONFLICT (lobby_id, user_id)
+                 DO UPDATE SET last_seen = EXCLUDED.last_seen`,
+                [lobbyId, req.user.id]
+            );
+        } catch (_) {}
         const mapsRes = await client.query(
             `SELECT concat('de_', map_name) as map_name, display_order
              FROM default_map_pool WHERE game = $1 ORDER BY display_order ASC, map_name ASC`,
@@ -1239,16 +1260,23 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
             .filter(r => r.declined === true)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
 
-        // Онлайн‑присутствие (по комнате Socket.IO)
+        // Онлайн‑присутствие: heartbeat за 10 секунд + (опционально) сокет-комната
         let online_user_ids = [];
         try {
-            const io = req.app.get('io');
-            if (io) {
-                const sockets = await io.in(`admin_lobby_${lobbyId}`).fetchSockets();
-                const ids = new Set();
-                for (const s of sockets) { if (s.userId) ids.add(Number(s.userId)); }
-                online_user_ids = Array.from(ids);
-            }
+            const hb = await client.query(
+                `SELECT DISTINCT user_id FROM admin_lobby_presence
+                 WHERE lobby_id = $1 AND last_seen > (CURRENT_TIMESTAMP - INTERVAL '10 seconds')`,
+                [lobbyId]
+            );
+            const ids = new Set(hb.rows.map(r => Number(r.user_id)));
+            try {
+                const io = req.app.get('io');
+                if (io) {
+                    const sockets = await io.in(`admin_lobby_${lobbyId}`).fetchSockets();
+                    for (const s of sockets) { if (s.userId) ids.add(Number(s.userId)); }
+                }
+            } catch (_) {}
+            online_user_ids = Array.from(ids);
         } catch (_) {}
         return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users, invited_declined_users, online_user_ids });
     } catch (e) {

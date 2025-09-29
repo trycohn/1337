@@ -290,6 +290,17 @@ function createSocketServer(httpServer) {
         socket.join(roomName);
         console.log(`🎮 [Socket.IO] ${socket.user.username} присоединился к лобби ${roomName}`);
         socket.emit('lobby_state', lobby);
+        // Heartbeat
+        try {
+          const pool = require('./db');
+          await pool.query(
+            `INSERT INTO admin_lobby_presence(lobby_id, user_id, last_seen)
+             VALUES ($1, $2, CURRENT_TIMESTAMP)
+             ON CONFLICT (lobby_id, user_id)
+             DO UPDATE SET last_seen = EXCLUDED.last_seen`,
+            [lobbyId, socket.userId]
+          );
+        } catch (_) {}
 
         // Отдельная админ‑комната для админ‑лобби состояния присутствия
         const adminRoom = `admin_lobby_${lobbyId}`;
@@ -318,6 +329,14 @@ function createSocketServer(httpServer) {
           io.in(adminRoom).allSockets().then((s) => {
             io.to(adminRoom).emit('admin_lobby_presence', { lobbyId: Number(lobbyId), onlineCount: s.size });
           });
+        } catch (_) {}
+        // Heartbeat (фикс внешнего выхода)
+        try {
+          const pool = require('./db');
+          pool.query(
+            `UPDATE admin_lobby_presence SET last_seen = CURRENT_TIMESTAMP WHERE lobby_id = $1 AND user_id = $2`,
+            [lobbyId, socket.userId]
+          ).catch(() => {});
         } catch (_) {}
       }
     });
