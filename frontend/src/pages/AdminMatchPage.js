@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { io } from 'socket.io-client';
+// Удаляем прямой импорт socket.io-client; используем API + фоновые polling‑обновления
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
 import '../styles/components.css';
@@ -23,7 +23,7 @@ function AdminMatchPage() {
     const [invitedPendingUsers, setInvitedPendingUsers] = useState([]);
     const [invitedDeclinedUsers, setInvitedDeclinedUsers] = useState([]);
     const [onlineUserIds, setOnlineUserIds] = useState([]);
-    const socketRef = useRef(null);
+    const socketRef = useRef(null); // зарезервировано (не используем WS)
     const searchDebounce = useRef(null);
 
     useEffect(() => {
@@ -135,57 +135,30 @@ function AdminMatchPage() {
         }
     }, [lobbyId]);
 
-    // Live Socket.IO подключение и авто‑accept для приглашенных
+    // Live‑обновления через короткие polling интервалов (без WS)
     useEffect(() => {
         if (!user || !lobbyId) return;
         const token = localStorage.getItem('token');
-        const s = io('/', { auth: { token }, transports: ['websocket'] });
-        socketRef.current = s;
-        s.on('connect', () => {
-            try { s.emit('join_lobby', { lobbyId }); } catch (_) {}
-        });
-        s.on('lobby_update', (payload) => {
-            if (!payload || Number(payload.id) !== Number(lobbyId)) return;
-            // Получаем свежее состояние из API, чтобы иметь дополнительные поля
-            (async () => {
-                try {
-                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                    if (r?.data?.success) {
-                        setLobby(r.data.lobby);
-                        setSelections(r.data.selections || []);
-                        setAvailableMaps(r.data.available_maps || []);
-                        setTeam1Users(r.data.team1_users || []);
-                        setTeam2Users(r.data.team2_users || []);
-                        setUnassignedUsers(r.data.unassigned_users || []);
-                        setInvitedPendingUsers(r.data.invited_pending_users || []);
-                        setInvitedDeclinedUsers(r.data.invited_declined_users || []);
-                        setOnlineUserIds(r.data.online_user_ids || []);
-                    }
-                } catch (_) {}
-            })();
-        });
-        s.on('admin_lobby_presence', (data) => {
-            if (Number(data?.lobbyId) !== Number(lobbyId)) return;
-            // При изменении присутствия подтягиваем онлайн‑список через API для точности
-            (async () => {
-                try {
-                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                    if (r?.data?.success) setOnlineUserIds(r.data.online_user_ids || []);
-                } catch (_) {}
-            })();
-        });
-
-        // Автопринятие приглашения для приглашенных (не админ) при входе в лобби
-        if (user && user.role !== 'admin') {
-            (async () => {
-                try { await api.post(`/api/admin/match-lobby/${lobbyId}/accept`, {}, { headers: { Authorization: `Bearer ${token}` } }); } catch (_) {}
-            })();
-        }
-
-        return () => {
-            try { s.emit('leave_lobby', { lobbyId }); } catch (_) {}
-            s.disconnect();
+        let timer = null;
+        const pull = async () => {
+            try {
+                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                if (r?.data?.success) {
+                    setLobby(r.data.lobby);
+                    setSelections(r.data.selections || []);
+                    setAvailableMaps(r.data.available_maps || []);
+                    setTeam1Users(r.data.team1_users || []);
+                    setTeam2Users(r.data.team2_users || []);
+                    setUnassignedUsers(r.data.unassigned_users || []);
+                    setInvitedPendingUsers(r.data.invited_pending_users || []);
+                    setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                    setOnlineUserIds(r.data.online_user_ids || []);
+                }
+            } catch (_) {}
+            timer = setTimeout(pull, 1500);
         };
+        pull();
+        return () => { if (timer) clearTimeout(timer); };
     }, [user, lobbyId]);
 
     function removeFromSelection(id) {

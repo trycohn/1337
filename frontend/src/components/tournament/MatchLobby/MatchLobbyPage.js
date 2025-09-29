@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../../../context/UserContext';
-import { io } from 'socket.io-client';
+// Убираем прямое WS‑подключение; используем polling API для live
 import MapSelectionBoard from './MapSelectionBoard';
 import ParticipantStatus from './ParticipantStatus';
 import './MatchLobby.css';
@@ -21,67 +21,29 @@ function MatchLobbyPage() {
     const [ready, setReady] = useState(false);
     const [selectedFormat, setSelectedFormat] = useState(null);
 
-    // 🔌 WebSocket подключение
+    // 🔄 Polling вместо WS
     useEffect(() => {
         if (!user || !lobbyId) return;
-
         const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/');
-            return;
-        }
-
-        const newSocket = io(API_URL, {
-            auth: { token },
-            transports: process.env.NODE_ENV === 'production' ? ['websocket'] : ['websocket', 'polling']
-        });
-
-        newSocket.on('connect', () => {
-            console.log('✅ Подключено к лобби');
-            newSocket.emit('join_lobby', { lobbyId, userId: user.id });
-        });
-
-        newSocket.on('lobby_state', (data) => {
-            console.log('📊 Состояние лобби:', data);
-            setLobby(data);
-            setLoading(false);
-            
-            // Устанавливаем формат матча
-            if (data.match_format) {
-                setSelectedFormat(data.match_format);
-            }
-        });
-
-        newSocket.on('lobby_update', (data) => {
-            console.log('🔄 Обновление лобби:', data);
-            setLobby(prev => ({ ...prev, ...data }));
-        });
-
-        newSocket.on('lobby_completed', (payload) => {
-            console.log('✅ Выбор карт завершен', payload);
-            const tid = payload?.tournamentId || lobby?.tournament_id;
-            if (tid) {
-                setTimeout(() => {
-                    navigate(`/tournaments/${tid}`);
-                }, 2000);
-            }
-        });
-
-        newSocket.on('error', (error) => {
-            console.error('❌ Ошибка:', error);
-            setError(error.message);
-        });
-
-        newSocket.on('disconnect', () => {
-            console.log('❌ Отключено от лобби');
-        });
-
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.emit('leave_lobby', { lobbyId });
-            newSocket.disconnect();
+        let timer = null;
+        const pull = async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        setLobby(data.lobby);
+                        if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
+                        setError(null);
+                    }
+                }
+            } catch (e) {}
+            timer = setTimeout(pull, 1500);
         };
+        pull();
+        return () => { if (timer) clearTimeout(timer); };
     }, [user, lobbyId, navigate]);
 
     // 🎯 Загрузка информации о лобби
