@@ -7,8 +7,9 @@ const SOCKET_CONFIG = {
     : 'http://localhost:3000',
   
   options: {
-    // 🚀 Стартуем с polling, затем upgrade → WebSocket
-    transports: ['polling', 'websocket'],
+    // 🚀 Временный стабильный режим: только polling (без апгрейда)
+    transports: ['polling'],
+    upgrade: false,
     
     // ⚙️ Таймауты
     timeout: 20000,
