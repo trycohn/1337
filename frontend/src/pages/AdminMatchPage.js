@@ -522,7 +522,14 @@ function AdminMatchPage() {
                                         const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
                                         if (data?.success) {
                                             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
+                                            if (r?.data?.success) {
+                                                setLobby(r.data.lobby);
+                                                setSelections(r.data.selections || []);
+                                                setAvailableMaps(r.data.available_maps || []);
+                                                setTeam1Users(r.data.team1_users || []);
+                                                setTeam2Users(r.data.team2_users || []);
+                                                setUnassignedUsers(r.data.unassigned_users || []);
+                                            }
                                         }
                                     }}
                                 >Начать BAN/PICK</button>
@@ -665,7 +672,19 @@ function AdminMatchPage() {
                         maps={availableMaps}
                         selections={selections}
                         currentTurn={lobby.current_turn_team || null}
-                        myTeamId={0}
+                        myTeamId={(() => {
+                            const meId = Number(user?.id);
+                            if (team1Users.some(u => Number(u.id) === meId)) return 1;
+                            if (team2Users.some(u => Number(u.id) === meId)) return 2;
+                            return null;
+                        })()}
+                        isCaptain={(() => {
+                            const meId = Number(user?.id);
+                            // капитан по умолчанию — первый в списке команды
+                            const cap1 = team1Users[0]?.id ? Number(team1Users[0].id) : null;
+                            const cap2 = team2Users[0]?.id ? Number(team2Users[0].id) : null;
+                            return meId === cap1 || meId === cap2;
+                        })()}
                         format={lobby.match_format}
                         status={lobby.status}
                         onMapAction={async (mapName, action) => {
