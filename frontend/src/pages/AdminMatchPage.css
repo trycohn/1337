@@ -74,6 +74,11 @@
   background-color: #ff3b30;
   border-color: #ff3b30;
 }
+/* New: in lobby state */
+.custom-match-status-inlobby::before {
+  background-color: #00bcd4;
+  border-color: #00bcd4;
+}
 
 /* DnD визуал */
 .custom-match-dropzone {
@@ -97,6 +102,14 @@
   opacity: 1;
 }
 
+.list-row {
+    font-size: 18px;
+    font-weight: 600;
+}
+/* reserved: row styling hook if needed */
+
+
+
 /* Invite side panel */
 .custom-match-invite-overlay {
   position: fixed;
@@ -108,13 +121,15 @@
   align-items: center;
 }
 .custom-match-invite-panel {
-  width: 240px;
+  width: 280px;
   height: 80vh;
   background: #000;
-  border-left: 1px solid #333;
+  border: 1px solid #333;
+  border-radius: 8px;
   box-shadow: -4px 0 12px rgba(0,0,0,0.5);
   display: flex;
   flex-direction: column;
+  margin-right: 16px;
 }
 .custom-match-invite-header {
   display: flex;
@@ -123,7 +138,13 @@
   padding: 8px 12px;
   border-bottom: 1px solid #333;
 }
-.custom-match-invite-title { font-weight: 600; }
+.custom-match-invite-title { 
+  font-weight: 600; 
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: 6px; 
+  opacity: .8; 
+}
 .custom-match-invite-close {
   background: transparent;
   border: 1px solid #333;
@@ -140,7 +161,38 @@
   flex: 1;
 }
 .custom-match-invite-section + .custom-match-invite-section { margin-top: 12px; }
-.custom-match-invite-section-title { font-size: 12px; opacity: .8; margin-bottom: 6px; }
+.custom-match-invite-section-title { 
+  font-size: 14px; 
+  opacity: .8; 
+  margin-bottom: 6px; 
+  color: #fff;
+  font-weight: 600;
+}
+.custom-match-plus-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #ff0000;
+  color: #fff;
+  background: transparent;
+  line-height: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 8px;
+}
+.custom-match-plus-btn:hover { background: #111; }
+.custom-match-plus-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.custom-match-invite-section input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+}
 
 @media (max-width: 768px) {
   .custom-match-invite-panel {

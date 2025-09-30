@@ -36,6 +36,23 @@ function AdminMatchPage() {
     const inviteSearchDebounce = useRef(null);
     const inviteSearchInputRef = useRef(null);
 
+    // Presence helpers
+    const lobbyPresenceSet = useMemo(() => {
+        const ids = [
+            ...(team1Users || []).map(u => u.id),
+            ...(team2Users || []).map(u => u.id),
+            ...(unassignedUsers || []).map(u => u.id)
+        ];
+        return new Set(ids);
+    }, [team1Users, team2Users, unassignedUsers]);
+
+    function getPresenceStatus(userId) {
+        if (!userId) return { cls: 'custom-match-status-offline', text: 'Оффлайн' };
+        if (lobbyPresenceSet.has(userId)) return { cls: 'custom-match-status-inlobby', text: 'В лобби' };
+        if (onlineUserIds.includes(userId)) return { cls: 'custom-match-status-online', text: 'Онлайн' };
+        return { cls: 'custom-match-status-offline', text: 'Оффлайн' };
+    }
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -667,17 +684,24 @@ function AdminMatchPage() {
                             {/* Friends block */}
                             <div className="custom-match-invite-section">
                                 <div className="custom-match-invite-section-title">Друзья</div>
-                                {(friends || []).slice(0, friendsExpanded ? friends.length : 5).map(fr => (
-                                    <div key={`fr-${fr.id}`} className="list-row">
-                                        <div className="list-row-left">
-                                            <img src={fr.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
-                                            <span className="ml-8 custom-match-ml-8">{fr.username}</span>
+                                {(friends || []).slice(0, friendsExpanded ? friends.length : 5).map(fr => {
+                                    const presence = getPresenceStatus(fr.id);
+                                    return (
+                                        <div key={`fr-${fr.id}`} className="list-row">
+                                            <div className="list-row-left">
+                                                <button
+                                                    className="custom-match-plus-btn"
+                                                    title="Пригласить"
+                                                    disabled={!lobbyId}
+                                                    onClick={() => inviteUserToTeam(fr.id, invitePanelTeam)}
+                                                >+</button>
+                                                <img src={fr.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                                <span className="ml-8 custom-match-ml-8">{fr.username}</span>
+                                                <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${presence.cls}`} title={presence.text}></span>
+                                            </div>
                                         </div>
-                                        <div className="list-row-right">
-                                            <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(fr.id, invitePanelTeam)}>Добавить</button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                                 {(friends || []).length > 5 && (
                                     <button className="btn btn-secondary custom-match-mt-8" onClick={() => setFriendsExpanded(v => !v)}>
                                         {friendsExpanded ? 'свернуть' : 'развернуть'}
@@ -696,18 +720,22 @@ function AdminMatchPage() {
                                     onChange={onInviteSearchChange}
                                 />
                                 <div className="custom-match-mt-8">
-                                    {inviteResults.map(u => (
-                                        <div key={`inv-${u.id}`} className="list-row">
-                                            <div className="list-row-left">
-                                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
-                                                <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                    {inviteResults.map(u => {
+                                        const presence = getPresenceStatus(u.id);
+                                        return (
+                                            <div key={`inv-${u.id}`} className="list-row">
+                                                <div className="list-row-left">
+                                                    <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                                    <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                                    <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${presence.cls}`} title={presence.text}></span>
+                                                </div>
+                                                <div className="list-row-right">
+                                                    <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(u.id, invitePanelTeam)}>Пригласить</button>
+                                                    <a className="btn btn-secondary custom-match-ml-8" href={`/user/${u.id}`} target="_blank" rel="noreferrer">Профиль</a>
+                                                </div>
                                             </div>
-                                            <div className="list-row-right">
-                                                <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(u.id, invitePanelTeam)}>Пригласить</button>
-                                                <a className="btn btn-secondary custom-match-ml-8" href={`/user/${u.id}`} target="_blank" rel="noreferrer">Профиль</a>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
