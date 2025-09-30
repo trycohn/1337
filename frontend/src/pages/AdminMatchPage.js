@@ -341,8 +341,8 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
-                    // авто‑подхват ссылок подключения, когда матч создан
-                    if ((r.data.lobby?.status === 'match_created' || r.data.lobby?.status === 'ready_to_create') && !connectInfo) {
+                    // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
+                    if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
                         try {
                             const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
                             if (conn?.data?.success) setConnectInfo(conn.data);
@@ -445,44 +445,7 @@ function AdminMatchPage() {
                         }}>Начать BAN/PICK</button>
                 </div>
             </div>
-            <div className="custom-match-mt-12" style={{ maxWidth: 640 }}>
-                <label className="sr-only" htmlFor="user-search">Поиск пользователей</label>
-                <input
-                    id="user-search"
-                    ref={searchInputRef}
-                    className="input"
-                    placeholder="Поиск пользователей (минимум 2 символа)"
-                    value={query}
-                    onChange={onSearchChange}
-                />
-                {!!results.length && (
-                    <div className="custom-match-mt-8">
-                        {(() => {
-                            const activeSet = new Set([
-                                ...invitedPendingUsers.map(x => x.id),
-                                ...unassignedUsers.map(x => x.id),
-                                ...team1Users.map(x => x.id),
-                                ...team2Users.map(x => x.id)
-                            ]);
-                            return results.map(u => (
-                                <div key={u.id} className="list-row">
-                                    <div className="list-row-left">
-                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
-                                        <span className="ml-8 custom-match-ml-8">{u.username}</span>
-                                        {u.steam_id ? <span className="ml-8 custom-match-ml-8 custom-match-muted">SteamID: {u.steam_id}</span> : <span className="ml-8 custom-match-ml-8 custom-match-danger-text">нет Steam</span>}
-                                    </div>
-                                    <div className="list-row-right">
-                                        {!activeSet.has(u.id) && isAdmin && (
-                                            <button className="btn btn-secondary" disabled={!lobbyId}
-                                                onClick={() => inviteUser(u)}>Пригласить</button>
-                                        )}
-                                    </div>
-                                </div>
-                            ));
-                        })()}
-                    </div>
-                )}
-            </div>
+            
 
             {/* Участники не в командах (dropzone) */}
             {unassignedUsers.length > 0 && (
@@ -715,6 +678,8 @@ function AdminMatchPage() {
                             ));
                         })()}
                     </div>
+                    {/* VS Block */}
+                    <div className="custom-match-vs-block">VS</div>
                     {/* Команда 2 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
                         <h4>
@@ -771,9 +736,9 @@ function AdminMatchPage() {
             </div>
 
             {/* Кнопка подключиться после завершения */}
-            {(connectInfo?.connect || lobby?.status === 'match_created' || lobby?.status === 'ready_to_create') && (
+            {(connectInfo?.connect || ['match_created','ready_to_create','completed'].includes(lobby?.status)) && (
                 <div className="custom-match-mt-16">
-                    {lobby?.status === 'ready_to_create' && Number(lobby?.created_by) === Number(user?.id) && (
+                    {['ready_to_create','completed'].includes(lobby?.status) && Number(lobby?.created_by) === Number(user?.id) && (
                         <button className="btn btn-primary" onClick={async () => {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/create-match`, {}, { headers: { Authorization: `Bearer ${token}` } });
