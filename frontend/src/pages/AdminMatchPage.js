@@ -25,6 +25,7 @@ function AdminMatchPage() {
     const [onlineUserIds, setOnlineUserIds] = useState([]);
     const socketRef = useRef(null); // зарезервировано (не используем WS)
     const searchDebounce = useRef(null);
+    const searchInputRef = useRef(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -243,10 +244,10 @@ function AdminMatchPage() {
     // Не блокируем страницу для приглашенных не-админов
 
     return (
-        <div className="admin-match-page">
+        <div className="custom-match-page">
             <h2>МАТЧ — тестовое лобби</h2>
-            <div className="mt-8">
-                <div className="row">
+            <div className="custom-match-mt-8">
+                <div className="custom-match-row">
                     <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
                         const token = localStorage.getItem('token');
                         await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo1' }, { headers: { Authorization: `Bearer ${token}` } });
@@ -277,17 +278,18 @@ function AdminMatchPage() {
                         }}>Начать ban/pick</button>
                 </div>
             </div>
-            <div className="mt-12" style={{ maxWidth: 640 }}>
+            <div className="custom-match-mt-12" style={{ maxWidth: 640 }}>
                 <label className="sr-only" htmlFor="user-search">Поиск пользователей</label>
                 <input
                     id="user-search"
+                    ref={searchInputRef}
                     className="input"
                     placeholder="Поиск пользователей (минимум 2 символа)"
                     value={query}
                     onChange={onSearchChange}
                 />
                 {!!results.length && (
-                    <div className="mt-8">
+                    <div className="custom-match-mt-8">
                         {(() => {
                             const activeSet = new Set([
                                 ...invitedPendingUsers.map(x => x.id),
@@ -298,9 +300,9 @@ function AdminMatchPage() {
                             return results.map(u => (
                                 <div key={u.id} className="list-row">
                                     <div className="list-row-left">
-                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                        <span className="ml-8">{u.username}</span>
-                                        {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
+                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                        <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                        {u.steam_id ? <span className="ml-8 custom-match-ml-8 custom-match-muted">SteamID: {u.steam_id}</span> : <span className="ml-8 custom-match-ml-8 custom-match-danger-text">нет Steam</span>}
                                     </div>
                                     <div className="list-row-right">
                                         {!activeSet.has(u.id) && isAdmin && (
@@ -317,14 +319,14 @@ function AdminMatchPage() {
 
             {/* Участники не в командах (dropzone) */}
             {unassignedUsers.length > 0 && (
-                <div className="mt-16 dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(null)}>
+                <div className="custom-match-mt-16 custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(null)}>
                     <h3>Участники не в командах</h3>
                     {unassignedUsers.map(u => (
-                        <div key={`un-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                        <div key={`un-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                             <div className="list-row-left">
-                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                <span className="ml-8">{u.username}</span>
-                                <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                <span className={`ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot ${onlineUserIds.includes(u.id) ? 'custom-match-status-online' : 'custom-match-status-offline'}`}>
                                     {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
                                 </span>
                             </div>
@@ -335,16 +337,16 @@ function AdminMatchPage() {
 
             {/* Приглашённые участники (ожидают принятия) */}
             {invitedPendingUsers.length > 0 && (
-                <div className="mt-16">
+                <div className="custom-match-mt-16">
                     <h3>Приглашённые участники</h3>
                     {invitedPendingUsers.map(u => (
-                        <div key={`pending-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                        <div key={`pending-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                             <div className="list-row-left">
-                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                <span className="ml-8">{u.username}</span>
-                                <span className="ml-8 muted status-dot status-pending">ожидает принятия…</span>
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                <span className="ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot custom-match-status-pending">ожидает принятия…</span>
                             </div>
-                            <div className="list-row-right row-actions">
+                            <div className="list-row-right custom-match-row-actions">
                                 <button className="btn btn-secondary" onClick={async () => {
                                     const token = localStorage.getItem('token');
                                     await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id }, { headers: { Authorization: `Bearer ${token}` } });
@@ -365,60 +367,31 @@ function AdminMatchPage() {
 
             {/* Отказавшиеся участники */}
             {invitedDeclinedUsers.length > 0 && (
-                <div className="mt-16">
+                <div className="custom-match-mt-16">
                     <h3>Отказавшиеся</h3>
                     {invitedDeclinedUsers.map(u => (
                         <div key={`declined-${u.id}`} className="list-row">
                             <div className="list-row-left">
-                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                <span className="ml-8">{u.username}</span>
-                                <span className="ml-8 muted status-dot status-declined">Отказ</span>
+                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                <span className="ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot custom-match-status-declined">Отказ</span>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className="mt-16">
-                <h3>Выбранные игроки</h3>
-                {selected.length === 0 && <div className="muted">Никого не выбрано</div>}
-                {selected.map(u => (
-                    <div key={u.id} className="list-row">
-                        <div className="list-row-left">
-                            <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                            <span className="ml-8">{u.username}</span>
-                            {u.steam_id ? <span className="ml-8 muted">SteamID: {u.steam_id}</span> : <span className="ml-8 danger-text">нет Steam</span>}
-                        </div>
-                        <div className="list-row-right">
-                            <button className="btn btn-secondary" onClick={() => removeFromSelection(u.id)}>Убрать</button>
-                            <button className="btn btn-secondary ml-8" disabled={!lobbyId}
-                                onClick={async () => {
-                                    const token = localStorage.getItem('token');
-                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 1, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
-                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                    if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                                }}>В команду 1</button>
-                            <button className="btn btn-secondary ml-8" disabled={!lobbyId}
-                                onClick={async () => {
-                                    const token = localStorage.getItem('token');
-                                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: 2, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
-                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                    if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                                }}>В команду 2</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+            
 
-            <div className="mt-16">
+            <div className="custom-match-mt-16">
                 <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
                     {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
                 </button>
-                <button className="btn btn-secondary ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
+                <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
                     Синхронизировать whitelist
                 </button>
                 {/* Очистка лобби — только создатель */}
-                <button className="btn btn-secondary ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
                     onClick={async () => {
                         try {
                             const token = localStorage.getItem('token');
@@ -437,13 +410,13 @@ function AdminMatchPage() {
             </div>
 
             {connectInfo && (
-                <div className="mt-16">
+                <div className="custom-match-mt-16">
                     <h3>Подключение</h3>
                     {connectInfo.connect && (
                         <div className="list-row">
                             <div className="list-row-left">
                                 <span>Игроки:</span>
-                                <code className="code-inline">{connectInfo.connect}</code>
+                                <code className="code-inline custom-match-code-inline">{connectInfo.connect}</code>
                             </div>
                             <div className="list-row-right">
                                 <button className="btn btn-secondary" onClick={() => copy(connectInfo.connect)}>Копировать</button>
@@ -451,10 +424,10 @@ function AdminMatchPage() {
                         </div>
                     )}
                     {connectInfo.gotv && (
-                        <div className="list-row mt-8">
+                        <div className="list-row custom-match-mt-8">
                             <div className="list-row-left">
                                 <span>GOTV:</span>
-                                <code className="code-inline">{connectInfo.gotv}</code>
+                                <code className="code-inline custom-match-code-inline">{connectInfo.gotv}</code>
                             </div>
                             <div className="list-row-right">
                                 <button className="btn btn-secondary" onClick={() => copy(connectInfo.gotv)}>Копировать</button>
@@ -466,8 +439,8 @@ function AdminMatchPage() {
 
             {/* Панель готовности и вступления админа */}
             {lobbyId && (
-                <div className="mt-16">
-                    <div className="row">
+                <div className="custom-match-mt-16">
+                    <div className="custom-match-row">
                         <button className="btn btn-secondary" onClick={async () => {
                             const token = localStorage.getItem('token');
                             await api.post(`/api/admin/match-lobby/${lobbyId}/join`, { team: 1 }, { headers: { Authorization: `Bearer ${token}` } });
@@ -490,7 +463,7 @@ function AdminMatchPage() {
 
             {/* Доска выбора карт */}
             {lobby && lobby.match_format && availableMaps?.length > 0 && (
-                <div className="mt-16">
+                <div className="custom-match-mt-16">
                     <MapSelectionBoard
                         maps={availableMaps}
                         selections={selections}
@@ -519,48 +492,82 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {/* Составы команд (dropzones) */}
-            {(team1Users.length > 0 || team2Users.length > 0) && (
-                <div className="mt-16">
-                    <h3>Состав команд</h3>
-                    <div className="row-lg">
-                        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
-                            <h4>{lobby?.team1_name || 'Команда 1'}</h4>
-                            {team1Users.length === 0 && <div className="muted">Нет игроков</div>}
-                            {team1Users.map(u => (
-                                <div key={`t1-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
-                                    <div className="list-row-left">
-                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                        <span className="ml-8">{u.username}</span>
-                                        <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
-                                            {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
-                                        </span>
+            {/* Составы команд (dropzones с placeholder-слотами) */}
+            <div className="custom-match-mt-16">
+                <h3>Состав команд</h3>
+                <div className="custom-match-row-lg custom-match-teams">
+                    {/* Команда 1 */}
+                    <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
+                        <h4>{lobby?.team1_name || 'Команда 1'}</h4>
+                        {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
+                        {team1Users.map(u => (
+                            <div key={`t1-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                                <div className="list-row-left">
+                                    <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                    <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                    <span className={`ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot ${onlineUserIds.includes(u.id) ? 'custom-match-status-online' : 'custom-match-status-offline'}`}>
+                                        {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {(() => {
+                            const maxSlots = 5;
+                            const placeholders = Math.max(0, maxSlots - team1Users.length);
+                            return Array.from({ length: placeholders }).map((_, idx) => (
+                                <div
+                                    key={`ph-1-${idx}`}
+                                    className="custom-match-placeholder-slot"
+                                    onClick={() => searchInputRef.current && searchInputRef.current.focus()}
+                                    onDragOver={e=>e.preventDefault()}
+                                    onDrop={handleDrop(1)}
+                                >
+                                    <div className="custom-match-placeholder-inner">
+                                        <span className="custom-match-plus">+</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
-                            <h4>{lobby?.team2_name || 'Команда 2'}</h4>
-                            {team2Users.length === 0 && <div className="muted">Нет игроков</div>}
-                            {team2Users.map(u => (
-                                <div key={`t2-${u.id}`} className="list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
-                                    <div className="list-row-left">
-                                        <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm" />
-                                        <span className="ml-8">{u.username}</span>
-                                        <span className={`ml-8 muted status-dot ${onlineUserIds.includes(u.id) ? 'status-online' : 'status-offline'}`}>
-                                            {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
-                                        </span>
+                            ));
+                        })()}
+                    </div>
+                    {/* Команда 2 */}
+                    <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
+                        <h4>{lobby?.team2_name || 'Команда 2'}</h4>
+                        {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
+                        {team2Users.map(u => (
+                            <div key={`t2-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                                <div className="list-row-left">
+                                    <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                    <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                    <span className={`ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot ${onlineUserIds.includes(u.id) ? 'custom-match-status-online' : 'custom-match-status-offline'}`}>
+                                        {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                        {(() => {
+                            const maxSlots = 5;
+                            const placeholders = Math.max(0, maxSlots - team2Users.length);
+                            return Array.from({ length: placeholders }).map((_, idx) => (
+                                <div
+                                    key={`ph-2-${idx}`}
+                                    className="custom-match-placeholder-slot"
+                                    onClick={() => searchInputRef.current && searchInputRef.current.focus()}
+                                    onDragOver={e=>e.preventDefault()}
+                                    onDrop={handleDrop(2)}
+                                >
+                                    <div className="custom-match-placeholder-inner">
+                                        <span className="custom-match-plus">+</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            ));
+                        })()}
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Кнопка подключиться после завершения */}
             {(connectInfo?.connect || lobby?.status === 'match_created' || lobby?.status === 'ready_to_create') && (
-                <div className="mt-16">
+                <div className="custom-match-mt-16">
                     {lobby?.status === 'ready_to_create' && Number(lobby?.created_by) === Number(user?.id) && (
                         <button className="btn btn-primary" onClick={async () => {
                             const token = localStorage.getItem('token');
@@ -569,7 +576,7 @@ function AdminMatchPage() {
                         }}>СОЗДАЕМ МАТЧ?</button>
                     )}
                     {connectInfo?.connect && (
-                        <a className="btn btn-primary ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
+                        <a className="btn btn-primary custom-match-ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
                             Подключиться к матчу
                         </a>
                     )}
