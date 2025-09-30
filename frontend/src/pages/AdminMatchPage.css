@@ -59,7 +59,7 @@
   border: 2px solid #666;
 }
 .custom-match-status-online::before {
-  background-color: #00c853;
+  background-color: transparent;
   border-color: #00c853;
 }
 .custom-match-status-offline::before {
@@ -74,10 +74,10 @@
   background-color: #ff3b30;
   border-color: #ff3b30;
 }
-/* New: in lobby state */
+/* New: in lobby state (green filled) */
 .custom-match-status-inlobby::before {
-  background-color: #00bcd4;
-  border-color: #00bcd4;
+  background-color: #00c853;
+  border-color: #00c853;
 }
 
 /* DnD визуал */
@@ -141,9 +141,9 @@
 .custom-match-invite-title { 
   font-weight: 600; 
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
   margin-bottom: 6px; 
-  opacity: .8; 
+
 }
 .custom-match-invite-close {
   background: transparent;
@@ -160,7 +160,10 @@
   overflow: auto;
   flex: 1;
 }
-.custom-match-invite-section + .custom-match-invite-section { margin-top: 12px; }
+.custom-match-invite-section + .custom-match-invite-section { 
+    margin-top: 24px; 
+}
+
 .custom-match-invite-section-title { 
   font-size: 14px; 
   opacity: .8; 
@@ -171,8 +174,7 @@
 .custom-match-plus-btn {
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  border: 1px solid #ff0000;
+  border: none;
   color: #fff;
   background: transparent;
   line-height: 20px;
@@ -180,7 +182,10 @@
   cursor: pointer;
   margin-right: 8px;
 }
-.custom-match-plus-btn:hover { background: #111; }
+.custom-match-plus-btn:hover { 
+    border: none !important; 
+}
+
 .custom-match-plus-btn:disabled { opacity: .5; cursor: not-allowed; }
 
 .custom-match-invite-section input {
