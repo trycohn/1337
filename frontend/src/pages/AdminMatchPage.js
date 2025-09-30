@@ -707,15 +707,7 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
-<<<<<<< HEAD
                                 if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
-=======
-                                // если завершили — сервер теперь сразу создаёт connect/gotv и возвращает lobby
-                                if (data.completed && data.lobby) {
-                                    setLobby(data.lobby);
-                                    setConnectInfo({ connect: data.connect || data.lobby.connect_url, gotv: data.gotv || data.lobby.gotv_url });
-                                }
->>>>>>> 6fc19e46812bf14e6fd605de9d7a91d9bcd6d70e
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) {
                                     setLobby(r.data.lobby);
