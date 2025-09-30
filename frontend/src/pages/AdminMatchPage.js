@@ -715,6 +715,8 @@ function AdminMatchPage() {
                             ));
                         })()}
                     </div>
+                    {/* VS Block */}
+                    <div className="custom-match-vs-block">VS</div>
                     {/* Команда 2 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
                         <h4>

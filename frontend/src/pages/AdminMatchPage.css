@@ -262,6 +262,8 @@
 .custom-match-teams {
   width: 100%;
 }
+.custom-match-teams.custom-match-row-lg { grid-template-columns: 1fr auto 1fr; }
+.custom-match-vs-block { display:flex; align-items:center; justify-content:center; font-weight:700; font-size:24px; color:#fff; padding: 8px 0; }
 .custom-match-team-column h4 {
   margin-top: 0;
   margin-bottom: 8px;
