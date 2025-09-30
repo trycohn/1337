@@ -1,6 +1,30 @@
+// Обновление готовности/присутствия игрока (heartbeat + локальный ready)
+router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { user_id, ready } = req.body || {};
+    const actorId = req.user.id;
+    const targetId = Number(user_id) || actorId;
+    // Только сам пользователь может менять свой ready
+    if (actorId !== targetId) return res.status(403).json({ success: false, error: 'Можно менять только свой статус' });
+    try {
+        await pool.query(
+            `INSERT INTO admin_lobby_presence(lobby_id, user_id, last_seen, is_ready)
+             VALUES ($1, $2, CURRENT_TIMESTAMP, $3)
+             ON CONFLICT (lobby_id, user_id)
+             DO UPDATE SET last_seen = EXCLUDED.last_seen, is_ready = EXCLUDED.is_ready`,
+            [Number(lobbyId), targetId, Boolean(ready)]
+        );
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('admin_lobby presence update error', e);
+        return res.status(500).json({ success: false, error: 'presence update failed' });
+    }
+});
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { authenticateToken } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
@@ -1082,6 +1106,8 @@ async function ensureAdminLobbyTables() {
         );
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_admin_lobby_presence_lobby_seen ON admin_lobby_presence(lobby_id, last_seen)`);
+    // Готовность игрока (локальная отметка)
+    await pool.query(`ALTER TABLE admin_lobby_presence ADD COLUMN IF NOT EXISTS is_ready BOOLEAN DEFAULT FALSE`);
     // Дедупликация и уникальный индекс
     await pool.query(`
         WITH dup AS (
@@ -1262,13 +1288,19 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
 
         // Онлайн‑присутствие: heartbeat за 10 секунд + (опционально) сокет-комната
         let online_user_ids = [];
+        let ready_user_ids = [];
         try {
             const hb = await client.query(
-                `SELECT DISTINCT user_id FROM admin_lobby_presence
+                `SELECT DISTINCT user_id, is_ready FROM admin_lobby_presence
                  WHERE lobby_id = $1 AND last_seen > (CURRENT_TIMESTAMP - INTERVAL '10 seconds')`,
                 [lobbyId]
             );
-            const ids = new Set(hb.rows.map(r => Number(r.user_id)));
+            const ids = new Set();
+            const rids = new Set();
+            for (const row of hb.rows) {
+                ids.add(Number(row.user_id));
+                if (row.is_ready) rids.add(Number(row.user_id));
+            }
             try {
                 const io = req.app.get('io');
                 if (io) {
@@ -1277,8 +1309,9 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
                 }
             } catch (_) {}
             online_user_ids = Array.from(ids);
+            ready_user_ids = Array.from(rids);
         } catch (_) {}
-        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users, invited_declined_users, online_user_ids });
+        return res.json({ success: true, lobby, available_maps: mapsRes.rows, selections: selRes.rows, team1_users, team2_users, unassigned_users, invited_pending_users, invited_declined_users, online_user_ids, ready_user_ids });
     } catch (e) {
         console.error('Ошибка получения админ-лобби', e);
         return res.status(500).json({ success: false, error: 'Ошибка сервера' });
