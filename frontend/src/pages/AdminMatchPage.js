@@ -26,6 +26,15 @@ function AdminMatchPage() {
     const socketRef = useRef(null); // зарезервировано (не используем WS)
     const searchDebounce = useRef(null);
     const searchInputRef = useRef(null);
+    // Invite panel state
+    const [invitePanelOpen, setInvitePanelOpen] = useState(false);
+    const [invitePanelTeam, setInvitePanelTeam] = useState(null);
+    const [friends, setFriends] = useState([]);
+    const [friendsExpanded, setFriendsExpanded] = useState(false);
+    const [inviteSearch, setInviteSearch] = useState('');
+    const [inviteResults, setInviteResults] = useState([]);
+    const inviteSearchDebounce = useRef(null);
+    const inviteSearchInputRef = useRef(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -105,6 +114,67 @@ function AdminMatchPage() {
                 setOnlineUserIds(r.data.online_user_ids || []);
             }
         } catch (_) {}
+    }
+
+    async function inviteUserToTeam(userId, team) {
+        if (!userId || !team) return;
+        try {
+            const token = localStorage.getItem('token');
+            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: userId, team, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (r?.data?.success) {
+                setLobby(r.data.lobby);
+                setSelections(r.data.selections || []);
+                setAvailableMaps(r.data.available_maps || []);
+                setTeam1Users(r.data.team1_users || []);
+                setTeam2Users(r.data.team2_users || []);
+                setUnassignedUsers(r.data.unassigned_users || []);
+                setInvitedPendingUsers(r.data.invited_pending_users || []);
+                setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                setOnlineUserIds(r.data.online_user_ids || []);
+            }
+        } catch (_) {}
+    }
+
+    const openInvitePanel = useCallback(async (team) => {
+        setInvitePanelTeam(team);
+        setInvitePanelOpen(true);
+        setFriendsExpanded(false);
+        try {
+            const token = localStorage.getItem('token');
+            const { data } = await api.get('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
+            const list = Array.isArray(data) ? data.map(f => f.friend) : [];
+            setFriends(list);
+        } catch (_) {
+            setFriends([]);
+        }
+        setTimeout(() => { inviteSearchInputRef.current && inviteSearchInputRef.current.focus(); }, 50);
+    }, []);
+
+    const closeInvitePanel = useCallback(() => {
+        setInvitePanelOpen(false);
+        setInviteSearch('');
+        setInviteResults([]);
+    }, []);
+
+    function onInviteSearchChange(e) {
+        const value = e.target.value;
+        setInviteSearch(value);
+        if (inviteSearchDebounce.current) clearTimeout(inviteSearchDebounce.current);
+        if (!value || value.trim().length < 2) {
+            setInviteResults([]);
+            return;
+        }
+        inviteSearchDebounce.current = setTimeout(async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const { data } = await api.get('/api/users/search', {
+                    params: { q: value, limit: 10 },
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setInviteResults(Array.isArray(data) ? data : []);
+            } catch (_) { setInviteResults([]); }
+        }, 250);
     }
 
     // DnD helpers
@@ -518,7 +588,7 @@ function AdminMatchPage() {
                                 <div
                                     key={`ph-1-${idx}`}
                                     className="custom-match-placeholder-slot"
-                                    onClick={() => searchInputRef.current && searchInputRef.current.focus()}
+                                    onClick={() => openInvitePanel(1)}
                                     onDragOver={e=>e.preventDefault()}
                                     onDrop={handleDrop(1)}
                                 >
@@ -551,7 +621,7 @@ function AdminMatchPage() {
                                 <div
                                     key={`ph-2-${idx}`}
                                     className="custom-match-placeholder-slot"
-                                    onClick={() => searchInputRef.current && searchInputRef.current.focus()}
+                                    onClick={() => openInvitePanel(2)}
                                     onDragOver={e=>e.preventDefault()}
                                     onDrop={handleDrop(2)}
                                 >
@@ -580,6 +650,68 @@ function AdminMatchPage() {
                             Подключиться к матчу
                         </a>
                     )}
+                </div>
+            )}
+
+            {/* Invite Side Panel */}
+            {invitePanelOpen && (
+                <div className="custom-match-invite-overlay" onClick={(e) => {
+                    if (e.target.classList.contains('custom-match-invite-overlay')) closeInvitePanel();
+                }}>
+                    <div className="custom-match-invite-panel" role="dialog" aria-modal="true">
+                        <div className="custom-match-invite-header">
+                            <div className="custom-match-invite-title">Пригласить</div>
+                            <button className="custom-match-invite-close" aria-label="Закрыть" onClick={closeInvitePanel}>×</button>
+                        </div>
+                        <div className="custom-match-invite-body">
+                            {/* Friends block */}
+                            <div className="custom-match-invite-section">
+                                <div className="custom-match-invite-section-title">Друзья</div>
+                                {(friends || []).slice(0, friendsExpanded ? friends.length : 5).map(fr => (
+                                    <div key={`fr-${fr.id}`} className="list-row">
+                                        <div className="list-row-left">
+                                            <img src={fr.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                            <span className="ml-8 custom-match-ml-8">{fr.username}</span>
+                                        </div>
+                                        <div className="list-row-right">
+                                            <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(fr.id, invitePanelTeam)}>Добавить</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(friends || []).length > 5 && (
+                                    <button className="btn btn-secondary custom-match-mt-8" onClick={() => setFriendsExpanded(v => !v)}>
+                                        {friendsExpanded ? 'свернуть' : 'развернуть'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Search block */}
+                            <div className="custom-match-invite-section custom-match-mt-16">
+                                <div className="custom-match-invite-section-title">Поиск пользователей</div>
+                                <input
+                                    ref={inviteSearchInputRef}
+                                    className="input"
+                                    placeholder="Найти пользователя"
+                                    value={inviteSearch}
+                                    onChange={onInviteSearchChange}
+                                />
+                                <div className="custom-match-mt-8">
+                                    {inviteResults.map(u => (
+                                        <div key={`inv-${u.id}`} className="list-row">
+                                            <div className="list-row-left">
+                                                <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
+                                                <span className="ml-8 custom-match-ml-8">{u.username}</span>
+                                            </div>
+                                            <div className="list-row-right">
+                                                <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(u.id, invitePanelTeam)}>Пригласить</button>
+                                                <a className="btn btn-secondary custom-match-ml-8" href={`/user/${u.id}`} target="_blank" rel="noreferrer">Профиль</a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

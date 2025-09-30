@@ -1,51 +1,188 @@
 /* ===== Custom Match Page (prefixed) ===== */
-.custom-match-page { padding: 16px; }
-.custom-match-mt-8 { margin-top: 8px; }
-.custom-match-mt-12 { margin-top: 12px; }
-.custom-match-mt-16 { margin-top: 16px; }
-.custom-match-ml-8 { margin-left: 8px; }
-.custom-match-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.custom-match-row-lg { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-.custom-match-muted { opacity: .7; }
-.custom-match-danger-text { color: #ff6666; }
-.custom-match-code-inline { margin-left: 8px; }
-.custom-match-avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.custom-match-page {
+  padding: 16px;
+}
+.custom-match-mt-8 {
+  margin-top: 8px;
+}
+.custom-match-mt-12 {
+  margin-top: 12px;
+}
+.custom-match-mt-16 {
+  margin-top: 16px;
+}
+.custom-match-ml-8 {
+  margin-left: 8px;
+}
+.custom-match-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.custom-match-row-lg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.custom-match-muted {
+  opacity: 0.7;
+}
+.custom-match-danger-text {
+  color: #ff6666;
+}
+.custom-match-code-inline {
+  margin-left: 8px;
+}
+.custom-match-avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 
 /* Статусы участников */
-.custom-match-status-dot { position: relative; padding-left: 18px; }
-.custom-match-status-dot::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    transform: translateY(-50%);
-    background-color: transparent;
-    border: 2px solid #666;
+.custom-match-status-dot {
+  position: relative;
+  padding-left: 18px;
 }
-.custom-match-status-online::before { background-color: #00c853; border-color: #00c853; }
-.custom-match-status-offline::before { background-color: transparent; border-color: #666; }
-.custom-match-status-pending::before { background-color: #999; border-color: #999; }
-.custom-match-status-declined::before { background-color: #ff3b30; border-color: #ff3b30; }
+.custom-match-status-dot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background-color: transparent;
+  border: 2px solid #666;
+}
+.custom-match-status-online::before {
+  background-color: #00c853;
+  border-color: #00c853;
+}
+.custom-match-status-offline::before {
+  background-color: transparent;
+  border-color: #666;
+}
+.custom-match-status-pending::before {
+  background-color: #999;
+  border-color: #999;
+}
+.custom-match-status-declined::before {
+  background-color: #ff3b30;
+  border-color: #ff3b30;
+}
 
 /* DnD визуал */
-.custom-match-dropzone { border: 1px dashed #333; padding: 8px; border-radius: 6px; }
-.custom-match-list-row[draggable="true"] { cursor: grab; }
-.custom-match-list-row[draggable="true"]:active { cursor: grabbing; }
+.custom-match-dropzone {
+  border: 1px dashed #333;
+  padding: 8px;
+  border-radius: 6px;
+}
+.custom-match-list-row[draggable="true"] {
+  cursor: grab;
+}
+.custom-match-list-row[draggable="true"]:active {
+  cursor: grabbing;
+}
 
 /* Hover actions for pending invites */
-.custom-match-row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
-.custom-match-list-row:hover .custom-match-row-actions { opacity: 1; }
+.custom-match-row-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+.custom-match-list-row:hover .custom-match-row-actions {
+  opacity: 1;
+}
 
+/* Invite side panel */
+.custom-match-invite-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.custom-match-invite-panel {
+  width: 240px;
+  height: 80vh;
+  background: #000;
+  border-left: 1px solid #333;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+.custom-match-invite-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #333;
+}
+.custom-match-invite-title { font-weight: 600; }
+.custom-match-invite-close {
+  background: transparent;
+  border: 1px solid #333;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  line-height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.custom-match-invite-body {
+  padding: 8px 12px;
+  overflow: auto;
+  flex: 1;
+}
+.custom-match-invite-section + .custom-match-invite-section { margin-top: 12px; }
+.custom-match-invite-section-title { font-size: 12px; opacity: .8; margin-bottom: 6px; }
+
+@media (max-width: 768px) {
+  .custom-match-invite-panel {
+    width: 100vw;
+    height: 100vh;
+  }
+}
 /* Placeholder slots in teams */
-.custom-match-placeholder-slot { display: flex; align-items: center; justify-content: center; height: 40px; border: 1px dashed #333; border-radius: 6px; margin-top: 8px; cursor: pointer; }
-.custom-match-placeholder-slot:hover { background: #111; }
-.custom-match-placeholder-inner { display: flex; align-items: center; }
-.custom-match-placeholder-inner .custom-match-plus { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background:#ff0000; color:#000; font-weight:700; text-align:center; line-height:18px; }
+.custom-match-placeholder-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border: 1px dashed #333;
+  border-radius: 6px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+.custom-match-placeholder-slot:hover {
+  background: #111;
+}
+.custom-match-placeholder-inner {
+  display: flex;
+  align-items: center;
+}
+.custom-match-placeholder-inner .custom-match-plus {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ff0000;
+  color: #000;
+  font-weight: 700;
+  text-align: center;
+  line-height: 18px;
+}
 
 /* Teams container */
-.custom-match-teams { width: 100%; }
-.custom-match-team-column h4 { margin-top: 0; margin-bottom: 8px; }
-
+.custom-match-teams {
+  width: 100%;
+}
+.custom-match-team-column h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
