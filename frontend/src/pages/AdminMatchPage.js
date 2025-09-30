@@ -706,6 +706,11 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
+                                // если завершили — сервер теперь сразу создаёт connect/gotv и возвращает lobby
+                                if (data.completed && data.lobby) {
+                                    setLobby(data.lobby);
+                                    setConnectInfo({ connect: data.connect || data.lobby.connect_url, gotv: data.gotv || data.lobby.gotv_url });
+                                }
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) {
                                     setLobby(r.data.lobby);
@@ -714,8 +719,13 @@ function AdminMatchPage() {
                                     setTeam1Users(r.data.team1_users || []);
                                     setTeam2Users(r.data.team2_users || []);
                                     setUnassignedUsers(r.data.unassigned_users || []);
+                                    if (['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) {
+                                        try {
+                                            const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (conn?.data?.success) setConnectInfo(conn.data);
+                                        } catch (_) {}
+                                    }
                                 }
-                                // после завершения пиков ждём явное «СОЗДАЕМ МАТЧ?»
                             }
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}

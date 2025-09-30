@@ -1607,11 +1607,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
         // Следующий ход
         const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
         if (next.completed) {
-            // Завершено — формируем JSON конфиг матча и отмечаем статус
-            await client.query(
-                `UPDATE admin_match_lobbies SET status = 'ready_to_create', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-                [lobbyId]
-            );
+            // Завершено — формируем JSON конфиг матча
+            // (поднимем статус до 'match_created' сразу после записи файла + генерации ссылок)
 
             // Собираем данные для JSON: карты, составы команд и имена
             const picksRes = await client.query(
@@ -1657,6 +1654,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 team2: { name: lobbyFresh?.team2_name || 'TEAM_B', players: team2Players }
             };
 
+            let configJsonSaved = false;
+            let publicUrl = null;
             try {
                 const path = require('path');
                 const fs = require('fs');
@@ -1665,14 +1664,30 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 const fileName = `${matchid}.json`;
                 const filePath = path.join(baseDir, fileName);
                 fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
-                await client.query('COMMIT');
-                const publicUrl = `/lobby/${lobbyId}/${fileName}`;
-                return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist });
+                publicUrl = `/lobby/${lobbyId}/${fileName}`;
+                configJsonSaved = true;
             } catch (writeErr) {
-                await client.query('COMMIT');
                 console.error('Ошибка записи JSON конфига лобби', writeErr);
-                return res.json({ success: true, completed: true, warning: 'Не удалось сохранить JSON конфиг на диск' });
+                // продолжим создание матч‑ссылок даже если файл не записался
             }
+
+            // Автогенерация ссылок подключения — сразу после завершения пик/бан
+            const cs2Host = process.env.CS2_TEST_HOST || process.env.CS2_GOTV_HOST || '127.0.0.1';
+            const cs2Port = process.env.CS2_TEST_PORT || process.env.CS2_GOTV_PORT || '27015';
+            const cs2Pass = process.env.CS2_TEST_PASSWORD || process.env.CS2_GOTV_PASSWORD || '';
+            const connect = `steam://connect/${cs2Host}:${cs2Port}/${cs2Pass ? cs2Pass : ''}`.replace(/\/$/, '');
+            const gotvHost = process.env.CS2_GOTV_HOST || cs2Host;
+            const gotvPort = process.env.CS2_GOTV_PORT || '27020';
+            const gotvPass = process.env.CS2_GOTV_PASSWORD || cs2Pass;
+            const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+
+            const updStatus = await client.query(
+                `UPDATE admin_match_lobbies SET status = 'match_created', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *`,
+                [connect, gotv, lobbyId]
+            );
+
+            await client.query('COMMIT');
+            return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0] });
         } else {
             const upd = await client.query(
                 `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
