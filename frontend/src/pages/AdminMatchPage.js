@@ -120,8 +120,12 @@ function AdminMatchPage() {
         // локальный тумблер
         setPlayerReady(prev => {
             const next = { ...prev, [userId]: !prev[userId] };
-            if (!isTeamAllReady(teamId)) cancelCountdown(teamId);
-            setTimeout(() => { if (isTeamAllReady(teamId)) startCountdown(teamId); }, 0);
+            // без таймера: при полной готовности команды сразу подтверждаем её на сервере
+            setTimeout(async () => {
+                if (isTeamAllReady(teamId)) {
+                    try { await confirmTeamReady(teamId); } catch (_) {}
+                }
+            }, 0);
             return next;
         });
         // отправим heartbeat в лобби (для live) — без изменения прав на backend
