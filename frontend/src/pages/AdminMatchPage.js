@@ -316,6 +316,17 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
+                    if (Array.isArray(r.data.ready_user_ids)) {
+                        setPlayerReady(prev => {
+                            const next = { ...prev };
+                            for (const id of r.data.ready_user_ids) next[id] = true;
+                            // снимаем готовность тех, кого нет в списке
+                            for (const u of [...team1Users, ...team2Users]) {
+                                if (!r.data.ready_user_ids.includes(u.id)) next[u.id] = false;
+                            }
+                            return next;
+                        });
+                    }
                 }
             } catch (_) {}
         };
@@ -652,7 +663,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team1_name || 'Команда 1'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (isTeamAllReady(1) ? 'ready' : 'not ready')}
+                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (lobby?.team1_ready ? 'ready' : 'not ready')}
                             </span>
                         </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
@@ -714,7 +725,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team2_name || 'Команда 2'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (isTeamAllReady(2) ? 'ready' : 'not ready')}
+                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (lobby?.team2_ready ? 'ready' : 'not ready')}
                             </span>
                         </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
