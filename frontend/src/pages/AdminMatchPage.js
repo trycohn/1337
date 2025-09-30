@@ -341,8 +341,8 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
-                    // авто‑подхват ссылок подключения, когда матч создан
-                    if ((r.data.lobby?.status === 'match_created' || r.data.lobby?.status === 'ready_to_create') && !connectInfo) {
+                    // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
+                    if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
                         try {
                             const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
                             if (conn?.data?.success) setConnectInfo(conn.data);
@@ -773,9 +773,9 @@ function AdminMatchPage() {
             </div>
 
             {/* Кнопка подключиться после завершения */}
-            {(connectInfo?.connect || lobby?.status === 'match_created' || lobby?.status === 'ready_to_create') && (
+            {(connectInfo?.connect || ['match_created','ready_to_create','completed'].includes(lobby?.status)) && (
                 <div className="custom-match-mt-16">
-                    {lobby?.status === 'ready_to_create' && Number(lobby?.created_by) === Number(user?.id) && (
+                    {['ready_to_create','completed'].includes(lobby?.status) && Number(lobby?.created_by) === Number(user?.id) && (
                         <button className="btn btn-primary" onClick={async () => {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/create-match`, {}, { headers: { Authorization: `Bearer ${token}` } });
