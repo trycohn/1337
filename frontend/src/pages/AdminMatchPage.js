@@ -40,6 +40,7 @@ function AdminMatchPage() {
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
     const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
     const countdownRefs = useRef({ 1: null, 2: null });
+    const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
     // Presence helpers
     const lobbyPresenceSet = useMemo(() => {
@@ -69,6 +70,28 @@ function AdminMatchPage() {
             return next;
         });
     }, [team1Users, team2Users]);
+
+    // Load saved readiness on lobby change
+    useEffect(() => {
+        if (!readyStorageKey) return;
+        try {
+            const raw = localStorage.getItem(readyStorageKey);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    setPlayerReady(prev => ({ ...prev, ...saved }));
+                }
+            }
+        } catch (_) {}
+    }, [readyStorageKey]);
+
+    // Persist readiness changes
+    useEffect(() => {
+        if (!readyStorageKey) return;
+        try {
+            localStorage.setItem(readyStorageKey, JSON.stringify(playerReady));
+        } catch (_) {}
+    }, [playerReady, readyStorageKey]);
 
     function isTeamAllReady(teamId) {
         const list = teamId === 1 ? team1Users : team2Users;
@@ -112,15 +135,19 @@ function AdminMatchPage() {
         }, 1000);
     }
 
-    function onTogglePlayerReady(userId, teamId) {
+    async function onTogglePlayerReady(userId, teamId) {
+        // локальный тумблер
         setPlayerReady(prev => {
             const next = { ...prev, [userId]: !prev[userId] };
-            // If any unready during countdown — cancel
             if (!isTeamAllReady(teamId)) cancelCountdown(teamId);
-            // If now all ready — start countdown
             setTimeout(() => { if (isTeamAllReady(teamId)) startCountdown(teamId); }, 0);
             return next;
         });
+        // отправим heartbeat в лобби (для live) — без изменения прав на backend
+        try {
+            const token = localStorage.getItem('token');
+            await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { user_id: userId, ready: playerReady[userId] ? false : true }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (_) {}
     }
 
     useEffect(() => {
