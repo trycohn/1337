@@ -41,6 +41,8 @@ function AdminMatchPage() {
     const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
     const countdownRefs = useRef({ 1: null, 2: null });
     const playerReadyRef = useRef({});
+    const pollInFlightRef = useRef(false);
+    const teamConfirmInFlightRef = useRef({ 1: false, 2: false });
     const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
@@ -114,9 +116,14 @@ function AdminMatchPage() {
 
     async function confirmTeamReady(teamId) {
         try {
+            if (teamConfirmInFlightRef.current[teamId]) return;
+            teamConfirmInFlightRef.current[teamId] = true;
             const token = localStorage.getItem('token');
             await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: teamId, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-        } catch (_) {}
+        } catch (_) {
+        } finally {
+            teamConfirmInFlightRef.current[teamId] = false;
+        }
     }
 
     function startCountdown(teamId) {
@@ -391,6 +398,8 @@ function AdminMatchPage() {
         const token = localStorage.getItem('token');
         let timer = null;
         const pull = async () => {
+            if (pollInFlightRef.current) { timer = setTimeout(pull, 1500); return; }
+            pollInFlightRef.current = true;
             try {
                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                 if (r?.data?.success) {
@@ -409,7 +418,7 @@ function AdminMatchPage() {
                     const t2 = (r.data.team2_users || []).map(u => u.id);
                     const readySet = new Set(Array.isArray(r.data.ready_user_ids) ? r.data.ready_user_ids : []);
 
-                    let nextReadyMap = { ...playerReady };
+                    let nextReadyMap = { ...playerReadyRef.current };
                     const counters = missingReadyCountersRef.current;
                     for (const id of [...t1, ...t2]) {
                         if (readySet.has(id)) {
@@ -446,6 +455,7 @@ function AdminMatchPage() {
                     }
                 }
             } catch (_) {}
+            pollInFlightRef.current = false;
             timer = setTimeout(pull, 1500);
         };
         pull();
