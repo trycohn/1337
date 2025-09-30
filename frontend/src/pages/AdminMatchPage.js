@@ -48,8 +48,10 @@ function AdminMatchPage() {
 
     function getPresenceStatus(userId) {
         if (!userId) return { cls: 'custom-match-status-offline', text: 'Оффлайн' };
-        if (lobbyPresenceSet.has(userId)) return { cls: 'custom-match-status-inlobby', text: 'В лобби' };
-        if (onlineUserIds.includes(userId)) return { cls: 'custom-match-status-online', text: 'Онлайн' };
+        const isOnline = onlineUserIds.includes(userId);
+        const inLobby = lobbyPresenceSet.has(userId);
+        if (isOnline && inLobby) return { cls: 'custom-match-status-inlobby', text: 'В лобби' };
+        if (isOnline) return { cls: 'custom-match-status-online', text: 'Онлайн' };
         return { cls: 'custom-match-status-offline', text: 'Оффлайн' };
     }
 
