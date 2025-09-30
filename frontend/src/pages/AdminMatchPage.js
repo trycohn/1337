@@ -461,15 +461,31 @@ function AdminMatchPage() {
                     ))}
                 </div>
                 <div className="custom-match-format-actions custom-match-mt-8">
-                    <button className="btn btn-secondary" disabled={!lobbyId || !(lobby?.status === 'ready')}
-                        onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                            if (data?.success) {
-                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                            }
-                        }}>Начать BAN/PICK</button>
+                    {(() => {
+                        const canStart = !!lobbyId && lobby?.status === 'ready';
+                        return (
+                            <div className="custom-match-tooltip">
+                                <button
+                                    className={`btn btn-secondary ${!canStart ? 'btn-disabled' : ''}`}
+                                    aria-disabled={!canStart}
+                                    onClick={async () => {
+                                        if (!canStart) {
+                                            const tip = document.querySelector('#start-pick-tip');
+                                            if (tip) { tip.classList.add('visible'); setTimeout(() => tip.classList.remove('visible'), 1800); }
+                                            return;
+                                        }
+                                        const token = localStorage.getItem('token');
+                                        const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                        if (data?.success) {
+                                            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
+                                        }
+                                    }}
+                                >Начать BAN/PICK</button>
+                                <div id="start-pick-tip" className="custom-match-tooltip-bubble">Не все команды готовы к матчу</div>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
             
