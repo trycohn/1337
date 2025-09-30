@@ -12,6 +12,7 @@ function AdminMatchPage() {
     const [results, setResults] = useState([]);
     const [selected, setSelected] = useState([]);
     const [connectInfo, setConnectInfo] = useState(null);
+    const [configJsonUrl, setConfigJsonUrl] = useState('');
     const [lobbyId, setLobbyId] = useState(null);
     const [lobby, setLobby] = useState(null);
     const [availableMaps, setAvailableMaps] = useState([]);
@@ -691,6 +692,7 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
+                                if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) {
                                     setLobby(r.data.lobby);
@@ -705,6 +707,21 @@ function AdminMatchPage() {
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}
                     />
+                </div>
+            )}
+
+            {/* Ссылка на JSON конфиг после завершения BAN/PICK */}
+            {configJsonUrl && (
+                <div className="custom-match-mt-16">
+                    <h3>JSON конфиг лобби</h3>
+                    <div className="list-row">
+                        <div className="list-row-left">
+                            <a href={configJsonUrl} target="_blank" rel="noreferrer" className="code-inline custom-match-code-inline">{configJsonUrl}</a>
+                        </div>
+                        <div className="list-row-right">
+                            <button className="btn btn-secondary" onClick={() => copy(`${window.location.origin}${configJsonUrl}`)}>Копировать URL</button>
+                        </div>
+                    </div>
                 </div>
             )}
 
