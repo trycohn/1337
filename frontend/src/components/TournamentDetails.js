@@ -221,6 +221,11 @@ function TournamentDetails() {
     const [isSearchingAdmins, setIsSearchingAdmins] = useState(false);
     const [adminSearchModal, setAdminSearchModal] = useState(false);
 
+    // 🆕 СОСТОЯНИЯ ДЛЯ ПОИСКА УЧАСТНИКОВ (модалка ParticipantSearchModal)
+    const [participantSearchQuery, setParticipantSearchQuery] = useState('');
+    const [participantSearchResults, setParticipantSearchResults] = useState([]);
+    const [isSearchingParticipants, setIsSearchingParticipants] = useState(false);
+
     // 🆕 СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ОКНА УДАЛЕНИЯ ТУРНИРА
     const [deleteTournamentModal, setDeleteTournamentModal] = useState(false);
     const [isDeletingTournament, setIsDeletingTournament] = useState(false);
@@ -2780,12 +2785,36 @@ function TournamentDetails() {
                     <ParticipantSearchModal
                         isOpen={modals.participantSearch}
                         onClose={() => closeModal('participantSearch')}
-                        onInvite={() => {}}
-                        searchQuery=""
-                        setSearchQuery={() => {}}
-                        searchResults={[]}
-                        isSearching={false}
-                        onSearch={() => {}}
+                        onInvite={async (userId, userName) => {
+                            try {
+                                const result = await tournamentManagement.inviteParticipant(userId);
+                                if (result.success) {
+                                    setMessage(`✅ ${userName} приглашен в турнир`);
+                                    closeModal('participantSearch');
+                                    // Обновляем данные турнира
+                                    await fetchTournamentData();
+                                } else {
+                                    setMessage(`❌ ${result.message || 'Ошибка при приглашении участника'}`);
+                                }
+                            } catch (e) {
+                                setMessage('❌ Ошибка при приглашении участника');
+                            } finally {
+                                setTimeout(() => setMessage(''), 4000);
+                            }
+                        }}
+                        searchQuery={participantSearchQuery}
+                        setSearchQuery={setParticipantSearchQuery}
+                        searchResults={participantSearchResults}
+                        isSearching={isSearchingParticipants}
+                        onSearch={async (q) => {
+                            try {
+                                setIsSearchingParticipants(true);
+                                const res = await tournamentManagement.searchUsers(q);
+                                if (res.success) setParticipantSearchResults(res.data || []);
+                            } finally {
+                                setIsSearchingParticipants(false);
+                            }
+                        }}
                         existingParticipants={tournament.participants || []}
                     />
                 )}
