@@ -36,10 +36,8 @@ function AdminMatchPage() {
     const inviteSearchDebounce = useRef(null);
     const inviteSearchInputRef = useRef(null);
     const [formatConfirm, setFormatConfirm] = useState({ open: false, target: null });
-    // Per‑player readiness and team countdowns
+    // Per‑player readiness
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
-    const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
-    const countdownRefs = useRef({ 1: null, 2: null });
     const playerReadyRef = useRef({});
     const pollInFlightRef = useRef(false);
     const teamConfirmInFlightRef = useRef({ 1: false, 2: false });
@@ -106,14 +104,6 @@ function AdminMatchPage() {
         return list.every(u => !!playerReady[u.id]);
     }
 
-    function cancelCountdown(teamId) {
-        if (countdownRefs.current[teamId]) {
-            clearInterval(countdownRefs.current[teamId]);
-            countdownRefs.current[teamId] = null;
-        }
-        setTeamCountdown(prev => ({ ...prev, [teamId]: null }));
-    }
-
     async function confirmTeamReady(teamId) {
         try {
             if (teamConfirmInFlightRef.current[teamId]) return;
@@ -124,28 +114,6 @@ function AdminMatchPage() {
         } finally {
             teamConfirmInFlightRef.current[teamId] = false;
         }
-    }
-
-    function startCountdown(teamId) {
-        if (countdownRefs.current[teamId]) return; // already running
-        setTeamCountdown(prev => ({ ...prev, [teamId]: 5 }));
-        countdownRefs.current[teamId] = setInterval(async () => {
-            let nextVal = 0;
-            setTeamCountdown(prev => {
-                const val = (prev[teamId] ?? 0) - 1;
-                nextVal = val;
-                return { ...prev, [teamId]: val };
-            });
-            const stillAllReady = isTeamAllReady(teamId);
-            if (!stillAllReady) {
-                cancelCountdown(teamId);
-                return;
-            }
-            if (nextVal <= 0) {
-                cancelCountdown(teamId);
-                try { await confirmTeamReady(teamId); } catch (_) {}
-            }
-        }, 1000);
     }
 
     async function onTogglePlayerReady(userId, teamId) {
@@ -437,14 +405,9 @@ function AdminMatchPage() {
                     const allReady1 = t1.length > 0 && t1.every(id => !!nextReadyMap[id]);
                     const allReady2 = t2.length > 0 && t2.every(id => !!nextReadyMap[id]);
 
-                    // если команда уже отмечена ready на сервере — таймер не нужен
-                    if (r.data.lobby?.team1_ready === true) cancelCountdown(1);
-                    else if (allReady1) { if (teamCountdown[1] == null) startCountdown(1); }
-                    else cancelCountdown(1);
-
-                    if (r.data.lobby?.team2_ready === true) cancelCountdown(2);
-                    else if (allReady2) { if (teamCountdown[2] == null) startCountdown(2); }
-                    else cancelCountdown(2);
+                    // без таймера: подтверждаем готовность команды сразу
+                    if (allReady1 && r.data.lobby?.team1_ready !== true) { try { await confirmTeamReady(1); } catch (_) {} }
+                    if (allReady2 && r.data.lobby?.team2_ready !== true) { try { await confirmTeamReady(2); } catch (_) {} }
 
                     // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
                     if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
@@ -731,7 +694,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team1_name || 'Команда 1'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (lobby?.team1_ready === true ? 'ready' : 'not ready')}
+                                {lobby?.team1_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
@@ -793,7 +756,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team2_name || 'Команда 2'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (lobby?.team2_ready === true ? 'ready' : 'not ready')}
+                                {lobby?.team2_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
