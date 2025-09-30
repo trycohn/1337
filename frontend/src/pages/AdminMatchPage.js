@@ -511,33 +511,33 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            
-
-            <div className="custom-match-mt-16">
-                <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
-                    {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
-                </button>
-                <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
-                    Синхронизировать whitelist
-                </button>
-                {/* Очистка лобби — только создатель */}
-                <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
-                    onClick={async () => {
-                        try {
-                            const token = localStorage.getItem('token');
-                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                            if (data?.success) {
-                                setLobby(data.lobby);
-                                setSelections([]);
-                                setTeam1Users([]);
-                                setTeam2Users([]);
-                                setConnectInfo(null);
-                            }
-                        } catch (_) {}
-                    }}>
-                    Очистить лобби
-                </button>
-            </div>
+            {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                <div className="custom-match-mt-16">
+                    <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
+                        {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
+                    </button>
+                    <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
+                        Синхронизировать whitelist
+                    </button>
+                    {/* Очистка лобби — только создатель */}
+                    <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                        onClick={async () => {
+                            try {
+                                const token = localStorage.getItem('token');
+                                const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                if (data?.success) {
+                                    setLobby(data.lobby);
+                                    setSelections([]);
+                                    setTeam1Users([]);
+                                    setTeam2Users([]);
+                                    setConnectInfo(null);
+                                }
+                            } catch (_) {}
+                        }}>
+                        Очистить лобби
+                    </button>
+                </div>
+            )}
 
             {connectInfo && (
                 <div className="custom-match-mt-16">
@@ -677,6 +677,14 @@ function AdminMatchPage() {
                                 </div>
                             ));
                         })()}
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                            <div className="custom-match-mt-8">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                }}>ready</button>
+                            </div>
+                        )}
                     </div>
                     {/* VS Block */}
                     <div className="custom-match-vs-block">VS</div>
@@ -731,6 +739,14 @@ function AdminMatchPage() {
                                 </div>
                             ));
                         })()}
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                            <div className="custom-match-mt-8">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                }}>ready</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
