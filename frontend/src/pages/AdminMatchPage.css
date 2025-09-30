@@ -271,6 +271,10 @@
 .custom-match-team-column h4 .custom-match-team-ready-status{ margin-left:8px; }
 .custom-match-team-column h4 .custom-match-team-ready-status:before{ content:''; }
 
+.custom-match-page .list-row { display: flex; align-items: center; }
+.custom-match-page .list-row-left { display: flex; align-items: center; }
+.custom-match-page .list-row-right { display: flex; align-items: center; }
+
 .custom-match-ready-toggle{
   width: 22px;
   height: 22px;
