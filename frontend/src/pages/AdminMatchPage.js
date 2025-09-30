@@ -36,10 +36,13 @@ function AdminMatchPage() {
     const inviteSearchDebounce = useRef(null);
     const inviteSearchInputRef = useRef(null);
     const [formatConfirm, setFormatConfirm] = useState({ open: false, target: null });
-    // Per‑player readiness and team countdowns
+    // Per‑player readiness
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
-    const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
-    const countdownRefs = useRef({ 1: null, 2: null });
+    const playerReadyRef = useRef({});
+    const pollInFlightRef = useRef(false);
+    const teamConfirmInFlightRef = useRef({ 1: false, 2: false });
+    const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
+    const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
     // Presence helpers
     const lobbyPresenceSet = useMemo(() => {
@@ -70,58 +73,85 @@ function AdminMatchPage() {
         });
     }, [team1Users, team2Users]);
 
+    // Load saved readiness on lobby change
+    useEffect(() => {
+        if (!readyStorageKey) return;
+        try {
+            const raw = localStorage.getItem(readyStorageKey);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    setPlayerReady(prev => ({ ...prev, ...saved }));
+                }
+            }
+        } catch (_) {}
+    }, [readyStorageKey]);
+
+    // Persist readiness changes
+    useEffect(() => {
+        if (!readyStorageKey) return;
+        try {
+            localStorage.setItem(readyStorageKey, JSON.stringify(playerReady));
+        } catch (_) {}
+    }, [playerReady, readyStorageKey]);
+
+    // держим актуальное значение готовности в ref для фоновых интервалов
+    useEffect(() => { playerReadyRef.current = playerReady; }, [playerReady]);
+
     function isTeamAllReady(teamId) {
         const list = teamId === 1 ? team1Users : team2Users;
         if (!list || list.length === 0) return false;
         return list.every(u => !!playerReady[u.id]);
     }
 
-    function cancelCountdown(teamId) {
-        if (countdownRefs.current[teamId]) {
-            clearInterval(countdownRefs.current[teamId]);
-            countdownRefs.current[teamId] = null;
-        }
-        setTeamCountdown(prev => ({ ...prev, [teamId]: null }));
-    }
-
     async function confirmTeamReady(teamId) {
         try {
+            if (teamConfirmInFlightRef.current[teamId]) return;
+            teamConfirmInFlightRef.current[teamId] = true;
             const token = localStorage.getItem('token');
             await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: teamId, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (_) {
+        } finally {
+            teamConfirmInFlightRef.current[teamId] = false;
+        }
+    }
+
+    async function onTogglePlayerReady(userId, teamId) {
+        // локальный тумблер
+        setPlayerReady(prev => {
+            const next = { ...prev, [userId]: !prev[userId] };
+            // без таймера: при полной готовности команды сразу подтверждаем её на сервере
+            setTimeout(async () => {
+                if (isTeamAllReady(teamId)) {
+                    try { await confirmTeamReady(teamId); } catch (_) {}
+                }
+            }, 0);
+            return next;
+        });
+        // отправим heartbeat в лобби (для live) — без изменения прав на backend
+        try {
+            const token = localStorage.getItem('token');
+            const nextReady = !(playerReady[userId]);
+            await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: nextReady }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (_) {}
     }
 
-    function startCountdown(teamId) {
-        if (countdownRefs.current[teamId]) return; // already running
-        setTeamCountdown(prev => ({ ...prev, [teamId]: 5 }));
-        countdownRefs.current[teamId] = setInterval(async () => {
-            setTeamCountdown(prev => {
-                const val = (prev[teamId] ?? 0) - 1;
-                return { ...prev, [teamId]: val };
-            });
-            const currentVal = teamCountdown[teamId];
-            const stillAllReady = isTeamAllReady(teamId);
-            if (!stillAllReady) {
-                cancelCountdown(teamId);
-                return;
-            }
-            if ((teamCountdown[teamId] ?? 0) <= 0) {
-                cancelCountdown(teamId);
-                await confirmTeamReady(teamId);
-            }
-        }, 1000);
-    }
-
-    function onTogglePlayerReady(userId, teamId) {
-        setPlayerReady(prev => {
-            const next = { ...prev, [userId]: !prev[userId] };
-            // If any unready during countdown — cancel
-            if (!isTeamAllReady(teamId)) cancelCountdown(teamId);
-            // If now all ready — start countdown
-            setTimeout(() => { if (isTeamAllReady(teamId)) startCountdown(teamId); }, 0);
-            return next;
-        });
-    }
+    // Heartbeat присутствия: обновляем last_seen и текущую готовность пользователя раз в 10с
+    useEffect(() => {
+        if (!user || !lobbyId) return;
+        const token = localStorage.getItem('token');
+        let timer = null;
+        const push = async () => {
+            try {
+                const currentReady = !!playerReadyRef.current[user?.id];
+                await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: currentReady }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch (_) {}
+        };
+        // мгновенный пульс при монтировании
+        push();
+        timer = setInterval(push, 10000);
+        return () => { if (timer) clearInterval(timer); };
+    }, [user?.id, lobbyId]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -289,6 +319,17 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
+                    if (Array.isArray(r.data.ready_user_ids)) {
+                        setPlayerReady(prev => {
+                            const next = { ...prev };
+                            for (const id of r.data.ready_user_ids) next[id] = true;
+                            // снимаем готовность тех, кого нет в списке
+                            for (const u of [...team1Users, ...team2Users]) {
+                                if (!r.data.ready_user_ids.includes(u.id)) next[u.id] = false;
+                            }
+                            return next;
+                        });
+                    }
                 }
             } catch (_) {}
         };
@@ -329,6 +370,8 @@ function AdminMatchPage() {
         const token = localStorage.getItem('token');
         let timer = null;
         const pull = async () => {
+            if (pollInFlightRef.current) { timer = setTimeout(pull, 1500); return; }
+            pollInFlightRef.current = true;
             try {
                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                 if (r?.data?.success) {
@@ -341,6 +384,35 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
+
+                    // стабилизация готовности: липкая синхронизация + гистерезис 2 цикла на снятие готовности
+                    const t1 = (r.data.team1_users || []).map(u => u.id);
+                    const t2 = (r.data.team2_users || []).map(u => u.id);
+                    const readySet = new Set(Array.isArray(r.data.ready_user_ids) ? r.data.ready_user_ids : []);
+
+                    let nextReadyMap = { ...playerReadyRef.current };
+                    const counters = missingReadyCountersRef.current;
+                    for (const id of [...t1, ...t2]) {
+                        if (readySet.has(id)) {
+                            nextReadyMap[id] = true;
+                            counters[id] = 0;
+                        } else {
+                            counters[id] = (counters[id] || 0) + 1;
+                            if (counters[id] >= 2) {
+                                nextReadyMap[id] = false;
+                            }
+                        }
+                    }
+                    setPlayerReady(nextReadyMap);
+
+                    // расчет «все готовы» по стабилизированным данным
+                    const allReady1 = t1.length > 0 && t1.every(id => !!nextReadyMap[id]);
+                    const allReady2 = t2.length > 0 && t2.every(id => !!nextReadyMap[id]);
+
+                    // без таймера: подтверждаем готовность команды сразу
+                    if (allReady1 && r.data.lobby?.team1_ready !== true) { try { await confirmTeamReady(1); } catch (_) {} }
+                    if (allReady2 && r.data.lobby?.team2_ready !== true) { try { await confirmTeamReady(2); } catch (_) {} }
+
                     // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
                     if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
                         try {
@@ -350,6 +422,7 @@ function AdminMatchPage() {
                     }
                 }
             } catch (_) {}
+            pollInFlightRef.current = false;
             timer = setTimeout(pull, 1500);
         };
         pull();
@@ -434,15 +507,38 @@ function AdminMatchPage() {
                     ))}
                 </div>
                 <div className="custom-match-format-actions custom-match-mt-8">
-                    <button className="btn btn-secondary" disabled={!lobbyId || !(lobby?.status === 'ready')}
-                        onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                            if (data?.success) {
-                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                            }
-                        }}>Начать BAN/PICK</button>
+                    {(() => {
+                        const ready1 = lobby?.team1_ready === true;
+                        const ready2 = lobby?.team2_ready === true;
+                        const canStart = !!lobbyId && (lobby?.status === 'ready' || (ready1 && ready2));
+                        const tip = `Готовность команд: ${ready1 ? 'Команда 1 — ready' : 'Команда 1 — not ready'}, ${ready2 ? 'Команда 2 — ready' : 'Команда 2 — not ready'}`;
+                        return (
+                            <div className="custom-match-tooltip">
+                                <button
+                                    className={`btn btn-secondary ${!canStart ? 'btn-disabled' : ''}`}
+                                    disabled={!canStart}
+                                    onClick={async () => {
+                                        const token = localStorage.getItem('token');
+                                        const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                        if (data?.success) {
+                                            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (r?.data?.success) {
+                                                setLobby(r.data.lobby);
+                                                setSelections(r.data.selections || []);
+                                                setAvailableMaps(r.data.available_maps || []);
+                                                setTeam1Users(r.data.team1_users || []);
+                                                setTeam2Users(r.data.team2_users || []);
+                                                setUnassignedUsers(r.data.unassigned_users || []);
+                                            }
+                                        }
+                                    }}
+                                >Начать BAN/PICK</button>
+                                {!canStart && (
+                                    <div className="custom-match-tooltip-bubble">{tip}</div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
             
@@ -511,33 +607,33 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            
-
-            <div className="custom-match-mt-16">
-                <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
-                    {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
-                </button>
-                <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
-                    Синхронизировать whitelist
-                </button>
-                {/* Очистка лобби — только создатель */}
-                <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
-                    onClick={async () => {
-                        try {
-                            const token = localStorage.getItem('token');
-                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                            if (data?.success) {
-                                setLobby(data.lobby);
-                                setSelections([]);
-                                setTeam1Users([]);
-                                setTeam2Users([]);
-                                setConnectInfo(null);
-                            }
-                        } catch (_) {}
-                    }}>
-                    Очистить лобби
-                </button>
-            </div>
+            {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                <div className="custom-match-mt-16">
+                    <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
+                        {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
+                    </button>
+                    <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
+                        Синхронизировать whitelist
+                    </button>
+                    {/* Очистка лобби — только создатель */}
+                    <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                        onClick={async () => {
+                            try {
+                                const token = localStorage.getItem('token');
+                                const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                if (data?.success) {
+                                    setLobby(data.lobby);
+                                    setSelections([]);
+                                    setTeam1Users([]);
+                                    setTeam2Users([]);
+                                    setConnectInfo(null);
+                                }
+                            } catch (_) {}
+                        }}>
+                        Очистить лобби
+                    </button>
+                </div>
+            )}
 
             {connectInfo && (
                 <div className="custom-match-mt-16">
@@ -567,29 +663,7 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {/* Панель готовности команд */}
-            {lobbyId && (
-                <div className="custom-match-mt-16">
-                    <div className="custom-match-row-lg custom-match-teams">
-                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
-                        <div>
-                            <button className="btn btn-secondary" onClick={async () => {
-                                const token = localStorage.getItem('token');
-                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                            }}>ready</button>
-                        </div>
-                        )}
-                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
-                        <div>
-                            <button className="btn btn-secondary" onClick={async () => {
-                                const token = localStorage.getItem('token');
-                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                            }}>ready</button>
-                        </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            
 
             {/* Доска выбора карт */}
             {lobby && lobby.match_format && availableMaps?.length > 0 && (
@@ -598,7 +672,19 @@ function AdminMatchPage() {
                         maps={availableMaps}
                         selections={selections}
                         currentTurn={lobby.current_turn_team || null}
-                        myTeamId={0}
+                        myTeamId={(() => {
+                            const meId = Number(user?.id);
+                            if (team1Users.some(u => Number(u.id) === meId)) return 1;
+                            if (team2Users.some(u => Number(u.id) === meId)) return 2;
+                            return null;
+                        })()}
+                        isCaptain={(() => {
+                            const meId = Number(user?.id);
+                            // капитан по умолчанию — первый в списке команды
+                            const cap1 = team1Users[0]?.id ? Number(team1Users[0].id) : null;
+                            const cap2 = team2Users[0]?.id ? Number(team2Users[0].id) : null;
+                            return meId === cap1 || meId === cap2;
+                        })()}
                         format={lobby.match_format}
                         status={lobby.status}
                         onMapAction={async (mapName, action) => {
@@ -631,7 +717,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team1_name || 'Команда 1'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (isTeamAllReady(1) ? 'ready' : 'not ready')}
+                                {lobby?.team1_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
@@ -677,6 +763,14 @@ function AdminMatchPage() {
                                 </div>
                             ));
                         })()}
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                            <div className="custom-match-mt-8">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                }}>ready</button>
+                            </div>
+                        )}
                     </div>
                     {/* VS Block */}
                     <div className="custom-match-vs-block">VS</div>
@@ -685,7 +779,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team2_name || 'Команда 2'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (isTeamAllReady(2) ? 'ready' : 'not ready')}
+                                {lobby?.team2_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
@@ -731,6 +825,14 @@ function AdminMatchPage() {
                                 </div>
                             ));
                         })()}
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                            <div className="custom-match-mt-8">
+                                <button className="btn btn-secondary" onClick={async () => {
+                                    const token = localStorage.getItem('token');
+                                    await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                                }}>ready</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

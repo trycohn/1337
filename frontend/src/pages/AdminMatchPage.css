@@ -227,6 +227,13 @@
   display: flex;
   justify-content: center;
 }
+.btn-disabled { opacity:.6; cursor:not-allowed; }
+.custom-match-tooltip{ position:relative; }
+.custom-match-tooltip-bubble{
+  position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  background:#111; border:1px solid #333; color:#fff; padding:6px 8px; border-radius:6px; margin-top:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease-in-out;
+}
+.custom-match-tooltip-bubble.visible{ opacity:1; }
 
 /* Confirm modal */
 .custom-match-format-confirm {

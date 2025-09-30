@@ -23,7 +23,8 @@ function MapSelectionBoard({
     format, 
     status, 
     onMapAction,
-    teamNames = {} 
+    teamNames = {},
+    isCaptain = false
 }) {
     // 🎯 Определение последовательности действий
     const actionSequence = useMemo(() => {
@@ -66,8 +67,9 @@ function MapSelectionBoard({
     const canMakeAction = useMemo(() => {
         return status === 'picking' && 
                currentTurn === myTeamId && 
-               currentAction !== null;
-    }, [status, currentTurn, myTeamId, currentAction]);
+               currentAction !== null &&
+               isCaptain === true;
+    }, [status, currentTurn, myTeamId, currentAction, isCaptain]);
 
     // 🏁 Проверка, завершен ли выбор
     const isSelectionComplete = useMemo(() => {
