@@ -212,6 +212,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Прямая раздача изображений карт из исходной папки public (для загруженных в рантайме файлов)
 app.use('/images/maps', express.static(path.join(__dirname, '../frontend/public/images/maps')));
+// Раздача сгенерированных JSON конфигов лобби
+app.use('/lobby', express.static(path.join(__dirname, 'lobbies')));
 
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {

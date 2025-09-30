@@ -1541,13 +1541,72 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin,
         // Следующий ход
         const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
         if (next.completed) {
-            // Завершено — ждём ручного запуска создания матча админом
+            // Завершено — формируем JSON конфиг матча и отмечаем статус
             await client.query(
                 `UPDATE admin_match_lobbies SET status = 'ready_to_create', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
                 [lobbyId]
             );
-            await client.query('COMMIT');
-            return res.json({ success: true, completed: true });
+
+            // Собираем данные для JSON: карты, составы команд и имена
+            const picksRes = await client.query(
+                `SELECT map_name, action_type, action_order
+                 FROM admin_map_selections
+                 WHERE lobby_id = $1
+                 ORDER BY action_order ASC`,
+                [lobbyId]
+            );
+            const maplist = picksRes.rows
+                .filter(r => r.action_type === 'pick')
+                .map(r => String(r.map_name));
+
+            // Получаем составы команд (только принявшие приглашение)
+            const teamRes = await client.query(
+                `SELECT i.team, u.username, u.steam_id
+                 FROM admin_lobby_invitations i
+                 JOIN users u ON u.id = i.user_id
+                 WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
+                [lobbyId]
+            );
+            const team1Players = teamRes.rows.filter(r => Number(r.team) === 1)
+                .map(r => r.steam_id).filter(Boolean).map(String);
+            const team2Players = teamRes.rows.filter(r => Number(r.team) === 2)
+                .map(r => r.steam_id).filter(Boolean).map(String);
+
+            // Читаем названия команд и формат
+            const lobbyFresh = (await client.query('SELECT match_format, team1_name, team2_name FROM admin_match_lobbies WHERE id = $1', [lobbyId])).rows[0];
+            const format = lobbyFresh?.match_format || lobby.match_format || 'bo1';
+            const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
+            const num_maps = numMapsByFormat[format] || 1;
+
+            // Формируем уникальный matchid и путь для сохранения
+            const ts = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+            const matchid = `${format}-lobby${lobbyId}-${ts}`;
+            const cfg = {
+                matchid,
+                num_maps,
+                maplist,
+                skip_veto: true,
+                side_type: 'standard',
+                team1: { name: lobbyFresh?.team1_name || 'TEAM_A', players: team1Players },
+                team2: { name: lobbyFresh?.team2_name || 'TEAM_B', players: team2Players }
+            };
+
+            try {
+                const path = require('path');
+                const fs = require('fs');
+                const baseDir = path.join(__dirname, '..', 'lobbies', String(lobbyId));
+                fs.mkdirSync(baseDir, { recursive: true });
+                const fileName = `${matchid}.json`;
+                const filePath = path.join(baseDir, fileName);
+                fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
+                await client.query('COMMIT');
+                const publicUrl = `/lobby/${lobbyId}/${fileName}`;
+                return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist });
+            } catch (writeErr) {
+                await client.query('COMMIT');
+                console.error('Ошибка записи JSON конфига лобби', writeErr);
+                return res.json({ success: true, completed: true, warning: 'Не удалось сохранить JSON конфиг на диск' });
+            }
         } else {
             const upd = await client.query(
                 `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
