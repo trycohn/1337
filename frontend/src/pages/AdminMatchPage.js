@@ -169,6 +169,7 @@ function AdminMatchPage() {
 
     // Создать/получить админ-лобби
     const ensureAdminLobby = useCallback(async () => {
+        if (!isAdmin) return; // защита от вызова у не-админов
         const token = localStorage.getItem('token');
         const { data } = await api.post('/api/admin/match-lobby', {}, { headers: { Authorization: `Bearer ${token}` } });
         if (data?.success) {
@@ -365,11 +366,22 @@ function AdminMatchPage() {
         }
     }, [lobbyId]);
 
-    // Live‑обновления через короткие polling интервалов (без WS)
+    // Live‑обновления через polling (без WS) с динамическим интервалом и паузой в background
     useEffect(() => {
         if (!user || !lobbyId) return;
         const token = localStorage.getItem('token');
         let timer = null;
+        let baseInterval = 1500;
+        const getDelay = () => {
+            const hidden = typeof document !== 'undefined' && document.hidden;
+            const status = lobby?.status;
+            if (hidden) return 8000; // вкладка в фоне — реже
+            if (status === 'picking') return 1200; // активный этап — чаще
+            if (status === 'ready' || status === 'waiting') return 2000;
+            return baseInterval;
+        };
+        const onVisibility = () => { /* сбросим таймер на новый интервал */ };
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
         const pull = async () => {
             if (pollInFlightRef.current) { timer = setTimeout(pull, 1500); return; }
             pollInFlightRef.current = true;
@@ -424,10 +436,13 @@ function AdminMatchPage() {
                 }
             } catch (_) {}
             pollInFlightRef.current = false;
-            timer = setTimeout(pull, 1500);
+            timer = setTimeout(pull, getDelay());
         };
         pull();
-        return () => { if (timer) clearTimeout(timer); };
+        return () => {
+            if (timer) clearTimeout(timer);
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, [user, lobbyId]);
 
     function removeFromSelection(id) {}
@@ -692,7 +707,15 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
+<<<<<<< HEAD
                                 if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
+=======
+                                // если завершили — сервер теперь сразу создаёт connect/gotv и возвращает lobby
+                                if (data.completed && data.lobby) {
+                                    setLobby(data.lobby);
+                                    setConnectInfo({ connect: data.connect || data.lobby.connect_url, gotv: data.gotv || data.lobby.gotv_url });
+                                }
+>>>>>>> 6fc19e46812bf14e6fd605de9d7a91d9bcd6d70e
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) {
                                     setLobby(r.data.lobby);
@@ -701,8 +724,13 @@ function AdminMatchPage() {
                                     setTeam1Users(r.data.team1_users || []);
                                     setTeam2Users(r.data.team2_users || []);
                                     setUnassignedUsers(r.data.unassigned_users || []);
+                                    if (['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) {
+                                        try {
+                                            const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (conn?.data?.success) setConnectInfo(conn.data);
+                                        } catch (_) {}
+                                    }
                                 }
-                                // после завершения пиков ждём явное «СОЗДАЕМ МАТЧ?»
                             }
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}
