@@ -35,6 +35,11 @@ function AdminMatchPage() {
     const [inviteResults, setInviteResults] = useState([]);
     const inviteSearchDebounce = useRef(null);
     const inviteSearchInputRef = useRef(null);
+    const [formatConfirm, setFormatConfirm] = useState({ open: false, target: null });
+    // Per‑player readiness and team countdowns
+    const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
+    const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
+    const countdownRefs = useRef({ 1: null, 2: null });
 
     // Presence helpers
     const lobbyPresenceSet = useMemo(() => {
@@ -53,6 +58,69 @@ function AdminMatchPage() {
         if (isOnline && inLobby) return { cls: 'custom-match-status-inlobby', text: 'В лобби' };
         if (isOnline) return { cls: 'custom-match-status-online', text: 'Онлайн' };
         return { cls: 'custom-match-status-offline', text: 'Оффлайн' };
+    }
+
+    // Initialize readiness for new users
+    useEffect(() => {
+        setPlayerReady(prev => {
+            const next = { ...prev };
+            for (const u of team1Users) if (next[u.id] === undefined) next[u.id] = false;
+            for (const u of team2Users) if (next[u.id] === undefined) next[u.id] = false;
+            return next;
+        });
+    }, [team1Users, team2Users]);
+
+    function isTeamAllReady(teamId) {
+        const list = teamId === 1 ? team1Users : team2Users;
+        if (!list || list.length === 0) return false;
+        return list.every(u => !!playerReady[u.id]);
+    }
+
+    function cancelCountdown(teamId) {
+        if (countdownRefs.current[teamId]) {
+            clearInterval(countdownRefs.current[teamId]);
+            countdownRefs.current[teamId] = null;
+        }
+        setTeamCountdown(prev => ({ ...prev, [teamId]: null }));
+    }
+
+    async function confirmTeamReady(teamId) {
+        try {
+            const token = localStorage.getItem('token');
+            await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: teamId, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (_) {}
+    }
+
+    function startCountdown(teamId) {
+        if (countdownRefs.current[teamId]) return; // already running
+        setTeamCountdown(prev => ({ ...prev, [teamId]: 5 }));
+        countdownRefs.current[teamId] = setInterval(async () => {
+            setTeamCountdown(prev => {
+                const val = (prev[teamId] ?? 0) - 1;
+                return { ...prev, [teamId]: val };
+            });
+            const currentVal = teamCountdown[teamId];
+            const stillAllReady = isTeamAllReady(teamId);
+            if (!stillAllReady) {
+                cancelCountdown(teamId);
+                return;
+            }
+            if ((teamCountdown[teamId] ?? 0) <= 0) {
+                cancelCountdown(teamId);
+                await confirmTeamReady(teamId);
+            }
+        }, 1000);
+    }
+
+    function onTogglePlayerReady(userId, teamId) {
+        setPlayerReady(prev => {
+            const next = { ...prev, [userId]: !prev[userId] };
+            // If any unready during countdown — cancel
+            if (!isTeamAllReady(teamId)) cancelCountdown(teamId);
+            // If now all ready — start countdown
+            setTimeout(() => { if (isTeamAllReady(teamId)) startCountdown(teamId); }, 0);
+            return next;
+        });
     }
 
     useEffect(() => {
@@ -273,6 +341,13 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
+                    // авто‑подхват ссылок подключения, когда матч создан
+                    if ((r.data.lobby?.status === 'match_created' || r.data.lobby?.status === 'ready_to_create') && !connectInfo) {
+                        try {
+                            const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
+                            if (conn?.data?.success) setConnectInfo(conn.data);
+                        } catch (_) {}
+                    }
                 }
             } catch (_) {}
             timer = setTimeout(pull, 1500);
@@ -336,26 +411,29 @@ function AdminMatchPage() {
         <div className="custom-match-page">
             <h2>МАТЧ — тестовое лобби</h2>
             <div className="custom-match-mt-8">
-                <div className="custom-match-row">
-                    <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
-                        const token = localStorage.getItem('token');
-                        await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo1' }, { headers: { Authorization: `Bearer ${token}` } });
-                        const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                    }}>BO1</button>
-                    <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
-                        const token = localStorage.getItem('token');
-                        await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo3' }, { headers: { Authorization: `Bearer ${token}` } });
-                        const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                    }}>BO3</button>
-                    <button className="btn btn-secondary" disabled={!lobbyId} onClick={async () => {
-                        const token = localStorage.getItem('token');
-                        await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: 'bo5' }, { headers: { Authorization: `Bearer ${token}` } });
-                        const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                        if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
-                    }}>BO5</button>
-                    {/* Старт пик/бан (после готовности обеих команд) */}
+                <div className="custom-match-format-tabs">
+                    {['bo1','bo3','bo5'].map(fmt => (
+                        <button
+                            key={fmt}
+                            className={`custom-match-format-tab ${lobby?.match_format === fmt ? 'active' : ''}`}
+                            disabled={!lobbyId}
+                            onClick={async (e) => {
+                                if (!lobbyId) return;
+                                const token = localStorage.getItem('token');
+                                const current = lobby?.match_format;
+                                if (current && current !== fmt) {
+                                    // open confirm modal
+                                    setFormatConfirm({ open: true, target: fmt });
+                                    return;
+                                }
+                                await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: fmt }, { headers: { Authorization: `Bearer ${token}` } });
+                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
+                            }}
+                        >{fmt.toUpperCase()}</button>
+                    ))}
+                </div>
+                <div className="custom-match-format-actions custom-match-mt-8">
                     <button className="btn btn-secondary" disabled={!lobbyId || !(lobby?.status === 'ready')}
                         onClick={async () => {
                             const token = localStorage.getItem('token');
@@ -364,7 +442,7 @@ function AdminMatchPage() {
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) { setLobby(r.data.lobby); setSelections(r.data.selections || []); setAvailableMaps(r.data.available_maps || []); setTeam1Users(r.data.team1_users || []); setTeam2Users(r.data.team2_users || []); }
                             }
-                        }}>Начать ban/pick</button>
+                        }}>Начать BAN/PICK</button>
                 </div>
             </div>
             <div className="custom-match-mt-12" style={{ maxWidth: 640 }}>
@@ -526,26 +604,26 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {/* Панель готовности и вступления админа */}
+            {/* Панель готовности команд */}
             {lobbyId && (
                 <div className="custom-match-mt-16">
-                    <div className="custom-match-row">
-                        <button className="btn btn-secondary" onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            await api.post(`/api/admin/match-lobby/${lobbyId}/join`, { team: 1 }, { headers: { Authorization: `Bearer ${token}` } });
-                        }}>Вступить в Команду 1</button>
-                        <button className="btn btn-secondary" onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            await api.post(`/api/admin/match-lobby/${lobbyId}/join`, { team: 2 }, { headers: { Authorization: `Bearer ${token}` } });
-                        }}>Вступить в Команду 2</button>
-                        <button className="btn btn-secondary" onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                        }}>Команда 1 Готова</button>
-                        <button className="btn btn-secondary" onClick={async () => {
-                            const token = localStorage.getItem('token');
-                            await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                        }}>Команда 2 Готова</button>
+                    <div className="custom-match-row-lg custom-match-teams">
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                        <div>
+                            <button className="btn btn-secondary" onClick={async () => {
+                                const token = localStorage.getItem('token');
+                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                            }}>ready</button>
+                        </div>
+                        )}
+                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                        <div>
+                            <button className="btn btn-secondary" onClick={async () => {
+                                const token = localStorage.getItem('token');
+                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
+                            }}>ready</button>
+                        </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -587,11 +665,23 @@ function AdminMatchPage() {
                 <div className="custom-match-row-lg custom-match-teams">
                     {/* Команда 1 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
-                        <h4>{lobby?.team1_name || 'Команда 1'}</h4>
+                        <h4>
+                            {lobby?.team1_name || 'Команда 1'}
+                            <span className="custom-match-team-ready-status custom-match-ml-8">
+                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (isTeamAllReady(1) ? 'ready' : 'not ready')}
+                            </span>
+                        </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
                         {team1Users.map(u => (
                             <div key={`t1-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                                 <div className="list-row-left">
+                                    <button className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'}`} title={playerReady[u.id] ? 'Готов' : 'Не готов'} onClick={() => onTogglePlayerReady(u.id, 1)}>
+                                        {playerReady[u.id] ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14"><path fill="currentColor" d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14"><path fill="currentColor" d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z"/></svg>
+                                        )}
+                                    </button>
                                     <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
                                     <span className="ml-8 custom-match-ml-8">{u.username}</span>
                                     {(() => { const p = getPresenceStatus(u.id); return (
@@ -620,11 +710,23 @@ function AdminMatchPage() {
                     </div>
                     {/* Команда 2 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
-                        <h4>{lobby?.team2_name || 'Команда 2'}</h4>
+                        <h4>
+                            {lobby?.team2_name || 'Команда 2'}
+                            <span className="custom-match-team-ready-status custom-match-ml-8">
+                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (isTeamAllReady(2) ? 'ready' : 'not ready')}
+                            </span>
+                        </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
                         {team2Users.map(u => (
                             <div key={`t2-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
                                 <div className="list-row-left">
+                                    <button className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'}`} title={playerReady[u.id] ? 'Готов' : 'Не готов'} onClick={() => onTogglePlayerReady(u.id, 2)}>
+                                        {playerReady[u.id] ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14"><path fill="currentColor" d="M530.8 134.1C545.1 144.5 548.3 164.5 537.9 178.8L281.9 530.8C276.4 538.4 267.9 543.1 258.5 543.9C249.1 544.7 240 541.2 233.4 534.6L105.4 406.6C92.9 394.1 92.9 373.8 105.4 361.3C117.9 348.8 138.2 348.8 150.7 361.3L252.2 462.8L486.2 141.1C496.6 126.8 516.6 123.6 530.9 134z"/></svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14"><path fill="currentColor" d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z"/></svg>
+                                        )}
+                                    </button>
                                     <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
                                     <span className="ml-8 custom-match-ml-8">{u.username}</span>
                                     {(() => { const p = getPresenceStatus(u.id); return (
@@ -740,6 +842,41 @@ function AdminMatchPage() {
                                     })}
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Format change confirm modal */}
+            {formatConfirm.open && (
+                <div className="custom-match-invite-overlay" onClick={(e) => {
+                    if (e.target.classList.contains('custom-match-invite-overlay')) setFormatConfirm({ open: false, target: null });
+                }}>
+                    <div className="custom-match-format-confirm" role="dialog" aria-modal="true">
+                        <div className="custom-match-invite-header">
+                            <div className="custom-match-invite-title">Сменить формат?</div>
+                            <button className="custom-match-invite-close" aria-label="Закрыть" onClick={() => setFormatConfirm({ open: false, target: null })}>×</button>
+                        </div>
+                        <div className="custom-match-format-confirm-body">
+                            В случае смены формата матча процедуру BAN/PICK придется начать заново.
+                        </div>
+                        <div className="custom-match-format-confirm-actions">
+                            <button className="btn btn-secondary" onClick={() => setFormatConfirm({ open: false, target: null })}>Отмена</button>
+                            <button className="btn btn-primary custom-match-ml-8" onClick={async () => {
+                                const target = formatConfirm.target;
+                                setFormatConfirm({ open: false, target: null });
+                                if (!target || !lobbyId) return;
+                                const token = localStorage.getItem('token');
+                                await api.post(`/api/admin/match-lobby/${lobbyId}/format`, { format: target }, { headers: { Authorization: `Bearer ${token}` } });
+                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                if (r?.data?.success) {
+                                    setLobby(r.data.lobby);
+                                    setSelections(r.data.selections || []);
+                                    setAvailableMaps(r.data.available_maps || []);
+                                    setTeam1Users(r.data.team1_users || []);
+                                    setTeam2Users(r.data.team2_users || []);
+                                }
+                            }}>Подтвердить</button>
                         </div>
                     </div>
                 </div>
