@@ -592,9 +592,9 @@ function AdminMatchPage() {
                                 <div className="list-row-left">
                                     <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
                                     <span className="ml-8 custom-match-ml-8">{u.username}</span>
-                                    <span className={`ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot ${onlineUserIds.includes(u.id) ? 'custom-match-status-online' : 'custom-match-status-offline'}`}>
-                                        {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
-                                    </span>
+                                    {(() => { const p = getPresenceStatus(u.id); return (
+                                        <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${p.cls}`} title={p.text}>{p.text}</span>
+                                    ); })()}
                                 </div>
                             </div>
                         ))}
@@ -625,9 +625,9 @@ function AdminMatchPage() {
                                 <div className="list-row-left">
                                     <img src={u.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
                                     <span className="ml-8 custom-match-ml-8">{u.username}</span>
-                                    <span className={`ml-8 custom-match-ml-8 custom-match-muted custom-match-status-dot ${onlineUserIds.includes(u.id) ? 'custom-match-status-online' : 'custom-match-status-offline'}`}>
-                                        {onlineUserIds.includes(u.id) ? 'В лобби' : 'оффлайн'}
-                                    </span>
+                                    {(() => { const p = getPresenceStatus(u.id); return (
+                                        <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${p.cls}`} title={p.text}>{p.text}</span>
+                                    ); })()}
                                 </div>
                             </div>
                         ))}
