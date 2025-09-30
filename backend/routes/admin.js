@@ -1501,7 +1501,16 @@ router.post('/match-lobby/:lobbyId/format', authenticateToken, requireAdmin, asy
     if (!['bo1','bo3','bo5'].includes(format)) return res.status(400).json({ success: false, error: 'Неверный формат' });
     try {
         const r = await pool.query(
-            `UPDATE admin_match_lobbies SET match_format = $1, status = 'waiting', updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+            `UPDATE admin_match_lobbies 
+             SET match_format = $1,
+                 status = 'waiting',
+                 team1_ready = FALSE,
+                 team2_ready = FALSE,
+                 first_picker_team = NULL,
+                 current_turn_team = NULL,
+                 updated_at = CURRENT_TIMESTAMP 
+             WHERE id = $2 
+             RETURNING *`,
             [format, lobbyId]
         );
         return res.json({ success: true, lobby: r.rows[0] });

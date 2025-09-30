@@ -473,18 +473,16 @@ function AdminMatchPage() {
                 </div>
                 <div className="custom-match-format-actions custom-match-mt-8">
                     {(() => {
-                        const canStart = !!lobbyId && lobby?.status === 'ready';
+                        const ready1 = lobby?.team1_ready === true;
+                        const ready2 = lobby?.team2_ready === true;
+                        const canStart = !!lobbyId && (lobby?.status === 'ready' || (ready1 && ready2));
+                        const tip = `Готовность команд: ${ready1 ? 'Команда 1 — ready' : 'Команда 1 — not ready'}, ${ready2 ? 'Команда 2 — ready' : 'Команда 2 — not ready'}`;
                         return (
                             <div className="custom-match-tooltip">
                                 <button
                                     className={`btn btn-secondary ${!canStart ? 'btn-disabled' : ''}`}
-                                    aria-disabled={!canStart}
+                                    disabled={!canStart}
                                     onClick={async () => {
-                                        if (!canStart) {
-                                            const tip = document.querySelector('#start-pick-tip');
-                                            if (tip) { tip.classList.add('visible'); setTimeout(() => tip.classList.remove('visible'), 1800); }
-                                            return;
-                                        }
                                         const token = localStorage.getItem('token');
                                         const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
                                         if (data?.success) {
@@ -493,7 +491,9 @@ function AdminMatchPage() {
                                         }
                                     }}
                                 >Начать BAN/PICK</button>
-                                <div id="start-pick-tip" className="custom-match-tooltip-bubble">Не все команды готовы к матчу</div>
+                                {!canStart && (
+                                    <div className="custom-match-tooltip-bubble">{tip}</div>
+                                )}
                             </div>
                         );
                     })()}
@@ -663,7 +663,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team1_name || 'Команда 1'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (lobby?.team1_ready ? 'ready' : 'not ready')}
+                                {teamCountdown[1] != null ? `ready (${teamCountdown[1]})` : (lobby?.team1_ready === true ? 'ready' : 'not ready')}
                             </span>
                         </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
@@ -725,7 +725,7 @@ function AdminMatchPage() {
                         <h4>
                             {lobby?.team2_name || 'Команда 2'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
-                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (lobby?.team2_ready ? 'ready' : 'not ready')}
+                                {teamCountdown[2] != null ? `ready (${teamCountdown[2]})` : (lobby?.team2_ready === true ? 'ready' : 'not ready')}
                             </span>
                         </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
