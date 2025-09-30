@@ -1554,8 +1554,10 @@ router.post('/match-lobby/:lobbyId/ready', authenticateToken, requireAdmin, asyn
     }
 });
 
-// Пик/бан карты
-router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin, async (req, res) => {
+// Пик/бан карты — разрешаем:
+// - админ/создатель лобби
+// - капитан команды, у которой сейчас ход (капитан = первый принявший инвайт в команде)
+router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const { mapName, action } = req.body || {};
@@ -1567,6 +1569,28 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, requireAdmin,
         const lobby = lobRes.rows[0];
         if (!lobby) throw new Error('Лобби не найдено');
         if (lobby.status !== 'picking') throw new Error('Пики/баны ещё не начались');
+
+        // Проверка прав
+        const isAdmin = req.user.role === 'admin' || Number(lobby.created_by) === Number(req.user.id);
+        if (!isAdmin) {
+            // Пользователь должен быть принятым участником команды, у которой сейчас ход
+            const teamTurn = lobby.current_turn_team;
+            if (teamTurn !== 1 && teamTurn !== 2) {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ success: false, error: 'Не ваш ход' });
+            }
+            const acc = await client.query(
+                `SELECT user_id FROM admin_lobby_invitations 
+                 WHERE lobby_id = $1 AND accepted = TRUE AND team = $2
+                 ORDER BY created_at ASC LIMIT 1`,
+                [lobbyId, teamTurn]
+            );
+            const captainUserId = acc.rows[0]?.user_id ? Number(acc.rows[0].user_id) : null;
+            if (captainUserId !== Number(req.user.id)) {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ success: false, error: 'Ход может делать только капитан команды' });
+            }
+        }
         // Проверка, не выбрана ли карта
         const exists = await client.query('SELECT 1 FROM admin_map_selections WHERE lobby_id = $1 AND map_name = $2', [lobbyId, mapName]);
         if (exists.rows[0]) throw new Error('Карта уже выбрана или забанена');
