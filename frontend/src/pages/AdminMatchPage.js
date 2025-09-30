@@ -40,6 +40,7 @@ function AdminMatchPage() {
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
     const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
     const countdownRefs = useRef({ 1: null, 2: null });
+    const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
     // Presence helpers
@@ -397,19 +398,31 @@ function AdminMatchPage() {
                     setInvitedPendingUsers(r.data.invited_pending_users || []);
                     setInvitedDeclinedUsers(r.data.invited_declined_users || []);
                     setOnlineUserIds(r.data.online_user_ids || []);
-                    // синхронизация готовности игроков для live‑обновлений
+
+                    // стабилизация готовности: липкая синхронизация + гистерезис 2 цикла на снятие готовности
                     const t1 = (r.data.team1_users || []).map(u => u.id);
                     const t2 = (r.data.team2_users || []).map(u => u.id);
                     const readySet = new Set(Array.isArray(r.data.ready_user_ids) ? r.data.ready_user_ids : []);
-                    setPlayerReady(prev => {
-                        const next = { ...prev };
-                        for (const id of t1) next[id] = readySet.has(id);
-                        for (const id of t2) next[id] = readySet.has(id);
-                        return next;
-                    });
-                    // локальная логика таймеров готовности команд
-                    const allReady1 = t1.length > 0 && t1.every(id => readySet.has(id));
-                    const allReady2 = t2.length > 0 && t2.every(id => readySet.has(id));
+
+                    let nextReadyMap = { ...playerReady };
+                    const counters = missingReadyCountersRef.current;
+                    for (const id of [...t1, ...t2]) {
+                        if (readySet.has(id)) {
+                            nextReadyMap[id] = true;
+                            counters[id] = 0;
+                        } else {
+                            counters[id] = (counters[id] || 0) + 1;
+                            if (counters[id] >= 2) {
+                                nextReadyMap[id] = false;
+                            }
+                        }
+                    }
+                    setPlayerReady(nextReadyMap);
+
+                    // расчет «все готовы» по стабилизированным данным
+                    const allReady1 = t1.length > 0 && t1.every(id => !!nextReadyMap[id]);
+                    const allReady2 = t2.length > 0 && t2.every(id => !!nextReadyMap[id]);
+
                     // если команда уже отмечена ready на сервере — таймер не нужен
                     if (r.data.lobby?.team1_ready === true) cancelCountdown(1);
                     else if (allReady1) { if (teamCountdown[1] == null) startCountdown(1); }
@@ -418,6 +431,7 @@ function AdminMatchPage() {
                     if (r.data.lobby?.team2_ready === true) cancelCountdown(2);
                     else if (allReady2) { if (teamCountdown[2] == null) startCountdown(2); }
                     else cancelCountdown(2);
+
                     // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
                     if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
                         try {
@@ -431,7 +445,7 @@ function AdminMatchPage() {
         };
         pull();
         return () => { if (timer) clearTimeout(timer); };
-    }, [user, lobbyId]);
+    }, [user, lobbyId, playerReady, teamCountdown]);
 
     function removeFromSelection(id) {}
 
