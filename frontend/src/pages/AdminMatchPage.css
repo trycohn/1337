@@ -38,3 +38,9 @@
 .row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
 .list-row:hover .row-actions { opacity: 1; }
 
+/* Placeholder slots in teams */
+.placeholder-slot { display: flex; align-items: center; justify-content: center; height: 40px; border: 1px dashed #333; border-radius: 6px; margin-top: 8px; cursor: pointer; }
+.placeholder-slot:hover { background: #111; }
+.placeholder-inner { display: flex; align-items: center; }
+.placeholder-inner .plus { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background:#ff0000; color:#000; font-weight:700; text-align:center; line-height:18px; }
+

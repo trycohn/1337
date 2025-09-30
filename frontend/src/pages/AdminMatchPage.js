@@ -90,7 +90,7 @@ function AdminMatchPage() {
         try {
             if (!lobbyId) await ensureAdminLobby();
             const token = localStorage.getItem('token');
-            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: u.id, team: null }, { headers: { Authorization: `Bearer ${token}` } });
             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (r?.data?.success) {
                 setLobby(r.data.lobby);
