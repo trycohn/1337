@@ -147,9 +147,26 @@ function AdminMatchPage() {
         // отправим heartbeat в лобби (для live) — без изменения прав на backend
         try {
             const token = localStorage.getItem('token');
-            await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { user_id: userId, ready: playerReady[userId] ? false : true }, { headers: { Authorization: `Bearer ${token}` } });
+            const nextReady = !(playerReady[userId]);
+            await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: nextReady }, { headers: { Authorization: `Bearer ${token}` } });
         } catch (_) {}
     }
+
+    // Heartbeat присутствия: обновляем last_seen и текущую готовность пользователя раз в 10с
+    useEffect(() => {
+        if (!user || !lobbyId) return;
+        const token = localStorage.getItem('token');
+        let timer = null;
+        const push = async () => {
+            try {
+                await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: !!playerReady[user?.id] }, { headers: { Authorization: `Bearer ${token}` } });
+            } catch (_) {}
+        };
+        // мгновенный пульс при монтировании/смене статуса
+        push();
+        timer = setInterval(push, 10000);
+        return () => { if (timer) clearInterval(timer); };
+    }, [user, lobbyId, playerReady, user?.id]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -393,8 +410,14 @@ function AdminMatchPage() {
                     // локальная логика таймеров готовности команд
                     const allReady1 = t1.length > 0 && t1.every(id => readySet.has(id));
                     const allReady2 = t2.length > 0 && t2.every(id => readySet.has(id));
-                    if (!allReady1 || r.data.lobby?.team1_ready === true) cancelCountdown(1); else if (teamCountdown[1] == null) startCountdown(1);
-                    if (!allReady2 || r.data.lobby?.team2_ready === true) cancelCountdown(2); else if (teamCountdown[2] == null) startCountdown(2);
+                    // если команда уже отмечена ready на сервере — таймер не нужен
+                    if (r.data.lobby?.team1_ready === true) cancelCountdown(1);
+                    else if (allReady1) { if (teamCountdown[1] == null) startCountdown(1); }
+                    else cancelCountdown(1);
+
+                    if (r.data.lobby?.team2_ready === true) cancelCountdown(2);
+                    else if (allReady2) { if (teamCountdown[2] == null) startCountdown(2); }
+                    else cancelCountdown(2);
                     // авто‑подхват ссылок подключения, когда матч готов к подключению/созданию
                     if ((['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) && !connectInfo) {
                         try {
