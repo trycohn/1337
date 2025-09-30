@@ -1,18 +1,19 @@
-.admin-match-page { padding: 16px; }
-.mt-8 { margin-top: 8px; }
-.mt-12 { margin-top: 12px; }
-.mt-16 { margin-top: 16px; }
-.ml-8 { margin-left: 8px; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; }
-.row-lg { display: flex; gap: 24px; flex-wrap: wrap; }
-.muted { opacity: .7; }
-.danger-text { color: #ff6666; }
-.code-inline { margin-left: 8px; }
-.avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+/* ===== Custom Match Page (prefixed) ===== */
+.custom-match-page { padding: 16px; }
+.custom-match-mt-8 { margin-top: 8px; }
+.custom-match-mt-12 { margin-top: 12px; }
+.custom-match-mt-16 { margin-top: 16px; }
+.custom-match-ml-8 { margin-left: 8px; }
+.custom-match-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.custom-match-row-lg { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.custom-match-muted { opacity: .7; }
+.custom-match-danger-text { color: #ff6666; }
+.custom-match-code-inline { margin-left: 8px; }
+.custom-match-avatar-sm { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
 
 /* Статусы участников */
-.status-dot { position: relative; padding-left: 18px; }
-.status-dot::before {
+.custom-match-status-dot { position: relative; padding-left: 18px; }
+.custom-match-status-dot::before {
     content: '';
     position: absolute;
     left: 0;
@@ -24,23 +25,27 @@
     background-color: transparent;
     border: 2px solid #666;
 }
-.status-online::before { background-color: #00c853; border-color: #00c853; }
-.status-offline::before { background-color: transparent; border-color: #666; }
-.status-pending::before { background-color: #999; border-color: #999; }
-.status-declined::before { background-color: #ff3b30; border-color: #ff3b30; }
+.custom-match-status-online::before { background-color: #00c853; border-color: #00c853; }
+.custom-match-status-offline::before { background-color: transparent; border-color: #666; }
+.custom-match-status-pending::before { background-color: #999; border-color: #999; }
+.custom-match-status-declined::before { background-color: #ff3b30; border-color: #ff3b30; }
 
 /* DnD визуал */
-.dropzone { border: 1px dashed #333; padding: 8px; border-radius: 6px; }
-.list-row[draggable="true"] { cursor: grab; }
-.list-row[draggable="true"]:active { cursor: grabbing; }
+.custom-match-dropzone { border: 1px dashed #333; padding: 8px; border-radius: 6px; }
+.custom-match-list-row[draggable="true"] { cursor: grab; }
+.custom-match-list-row[draggable="true"]:active { cursor: grabbing; }
 
 /* Hover actions for pending invites */
-.row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
-.list-row:hover .row-actions { opacity: 1; }
+.custom-match-row-actions { opacity: 0; transition: opacity .15s ease-in-out; }
+.custom-match-list-row:hover .custom-match-row-actions { opacity: 1; }
 
 /* Placeholder slots in teams */
-.placeholder-slot { display: flex; align-items: center; justify-content: center; height: 40px; border: 1px dashed #333; border-radius: 6px; margin-top: 8px; cursor: pointer; }
-.placeholder-slot:hover { background: #111; }
-.placeholder-inner { display: flex; align-items: center; }
-.placeholder-inner .plus { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background:#ff0000; color:#000; font-weight:700; text-align:center; line-height:18px; }
+.custom-match-placeholder-slot { display: flex; align-items: center; justify-content: center; height: 40px; border: 1px dashed #333; border-radius: 6px; margin-top: 8px; cursor: pointer; }
+.custom-match-placeholder-slot:hover { background: #111; }
+.custom-match-placeholder-inner { display: flex; align-items: center; }
+.custom-match-placeholder-inner .custom-match-plus { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background:#ff0000; color:#000; font-weight:700; text-align:center; line-height:18px; }
+
+/* Teams container */
+.custom-match-teams { width: 100%; }
+.custom-match-team-column h4 { margin-top: 0; margin-bottom: 8px; }
 
