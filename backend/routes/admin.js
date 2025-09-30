@@ -1,3 +1,14 @@
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const multer = require('multer');
+const sharp = require('sharp');
+const fs = require('fs');
+const path = require('path');
 // Обновление готовности/присутствия игрока (heartbeat + локальный ready)
 router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
@@ -21,24 +32,6 @@ router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res
         return res.status(500).json({ success: false, error: 'presence update failed' });
     }
 });
-const express = require('express');
-const router = express.Router();
-const pool = require('../db');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const nodemailer = require('nodemailer');
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
-const multer = require('multer');
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
-// Middleware для проверки роли администратора (объявляем до использования)
-function requireAdmin(req, res, next) {
-    if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора' });
-    }
-    next();
-}
 // =============================
 //  Глобальный дефолтный маппул
 // =============================
