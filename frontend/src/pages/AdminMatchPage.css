@@ -287,3 +287,4 @@
 .custom-match-ready-toggle.on{ color:#00c853; border-color:#00c853; }
 .custom-match-ready-toggle.off{ color:#777; }
 .custom-match-ready-toggle.disabled{ opacity:.4; cursor:not-allowed; }
+.custom-match-ready-toggle svg{ display:block; width:14px; height:14px; fill: currentColor; }
