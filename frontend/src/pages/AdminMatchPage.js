@@ -40,6 +40,7 @@ function AdminMatchPage() {
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
     const [teamCountdown, setTeamCountdown] = useState({ 1: null, 2: null });
     const countdownRefs = useRef({ 1: null, 2: null });
+    const playerReadyRef = useRef({});
     const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
@@ -93,6 +94,9 @@ function AdminMatchPage() {
             localStorage.setItem(readyStorageKey, JSON.stringify(playerReady));
         } catch (_) {}
     }, [playerReady, readyStorageKey]);
+
+    // держим актуальное значение готовности в ref для фоновых интервалов
+    useEffect(() => { playerReadyRef.current = playerReady; }, [playerReady]);
 
     function isTeamAllReady(teamId) {
         const list = teamId === 1 ? team1Users : team2Users;
@@ -160,14 +164,15 @@ function AdminMatchPage() {
         let timer = null;
         const push = async () => {
             try {
-                await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: !!playerReady[user?.id] }, { headers: { Authorization: `Bearer ${token}` } });
+                const currentReady = !!playerReadyRef.current[user?.id];
+                await api.post(`/api/admin/match-lobby/${lobbyId}/presence`, { ready: currentReady }, { headers: { Authorization: `Bearer ${token}` } });
             } catch (_) {}
         };
-        // мгновенный пульс при монтировании/смене статуса
+        // мгновенный пульс при монтировании
         push();
         timer = setInterval(push, 10000);
         return () => { if (timer) clearInterval(timer); };
-    }, [user, lobbyId, playerReady, user?.id]);
+    }, [user?.id, lobbyId]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -445,7 +450,7 @@ function AdminMatchPage() {
         };
         pull();
         return () => { if (timer) clearTimeout(timer); };
-    }, [user, lobbyId, playerReady, teamCountdown]);
+    }, [user, lobbyId]);
 
     function removeFromSelection(id) {}
 
