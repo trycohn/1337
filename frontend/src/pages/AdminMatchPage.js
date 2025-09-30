@@ -567,29 +567,7 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {/* Панель готовности команд */}
-            {lobbyId && (
-                <div className="custom-match-mt-16">
-                    <div className="custom-match-row-lg custom-match-teams">
-                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
-                        <div>
-                            <button className="btn btn-secondary" onClick={async () => {
-                                const token = localStorage.getItem('token');
-                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 1, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                            }}>ready</button>
-                        </div>
-                        )}
-                        {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
-                        <div>
-                            <button className="btn btn-secondary" onClick={async () => {
-                                const token = localStorage.getItem('token');
-                                await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: 2, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                            }}>ready</button>
-                        </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            
 
             {/* Доска выбора карт */}
             {lobby && lobby.match_format && availableMaps?.length > 0 && (
