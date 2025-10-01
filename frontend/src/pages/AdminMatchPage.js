@@ -707,6 +707,10 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
+                                if (data.completed && data.match_id) {
+                                    // Мгновенный переход на страницу кастомного матча
+                                    try { window.location.href = `/matches/custom/${data.match_id}`; } catch (_) {}
+                                }
                                 if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                                 if (r?.data?.success) {
