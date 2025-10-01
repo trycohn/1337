@@ -102,3 +102,26 @@ router.delete('/:id', authenticateToken, restrictTo(['organizer', 'admin']), asy
 });
 
 module.exports = router;
+ 
+// Детали матча (турнирного или кастомного) + шаги пик/бан (если есть)
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    const matchId = Number(id);
+    if (!Number.isInteger(matchId)) return res.status(400).json({ error: 'Bad id' });
+    const client = await pool.connect();
+    try {
+        const m = await client.query('SELECT * FROM matches WHERE id = $1', [matchId]);
+        if (m.rows.length === 0) return res.status(404).json({ error: 'Матч не найден' });
+        const match = m.rows[0];
+        const steps = await client.query(
+            'SELECT action_order, action_type, team_id, map_name, created_at FROM match_veto_steps WHERE match_id = $1 ORDER BY action_order ASC',
+            [matchId]
+        );
+        return res.json({ success: true, match, veto_steps: steps.rows });
+    } catch (e) {
+        console.error('get match details error', e);
+        return res.status(500).json({ error: 'Failed to load match' });
+    } finally {
+        client.release();
+    }
+});
