@@ -3969,12 +3969,12 @@ function Profile() {
                                             const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : '';
                                             const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
                                             return (
-                                                <a key={`${m.source_type}-${m.id}`} className="list-row" href={href}>
-                                                    <div className="list-row-left">
-                                                        <span style={{minWidth: 120}}>{title}</span>
-                                                        <span style={{marginLeft: 8}}>{game}</span>
+                                                <a key={`${m.source_type}-${m.id}`} className="match-history-row" href={href}>
+                                                    <div className="match-history-left">
+                                                        <span className="match-history-title" style={{minWidth: 120}}>{title}</span>
+                                                        <span className="match-history-game" title={game}>{renderGameIcon(game)}</span>
                                                     </div>
-                                                    <div className="list-row-right" style={{gap: 12}}>
+                                                    <div className="match-history-right" style={{gap: 12}}>
                                                         <span>{result} {score1}:{score2}</span>
                                                         <span style={{color:'#999'}}>{dateStr}</span>
                                                     </div>

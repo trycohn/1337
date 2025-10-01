@@ -697,6 +697,55 @@
     margin-top: 10px;
 }
 
+/* =========================
+   MATCH HISTORY (PROFILE TAB)
+   ========================= */
+.match-history-list {
+    display: grid;
+    gap: 8px;
+}
+
+.match-history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.match-history-row:hover {
+    border-color: var(--btn-order-color);
+    box-shadow: 0 0 10px rgba(255,0,0,0.12);
+}
+
+.match-history-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.match-history-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.match-history-game {
+    display: flex;
+    align-items: center;
+}
+
+.match-history-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ccc;
+    font-size: 13px;
+}
+
 .view-all-btn-red {
     background: var(--btn-order-color);
     color: #fff;
