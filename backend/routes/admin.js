@@ -1131,6 +1131,15 @@ async function ensureAdminLobbyTables() {
             action_order INTEGER NOT NULL,
             UNIQUE(lobby_id, map_name)
         );
+        
+        -- Администраторы лобби (создатель + дополнительные админы в будущем)
+        CREATE TABLE IF NOT EXISTS admin_lobby_admins (
+            lobby_id INTEGER NOT NULL REFERENCES admin_match_lobbies(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            role VARCHAR(16) DEFAULT 'admin',
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (lobby_id, user_id)
+        );
     `);
 }
 
@@ -1170,6 +1179,14 @@ router.post('/match-lobby', authenticateToken, requireAdmin, async (req, res) =>
                 [req.user.id]
             );
             lobby = ins.rows[0];
+            // Автоматически назначаем создателя админом лобби
+            try {
+                await client.query(
+                    `INSERT INTO admin_lobby_admins(lobby_id, user_id, role)
+                     VALUES ($1, $2, 'owner') ON CONFLICT (lobby_id, user_id) DO NOTHING`,
+                    [lobby.id, req.user.id]
+                );
+            } catch (_) {}
         }
         // Доступные карты из default_map_pool
         const mapsRes = await client.query(
@@ -1206,14 +1223,15 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         if (!lobbyRes.rows[0]) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
         const lobby = lobbyRes.rows[0];
 
-        // 🛡️ Доступ: админ ИЛИ создатель ИЛИ приглашённый пользователь
+        // 🛡️ Доступ: админ ИЛИ создатель ИЛИ приглашённый пользователь ИЛИ админ лобби
         if (req.user.role !== 'admin') {
             const invited = await client.query(
                 `SELECT 1 FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2 LIMIT 1`,
                 [lobbyId, req.user.id]
             );
             const isCreator = Number(lobby.created_by) === Number(req.user.id);
-            if (!(invited.rows[0] || isCreator)) {
+            const adminLobby = await client.query(`SELECT 1 FROM admin_lobby_admins WHERE lobby_id = $1 AND user_id = $2`, [lobbyId, req.user.id]);
+            if (!(invited.rows[0] || isCreator || adminLobby.rows[0])) {
                 console.warn('[ADMIN_LOBBY][ACCESS_DENIED]', {
                     lobbyId: Number(lobbyId),
                     requesterId: Number(req.user.id),
@@ -1331,12 +1349,19 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
 });
 
 // Пригласить пользователя в команду
-router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/match-lobby/:lobbyId/invite', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const { user_id, team = null, accept = false } = req.body || {};
     if (!user_id) return res.status(400).json({ success: false, error: 'user_id обязателен' });
     try {
+        // Разрешаем: админ или создатель лобби
+        const rOwner = await pool.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        if (rOwner.rows.length === 0) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const isCreator = Number(rOwner.rows[0].created_by) === Number(req.user.id);
+        if (!(req.user.role === 'admin' || isCreator)) {
+            return res.status(403).json({ success: false, error: 'Нет прав на приглашение' });
+        }
         console.log('[ADMIN_LOBBY][INVITE] request', {
             lobbyId: Number(lobbyId),
             inviterId: req.user?.id,
@@ -1345,10 +1370,10 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, requireAdmin, asy
             accept
         });
         await pool.query(
-            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted, declined, updated_at)
+             VALUES ($1, $2, $3, $4, FALSE, NOW())
              ON CONFLICT (lobby_id, user_id)
-             DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted`,
+             DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted, declined = FALSE, updated_at = NOW()`,
             [lobbyId, user_id, (team === null ? null : Number(team)), Boolean(accept)]
         );
         // WS-уведомление приглашенному
