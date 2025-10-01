@@ -1706,8 +1706,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 maplist,
                 skip_veto: true,
                 side_type: 'standard',
-                team1: { name: lobbyFresh?.team1_name || 'TEAM_A', players: team1PlayersSteam },
-                team2: { name: lobbyFresh?.team2_name || 'TEAM_B', players: team2PlayersSteam }
+                team1: { name: 'TEAM_A', players: team1PlayersSteam },
+                team2: { name: 'TEAM_B', players: team2PlayersSteam }
             };
 
             let configJsonSaved = false;

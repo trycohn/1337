@@ -570,7 +570,7 @@ function AdminMatchPage() {
                         const ready1 = lobby?.team1_ready === true;
                         const ready2 = lobby?.team2_ready === true;
                         const canStart = !!lobbyId && (lobby?.status === 'ready' || (ready1 && ready2));
-                        const tip = `Готовность команд: ${ready1 ? 'Команда 1 — ready' : 'Команда 1 — not ready'}, ${ready2 ? 'Команда 2 — ready' : 'Команда 2 — not ready'}`;
+                        const tip = `Готовность команд: ${ready1 ? 'Team_A — ready' : 'Team_A — not ready'}, ${ready2 ? 'Team_B — ready' : 'Team_B — not ready'}`;
                         return (
                             <div className="custom-match-tooltip">
                                 <button
@@ -728,7 +728,7 @@ function AdminMatchPage() {
                     <h3>Завершить матч</h3>
                     <div className="list-row">
                         <div className="list-row-left" style={{gap:12, alignItems:'center'}}>
-                            <span>{lobby.team1_name || 'Команда 1'}</span>
+                            <span>{lobby.team1_name || 'Team_A'}</span>
                             <input
                                 type="number"
                                 min="0"
@@ -750,8 +750,8 @@ function AdminMatchPage() {
                             />
                             <select value={finalWinnerTeam} onChange={(e)=>setFinalWinnerTeam(e.target.value)} className="input" style={{width:200}}>
                                 <option value="">Победитель…</option>
-                                <option value="1">{lobby.team1_name || 'Команда 1'}</option>
-                                <option value="2">{lobby.team2_name || 'Команда 2'}</option>
+                                <option value="1">{lobby.team1_name || 'Team_A'}</option>
+                                <option value="2">{lobby.team2_name || 'Team_B'}</option>
                             </select>
                         </div>
                         <div className="list-row-right">
@@ -826,7 +826,7 @@ function AdminMatchPage() {
                                 }
                             }
                         }}
-                        teamNames={{ 1: lobby.team1_name || 'Команда 1', 2: lobby.team2_name || 'Команда 2' }}
+                        teamNames={{ 1: lobby.team1_name || 'Team_A', 2: lobby.team2_name || 'Team_B' }}
                     />
                 </div>
             )}
@@ -853,7 +853,7 @@ function AdminMatchPage() {
                     {/* Команда 1 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
                         <h4>
-                            {lobby?.team1_name || 'Команда 1'}
+                            {lobby?.team1_name || 'Team_A'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
                                 {lobby?.team1_ready === true ? 'ready' : 'not ready'}
                             </span>
@@ -915,7 +915,7 @@ function AdminMatchPage() {
                     {/* Команда 2 */}
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
                         <h4>
-                            {lobby?.team2_name || 'Команда 2'}
+                            {lobby?.team2_name || 'Team_B'}
                             <span className="custom-match-team-ready-status custom-match-ml-8">
                                 {lobby?.team2_ready === true ? 'ready' : 'not ready'}
                             </span>
