@@ -291,6 +291,18 @@ function AdminMatchPage() {
         setInviteResults([]);
     }, []);
 
+    useEffect(() => {
+        if (invitePanelOpen) {
+            console.log('[INVITE_PANEL] state', {
+                lobbyId,
+                canInvite,
+                invitePanelTeam,
+                userId: user?.id,
+                createdBy: lobby?.created_by
+            });
+        }
+    }, [invitePanelOpen, canInvite, invitePanelTeam, lobby, user, lobbyId]);
+
     function onInviteSearchChange(e) {
         const value = e.target.value;
         setInviteSearch(value);
