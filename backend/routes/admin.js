@@ -1757,10 +1757,19 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 .map((r, idx) => ({ order: r.action_order, map: r.map_name, index: idx + 1 }));
 
             const matchIns = await client.query(
-                `INSERT INTO matches (source_type, custom_lobby_id, game, tournament_id, team1_id, team2_id, team1_name, team2_name, status, created_at,
-                                      connect_url, gotv_url, maps_data, team1_players, team2_players)
-                 VALUES ('custom', $1, $2, NULL, NULL, NULL, $3, $4, 'scheduled', NOW(), $5, $6, $7::jsonb, $8::jsonb, $9::jsonb)
-                 RETURNING id`,
+                `INSERT INTO matches (
+                    source_type, custom_lobby_id, game, tournament_id,
+                    team1_id, team2_id, team1_name, team2_name,
+                    round, match_number,
+                    status, created_at,
+                    connect_url, gotv_url, maps_data, team1_players, team2_players
+                 ) VALUES (
+                    'custom', $1, $2, NULL,
+                    NULL, NULL, $3, $4,
+                    1, 1,
+                    'scheduled', NOW(),
+                    $5, $6, $7::jsonb, $8::jsonb, $9::jsonb
+                 ) RETURNING id`,
                 [lobbyId, 'CS2', lobbyFresh?.team1_name || 'TEAM_A', lobbyFresh?.team2_name || 'TEAM_B', connect, gotv, JSON.stringify(mapsData), JSON.stringify(team1Players), JSON.stringify(team2Players)]
             );
             const newMatchId = matchIns.rows[0].id;
