@@ -1,3 +1,73 @@
+// История матчей пользователя (объединённая): турнирные + кастомные
+router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
+    const { userId } = req.params;
+    const uid = Number(userId);
+    if (!Number.isInteger(uid)) return res.status(400).json({ success: false, error: 'Bad userId' });
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(5, Number(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+    const client = await pool.connect();
+    try {
+        // Участие пользователя: либо как team member (по JSONB players), либо по результатам сохранения
+        // Для производительности сначала возьмём custom (по JSONB user_id), затем tournament по связям (упрощённо по командам пока опускаем)
+        const sql = `
+            WITH custom AS (
+                SELECT m.id, m.source_type, m.custom_lobby_id, m.game,
+                       m.team1_name, m.team2_name, m.team1_players, m.team2_players,
+                       COALESCE(m.score1, 0) AS score1, COALESCE(m.score2, 0) AS score2,
+                       m.connect_url, m.gotv_url,
+                       m.id AS sort_id,
+                       NULL::INTEGER AS tournament_id,
+                       'Custom match' AS format_label
+                FROM matches m
+                WHERE m.source_type = 'custom'
+                  AND (
+                        EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(m.team1_players) AS p
+                            WHERE (p->>'user_id')::int = $1
+                        ) OR EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(m.team2_players) AS p
+                            WHERE (p->>'user_id')::int = $1
+                        )
+                  )
+            ), tour AS (
+                SELECT m.id, m.source_type, m.custom_lobby_id, m.game,
+                       t.name AS team1_name, t2.name AS team2_name,
+                       NULL::jsonb AS team1_players, NULL::jsonb AS team2_players,
+                       COALESCE(m.score1, 0) AS score1, COALESCE(m.score2, 0) AS score2,
+                       m.connect_url, m.gotv_url,
+                       m.id AS sort_id,
+                       m.tournament_id,
+                       'Tournament' AS format_label
+                FROM matches m
+                LEFT JOIN tournament_teams t ON t.id = m.team1_id
+                LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+                WHERE m.source_type = 'tournament'
+                  AND (
+                       -- упрощённо: попадание по участию в команде (если есть отдельная таблица членов, можно джоинить)
+                       m.team1_id IN (
+                            SELECT team_id FROM tournament_team_members WHERE user_id = $1
+                       ) OR m.team2_id IN (
+                            SELECT team_id FROM tournament_team_members WHERE user_id = $1
+                       )
+                  )
+            )
+            SELECT * FROM (
+                SELECT * FROM custom
+                UNION ALL
+                SELECT * FROM tour
+            ) u
+            ORDER BY sort_id DESC
+            LIMIT $2 OFFSET $3`;
+        const r = await client.query(sql, [uid, limit, offset]);
+        return res.json({ success: true, items: r.rows, page, limit });
+    } catch (e) {
+        console.error('user matches error', e);
+        return res.status(500).json({ success: false, error: 'Failed to load user matches' });
+    } finally {
+        client.release();
+    }
+});
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
