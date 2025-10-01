@@ -1277,9 +1277,18 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         const team2_users = invRes.rows
             .filter(r => r.team === 2 && r.accepted)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
-        const unassigned_users = invRes.rows
-            .filter(r => r.accepted === true && r.team === null && r.declined === false)
+        let unassigned_users = invRes.rows
+            .filter(r => r.team === null && r.declined === false && r.accepted === true)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        // Гарантируем отображение создателя лобби среди "не в команде", если он не в командах
+        if (!team1_users.some(u => Number(u.id) === Number(lobby.created_by)) && !team2_users.some(u => Number(u.id) === Number(lobby.created_by))) {
+            const ownerRow = invRes.rows.find(r => Number(r.user_id) === Number(lobby.created_by));
+            if (ownerRow) {
+                if (!unassigned_users.some(u => Number(u.id) === Number(ownerRow.user_id))) {
+                    unassigned_users.unshift({ id: ownerRow.user_id, username: ownerRow.username, avatar_url: ownerRow.avatar_url });
+                }
+            }
+        }
         const invited_pending_users = invRes.rows
             .filter(r => r.accepted === false && r.declined === false)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));

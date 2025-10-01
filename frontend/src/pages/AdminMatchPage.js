@@ -169,7 +169,13 @@ function AdminMatchPage() {
             .catch(() => {});
     }, []);
 
-    const canInvite = useMemo(() => isAdmin, [isAdmin]);
+    // Приглашать может админ или создатель лобби
+    const canInvite = useMemo(() => {
+        if (!user) return false;
+        if (isAdmin) return true;
+        if (lobby && lobby.created_by) return Number(lobby.created_by) === Number(user.id);
+        return false;
+    }, [isAdmin, lobby, user]);
 
     // Создать/получить админ-лобби
     const ensureAdminLobby = useCallback(async () => {
@@ -980,8 +986,8 @@ function AdminMatchPage() {
                                                 <button
                                                     className="custom-match-plus-btn"
                                                     title="Пригласить"
-                                                    disabled={!lobbyId}
-                                                    onClick={() => inviteUserToTeam(fr.id, invitePanelTeam)}
+                                                    disabled={!lobbyId || !canInvite || !invitePanelTeam}
+                                                    onClick={() => canInvite && invitePanelTeam && inviteUserToTeam(fr.id, invitePanelTeam)}
                                                 >+</button>
                                                 <img src={fr.avatar_url || '/images/avatars/default.svg'} alt="avatar" className="avatar-sm custom-match-avatar-sm" />
                                                 <span className="ml-8 custom-match-ml-8">{fr.username}</span>
@@ -1018,7 +1024,7 @@ function AdminMatchPage() {
                                                     <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${presence.cls}`} title={presence.text}></span>
                                                 </div>
                                                 <div className="list-row-right">
-                                                    <button className="btn btn-secondary" disabled={!lobbyId} onClick={() => inviteUserToTeam(u.id, invitePanelTeam)}>Пригласить</button>
+                                                    <button className="btn btn-secondary" disabled={!lobbyId || !canInvite || !invitePanelTeam} onClick={() => canInvite && invitePanelTeam && inviteUserToTeam(u.id, invitePanelTeam)}>Пригласить</button>
                                                     <a className="btn btn-secondary custom-match-ml-8" href={`/user/${u.id}`} target="_blank" rel="noreferrer">Профиль</a>
                                                 </div>
                                             </div>
