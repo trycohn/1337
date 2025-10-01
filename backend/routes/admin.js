@@ -1300,7 +1300,7 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
             .filter(r => r.team === 2 && r.accepted)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
         let unassigned_users = invRes.rows
-            .filter(r => r.team === null && r.declined === false && r.accepted === true)
+            .filter(r => r.team === null && r.declined === false && (r.accepted === true || Number(r.user_id) === Number(lobby.created_by)))
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
         // Гарантируем отображение создателя лобби среди "не в команде", если он не в командах
         if (!team1_users.some(u => Number(u.id) === Number(lobby.created_by)) && !team2_users.some(u => Number(u.id) === Number(lobby.created_by))) {

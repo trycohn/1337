@@ -173,8 +173,11 @@ function AdminMatchPage() {
     const canInvite = useMemo(() => {
         if (!user) return false;
         if (isAdmin) return true;
-        if (lobby && lobby.created_by) return Number(lobby.created_by) === Number(user.id);
-        return false;
+        // создатель лобби всегда может приглашать
+        if (lobby && lobby.created_by && Number(lobby.created_by) === Number(user.id)) return true;
+        // админ лобби (owner/admin) тоже может приглашать
+        // сервер уже проверяет права, здесь просто не блокируем UI
+        return true;
     }, [isAdmin, lobby, user]);
 
     // Создать/получить админ-лобби
