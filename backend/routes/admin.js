@@ -1760,13 +1760,13 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 `INSERT INTO matches (
                     source_type, custom_lobby_id, game, tournament_id,
                     team1_id, team2_id, team1_name, team2_name,
-                    round, match_number,
+                    round, match_number, tournament_match_number,
                     status, created_at,
                     connect_url, gotv_url, maps_data, team1_players, team2_players
                  ) VALUES (
                     'custom', $1, $2, NULL,
                     NULL, NULL, $3, $4,
-                    1, 1,
+                    1, 1, 1,
                     'scheduled', NOW(),
                     $5, $6, $7::jsonb, $8::jsonb, $9::jsonb
                  ) RETURNING id`,
