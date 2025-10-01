@@ -13,6 +13,9 @@ function AdminMatchPage() {
     const [selected, setSelected] = useState([]);
     const [connectInfo, setConnectInfo] = useState(null);
     const [createdMatchId, setCreatedMatchId] = useState(null);
+    const [finalScore1, setFinalScore1] = useState('');
+    const [finalScore2, setFinalScore2] = useState('');
+    const [finalWinnerTeam, setFinalWinnerTeam] = useState('');
     const [configJsonUrl, setConfigJsonUrl] = useState('');
     const [lobbyId, setLobbyId] = useState(null);
     const [lobby, setLobby] = useState(null);
@@ -681,6 +684,60 @@ function AdminMatchPage() {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Завершение матча (только админ/создатель), когда матч создан */}
+            {lobby && lobby.status === 'match_created' && (isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
+                <div className="custom-match-mt-16">
+                    <h3>Завершить матч</h3>
+                    <div className="list-row">
+                        <div className="list-row-left" style={{gap:12, alignItems:'center'}}>
+                            <span>{lobby.team1_name || 'Команда 1'}</span>
+                            <input
+                                type="number"
+                                min="0"
+                                value={finalScore1}
+                                onChange={(e)=>setFinalScore1(e.target.value)}
+                                placeholder="Счёт"
+                                className="input"
+                                style={{width:80}}
+                            />
+                            <span>:</span>
+                            <input
+                                type="number"
+                                min="0"
+                                value={finalScore2}
+                                onChange={(e)=>setFinalScore2(e.target.value)}
+                                placeholder="Счёт"
+                                className="input"
+                                style={{width:80}}
+                            />
+                            <select value={finalWinnerTeam} onChange={(e)=>setFinalWinnerTeam(e.target.value)} className="input" style={{width:200}}>
+                                <option value="">Победитель…</option>
+                                <option value="1">{lobby.team1_name || 'Команда 1'}</option>
+                                <option value="2">{lobby.team2_name || 'Команда 2'}</option>
+                            </select>
+                        </div>
+                        <div className="list-row-right">
+                            <button
+                                className="btn btn-primary"
+                                onClick={async ()=>{
+                                    const token = localStorage.getItem('token');
+                                    const body = {
+                                        score1: Number(finalScore1)||0,
+                                        score2: Number(finalScore2)||0,
+                                        winner_team_id: finalWinnerTeam ? Number(finalWinnerTeam) : null
+                                    };
+                                    try {
+                                        await api.post(`/api/admin/match-lobby/${lobbyId}/complete`, body, { headers: { Authorization: `Bearer ${token}` } });
+                                        // следующий pull увидит status=completed и выполнит редирект
+                                    } catch (_) {}
+                                }}
+                                disabled={!finalWinnerTeam || finalScore1==='' || finalScore2===''}
+                            >Завершить</button>
+                        </div>
+                    </div>
                 </div>
             )}
 
