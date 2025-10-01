@@ -16,7 +16,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        m.team1_name, m.team2_name, m.team1_players, m.team2_players,
                        COALESCE(m.score1, 0) AS score1, COALESCE(m.score2, 0) AS score2,
                        m.connect_url, m.gotv_url,
-                       m.id AS sort_id,
+                       m.created_at,
                        NULL::INTEGER AS tournament_id,
                        'Custom match' AS format_label
                 FROM matches m
@@ -36,7 +36,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        NULL::jsonb AS team1_players, NULL::jsonb AS team2_players,
                        COALESCE(m.score1, 0) AS score1, COALESCE(m.score2, 0) AS score2,
                        m.connect_url, m.gotv_url,
-                       m.id AS sort_id,
+                       m.created_at,
                        m.tournament_id,
                        'Tournament' AS format_label
                 FROM matches m
@@ -57,7 +57,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                 UNION ALL
                 SELECT * FROM tour
             ) u
-            ORDER BY sort_id DESC
+            ORDER BY created_at DESC NULLS LAST
             LIMIT $2 OFFSET $3`;
         const r = await client.query(sql, [uid, limit, offset]);
         return res.json({ success: true, items: r.rows, page, limit });
