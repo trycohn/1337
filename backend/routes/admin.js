@@ -1821,14 +1821,17 @@ router.post('/match-lobby/:lobbyId/complete', authenticateToken, async (req, res
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const r = await client.query('SELECT match_id FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        const r = await client.query('SELECT match_id, created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
         if (r.rows.length === 0) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, error: 'Лобби не найдено' }); }
+        const isAdmin = req.user.role === 'admin' || Number(r.rows[0].created_by) === Number(req.user.id);
+        if (!isAdmin) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Недостаточно прав' }); }
         const matchId = r.rows[0].match_id;
         if (!matchId) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Матч ещё не создан' }); }
         await client.query(
             `UPDATE matches SET score1 = $1, score2 = $2, winner_id = $3, status = 'completed' WHERE id = $4`,
             [Number(score1) || 0, Number(score2) || 0, winner_team_id || null, matchId]
         );
+        await client.query(`UPDATE admin_match_lobbies SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [lobbyId]);
         await client.query('COMMIT');
         return res.json({ success: true, match_id: matchId, status: 'completed' });
     } catch (e) {
