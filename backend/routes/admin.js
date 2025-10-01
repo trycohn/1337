@@ -1157,9 +1157,13 @@ function determineNextTurnForFormat(matchFormat, actionIndex, firstPickerTeam) {
 }
 
 // Создать админ-лобби (одно активное на пользователя)
-router.post('/match-lobby', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/match-lobby', authenticateToken, async (req, res) => {
     await ensureDefaultMapPool();
     await ensureAdminLobbyTables();
+    // Разрешаем создавать тестовое лобби только глобальному администратору
+    if (req.user?.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Только администратор может создавать тестовое лобби' });
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
