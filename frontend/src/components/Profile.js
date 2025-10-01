@@ -1895,6 +1895,9 @@ function Profile() {
     // Переключение между вкладками
     const switchTab = (tabName) => {
         setActiveTab(tabName);
+        if (tabName === 'matchhistory' && user && !loadingMatchHistory && matchHistory.length === 0) {
+            loadMatchHistory(user.id).catch(() => {});
+        }
     };
 
     // Открытие модального окна истории матчей
@@ -2350,6 +2353,18 @@ function Profile() {
             return 0;
         });
 
+    async function loadMatchHistory(userId) {
+        try {
+            setLoadingMatchHistory(true);
+            const { data } = await api.get(`/api/admin/users/${userId}/matches`);
+            if (data?.success && Array.isArray(data.items)) setMatchHistory(data.items);
+        } catch (_) {
+            setMatchHistory([]);
+        } finally {
+            setLoadingMatchHistory(false);
+        }
+    }
+
     if (!user) return <div className="loading-spinner">Загрузка...</div>;
 
     return (
@@ -2470,6 +2485,15 @@ function Profile() {
                             <div className="nav-tab-content-profile">
                                 <span className="nav-tab-icon-profile">⚔️</span>
                                 <span>Мои команды</span>
+                            </div>
+                        </button>
+                        <button 
+                            className={`nav-tab-profile ${activeTab === 'matchhistory' ? 'active' : ''}`} 
+                            onClick={() => switchTab('matchhistory')}
+                        >
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">📅</span>
+                                <span>История матчей</span>
                             </div>
                         </button>
                         {user && user.role === 'admin' && (
@@ -3923,6 +3947,43 @@ function Profile() {
                         {/* Achievements Tab (admin only) */}
                         {user && user.role === 'admin' && activeTab === 'achievements' && (
                             <AchievementsPanel userId={user.id} />
+                        )}
+                        {activeTab === 'matchhistory' && (
+                            <>
+                                <div className="content-header">
+                                    <h3>История матчей</h3>
+                                </div>
+                                {loadingMatchHistory && <div>Загрузка…</div>}
+                                {!loadingMatchHistory && matchHistory.length === 0 && (
+                                    <div className="empty-state">Пока нет сыгранных матчей</div>
+                                )}
+                                {!loadingMatchHistory && matchHistory.length > 0 && (
+                                    <div className="match-history-list">
+                                        {matchHistory.map((m) => {
+                                            const isCustom = m.source_type === 'custom';
+                                            const title = isCustom ? 'Custom match' : (m.tournament_id ? 'Tournament' : 'Матч');
+                                            const game = m.game || 'Counter-Strike 2';
+                                            const score1 = m.score1 ?? 0;
+                                            const score2 = m.score2 ?? 0;
+                                            const result = score1 === score2 ? '—' : (score1 > score2 ? 'Победа' : 'Поражение');
+                                            const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : '';
+                                            const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
+                                            return (
+                                                <a key={`${m.source_type}-${m.id}`} className="list-row" href={href}>
+                                                    <div className="list-row-left">
+                                                        <span style={{minWidth: 120}}>{title}</span>
+                                                        <span style={{marginLeft: 8}}>{game}</span>
+                                                    </div>
+                                                    <div className="list-row-right" style={{gap: 12}}>
+                                                        <span>{result} {score1}:{score2}</span>
+                                                        <span style={{color:'#999'}}>{dateStr}</span>
+                                                    </div>
+                                                </a>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
