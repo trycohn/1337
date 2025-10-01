@@ -1630,9 +1630,9 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                  WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
                 [lobbyId]
             );
-            const team1Players = teamRes.rows.filter(r => Number(r.team) === 1)
+            const team1PlayersSteam = teamRes.rows.filter(r => Number(r.team) === 1)
                 .map(r => r.steam_id).filter(Boolean).map(String);
-            const team2Players = teamRes.rows.filter(r => Number(r.team) === 2)
+            const team2PlayersSteam = teamRes.rows.filter(r => Number(r.team) === 2)
                 .map(r => r.steam_id).filter(Boolean).map(String);
 
             // Читаем названия команд и формат
@@ -1650,8 +1650,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 maplist,
                 skip_veto: true,
                 side_type: 'standard',
-                team1: { name: lobbyFresh?.team1_name || 'TEAM_A', players: team1Players },
-                team2: { name: lobbyFresh?.team2_name || 'TEAM_B', players: team2Players }
+                team1: { name: lobbyFresh?.team1_name || 'TEAM_A', players: team1PlayersSteam },
+                team2: { name: lobbyFresh?.team2_name || 'TEAM_B', players: team2PlayersSteam }
             };
 
             let configJsonSaved = false;
@@ -1685,9 +1685,41 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 `UPDATE admin_match_lobbies SET status = 'match_created', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *`,
                 [connect, gotv, lobbyId]
             );
+            // Создаём запись в matches как custom match
+            const participants = await client.query(
+                `SELECT i.team, i.user_id, u.username, u.steam_id
+                 FROM admin_lobby_invitations i
+                 JOIN users u ON u.id = i.user_id
+                 WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)
+                 ORDER BY i.team ASC, i.created_at ASC`,
+                [lobbyId]
+            );
+            const team1Players = participants.rows.filter(r => Number(r.team) === 1).map(r => ({ user_id: r.user_id, username: r.username, steam_id: r.steam_id }));
+            const team2Players = participants.rows.filter(r => Number(r.team) === 2).map(r => ({ user_id: r.user_id, username: r.username, steam_id: r.steam_id }));
+            const mapsData = picksRes.rows
+                .filter(r => r.action_type === 'pick')
+                .map((r, idx) => ({ order: r.action_order, map: r.map_name, index: idx + 1 }));
+
+            const matchIns = await client.query(
+                `INSERT INTO matches (source_type, custom_lobby_id, game, tournament_id, team1_id, team2_id, team1_name, team2_name, status, created_at,
+                                      connect_url, gotv_url, maps_data, team1_players, team2_players)
+                 VALUES ('custom', $1, $2, NULL, NULL, NULL, $3, $4, 'completed', NOW(), $5, $6, $7::jsonb, $8::jsonb, $9::jsonb)
+                 RETURNING id`,
+                [lobbyId, 'CS2', lobbyFresh?.team1_name || 'TEAM_A', lobbyFresh?.team2_name || 'TEAM_B', connect, gotv, JSON.stringify(mapsData), JSON.stringify(team1Players), JSON.stringify(team2Players)]
+            );
+            const newMatchId = matchIns.rows[0].id;
+
+            // Сохраняем шаги пика/бана в match_veto_steps
+            for (const row of picksRes.rows) {
+                await client.query(
+                    `INSERT INTO match_veto_steps (match_id, action_order, action_type, team_id, map_name)
+                     VALUES ($1, $2, $3, $4, $5)`,
+                    [newMatchId, row.action_order, row.action_type, row.team_id || null, row.map_name]
+                );
+            }
 
             await client.query('COMMIT');
-            return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0] });
+            return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0], match_id: newMatchId });
         } else {
             const upd = await client.query(
                 `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
