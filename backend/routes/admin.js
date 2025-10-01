@@ -1704,7 +1704,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             const matchIns = await client.query(
                 `INSERT INTO matches (source_type, custom_lobby_id, game, tournament_id, team1_id, team2_id, team1_name, team2_name, status, created_at,
                                       connect_url, gotv_url, maps_data, team1_players, team2_players)
-                 VALUES ('custom', $1, $2, NULL, NULL, NULL, $3, $4, 'completed', NOW(), $5, $6, $7::jsonb, $8::jsonb, $9::jsonb)
+                 VALUES ('custom', $1, $2, NULL, NULL, NULL, $3, $4, 'scheduled', NOW(), $5, $6, $7::jsonb, $8::jsonb, $9::jsonb)
                  RETURNING id`,
                 [lobbyId, 'CS2', lobbyFresh?.team1_name || 'TEAM_A', lobbyFresh?.team2_name || 'TEAM_B', connect, gotv, JSON.stringify(mapsData), JSON.stringify(team1Players), JSON.stringify(team2Players)]
             );
@@ -1719,8 +1719,11 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 );
             }
 
+            // Привязываем лобби к матчу
+            await client.query('UPDATE admin_match_lobbies SET match_id = $1 WHERE id = $2', [newMatchId, lobbyId]);
+
             await client.query('COMMIT');
-            return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0], match_id: newMatchId });
+            return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0], match_id: newMatchId, match_status: 'scheduled' });
         } else {
             const upd = await client.query(
                 `UPDATE admin_match_lobbies SET current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
@@ -1806,6 +1809,32 @@ router.post('/match-lobby/:lobbyId/create-match', authenticateToken, requireAdmi
         await client.query('ROLLBACK');
         console.error('Ошибка create-match', e);
         return res.status(500).json({ success: false, error: 'Не удалось создать матч' });
+    } finally {
+        client.release();
+    }
+});
+
+// Завершить кастомный матч: записать итоговый счёт и завершить, уведомить лобби
+router.post('/match-lobby/:lobbyId/complete', authenticateToken, async (req, res) => {
+    const { lobbyId } = req.params;
+    const { score1, score2, winner_team_id } = req.body || {};
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const r = await client.query('SELECT match_id FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (r.rows.length === 0) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, error: 'Лобби не найдено' }); }
+        const matchId = r.rows[0].match_id;
+        if (!matchId) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Матч ещё не создан' }); }
+        await client.query(
+            `UPDATE matches SET score1 = $1, score2 = $2, winner_id = $3, status = 'completed' WHERE id = $4`,
+            [Number(score1) || 0, Number(score2) || 0, winner_team_id || null, matchId]
+        );
+        await client.query('COMMIT');
+        return res.json({ success: true, match_id: matchId, status: 'completed' });
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('complete custom match error', e);
+        return res.status(500).json({ success: false, error: 'Failed to complete match' });
     } finally {
         client.release();
     }

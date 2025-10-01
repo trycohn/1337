@@ -36,6 +36,8 @@ function CustomMatchPage() {
     );
 
     const { match, veto_steps } = data || {};
+    const picks = Array.isArray(veto_steps) ? veto_steps.filter(s => s.action_type === 'pick') : [];
+    const bans = Array.isArray(veto_steps) ? veto_steps.filter(s => s.action_type === 'ban') : [];
     const titleLeft = match.team1_name || 'Команда 1';
     const titleRight = match.team2_name || 'Команда 2';
     const score1 = match.score1 ?? '-';
@@ -91,6 +93,32 @@ function CustomMatchPage() {
                             <li key={m.order}>Карта {m.index}: {m.map}</li>
                         ))}
                     </ul>
+                </div>
+            )}
+
+            {(picks.length > 0 || bans.length > 0) && (
+                <div className="custom-match-mt-16">
+                    <h3>Пики / Баны</h3>
+                    {picks.length > 0 && (
+                        <div className="custom-match-mt-8">
+                            <strong>Пики:</strong>
+                            <ul>
+                                {picks.map((s) => (
+                                    <li key={`pick-${s.action_order}`}>{s.action_order}. {s.map_name} (team {s.team_id || '?'})</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {bans.length > 0 && (
+                        <div className="custom-match-mt-8">
+                            <strong>Баны:</strong>
+                            <ul>
+                                {bans.map((s) => (
+                                    <li key={`ban-${s.action_order}`}>{s.action_order}. {s.map_name} (team {s.team_id || '?'})</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
 

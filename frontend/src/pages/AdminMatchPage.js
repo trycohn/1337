@@ -12,6 +12,7 @@ function AdminMatchPage() {
     const [results, setResults] = useState([]);
     const [selected, setSelected] = useState([]);
     const [connectInfo, setConnectInfo] = useState(null);
+    const [createdMatchId, setCreatedMatchId] = useState(null);
     const [configJsonUrl, setConfigJsonUrl] = useState('');
     const [lobbyId, setLobbyId] = useState(null);
     const [lobby, setLobby] = useState(null);
@@ -433,6 +434,10 @@ function AdminMatchPage() {
                             if (conn?.data?.success) setConnectInfo(conn.data);
                         } catch (_) {}
                     }
+                    // Если матч уже завершён на сервере — редиректим всех в страницу матча (если мы знаем id)
+                    if (r.data.lobby?.match_id && r.data.lobby?.status === 'completed') {
+                        try { window.location.href = `/matches/custom/${r.data.lobby.match_id}`; } catch (_) {}
+                    }
                 }
             } catch (_) {}
             pollInFlightRef.current = false;
@@ -707,9 +712,9 @@ function AdminMatchPage() {
                             const token = localStorage.getItem('token');
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) {
+                                // Страницу матча создаём сразу (match_id есть), но редирект делаем после завершения матча
                                 if (data.completed && data.match_id) {
-                                    // Мгновенный переход на страницу кастомного матча
-                                    try { window.location.href = `/matches/custom/${data.match_id}`; } catch (_) {}
+                                    setCreatedMatchId(data.match_id);
                                 }
                                 if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
                                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
