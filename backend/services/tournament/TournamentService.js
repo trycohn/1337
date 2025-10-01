@@ -1795,7 +1795,7 @@ class TournamentService {
                             WHEN tt.id IS NOT NULL THEN 
                                 -- Приоритет: логотип команды, иначе аватар капитана или первого участника
                                 COALESCE(
-                                    tt.logo_url,
+                                    NULLIF(tt.logo_url, ''),
                                     (
                                         SELECT u2.avatar_url
                                         FROM tournament_team_members ttm2
