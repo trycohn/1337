@@ -165,6 +165,7 @@ function AdminMatchPage() {
             .then(r => {
                 setUser(r.data);
                 setIsAdmin(r.data?.role === 'admin');
+                try { console.log('[ADMIN_LOBBY] /users/me =>', { id: r.data?.id, role: r.data?.role }); } catch (_) {}
             })
             .catch(() => {});
     }, []);
@@ -182,11 +183,13 @@ function AdminMatchPage() {
 
     // Создать/получить админ-лобби
     const ensureAdminLobby = useCallback(async () => {
-        if (!isAdmin) return; // защита от вызова у не-админов
+        if (!isAdmin) { try { console.log('[ADMIN_LOBBY] ensureAdminLobby skipped (not admin)'); } catch (_) {} return; }
         const token = localStorage.getItem('token');
+        try { console.log('[ADMIN_LOBBY] ensureAdminLobby start'); } catch (_) {}
         const { data } = await api.post('/api/admin/match-lobby', {}, { headers: { Authorization: `Bearer ${token}` } });
         if (data?.success) {
             setLobbyId(data.lobby.id);
+            try { console.log('[ADMIN_LOBBY] ensureAdminLobby ok', { lobbyId: data.lobby.id }); } catch (_) {}
             // сразу подгрузим полный state лобби
             const r = await api.get(`/api/admin/match-lobby/${data.lobby.id}`, { headers: { Authorization: `Bearer ${token}` } });
             if (r?.data?.success) {
@@ -197,12 +200,13 @@ function AdminMatchPage() {
                 setTeam2Users(r.data.team2_users || []);
                 setUnassignedUsers(r.data.unassigned_users || []);
                 setInvitedPendingUsers(r.data.invited_pending_users || []);
+                try { console.log('[ADMIN_LOBBY] initial state loaded', { team1: (r.data.team1_users || []).length, team2: (r.data.team2_users || []).length, unassigned: (r.data.unassigned_users || []).length }); } catch (_) {}
             } else {
                 setLobby(data.lobby);
                 setAvailableMaps(data.available_maps || []);
             }
         }
-    }, []);
+    }, [isAdmin]);
 
     function onSearchChange(e) {
         const value = e.target.value;
@@ -253,6 +257,7 @@ function AdminMatchPage() {
         try {
             const token = localStorage.getItem('token');
             const acceptFlag = !!team;
+            try { console.log('[INVITE_PANEL] invite click', { lobbyId, userId, team, accept: acceptFlag, canInvite }); } catch (_) {}
             await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: userId, team, accept: acceptFlag }, { headers: { Authorization: `Bearer ${token}` } });
             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (r?.data?.success) {
@@ -276,7 +281,7 @@ function AdminMatchPage() {
         try {
             const token = localStorage.getItem('token');
             const { data } = await api.get('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
-            console.log('[INVITE_PANEL] fetched friends', Array.isArray(data) ? data.length : 0);
+            try { console.log('[INVITE_PANEL] fetched friends', Array.isArray(data) ? data.length : 0); } catch (_) {}
             const list = Array.isArray(data) ? data.map(f => f.friend) : [];
             setFriends(list);
         } catch (_) {
@@ -293,13 +298,9 @@ function AdminMatchPage() {
 
     useEffect(() => {
         if (invitePanelOpen) {
-            console.log('[INVITE_PANEL] state', {
-                lobbyId,
-                canInvite,
-                invitePanelTeam,
-                userId: user?.id,
-                createdBy: lobby?.created_by
-            });
+            try {
+                console.log('[INVITE_PANEL] state', { lobbyId, canInvite, invitePanelTeam, userId: user?.id, createdBy: lobby?.created_by });
+            } catch (_) {}
         }
     }, [invitePanelOpen, canInvite, invitePanelTeam, lobby, user, lobbyId]);
 
@@ -318,7 +319,7 @@ function AdminMatchPage() {
                     params: { q: value, limit: 10 },
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                console.log('[INVITE_PANEL] search results', Array.isArray(data) ? data.length : 0, 'for', value);
+                try { console.log('[INVITE_PANEL] search results', Array.isArray(data) ? data.length : 0, 'for', value); } catch (_) {}
                 setInviteResults(Array.isArray(data) ? data : []);
             } catch (_) { setInviteResults([]); }
         }, 250);
@@ -524,6 +525,16 @@ function AdminMatchPage() {
         if (isAdmin && !lobbyId) {
             ensureAdminLobby().catch(() => {});
         }
+    }, [isAdmin, lobbyId, ensureAdminLobby]);
+
+    // Fallback retry: если лобби не создалось, повторим попытку через 1.5с
+    useEffect(() => {
+        if (!isAdmin || lobbyId) return;
+        const t = setTimeout(() => {
+            try { console.log('[ADMIN_LOBBY] retry ensureAdminLobby (timer)'); } catch (_) {}
+            ensureAdminLobby().catch(() => {});
+        }, 1500);
+        return () => clearTimeout(t);
     }, [isAdmin, lobbyId, ensureAdminLobby]);
 
     // Не блокируем страницу для приглашенных не-админов
