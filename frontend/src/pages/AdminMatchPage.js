@@ -276,6 +276,7 @@ function AdminMatchPage() {
         try {
             const token = localStorage.getItem('token');
             const { data } = await api.get('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
+            console.log('[INVITE_PANEL] fetched friends', Array.isArray(data) ? data.length : 0);
             const list = Array.isArray(data) ? data.map(f => f.friend) : [];
             setFriends(list);
         } catch (_) {
@@ -305,6 +306,7 @@ function AdminMatchPage() {
                     params: { q: value, limit: 10 },
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                console.log('[INVITE_PANEL] search results', Array.isArray(data) ? data.length : 0, 'for', value);
                 setInviteResults(Array.isArray(data) ? data : []);
             } catch (_) { setInviteResults([]); }
         }, 250);

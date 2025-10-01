@@ -1276,6 +1276,11 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
              ORDER BY i.user_id, i.created_at DESC`,
             [lobbyId]
         );
+        console.log('[ADMIN_LOBBY][GET] invites raw', {
+            lobbyId: Number(lobbyId),
+            rows: invRes.rows.length,
+            sample: invRes.rows.slice(0, 3)
+        });
         // Включаем создателя лобби как приглашенного участника (если нет записи)
         if (!invRes.rows.some(r => Number(r.user_id) === Number(lobby.created_by))) {
             const owner = await client.query('SELECT id, username, avatar_url, steam_id FROM users WHERE id = $1', [lobby.created_by]);
@@ -1302,6 +1307,16 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         let unassigned_users = invRes.rows
             .filter(r => r.team === null && r.declined === false && (r.accepted === true || Number(r.user_id) === Number(lobby.created_by)))
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
+        console.log('[ADMIN_LOBBY][GET] grouped', {
+            lobbyId: Number(lobbyId),
+            team1_users_len: team1_users.length,
+            team2_users_len: team2_users.length,
+            unassigned_users_len: unassigned_users.length,
+            creator_id: Number(lobby.created_by),
+            creator_in_unassigned: unassigned_users.some(u => Number(u.id) === Number(lobby.created_by)),
+            creator_in_team1: team1_users.some(u => Number(u.id) === Number(lobby.created_by)),
+            creator_in_team2: team2_users.some(u => Number(u.id) === Number(lobby.created_by))
+        });
         // Гарантируем отображение создателя лобби среди "не в команде", если он не в командах
         if (!team1_users.some(u => Number(u.id) === Number(lobby.created_by)) && !team2_users.some(u => Number(u.id) === Number(lobby.created_by))) {
             const ownerRow = invRes.rows.find(r => Number(r.user_id) === Number(lobby.created_by));
@@ -1373,13 +1388,15 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, async (req, res) 
             team,
             accept
         });
-        await pool.query(
+        const upsert = await pool.query(
             `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted, declined, updated_at)
              VALUES ($1, $2, $3, $4, FALSE, NOW())
              ON CONFLICT (lobby_id, user_id)
              DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted, declined = FALSE, updated_at = NOW()`,
             [lobbyId, user_id, (team === null ? null : Number(team)), Boolean(accept)]
         );
+        const after = await pool.query('SELECT user_id, team, accepted, declined FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2', [lobbyId, user_id]);
+        console.log('[ADMIN_LOBBY][INVITE] upserted', { lobbyId: Number(lobbyId), userId: Number(user_id), row: after.rows[0] });
         // WS-уведомление приглашенному
         try {
             const io = req.app.get('io');
