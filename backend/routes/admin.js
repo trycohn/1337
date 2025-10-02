@@ -1661,6 +1661,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const { mapName, action } = req.body || {};
+    console.log('[SELECT-MAP] request', { lobbyId, mapName, action, userId: req.user?.id });
     if (!['pick','ban'].includes(action)) return res.status(400).json({ success: false, error: 'action: pick|ban' });
     const client = await pool.connect();
     try {
@@ -1668,6 +1669,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
         const lobRes = await client.query('SELECT * FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
         const lobby = lobRes.rows[0];
         if (!lobby) throw new Error('Лобби не найдено');
+        console.log('[SELECT-MAP] lobby status', { status: lobby.status, current_turn: lobby.current_turn_team });
         if (lobby.status !== 'picking') throw new Error('Пики/баны ещё не начались');
 
         // Проверка прав
@@ -1682,10 +1684,11 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             const acc = await client.query(
                 `SELECT user_id FROM admin_lobby_invitations 
                  WHERE lobby_id = $1 AND accepted = TRUE AND team = $2
-                 ORDER BY created_at ASC LIMIT 1`,
+                 ORDER BY team_position ASC, id ASC LIMIT 1`,
                 [lobbyId, teamTurn]
             );
             const captainUserId = acc.rows[0]?.user_id ? Number(acc.rows[0].user_id) : null;
+            console.log('[SELECT-MAP] captain check', { teamTurn, captainUserId, requesterId: req.user.id, isAdmin });
             if (captainUserId !== Number(req.user.id)) {
                 await client.query('ROLLBACK');
                 return res.status(403).json({ success: false, error: 'Ход может делать только капитан команды' });
@@ -1918,11 +1921,12 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 [next.teamId, lobbyId]
             );
             await client.query('COMMIT');
-            return res.json({ success: true, completed: false, lobby: upd.rows[0] });
+            console.log('[SELECT-MAP] success (not completed)', { nextTeam: next.teamId });
+            return res.json({ success: true, completed: false, lobby: upd.rows[0], selections: await client.query('SELECT * FROM admin_map_selections WHERE lobby_id = $1 ORDER BY action_order', [lobbyId]).then(r => r.rows) });
         }
     } catch (e) {
         await client.query('ROLLBACK');
-        console.error('Ошибка select-map', e);
+        console.error('❌ [SELECT-MAP] error', e.message, e.stack);
         return res.status(400).json({ success: false, error: e.message || 'Не удалось выполнить действие' });
     } finally {
         client.release();
