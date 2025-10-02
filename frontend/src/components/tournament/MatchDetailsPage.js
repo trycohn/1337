@@ -6,6 +6,7 @@ import { getParticipantInfo } from '../../utils/participantHelpers';
 import MatchMetaTags from '../SEO/MatchMetaTags';
 import MatchShareModal from './modals/MatchShareModal';
 import { MatchFeedbackManager } from '../feedback'; // 🎮 Match Feedback система
+import api from '../../axios'; // 🔧 ИСПРАВЛЕНО: импорт axios
 import './MatchDetailsPage.css';
 
 /**
