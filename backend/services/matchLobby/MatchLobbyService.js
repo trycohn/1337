@@ -766,6 +766,7 @@ class MatchLobbyService {
                 );
                 
                 const response = result.response || '';
+                console.log(`📋 [Tournament] RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой ответ)');
                 
                 // Проверяем что сервер занят
                 if (response.includes('A match is already setup') || 
@@ -775,13 +776,14 @@ class MatchLobbyService {
                     continue;
                 }
                 
-                // Проверяем успешную загрузку
-                if (response.includes('Success') || 
-                    response.includes('[LoadMatchFromJSON]') ||
-                    response.includes('Starting warmup')) {
-                    console.log(`✅ [Tournament] Сервер ${server.name} подтвердил загрузку конфига!`);
+                // Проверяем на ошибки загрузки
+                if (response.includes('Error') || response.includes('Failed')) {
+                    console.log(`❌ [Tournament] Сервер ${server.name} вернул ошибку, пробуем следующий...`);
+                    continue;
                 }
                 
+                // Если нет ошибок - считаем что команда прошла успешно
+                console.log(`✅ [Tournament] Сервер ${server.name} принял команду загрузки конфига!`);
                 selectedServer = server;
                 
                 // Формируем ссылки подключения
