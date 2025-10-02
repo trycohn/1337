@@ -1756,6 +1756,11 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
             const num_maps = numMapsByFormat[format] || 1;
 
+            // Динамически определяем players_per_team (берем максимум из обеих команд)
+            const team1Count = Object.keys(team1PlayersObj).length;
+            const team2Count = Object.keys(team2PlayersObj).length;
+            const players_per_team = Math.max(team1Count, team2Count, 1);
+
             // Формируем уникальный matchid (ЧИСЛО для MatchZy!)
             const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
             const matchid = parseInt(`${lobbyId}${ts}`); // ЧИСЛО, не строка!
@@ -1767,7 +1772,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 maplist,
                 skip_veto: true,
                 side_type: 'standard',
-                players_per_team: 5,
+                players_per_team, // динамическое значение
                 team1: { 
                     name: lobbyFresh?.team1_name || 'TEAM_A', 
                     players: team1PlayersObj // объект {steam_id: nickname}

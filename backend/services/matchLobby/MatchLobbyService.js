@@ -703,6 +703,11 @@ class MatchLobbyService {
         const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
         const num_maps = numMapsByFormat[matchFormat] || maplist.length;
         
+        // Динамически определяем players_per_team (берем максимум из обеих команд)
+        const team1Count = Object.keys(team1PlayersObj).length;
+        const team2Count = Object.keys(team2PlayersObj).length;
+        const players_per_team = Math.max(team1Count, team2Count, 1);
+        
         // MatchZy требует matchid как ЧИСЛО (integer)!
         const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
         const matchid = parseInt(`${matchId}${ts}`); // ЧИСЛО, не строка!
@@ -714,7 +719,7 @@ class MatchLobbyService {
             maplist,
             skip_veto: true,
             side_type: 'standard',
-            players_per_team: 5,
+            players_per_team, // динамическое значение
             team1: { 
                 name: lobby.team1_name || 'Team 1', 
                 players: team1PlayersObj // объект {steam_id: nickname}
