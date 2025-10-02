@@ -1,0 +1,293 @@
+/* 📊 PROFILE REPUTATION STYLES */
+
+.profile-reputation-container {
+    padding: 24px;
+    color: #ffffff;
+}
+
+/* Loading & Empty States */
+.reputation-loading {
+    text-align: center;
+    padding: 64px 32px;
+    color: #999999;
+    font-size: 16px;
+}
+
+.reputation-empty {
+    text-align: center;
+    padding: 64px 32px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+}
+
+.reputation-empty .empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.reputation-empty h3 {
+    color: #ffffff;
+    font-size: 22px;
+    margin: 0 0 12px 0;
+}
+
+.reputation-empty p {
+    color: #999999;
+    font-size: 15px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Main Reputation Display */
+.reputation-main {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.reputation-circle-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 24px;
+}
+
+.reputation-circle {
+    width: 100%;
+    height: 100%;
+}
+
+.reputation-progress {
+    transition: stroke-dasharray 1s ease-out;
+}
+
+.reputation-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.reputation-label {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.reputation-count {
+    font-size: 14px;
+    color: #999999;
+}
+
+/* Breakdown */
+.reputation-breakdown {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.reputation-breakdown h3 {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+}
+
+/* Metric */
+.reputation-metric {
+    margin-bottom: 32px;
+}
+
+.reputation-metric:last-child {
+    margin-bottom: 0;
+}
+
+.metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.metric-name {
+    color: #999999;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metric-value {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* Metric Bar */
+.metric-bar {
+    height: 12px;
+    background: #222222;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.metric-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s ease-out;
+}
+
+.metric-fill.fairness {
+    background: linear-gradient(90deg, #00aa00 0%, #00ff00 100%);
+}
+
+.metric-fill.behavior {
+    background: linear-gradient(90deg, #0088cc 0%, #00ccff 100%);
+}
+
+.metric-fill.teamplay {
+    background: linear-gradient(90deg, #8800cc 0%, #cc00ff 100%);
+}
+
+/* Metric Details */
+.metric-details {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.detail-item {
+    font-size: 13px;
+    color: #cccccc;
+}
+
+.detail-item.clean {
+    color: #00ff00;
+}
+
+.detail-item.normal {
+    color: #999999;
+}
+
+.detail-item.suspicious {
+    color: #ffaa00;
+}
+
+.detail-item.cheating,
+.detail-item.toxic {
+    color: #ff0000;
+}
+
+.detail-item.good,
+.detail-item.excellent {
+    color: #00ff00;
+}
+
+.detail-item.poor {
+    color: #ff6600;
+}
+
+/* Warnings */
+.reputation-warning {
+    background: rgba(255, 170, 0, 0.1);
+    border: 1px solid #ffaa00;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.reputation-warning.warning-toxic {
+    background: rgba(255, 102, 0, 0.1);
+    border-color: #ff6600;
+}
+
+.warning-icon {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.warning-content strong {
+    display: block;
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.warning-content p {
+    color: #cccccc;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Info Section */
+.reputation-info {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.reputation-info h4 {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+}
+
+.reputation-info ul {
+    margin: 0 0 16px 0;
+    padding-left: 24px;
+    color: #cccccc;
+}
+
+.reputation-info li {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.info-note {
+    color: #666666;
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.6;
+    padding-top: 16px;
+    border-top: 1px solid #222222;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-reputation-container {
+        padding: 16px;
+    }
+    
+    .reputation-circle-container {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .reputation-value {
+        font-size: 36px;
+    }
+    
+    .reputation-breakdown {
+        padding: 20px;
+    }
+    
+    .metric-details {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+

@@ -2244,6 +2244,178 @@ router.post('/users/:userId/unban', authenticateToken, requireAdmin, async (req,
     }
 });
 
+// ============================================================================
+// 🎮 MATCH FEEDBACKS: СТАТИСТИКА И SUSPICIOUS REPORTS
+// ============================================================================
+
+/**
+ * GET /api/admin/suspicious-players
+ * Получить список подозрительных игроков (только для админов)
+ */
+router.get('/suspicious-players', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { 
+            min_cheating_reports = 3,
+            max_reputation = 50,
+            limit = 50,
+            offset = 0,
+            sort = 'cheating_desc'
+        } = req.query;
+        
+        let orderBy = 'pr.cheating_reports DESC, pr.reputation_index ASC';
+        
+        switch (sort) {
+            case 'reputation_asc':
+                orderBy = 'pr.reputation_index ASC';
+                break;
+            case 'reputation_desc':
+                orderBy = 'pr.reputation_index DESC';
+                break;
+            case 'cheating_desc':
+                orderBy = 'pr.cheating_reports DESC, pr.reputation_index ASC';
+                break;
+            case 'recent':
+                orderBy = 'pr.updated_at DESC';
+                break;
+        }
+        
+        const result = await pool.query(`
+            SELECT 
+                pr.*,
+                u.username,
+                u.email,
+                u.steam_id,
+                u.steam_url,
+                u.is_banned,
+                u.ban_reason,
+                uts.trust_score,
+                uts.trust_action
+            FROM player_reputation pr
+            JOIN users u ON u.id = pr.user_id
+            LEFT JOIN user_trust_scores uts ON uts.user_id = pr.user_id
+            WHERE pr.cheating_reports >= $1
+               OR pr.reputation_index <= $2
+            ORDER BY ${orderBy}
+            LIMIT $3 OFFSET $4
+        `, [min_cheating_reports, max_reputation, limit, offset]);
+        
+        // Получить детальные feedbacks для каждого
+        const playersWithDetails = await Promise.all(
+            result.rows.map(async (player) => {
+                const recentReportsResult = await pool.query(`
+                    SELECT 
+                        mf.id,
+                        mf.fairness_rating,
+                        mf.behavior_rating,
+                        u.username as reviewer_name,
+                        m.id as match_id,
+                        t.id as tournament_id,
+                        t.name as tournament_name,
+                        mf.created_at
+                    FROM match_feedback mf
+                    JOIN users u ON u.id = mf.reviewer_id
+                    JOIN matches m ON m.id = mf.match_id
+                    JOIN tournaments t ON t.id = mf.tournament_id
+                    WHERE mf.reviewed_id = $1
+                      AND (mf.fairness_rating IN ('suspicious', 'cheating') 
+                           OR mf.behavior_rating = 'toxic')
+                    ORDER BY mf.created_at DESC
+                    LIMIT 10
+                `, [player.user_id]);
+                
+                return {
+                    ...player,
+                    recent_negative_reports: recentReportsResult.rows
+                };
+            })
+        );
+        
+        const countResult = await pool.query(`
+            SELECT COUNT(*) 
+            FROM player_reputation pr
+            WHERE pr.cheating_reports >= $1
+               OR pr.reputation_index <= $2
+        `, [min_cheating_reports, max_reputation]);
+        
+        res.json({
+            success: true,
+            players: playersWithDetails,
+            total: parseInt(countResult.rows[0].count),
+            pagination: {
+                limit: parseInt(limit),
+                offset: parseInt(offset)
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка получения suspicious players:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch suspicious players' });
+    }
+});
+
+/**
+ * GET /api/admin/feedback-stats
+ * Общая статистика по feedbacks (только для админов)
+ */
+router.get('/feedback-stats', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const feedbackStats = await pool.query(`
+            SELECT 
+                COUNT(*) as total_feedbacks,
+                COUNT(DISTINCT reviewer_id) as active_reviewers,
+                COUNT(DISTINCT reviewed_id) as players_reviewed,
+                COUNT(CASE WHEN fairness_rating = 'cheating' THEN 1 END) as cheating_reports,
+                COUNT(CASE WHEN fairness_rating = 'suspicious' THEN 1 END) as suspicious_reports,
+                COUNT(CASE WHEN behavior_rating = 'toxic' THEN 1 END) as toxic_reports,
+                COUNT(CASE WHEN created_at > CURRENT_DATE THEN 1 END) as today_feedbacks,
+                AVG(coins_rewarded)::INTEGER as avg_coins_per_feedback
+            FROM match_feedback
+        `);
+        
+        const coinsStats = await pool.query(`
+            SELECT 
+                COALESCE(SUM(balance), 0) as total_coins_in_circulation,
+                COALESCE(SUM(lifetime_earned), 0) as total_coins_earned,
+                COALESCE(AVG(balance)::INTEGER, 0) as avg_balance_per_user,
+                COUNT(*) as users_with_coins
+            FROM user_coins
+        `);
+        
+        const reputationStats = await pool.query(`
+            SELECT 
+                COUNT(*) as players_with_reputation,
+                AVG(reputation_index)::INTEGER as avg_reputation,
+                COUNT(CASE WHEN reputation_index >= 80 THEN 1 END) as excellent,
+                COUNT(CASE WHEN reputation_index >= 60 AND reputation_index < 80 THEN 1 END) as good,
+                COUNT(CASE WHEN reputation_index >= 40 AND reputation_index < 60 THEN 1 END) as average,
+                COUNT(CASE WHEN reputation_index < 40 THEN 1 END) as low,
+                COUNT(CASE WHEN cheating_reports >= 3 THEN 1 END) as flagged_for_cheating,
+                COUNT(CASE WHEN cheating_reports >= 5 THEN 1 END) as critical_cheating
+            FROM player_reputation
+        `);
+        
+        const completionStats = await pool.query(`
+            SELECT 
+                COUNT(*) as total_prompts,
+                COUNT(CASE WHEN feedback_given THEN 1 END) as completed,
+                ROUND(100.0 * COUNT(CASE WHEN feedback_given THEN 1 END) / NULLIF(COUNT(*), 0), 2) as completion_rate
+            FROM match_feedback_pending
+        `);
+        
+        res.json({
+            success: true,
+            feedback: feedbackStats.rows[0],
+            coins: coinsStats.rows[0],
+            reputation: reputationStats.rows[0],
+            completion: completionStats.rows[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка получения статистики feedbacks:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch feedback stats' });
+    }
+});
+
 // История матчей пользователя (объединённая): турнирные + кастомные
 router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
     const { userId } = req.params;

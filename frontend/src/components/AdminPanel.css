@@ -1045,4 +1045,219 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ============================================================================ */
+/* 🎮 FEEDBACKS TAB */
+/* ============================================================================ */
+
+.feedbacks-tab {
+    padding: 24px 0;
+}
+
+.feedbacks-tab h2, .feedbacks-tab h3 {
+    color: #ffffff;
+    margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.feedbacks-tab h3 {
+    font-size: 20px;
+    margin-top: 32px;
+}
+
+.feedbacks-tab h4 {
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+/* Feedback Stats Grid */
+.feedback-stats-section {
+    margin-bottom: 32px;
+}
+
+.feedback-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.feedback-stats-grid .stat-card.stat-danger {
+    border-color: #ff0000;
+}
+
+.feedback-stats-grid .stat-card.stat-warning {
+    border-color: #ffaa00;
+}
+
+.feedback-stats-grid .stat-card.stat-info {
+    border-color: #66ccff;
+}
+
+.feedback-stats-grid .stat-card.stat-success {
+    border-color: #00aa00;
+}
+
+/* Feedback Filters */
+.feedback-filters {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.feedback-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Suspicious Players Table */
+.suspicious-players-table {
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
+.suspicious-row.critical {
+    background: rgba(255, 0, 0, 0.08);
+}
+
+.suspicious-row.critical:hover {
+    background: rgba(255, 0, 0, 0.12);
+}
+
+/* Reputation Badge */
+.reputation-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.reputation-badge.rep-4 {
+    background: #00aa00;
+    color: #000000;
+}
+
+.reputation-badge.rep-3 {
+    background: #88cc00;
+    color: #000000;
+}
+
+.reputation-badge.rep-2 {
+    background: #ffaa00;
+    color: #000000;
+}
+
+.reputation-badge.rep-1 {
+    background: #ff6600;
+    color: #ffffff;
+}
+
+.reputation-badge.rep-0 {
+    background: #ff0000;
+    color: #ffffff;
+}
+
+/* Trust Badge Small */
+.trust-badge-small {
+    color: #999999;
+    font-size: 12px;
+}
+
+/* Danger Badge */
+.danger-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.danger-badge.critical {
+    background: rgba(255, 0, 0, 0.3);
+    border: 1px solid #ff0000;
+}
+
+/* Toxic Badge */
+.toxic-badge {
+    color: #ff6600;
+    font-weight: 500;
+}
+
+/* Feedback Actions */
+.feedback-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* Feedback Pagination */
+.feedback-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.feedback-pagination .pagination-info {
+    color: #999999;
+    font-size: 14px;
+}
+
+/* Feedback Legend */
+.feedback-legend {
+    margin-top: 32px;
+    padding: 20px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.feedback-legend ul {
+    margin: 8px 0;
+    padding-left: 24px;
+    color: #cccccc;
+}
+
+.feedback-legend li {
+    margin: 4px 0;
+}
+
+/* Responsive для Feedbacks */
+@media (max-width: 768px) {
+    .feedback-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .feedback-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .feedback-filters .filter-group {
+        width: 100%;
+    }
+    
+    .feedback-pagination {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
  

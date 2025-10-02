@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
+import ProfileReputation from './ProfileReputation'; // 📊 Компонент репутации
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -2530,6 +2531,15 @@ function Profile() {
                                 <span>Турниры</span>
                             </div>
                         </button>
+                        <button 
+                            className={`nav-tab-profile ${activeTab === 'reputation' ? 'active' : ''}`} 
+                            onClick={() => switchTab('reputation')}
+                        >
+                            <div className="nav-tab-content-profile">
+                                <span className="nav-tab-icon-profile">📊</span>
+                                <span>Репутация</span>
+                            </div>
+                        </button>
                         {user && user.role === 'admin' && (
                         <button 
                             className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
@@ -3948,6 +3958,12 @@ function Profile() {
                         {user && user.role === 'admin' && activeTab === 'achievements' && (
                             <AchievementsPanel userId={user.id} />
                         )}
+                        
+                        {/* 📊 REPUTATION TAB */}
+                        {activeTab === 'reputation' && (
+                            <ProfileReputation userId={user.id} />
+                        )}
+                        
                         {activeTab === 'matchhistory' && (
                             <>
                                 <div className="content-header">

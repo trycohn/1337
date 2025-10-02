@@ -108,6 +108,14 @@ function AdminPanel() {
     const [trustSort, setTrustSort] = useState('score_asc');
     const [trustPagination, setTrustPagination] = useState({ total: 0, limit: 50, offset: 0 });
     const [recheckingUserId, setRecheckingUserId] = useState(null);
+    
+    // 🎮 FEEDBACKS: State для системы обратной связи
+    const [suspiciousPlayers, setSuspiciousPlayers] = useState([]);
+    const [feedbackStats, setFeedbackStats] = useState(null);
+    const [feedbacksLoading, setFeedbacksLoading] = useState(false);
+    const [feedbackFilter, setFeedbackFilter] = useState({ min_cheating: 3, max_reputation: 50 });
+    const [feedbackSort, setFeedbackSort] = useState('cheating_desc');
+    const [feedbackPagination, setFeedbackPagination] = useState({ total: 0, limit: 50, offset: 0 });
     // Preloaded avatars state
     const [preAvatars, setPreAvatars] = useState([]);
     const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
@@ -396,6 +404,50 @@ function AdminPanel() {
             alert('❌ Ошибка разбана пользователя');
         }
     };
+    
+    // 🎮 FEEDBACKS: Загрузка suspicious players
+    const fetchSuspiciousPlayers = useCallback(async () => {
+        setFeedbacksLoading(true);
+        try {
+            const response = await api.get('/api/admin/suspicious-players', {
+                params: {
+                    min_cheating_reports: feedbackFilter.min_cheating,
+                    max_reputation: feedbackFilter.max_reputation,
+                    limit: feedbackPagination.limit,
+                    offset: feedbackPagination.offset,
+                    sort: feedbackSort
+                },
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                setSuspiciousPlayers(response.data.players);
+                setFeedbackPagination(prev => ({
+                    ...prev,
+                    total: response.data.total
+                }));
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки suspicious players:', err);
+        } finally {
+            setFeedbacksLoading(false);
+        }
+    }, [feedbackFilter, feedbackSort, feedbackPagination.limit, feedbackPagination.offset]);
+    
+    // 🎮 FEEDBACKS: Загрузка статистики
+    const fetchFeedbackStats = useCallback(async () => {
+        try {
+            const response = await api.get('/api/admin/feedback-stats', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                setFeedbackStats(response.data);
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки статистики feedbacks:', err);
+        }
+    }, []);
 
     useEffect(() => {
         checkAdminAccess();
@@ -412,8 +464,13 @@ function AdminPanel() {
                 fetchTrustScores();
                 fetchTrustStats();
             }
+            // 🎮 FEEDBACKS: Загружаем Feedbacks при первой загрузке
+            if (activeTab === 'feedbacks') {
+                fetchSuspiciousPlayers();
+                fetchFeedbackStats();
+            }
         }
-    }, [user, fetchRequests, fetchStats, activeTab, fetchTrustScores, fetchTrustStats]);
+    }, [user, fetchRequests, fetchStats, activeTab, fetchTrustScores, fetchTrustStats, fetchSuspiciousPlayers, fetchFeedbackStats]);
 
     const fetchDefaultMapPool = useCallback(async () => {
         try {
@@ -725,6 +782,12 @@ function AdminPanel() {
                     onClick={() => setActiveTab('trustScores')}
                 >
                     🛡️ Trust Scores
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'feedbacks' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('feedbacks')}
+                >
+                    🎮 Feedbacks
                 </button>
             </div>
 
@@ -1477,6 +1540,281 @@ function AdminPanel() {
                                 <p className="legend-note">
                                     <strong>Автоматическая блокировка:</strong> VAC бан &lt;1 года, Game бан &lt;6 месяцев<br />
                                     <strong>Перепроверка:</strong> Раз в 7 дней при входе
+                                </p>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+            
+            {/* 🎮 FEEDBACKS: Вкладка Match Feedbacks */}
+            {activeTab === 'feedbacks' && (
+                <div className="feedbacks-tab">
+                    <h2>🎮 Match Feedbacks & Reputation</h2>
+                    
+                    {/* Статистика */}
+                    {feedbackStats && (
+                        <div className="feedback-stats-section">
+                            <h3>Общая статистика</h3>
+                            <div className="feedback-stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-value">{feedbackStats.feedback?.total_feedbacks || 0}</div>
+                                    <div className="stat-label">Всего оценок</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{feedbackStats.completion?.completion_rate || 0}%</div>
+                                    <div className="stat-label">Completion Rate</div>
+                                </div>
+                                <div className="stat-card stat-danger">
+                                    <div className="stat-value">{feedbackStats.feedback?.cheating_reports || 0}</div>
+                                    <div className="stat-label">Жалоб на читинг</div>
+                                </div>
+                                <div className="stat-card stat-warning">
+                                    <div className="stat-value">{feedbackStats.feedback?.toxic_reports || 0}</div>
+                                    <div className="stat-label">Жалоб на токсичность</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{feedbackStats.reputation?.avg_reputation || 50}</div>
+                                    <div className="stat-label">Средняя репутация</div>
+                                </div>
+                                <div className="stat-card stat-info">
+                                    <div className="stat-value">{feedbackStats.reputation?.flagged_for_cheating || 0}</div>
+                                    <div className="stat-label">Зафлагано (3+ жалоб)</div>
+                                </div>
+                                <div className="stat-card stat-success">
+                                    <div className="stat-value">{feedbackStats.coins?.total_coins_earned || 0}</div>
+                                    <div className="stat-label">Coins роздано</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{feedbackStats.reputation?.players_with_reputation || 0}</div>
+                                    <div className="stat-label">Игроков с репутацией</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Фильтры */}
+                    <div className="feedback-filters">
+                        <div className="filter-group">
+                            <label>Мин. жалоб на чит:</label>
+                            <input 
+                                type="number"
+                                min="1"
+                                value={feedbackFilter.min_cheating}
+                                onChange={(e) => setFeedbackFilter(prev => ({ 
+                                    ...prev, 
+                                    min_cheating: parseInt(e.target.value) || 1 
+                                }))}
+                                className="map-input"
+                                style={{width: '80px'}}
+                            />
+                        </div>
+                        
+                        <div className="filter-group">
+                            <label>Макс. репутация:</label>
+                            <input 
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={feedbackFilter.max_reputation}
+                                onChange={(e) => setFeedbackFilter(prev => ({ 
+                                    ...prev, 
+                                    max_reputation: parseInt(e.target.value) || 50 
+                                }))}
+                                className="map-input"
+                                style={{width: '80px'}}
+                            />
+                        </div>
+                        
+                        <div className="filter-group">
+                            <label>Сортировка:</label>
+                            <select 
+                                className="status-filter"
+                                value={feedbackSort}
+                                onChange={(e) => setFeedbackSort(e.target.value)}
+                            >
+                                <option value="cheating_desc">По жалобам (убыв.)</option>
+                                <option value="reputation_asc">По репутации (возр.)</option>
+                                <option value="reputation_desc">По репутации (убыв.)</option>
+                                <option value="recent">По дате (новые)</option>
+                            </select>
+                        </div>
+                        
+                        <button 
+                            className="btn"
+                            onClick={() => {
+                                setFeedbackPagination(prev => ({ ...prev, offset: 0 }));
+                                fetchSuspiciousPlayers();
+                            }}
+                        >
+                            🔍 Применить
+                        </button>
+                    </div>
+                    
+                    {/* Таблица suspicious players */}
+                    {feedbacksLoading ? (
+                        <div className="admin-loading">Загрузка подозрительных игроков...</div>
+                    ) : (
+                        <>
+                            <h3>🚨 Подозрительные игроки ({feedbackPagination.total})</h3>
+                            
+                            <div className="suspicious-players-table">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Игрок</th>
+                                            <th>Репутация</th>
+                                            <th>Trust Score</th>
+                                            <th>Жалоб на чит</th>
+                                            <th>Подозр./Всего</th>
+                                            <th>Токсич.</th>
+                                            <th>Статус</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {suspiciousPlayers.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: '#999' }}>
+                                                    {feedbackStats?.reputation?.flagged_for_cheating > 0 ? 
+                                                        'Нет игроков по заданным фильтрам' :
+                                                        'Пока нет подозрительных игроков 🎉'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            suspiciousPlayers.map((player) => (
+                                                <tr 
+                                                    key={player.user_id}
+                                                    className={`suspicious-row ${player.cheating_reports >= 5 ? 'critical' : ''}`}
+                                                >
+                                                    <td>{player.user_id}</td>
+                                                    <td>
+                                                        <div className="user-cell">
+                                                            <strong>{player.username}</strong>
+                                                            <span className="user-email">{player.email}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className={`reputation-badge rep-${Math.floor(player.reputation_index / 20)}`}>
+                                                            {player.reputation_index}/100
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        {player.trust_score ? (
+                                                            <span className="trust-badge-small">{player.trust_score}/100</span>
+                                                        ) : (
+                                                            <span style={{color: '#666'}}>-</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <span className={`danger-badge ${player.cheating_reports >= 5 ? 'critical' : ''}`}>
+                                                            {player.cheating_reports}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span style={{color: player.suspicious_reports > 0 ? '#ffaa00' : '#999'}}>
+                                                            {player.suspicious_reports} / {player.total_feedbacks}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={player.toxic_behavior > 0 ? 'toxic-badge' : ''}>
+                                                            {player.toxic_behavior || 0}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`user-status ${player.is_banned ? 'banned' : 'active'}`}>
+                                                            {player.is_banned ? '❌ Banned' : '✅ Active'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="feedback-actions">
+                                                            <button
+                                                                className="btn-small"
+                                                                onClick={() => {
+                                                                    const reports = player.recent_negative_reports || [];
+                                                                    const details = `
+Игрок: ${player.username}
+Репутация: ${player.reputation_index}/100
+Жалоб на чит: ${player.cheating_reports}
+Подозрительных: ${player.suspicious_reports}
+Всего оценок: ${player.total_feedbacks}
+
+Недавние негативные отзывы:
+${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.behavior_rating} (${r.tournament_name})`).join('\n')}
+                                                                    `.trim();
+                                                                    alert(details);
+                                                                }}
+                                                                title="Детали"
+                                                            >
+                                                                🔍
+                                                            </button>
+                                                            {!player.is_banned ? (
+                                                                <button
+                                                                    className="btn-small danger"
+                                                                    onClick={() => banUser(player.user_id, player.username)}
+                                                                    title="Забанить"
+                                                                >
+                                                                    🚫
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="btn-small"
+                                                                    onClick={() => unbanUser(player.user_id, player.username)}
+                                                                    title="Разбанить"
+                                                                >
+                                                                    ✅
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* Пагинация */}
+                            {feedbackPagination.total > feedbackPagination.limit && (
+                                <div className="feedback-pagination">
+                                    <button
+                                        className="btn"
+                                        onClick={() => setFeedbackPagination(prev => ({
+                                            ...prev,
+                                            offset: Math.max(0, prev.offset - prev.limit)
+                                        }))}
+                                        disabled={feedbackPagination.offset === 0}
+                                    >
+                                        ← Предыдущая
+                                    </button>
+                                    <span className="pagination-info">
+                                        Показано {feedbackPagination.offset + 1}—{Math.min(feedbackPagination.offset + feedbackPagination.limit, feedbackPagination.total)} из {feedbackPagination.total}
+                                    </span>
+                                    <button
+                                        className="btn"
+                                        onClick={() => setFeedbackPagination(prev => ({
+                                            ...prev,
+                                            offset: prev.offset + prev.limit
+                                        }))}
+                                        disabled={feedbackPagination.offset + feedbackPagination.limit >= feedbackPagination.total}
+                                    >
+                                        Следующая →
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* Пояснение */}
+                            <div className="feedback-legend">
+                                <h4>Критерии попадания в список:</h4>
+                                <ul>
+                                    <li>3+ жалобы на читинг ИЛИ</li>
+                                    <li>Репутация ≤50/100</li>
+                                </ul>
+                                <p className="legend-note">
+                                    <strong>Рекомендация:</strong> Проверяйте игроков с 5+ жалобами на читинг в приоритетном порядке.
+                                    Игроки с низкой репутацией могут быть просто токсичными, а не читерами.
                                 </p>
                             </div>
                         </>
