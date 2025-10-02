@@ -95,7 +95,13 @@
 
 .lobby-map-item.map-picked {
     border-color: #00ff00;
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    background-color: #001a00;
+}
+
+.lobby-map-item.map-picked .lobby-map-name {
+    color: #00ff00;
+    font-weight: bold;
 }
 
 .lobby-map-item.map-banned {
@@ -257,10 +263,17 @@
 /* Выбранные карты */
 .lobby-selected-maps {
     margin-top: 30px;
-    padding: 20px;
-    background-color: #000;
+    padding: 25px;
+    background-color: #001a00;
     border-radius: 10px;
-    border: 2px solid #00ff00;
+    border: 3px solid #00ff00;
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+    animation: pulse-selected 2s ease-in-out infinite;
+}
+
+@keyframes pulse-selected {
+    0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 0, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.6); }
 }
 
 .lobby-selected-maps h4 {
