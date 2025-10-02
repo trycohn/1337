@@ -166,17 +166,9 @@ function AdminPanel() {
     const [showServerForm, setShowServerForm] = useState(false);
     const [serverForm, setServerForm] = useState({
         name: '',
-        description: '',
         host: '',
         port: 27015,
-        rcon_password: '',
-        server_password: '',
-        gotv_host: '',
-        gotv_port: 27020,
-        gotv_password: '',
-        max_slots: 10,
-        location: 'RU',
-        status: 'offline'
+        rcon_password: ''
     });
 
     async function adminFetchUserById() {
@@ -351,17 +343,9 @@ function AdminPanel() {
         setEditingServer(server);
         setServerForm({
             name: server.name,
-            description: server.description || '',
             host: server.host,
             port: server.port,
-            rcon_password: '',
-            server_password: '',
-            gotv_host: server.gotv_host || '',
-            gotv_port: server.gotv_port || 27020,
-            gotv_password: '',
-            max_slots: server.max_slots,
-            location: server.location || 'RU',
-            status: server.status
+            rcon_password: ''
         });
         setShowServerForm(true);
     }
@@ -371,17 +355,9 @@ function AdminPanel() {
         setShowServerForm(false);
         setServerForm({
             name: '',
-            description: '',
             host: '',
             port: 27015,
-            rcon_password: '',
-            server_password: '',
-            gotv_host: '',
-            gotv_port: 27020,
-            gotv_password: '',
-            max_slots: 10,
-            location: 'RU',
-            status: 'offline'
+            rcon_password: ''
         });
     }
 
@@ -2267,7 +2243,7 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
 
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Порт
+                                        Порт *
                                     </label>
                                     <input
                                         type="number"
@@ -2287,118 +2263,7 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                                         className="map-input"
                                         value={serverForm.rcon_password}
                                         onChange={(e) => setServerForm({...serverForm, rcon_password: e.target.value})}
-                                        placeholder={editingServer ? 'Оставьте пустым для сохранения текущего' : 'rcon_password'}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Пароль сервера
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="map-input"
-                                        value={serverForm.server_password}
-                                        onChange={(e) => setServerForm({...serverForm, server_password: e.target.value})}
-                                        placeholder="server_pass"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        GOTV IP
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="map-input"
-                                        value={serverForm.gotv_host}
-                                        onChange={(e) => setServerForm({...serverForm, gotv_host: e.target.value})}
-                                        placeholder="80.87.200.23"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        GOTV порт
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="map-input"
-                                        value={serverForm.gotv_port}
-                                        onChange={(e) => setServerForm({...serverForm, gotv_port: parseInt(e.target.value)})}
-                                        placeholder="27020"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        GOTV пароль
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="map-input"
-                                        value={serverForm.gotv_password}
-                                        onChange={(e) => setServerForm({...serverForm, gotv_password: e.target.value})}
-                                        placeholder="gotv_pass"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Максимум слотов
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="map-input"
-                                        value={serverForm.max_slots}
-                                        onChange={(e) => setServerForm({...serverForm, max_slots: parseInt(e.target.value)})}
-                                        placeholder="10"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Локация
-                                    </label>
-                                    <select
-                                        className="map-input"
-                                        value={serverForm.location}
-                                        onChange={(e) => setServerForm({...serverForm, location: e.target.value})}
-                                    >
-                                        <option value="RU">RU - Россия</option>
-                                        <option value="EU">EU - Европа</option>
-                                        <option value="NA">NA - Северная Америка</option>
-                                        <option value="AS">AS - Азия</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Статус
-                                    </label>
-                                    <select
-                                        className="map-input"
-                                        value={serverForm.status}
-                                        onChange={(e) => setServerForm({...serverForm, status: e.target.value})}
-                                    >
-                                        <option value="offline">offline</option>
-                                        <option value="online">online</option>
-                                        <option value="in_use">in_use</option>
-                                        <option value="maintenance">maintenance</option>
-                                    </select>
-                                </div>
-
-                                <div style={{ gridColumn: '1 / -1' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
-                                        Описание
-                                    </label>
-                                    <textarea
-                                        className="map-input"
-                                        value={serverForm.description}
-                                        onChange={(e) => setServerForm({...serverForm, description: e.target.value})}
-                                        placeholder="Описание сервера"
-                                        rows="3"
-                                        style={{ width: '100%', resize: 'vertical' }}
+                                        placeholder={editingServer ? 'Оставьте пустым чтобы не менять' : 'Введите RCON пароль'}
                                     />
                                 </div>
                             </div>
@@ -2407,7 +2272,7 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                                 <button 
                                     className="btn" 
                                     onClick={saveServer}
-                                    disabled={serversLoading || !serverForm.name || !serverForm.host || (!editingServer && !serverForm.rcon_password)}
+                                    disabled={serversLoading || !serverForm.name || !serverForm.host || !serverForm.port || (!editingServer && !serverForm.rcon_password)}
                                 >
                                     {serversLoading ? 'Сохранение...' : 'Сохранить'}
                                 </button>
@@ -2434,10 +2299,7 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                             <thead>
                                 <tr style={{ background: '#000', borderBottom: '2px solid #ff0000' }}>
                                     <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>Название</th>
-                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>Адрес</th>
-                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>GOTV</th>
-                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Слоты</th>
-                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Локация</th>
+                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>Адрес (IP:Порт)</th>
                                     <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Статус</th>
                                     <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Действия</th>
                                 </tr>
@@ -2445,7 +2307,7 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                             <tbody>
                                 {servers.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: '#aaa' }}>
+                                        <td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#aaa' }}>
                                             Нет серверов
                                         </td>
                                     </tr>
@@ -2454,30 +2316,9 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                                         <tr key={server.id} style={{ borderBottom: '1px solid #333' }}>
                                             <td style={{ padding: '12px' }}>
                                                 <div style={{ fontWeight: 'bold', color: '#fff' }}>{server.name}</div>
-                                                {server.description && (
-                                                    <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
-                                                        {server.description}
-                                                    </div>
-                                                )}
                                             </td>
                                             <td style={{ padding: '12px', color: '#fff' }}>
                                                 {server.host}:{server.port}
-                                            </td>
-                                            <td style={{ padding: '12px', color: '#fff' }}>
-                                                {server.gotv_host ? `${server.gotv_host}:${server.gotv_port}` : '-'}
-                                            </td>
-                                            <td style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>
-                                                {server.max_slots}
-                                            </td>
-                                            <td style={{ padding: '12px', textAlign: 'center' }}>
-                                                <span style={{ 
-                                                    padding: '4px 8px', 
-                                                    background: '#222', 
-                                                    borderRadius: '4px',
-                                                    color: '#fff'
-                                                }}>
-                                                    {server.location}
-                                                </span>
                                             </td>
                                             <td style={{ padding: '12px', textAlign: 'center' }}>
                                                 <span style={{ 
@@ -2533,14 +2374,13 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                     }}>
                         <h4 style={{ marginTop: 0, color: '#fff' }}>ℹ️ Информация</h4>
                         <p style={{ color: '#aaa', margin: '8px 0' }}>
-                            Здесь можно добавлять и управлять CS2 серверами для автоматизации матчей.
-                            RCON пароль используется для отправки команд на сервер.
+                            Управление CS2 серверами для автоматизации матчей. RCON используется для отправки команд на сервер.
                         </p>
                         <p style={{ color: '#aaa', margin: '8px 0' }}>
-                            <strong style={{ color: '#fff' }}>Функции:</strong> проверка статуса сервера, загрузка конфигов матчей, управление игровым процессом.
+                            <strong style={{ color: '#fff' }}>Что нужно:</strong> Название, IP адрес, Порт, RCON пароль
                         </p>
-                        <p style={{ color: '#888', fontSize: '12px', margin: '8px 0' }}>
-                            API: GET /api/servers, POST /api/servers/:id/command, POST /api/servers/:id/check
+                        <p style={{ color: '#aaa', margin: '8px 0' }}>
+                            <strong style={{ color: '#fff' }}>Функции:</strong> проверка статуса (🔍), загрузка конфигов матчей, управление игровым процессом через RCON команды
                         </p>
                     </div>
                 </div>

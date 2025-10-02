@@ -10,7 +10,7 @@ const rconService = require('../services/rconService');
 
 // Middleware для проверки прав администратора
 const requireAdmin = (req, res, next) => {
-    if (!req.user?.is_admin) {
+    if (!req.user || req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Требуются права администратора' });
     }
     next();
@@ -103,17 +103,9 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const {
             name,
-            description,
             host,
             port,
-            rcon_password,
-            server_password,
-            gotv_host,
-            gotv_port,
-            gotv_password,
-            max_slots,
-            location,
-            metadata
+            rcon_password
         } = req.body;
         
         // Валидация обязательных полей
@@ -123,25 +115,20 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
             });
         }
         
+        const serverPort = port || 27015;
+        
         const result = await pool.query(
             `INSERT INTO cs2_servers 
-            (name, description, host, port, rcon_password, server_password, 
-             gotv_host, gotv_port, gotv_password, max_slots, location, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            (name, host, port, rcon_password, gotv_host, gotv_port)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *`,
             [
                 name,
-                description || null,
                 host,
-                port || 27015,
+                serverPort,
                 rcon_password,
-                server_password || null,
-                gotv_host || null,
-                gotv_port || 27020,
-                gotv_password || null,
-                max_slots || 10,
-                location || null,
-                metadata ? JSON.stringify(metadata) : '{}'
+                host, // GOTV использует тот же IP
+                serverPort // GOTV использует тот же порт
             ]
         );
         
@@ -180,19 +167,9 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         const { id } = req.params;
         const {
             name,
-            description,
             host,
             port,
-            rcon_password,
-            server_password,
-            gotv_host,
-            gotv_port,
-            gotv_password,
-            status,
-            max_slots,
-            location,
-            is_active,
-            metadata
+            rcon_password
         } = req.body;
         
         // Проверяем существование сервера
@@ -209,57 +186,19 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             updates.push(`name = $${paramIndex++}`);
             params.push(name);
         }
-        if (description !== undefined) {
-            updates.push(`description = $${paramIndex++}`);
-            params.push(description);
-        }
         if (host !== undefined) {
-            updates.push(`host = $${paramIndex++}`);
+            updates.push(`host = $${paramIndex++}, gotv_host = $${paramIndex++}`);
             params.push(host);
+            params.push(host); // GOTV использует тот же IP
         }
         if (port !== undefined) {
-            updates.push(`port = $${paramIndex++}`);
+            updates.push(`port = $${paramIndex++}, gotv_port = $${paramIndex++}`);
             params.push(port);
+            params.push(port); // GOTV использует тот же порт
         }
-        if (rcon_password !== undefined) {
+        if (rcon_password !== undefined && rcon_password !== '') {
             updates.push(`rcon_password = $${paramIndex++}`);
             params.push(rcon_password);
-        }
-        if (server_password !== undefined) {
-            updates.push(`server_password = $${paramIndex++}`);
-            params.push(server_password);
-        }
-        if (gotv_host !== undefined) {
-            updates.push(`gotv_host = $${paramIndex++}`);
-            params.push(gotv_host);
-        }
-        if (gotv_port !== undefined) {
-            updates.push(`gotv_port = $${paramIndex++}`);
-            params.push(gotv_port);
-        }
-        if (gotv_password !== undefined) {
-            updates.push(`gotv_password = $${paramIndex++}`);
-            params.push(gotv_password);
-        }
-        if (status !== undefined) {
-            updates.push(`status = $${paramIndex++}`);
-            params.push(status);
-        }
-        if (max_slots !== undefined) {
-            updates.push(`max_slots = $${paramIndex++}`);
-            params.push(max_slots);
-        }
-        if (location !== undefined) {
-            updates.push(`location = $${paramIndex++}`);
-            params.push(location);
-        }
-        if (is_active !== undefined) {
-            updates.push(`is_active = $${paramIndex++}`);
-            params.push(is_active);
-        }
-        if (metadata !== undefined) {
-            updates.push(`metadata = $${paramIndex++}`);
-            params.push(JSON.stringify(metadata));
         }
         
         updates.push(`updated_at = CURRENT_TIMESTAMP`);
