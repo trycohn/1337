@@ -71,7 +71,7 @@ function PostMatchFeedbackModal({ isOpen, onClose, matchId, matchInfo }) {
             });
             
             if (response.data.success) {
-                alert(`✅ ${response.data.message}\n\nОценок сохранено: ${response.data.feedbacks_saved}\nНачислено coins: ${response.data.coins_earned} 🪙`);
+                alert(`✅ ${response.data.message}\n\nОценок сохранено: ${response.data.feedbacks_saved}\nНачислено Leet Coins: ${response.data.coins_earned} 🪙`);
                 onClose();
             }
         } catch (error) {

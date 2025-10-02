@@ -218,7 +218,7 @@ router.post('/:matchId/feedback', authenticateToken, async (req, res) => {
             success: true,
             feedbacks_saved: savedFeedbacks,
             coins_earned: totalCoins,
-            message: `Спасибо за feedback! Вам начислено ${totalCoins} coins 🪙`
+            message: `Спасибо за feedback! Вам начислено ${totalCoins} Leet Coins 🪙`
         });
         
     } catch (error) {

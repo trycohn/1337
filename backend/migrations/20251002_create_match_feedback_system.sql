@@ -157,9 +157,9 @@ CREATE TABLE IF NOT EXISTS user_coins (
 
 CREATE INDEX IF NOT EXISTS idx_user_coins_balance ON user_coins(balance);
 
-COMMENT ON TABLE user_coins IS 'Баланс виртуальной валюты (coins) пользователей';
+COMMENT ON TABLE user_coins IS 'Баланс виртуальной валюты Leet Coins пользователей';
 
--- История транзакций coins
+-- История транзакций Leet Coins
 CREATE TABLE IF NOT EXISTS coin_transactions (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS coin_transactions (
 CREATE INDEX IF NOT EXISTS idx_coin_transactions_user ON coin_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_coin_transactions_created ON coin_transactions(created_at);
 
-COMMENT ON TABLE coin_transactions IS 'История транзакций виртуальной валюты';
+COMMENT ON TABLE coin_transactions IS 'История транзакций виртуальной валюты Leet Coins';
 
 -- ============================================================================
 -- ФУНКЦИЯ: Обновление репутации игрока

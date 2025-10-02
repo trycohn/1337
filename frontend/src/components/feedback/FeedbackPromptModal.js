@@ -47,7 +47,7 @@ function FeedbackPromptModal({ isOpen, onClose, onAccept, matchInfo }) {
                     <div className="feedback-prompt-reward">
                         <span className="reward-icon">🪙</span>
                         <span className="reward-text">
-                            Получите до <strong>50 coins</strong> за вашу оценку
+                            Получите до <strong>50 Leet Coins</strong> за вашу оценку
                         </span>
                     </div>
                     

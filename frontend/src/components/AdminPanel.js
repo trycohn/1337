@@ -116,6 +116,12 @@ function AdminPanel() {
     const [feedbackFilter, setFeedbackFilter] = useState({ min_cheating: 3, max_reputation: 50 });
     const [feedbackSort, setFeedbackSort] = useState('cheating_desc');
     const [feedbackPagination, setFeedbackPagination] = useState({ total: 0, limit: 50, offset: 0 });
+    
+    // 📊 MATCHZY STATS: State для детальной статистики
+    const [matchzyAnomalies, setMatchzyAnomalies] = useState([]);
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [leaderboardMetric, setLeaderboardMetric] = useState('rating');
+    const [statsLoading, setStatsLoading] = useState(false);
     // Preloaded avatars state
     const [preAvatars, setPreAvatars] = useState([]);
     const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
@@ -448,6 +454,40 @@ function AdminPanel() {
             console.error('❌ Ошибка загрузки статистики feedbacks:', err);
         }
     }, []);
+    
+    // 📊 MATCHZY: Загрузка аномалий
+    const fetchMatchzyAnomalies = useCallback(async () => {
+        setStatsLoading(true);
+        try {
+            const response = await api.get('/api/player-stats/admin/stats-anomalies', {
+                params: { reviewed: 'false', severity: null, limit: 50 },
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                setMatchzyAnomalies(response.data.anomalies);
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки аномалий:', err);
+        } finally {
+            setStatsLoading(false);
+        }
+    }, []);
+    
+    // 📊 MATCHZY: Загрузка leaderboard
+    const fetchLeaderboard = useCallback(async () => {
+        try {
+            const response = await api.get('/api/player-stats/leaderboard', {
+                params: { metric: leaderboardMetric, limit: 20 }
+            });
+            
+            if (response.data.success) {
+                setLeaderboard(response.data.leaderboard);
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки leaderboard:', err);
+        }
+    }, [leaderboardMetric]);
 
     useEffect(() => {
         checkAdminAccess();
@@ -469,8 +509,13 @@ function AdminPanel() {
                 fetchSuspiciousPlayers();
                 fetchFeedbackStats();
             }
+            // 📊 MATCHZY: Загружаем Stats при первой загрузке
+            if (activeTab === 'matchzyStats') {
+                fetchMatchzyAnomalies();
+                fetchLeaderboard();
+            }
         }
-    }, [user, fetchRequests, fetchStats, activeTab, fetchTrustScores, fetchTrustStats, fetchSuspiciousPlayers, fetchFeedbackStats]);
+    }, [user, fetchRequests, fetchStats, activeTab, fetchTrustScores, fetchTrustStats, fetchSuspiciousPlayers, fetchFeedbackStats, fetchMatchzyAnomalies, fetchLeaderboard]);
 
     const fetchDefaultMapPool = useCallback(async () => {
         try {
@@ -788,6 +833,12 @@ function AdminPanel() {
                     onClick={() => setActiveTab('feedbacks')}
                 >
                     🎮 Feedbacks
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'matchzyStats' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('matchzyStats')}
+                >
+                    📊 Stats
                 </button>
             </div>
 
@@ -1819,6 +1870,206 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                             </div>
                         </>
                     )}
+                </div>
+            )}
+            
+            {/* 📊 MATCHZY STATS: Вкладка детальной статистики */}
+            {activeTab === 'matchzyStats' && (
+                <div className="matchzy-stats-tab">
+                    <h2>📊 MatchZy Detailed Statistics</h2>
+                    
+                    {/* Аномалии */}
+                    <div className="anomalies-section">
+                        <h3>🚨 Обнаруженные аномалии ({matchzyAnomalies.length})</h3>
+                        
+                        {statsLoading ? (
+                            <div className="admin-loading">Загрузка аномалий...</div>
+                        ) : matchzyAnomalies.length === 0 ? (
+                            <div className="stats-empty">
+                                🎉 Нет непроверенных аномалий! Все чисто.
+                            </div>
+                        ) : (
+                            <div className="anomalies-table">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Игрок</th>
+                                            <th>Аномалия</th>
+                                            <th>Severity</th>
+                                            <th>Значение</th>
+                                            <th>Турнир/Матч</th>
+                                            <th>Дата</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {matchzyAnomalies.map(anomaly => (
+                                            <tr key={anomaly.id} className={`anomaly-row severity-${anomaly.severity.toLowerCase()}`}>
+                                                <td>{anomaly.user_id}</td>
+                                                <td>
+                                                    <div className="user-cell">
+                                                        <strong>{anomaly.username}</strong>
+                                                        <span className="user-email">{anomaly.email}</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className="anomaly-type">
+                                                        {anomaly.anomaly_type === 'high_hs_percentage' && 'HS% Too High'}
+                                                        {anomaly.anomaly_type === 'sudden_improvement' && 'Sudden Improvement'}
+                                                        {anomaly.anomaly_type === 'low_utility_high_kills' && 'Low Utility / High K/D'}
+                                                        {anomaly.anomaly_type === 'perfect_clutches' && 'Perfect Clutches'}
+                                                        {anomaly.anomaly_type === 'prefiring_pattern' && 'Prefiring Pattern'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`severity-badge severity-${anomaly.severity.toLowerCase()}`}>
+                                                        {anomaly.severity === 'CRITICAL' && '🔴 CRITICAL'}
+                                                        {anomaly.severity === 'HIGH' && '⚠️ HIGH'}
+                                                        {anomaly.severity === 'MEDIUM' && '🟡 MEDIUM'}
+                                                        {anomaly.severity === 'LOW' && '🟢 LOW'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className="anomaly-value">
+                                                        {anomaly.value?.toFixed(1) || '-'}
+                                                        {anomaly.expected_value && (
+                                                            <span className="anomaly-expected"> (exp: {anomaly.expected_value.toFixed(0)})</span>
+                                                        )}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className="anomaly-context">
+                                                        {anomaly.tournament_name || 'Unknown'}<br/>
+                                                        <span style={{color: '#666', fontSize: '11px'}}>Match #{anomaly.match_id}</span>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className="anomaly-date">
+                                                        {new Date(anomaly.detected_at).toLocaleDateString('ru-RU')}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="anomaly-actions">
+                                                        <button
+                                                            className="btn-small"
+                                                            onClick={() => {
+                                                                alert(`Аномалия: ${anomaly.description}\n\nEvidence: ${JSON.stringify(anomaly.evidence, null, 2)}`);
+                                                            }}
+                                                            title="Детали"
+                                                        >
+                                                            🔍
+                                                        </button>
+                                                        <button
+                                                            className="btn-small danger"
+                                                            onClick={() => banUser(anomaly.user_id, anomaly.username)}
+                                                            title="Забанить"
+                                                        >
+                                                            🚫
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Leaderboards */}
+                    <div className="leaderboards-section">
+                        <div className="leaderboard-header">
+                            <h3>🏆 Leaderboards</h3>
+                            <select 
+                                className="status-filter"
+                                value={leaderboardMetric}
+                                onChange={(e) => {
+                                    setLeaderboardMetric(e.target.value);
+                                    setTimeout(fetchLeaderboard, 100);
+                                }}
+                            >
+                                <option value="rating">Rating</option>
+                                <option value="kd">K/D Ratio</option>
+                                <option value="hs">Headshot %</option>
+                                <option value="adr">ADR</option>
+                                <option value="clutch">Clutch Success</option>
+                            </select>
+                        </div>
+                        
+                        {leaderboard.length === 0 ? (
+                            <div className="stats-empty">Нет данных для leaderboard</div>
+                        ) : (
+                            <div className="leaderboard-table">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Игрок</th>
+                                            <th>Матчи</th>
+                                            <th>W/L</th>
+                                            <th>K/D</th>
+                                            <th>ADR</th>
+                                            <th>HS%</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leaderboard.map((player, index) => (
+                                            <tr key={player.user_id} className={index < 3 ? 'top-player' : ''}>
+                                                <td>
+                                                    <span className="rank-number">
+                                                        {index + 1}
+                                                        {index === 0 && ' 🥇'}
+                                                        {index === 1 && ' 🥈'}
+                                                        {index === 2 && ' 🥉'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="leaderboard-player">
+                                                        <img 
+                                                            src={player.avatar_url || '/default-avatar.png'}
+                                                            alt={player.username}
+                                                            className="player-avatar-small"
+                                                            onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                                        />
+                                                        <strong>{player.username}</strong>
+                                                    </div>
+                                                </td>
+                                                <td>{player.total_matches}</td>
+                                                <td>
+                                                    <span className="wl-stat">
+                                                        {player.total_wins}W-{player.total_losses}L
+                                                    </span>
+                                                </td>
+                                                <td className={player.kd_ratio > 1 ? 'good' : 'bad'}>
+                                                    {player.kd_ratio?.toFixed(2)}
+                                                </td>
+                                                <td>{player.avg_adr?.toFixed(0)}</td>
+                                                <td>{player.avg_hs_percentage?.toFixed(0)}%</td>
+                                                <td className="rating-highlight">
+                                                    {player.avg_rating?.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Инфо */}
+                    <div className="matchzy-info">
+                        <h4>ℹ️ Информация</h4>
+                        <p>
+                            Детальная статистика собирается автоматически от MatchZy plugin на игровых серверах.
+                            Аномалии детектируются в реальном времени и интегрированы с Trust Score системой.
+                        </p>
+                        <p className="info-note">
+                            <strong>Настройка MatchZy:</strong> Добавьте webhook URL в конфиг сервера.
+                            Детали в документации: ГОТОВО_ДЕТАЛЬНАЯ_СТАТИСТИКА_MATCHZY.md
+                        </p>
+                    </div>
                 </div>
             )}
         </div>

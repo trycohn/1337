@@ -1260,4 +1260,211 @@
         gap: 12px;
     }
 }
+
+/* ============================================================================ */
+/* 📊 MATCHZY STATS TAB */
+/* ============================================================================ */
+
+.matchzy-stats-tab {
+    padding: 24px 0;
+}
+
+.matchzy-stats-tab h2 {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 32px;
+}
+
+.matchzy-stats-tab h3 {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 32px 0 16px 0;
+}
+
+.matchzy-stats-tab h4 {
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 12px;
+}
+
+/* Anomalies Section */
+.anomalies-section {
+    margin-bottom: 40px;
+}
+
+.anomalies-table {
+    overflow-x: auto;
+}
+
+.anomaly-row.severity-critical {
+    background: rgba(255, 0, 0, 0.08);
+}
+
+.anomaly-row.severity-high {
+    background: rgba(255, 170, 0, 0.05);
+}
+
+.anomaly-type {
+    font-size: 13px;
+    color: #cccccc;
+}
+
+.severity-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.severity-badge.severity-critical {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff0000;
+    border: 1px solid #ff0000;
+}
+
+.severity-badge.severity-high {
+    background: rgba(255, 170, 0, 0.2);
+    color: #ffaa00;
+    border: 1px solid #ffaa00;
+}
+
+.severity-badge.severity-medium {
+    background: rgba(255, 255, 0, 0.1);
+    color: #ffff00;
+    border: 1px solid #999900;
+}
+
+.severity-badge.severity-low {
+    background: rgba(0, 170, 0, 0.1);
+    color: #00ff00;
+    border: 1px solid #00aa00;
+}
+
+.anomaly-value {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.anomaly-expected {
+    color: #666666;
+    font-size: 11px;
+}
+
+.anomaly-context {
+    font-size: 12px;
+    color: #cccccc;
+}
+
+.anomaly-date {
+    color: #999999;
+    font-size: 12px;
+}
+
+.anomaly-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* Leaderboards */
+.leaderboards-section {
+    margin-bottom: 40px;
+}
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.leaderboard-table {
+    overflow-x: auto;
+}
+
+.leaderboard-table .top-player {
+    background: rgba(255, 215, 0, 0.03);
+}
+
+.leaderboard-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #333;
+}
+
+.rank-number {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.wl-stat {
+    color: #999999;
+    font-size: 13px;
+}
+
+.leaderboard-table .good {
+    color: #00ff00;
+}
+
+.leaderboard-table .bad {
+    color: #ff6666;
+}
+
+.rating-highlight {
+    color: #ffaa00;
+    font-weight: 600;
+}
+
+/* Info Section */
+.matchzy-info {
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.matchzy-info p {
+    color: #cccccc;
+    line-height: 1.6;
+    margin: 8px 0;
+}
+
+.matchzy-info .info-note {
+    color: #999999;
+    font-size: 13px;
+    padding-top: 12px;
+    border-top: 1px solid #222222;
+}
+
+.matchzy-info .info-note strong {
+    color: #ffffff;
+}
+
+.stats-empty {
+    text-align: center;
+    padding: 48px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    color: #999999;
+    font-size: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .leaderboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
  
