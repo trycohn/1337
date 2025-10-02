@@ -5,6 +5,7 @@ import { ensureHttps } from '../../utils/userHelpers';
 import { getParticipantInfo } from '../../utils/participantHelpers';
 import MatchMetaTags from '../SEO/MatchMetaTags';
 import MatchShareModal from './modals/MatchShareModal';
+import { MatchFeedbackManager } from '../feedback'; // 🎮 Match Feedback система
 import './MatchDetailsPage.css';
 
 /**
@@ -30,6 +31,10 @@ const MatchDetailsPage = () => {
     const [editingMapKey, setEditingMapKey] = useState(null);
     const [userIsAdmin, setUserIsAdmin] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
+    
+    // 🎮 FEEDBACK: State для системы обратной связи
+    const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
+    const [feedbackChecked, setFeedbackChecked] = useState(false);
 
     useEffect(() => {
         // Фолбек: получаем id пользователя из JWT, если контекст недоступен
@@ -47,6 +52,34 @@ const MatchDetailsPage = () => {
     useEffect(() => {
         fetchMatchDetails();
     }, [tournamentId, matchId]);
+    
+    // 🎮 FEEDBACK: Проверка нужно ли показать feedback
+    useEffect(() => {
+        const checkFeedbackNeeded = async () => {
+            if (!match || !user || feedbackChecked) return;
+            
+            // Только для завершенных матчей
+            if (match.state !== 'DONE' && match.state !== 'SCORE_DONE') return;
+            
+            try {
+                const response = await api.get(`/api/matches/${match.id}/feedback/check`);
+                
+                if (!response.data.feedback_given) {
+                    // Даем время посмотреть результат, потом показываем модалку
+                    setTimeout(() => {
+                        setShowFeedbackPrompt(true);
+                    }, 1500);
+                }
+                
+                setFeedbackChecked(true);
+            } catch (error) {
+                console.log('Feedback check failed, skipping');
+                setFeedbackChecked(true);
+            }
+        };
+        
+        checkFeedbackNeeded();
+    }, [match, user, feedbackChecked]);
 
     const fetchMatchDetails = async () => {
         try {
@@ -999,6 +1032,19 @@ const MatchDetailsPage = () => {
                 selectedMatch={match}
                 tournament={tournament}
             />
+            
+            {/* 🎮 FEEDBACK: Система обратной связи после матча */}
+            {user && match && (
+                <MatchFeedbackManager
+                    matchId={match.id}
+                    matchInfo={{
+                        team1_name: match.team1_name,
+                        team2_name: match.team2_name
+                    }}
+                    triggerShow={showFeedbackPrompt}
+                    onComplete={() => setShowFeedbackPrompt(false)}
+                />
+            )}
         </div>
     );
 };

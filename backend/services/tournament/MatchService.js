@@ -315,6 +315,30 @@ class MatchService {
                 console.log(`✅ [safeUpdateMatchResult] Результат матча обновлен`);
                 matchWasUpdated = true;
             }
+            
+            // 🎮 FEEDBACK: Создать pending feedback для всех участников матча
+            try {
+                if (winnerId && matchData.team1_id && matchData.team2_id) {
+                    const participantsResult = await client.query(`
+                        SELECT DISTINCT ttm.user_id
+                        FROM tournament_team_members ttm
+                        WHERE ttm.team_id IN ($1, $2)
+                    `, [matchData.team1_id, matchData.team2_id]);
+                    
+                    for (const participant of participantsResult.rows) {
+                        await client.query(`
+                            INSERT INTO match_feedback_pending (match_id, user_id)
+                            VALUES ($1, $2)
+                            ON CONFLICT (match_id, user_id) DO NOTHING
+                        `, [matchId, participant.user_id]);
+                    }
+                    
+                    console.log(`📝 [Match Feedback] Создано ${participantsResult.rows.length} pending feedback запросов для матча ${matchId}`);
+                }
+            } catch (feedbackError) {
+                console.error('⚠️ [Match Feedback] Ошибка создания pending:', feedbackError);
+                // Не падаем, это некритично
+            }
 
             // 2.1. 🆕 Принудительное завершение BYE vs BYE и матчей без winner: статус -> completed
             const shouldSoftComplete = (!winnerId) && (!matchData.team1_id && !matchData.team2_id);

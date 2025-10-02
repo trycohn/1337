@@ -1,0 +1,205 @@
+/* 🎮 FEEDBACK PROMPT MODAL STYLES */
+
+.feedback-prompt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.feedback-prompt-modal {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideIn 0.3s ease-out 0.1s forwards;
+}
+
+.feedback-prompt-content {
+    padding: 40px 32px;
+    text-align: center;
+}
+
+/* Иконка */
+.feedback-prompt-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Заголовок */
+.feedback-prompt-title {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    line-height: 1.3;
+}
+
+/* Описание */
+.feedback-prompt-description {
+    color: #999999;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+/* Информация о матче */
+.feedback-prompt-match-info {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.match-info-label {
+    color: #666666;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.match-info-teams {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Награда */
+.feedback-prompt-reward {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.reward-icon {
+    font-size: 32px;
+}
+
+.reward-text {
+    color: #cccccc;
+    font-size: 15px;
+}
+
+.reward-text strong {
+    color: #ff0000;
+    font-weight: 600;
+}
+
+/* Кнопки */
+.feedback-prompt-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.feedback-btn {
+    flex: 1;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.feedback-btn-primary {
+    background: #ff0000;
+    color: #000000;
+}
+
+.feedback-btn-primary:hover {
+    background: #ff3333;
+    transform: translateY(-1px);
+}
+
+.feedback-btn-secondary {
+    background: #111111;
+    color: #999999;
+    border: 1px solid #333333;
+}
+
+.feedback-btn-secondary:hover {
+    background: #1a1a1a;
+    color: #ffffff;
+}
+
+/* Подсказка */
+.feedback-prompt-hint {
+    color: #666666;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .feedback-prompt-modal {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .feedback-prompt-content {
+        padding: 32px 24px;
+    }
+    
+    .feedback-prompt-title {
+        font-size: 20px;
+    }
+    
+    .feedback-prompt-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .feedback-btn {
+        width: 100%;
+    }
+}
+

@@ -1,0 +1,347 @@
+/* 🎮 POST-MATCH FEEDBACK MODAL STYLES */
+
+.post-feedback-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    opacity: 0;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.post-feedback-modal {
+    background-color: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideIn 0.3s ease-out 0.1s forwards;
+}
+
+/* Header */
+.post-feedback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid #333333;
+    position: sticky;
+    top: 0;
+    background: #111111;
+    z-index: 10;
+}
+
+.post-feedback-header h2 {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.feedback-close-btn {
+    background: none;
+    border: none;
+    color: #999999;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.feedback-close-btn:hover {
+    background: #222222;
+    color: #ffffff;
+}
+
+/* Content */
+.post-feedback-content {
+    padding: 32px;
+}
+
+.feedback-loading {
+    text-align: center;
+    padding: 64px 32px;
+    color: #999999;
+    font-size: 16px;
+}
+
+/* Section */
+.feedback-section {
+    margin-bottom: 40px;
+}
+
+.feedback-section:last-of-type {
+    margin-bottom: 24px;
+}
+
+.feedback-section-title {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+}
+
+.feedback-section-hint {
+    color: #666666;
+    font-size: 13px;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+}
+
+/* Player Card */
+.feedback-player-card {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s ease;
+}
+
+.feedback-player-card:hover {
+    border-color: #333333;
+}
+
+.feedback-player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.feedback-player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #333333;
+}
+
+.feedback-player-name {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Rating Group */
+.feedback-rating-group {
+    margin-bottom: 16px;
+}
+
+.feedback-rating-group:last-child {
+    margin-bottom: 0;
+}
+
+.feedback-rating-group label {
+    display: block;
+    color: #999999;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.feedback-rating-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Rating Buttons */
+.rating-btn {
+    padding: 10px 16px;
+    background: #000000;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    color: #cccccc;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.rating-btn:hover {
+    background: #1a1a1a;
+    border-color: #444444;
+    transform: translateY(-1px);
+}
+
+.rating-btn.active {
+    border-width: 2px;
+    font-weight: 600;
+}
+
+/* Цвета для разных типов оценок */
+.rating-btn.rating-clean.active {
+    background: rgba(0, 170, 0, 0.15);
+    border-color: #00aa00;
+    color: #00ff00;
+}
+
+.rating-btn.rating-good.active {
+    background: rgba(0, 170, 0, 0.15);
+    border-color: #00aa00;
+    color: #00ff00;
+}
+
+.rating-btn.rating-normal.active {
+    background: rgba(102, 102, 102, 0.15);
+    border-color: #666666;
+    color: #cccccc;
+}
+
+.rating-btn.rating-suspicious.active {
+    background: rgba(255, 170, 0, 0.15);
+    border-color: #ffaa00;
+    color: #ffaa00;
+}
+
+.rating-btn.rating-cheating.active {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.rating-btn.rating-toxic.active {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.rating-btn.rating-bad.active {
+    background: rgba(255, 102, 0, 0.15);
+    border-color: #ff6600;
+    color: #ff6600;
+}
+
+.rating-btn.rating-silent.active {
+    background: rgba(102, 102, 102, 0.15);
+    border-color: #666666;
+    color: #999999;
+}
+
+/* Summary */
+.feedback-summary {
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.feedback-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.feedback-summary-item span {
+    color: #999999;
+    font-size: 13px;
+}
+
+.feedback-summary-item strong {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.reward-highlight {
+    color: #ff0000 !important;
+}
+
+/* Actions */
+.post-feedback-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* Warning */
+.feedback-warning {
+    text-align: center;
+    color: #666666;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Scrollbar */
+.post-feedback-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.post-feedback-modal::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+.post-feedback-modal::-webkit-scrollbar-thumb {
+    background: #333333;
+    border-radius: 4px;
+}
+
+.post-feedback-modal::-webkit-scrollbar-thumb:hover {
+    background: #444444;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .post-feedback-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .post-feedback-header {
+        padding: 20px 24px;
+    }
+    
+    .post-feedback-header h2 {
+        font-size: 18px;
+    }
+    
+    .post-feedback-content {
+        padding: 24px 20px;
+    }
+    
+    .feedback-player-card {
+        padding: 16px;
+    }
+    
+    .feedback-rating-buttons {
+        flex-direction: column;
+    }
+    
+    .rating-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .post-feedback-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .feedback-btn {
+        width: 100%;
+    }
+    
+    .feedback-summary {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}
+
