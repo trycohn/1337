@@ -1712,6 +1712,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
 
             let configJsonSaved = false;
             let publicUrl = null;
+            let fullConfigUrl = null;
             try {
                 const path = require('path');
                 const fs = require('fs');
@@ -1721,25 +1722,104 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 const filePath = path.join(baseDir, fileName);
                 fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
                 publicUrl = `/lobby/${lobbyId}/${fileName}`;
+                fullConfigUrl = `https://1337community.com${publicUrl}`;
                 configJsonSaved = true;
+                console.log(`✅ JSON конфиг сохранен: ${fullConfigUrl}`);
             } catch (writeErr) {
-                console.error('Ошибка записи JSON конфига лобби', writeErr);
-                // продолжим создание матч‑ссылок даже если файл не записался
+                console.error('❌ Ошибка записи JSON конфига лобби', writeErr);
             }
 
-            // Автогенерация ссылок подключения — сразу после завершения пик/бан
-            const cs2Host = process.env.CS2_TEST_HOST || process.env.CS2_GOTV_HOST || '127.0.0.1';
-            const cs2Port = process.env.CS2_TEST_PORT || process.env.CS2_GOTV_PORT || '27015';
-            const cs2Pass = process.env.CS2_TEST_PASSWORD || process.env.CS2_GOTV_PASSWORD || '';
-            const connect = `steam://connect/${cs2Host}:${cs2Port}/${cs2Pass ? cs2Pass : ''}`.replace(/\/$/, '');
-            const gotvHost = process.env.CS2_GOTV_HOST || cs2Host;
-            const gotvPort = process.env.CS2_GOTV_PORT || '27020';
-            const gotvPass = process.env.CS2_GOTV_PASSWORD || cs2Pass;
-            const gotv = `steam://rungameid/730//+connect ${gotvHost}:${gotvPort};+password ${gotvPass}`;
+            // 🖥️ Поиск свободного сервера и загрузка конфига через RCON
+            let selectedServer = null;
+            let connect = null;
+            let gotv = null;
 
+            if (configJsonSaved && fullConfigUrl) {
+                try {
+                    const rconService = require('../services/rconService');
+                    
+                    // Получаем список активных серверов
+                    const serversResult = await client.query(
+                        'SELECT * FROM cs2_servers WHERE is_active = true ORDER BY id ASC'
+                    );
+                    
+                    console.log(`🔍 Поиск свободного сервера среди ${serversResult.rows.length} активных...`);
+                    
+                    for (const server of serversResult.rows) {
+                        try {
+                            console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
+                            
+                            // Пытаемся загрузить конфиг на сервер
+                            const result = await rconService.executeCommand(
+                                server.id,
+                                `matchzy_loadmatch_url "${fullConfigUrl}"`,
+                                {
+                                    userId: req.user.id,
+                                    lobbyId: lobbyId,
+                                    logToDb: true
+                                }
+                            );
+                            
+                            // Проверяем ответ сервера
+                            const response = result.response || '';
+                            
+                            if (response.includes('A match is already setup') || 
+                                response.includes('already setup') ||
+                                response.includes('match already in progress')) {
+                                console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
+                                continue; // Сервер занят, пробуем следующий
+                            }
+                            
+                            // Если дошли сюда - команда успешно выполнена
+                            selectedServer = server;
+                            
+                            // Формируем ссылки подключения
+                            const serverPass = server.server_password || '';
+                            connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
+                            
+                            const gotvHost = server.gotv_host || server.host;
+                            const gotvPort = server.gotv_port || server.port;
+                            const gotvPass = server.gotv_password || '';
+                            gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
+                            
+                            console.log(`✅ Конфиг загружен на сервер ${server.name}!`);
+                            console.log(`📡 Connect: ${connect}`);
+                            console.log(`📺 GOTV: ${gotv}`);
+                            
+                            // Обновляем статус сервера
+                            await client.query(
+                                'UPDATE cs2_servers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                ['in_use', server.id]
+                            );
+                            
+                            break; // Сервер найден, выходим из цикла
+                            
+                        } catch (serverError) {
+                            console.error(`❌ Ошибка на сервере ${server.name}:`, serverError.message);
+                            continue; // Пробуем следующий сервер
+                        }
+                    }
+                    
+                    if (!selectedServer) {
+                        console.warn('⚠️ Не найдено свободных серверов! Лобби создано без привязки к серверу.');
+                    }
+                    
+                } catch (rconError) {
+                    console.error('❌ Ошибка при поиске сервера:', rconError);
+                }
+            }
+
+            // Обновляем лобби с данными сервера (если найден)
             const updStatus = await client.query(
-                `UPDATE admin_match_lobbies SET status = 'match_created', connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *`,
-                [connect, gotv, lobbyId]
+                `UPDATE admin_match_lobbies 
+                SET status = 'match_created', 
+                    server_id = $1, 
+                    connect_url = $2, 
+                    gotv_url = $3, 
+                    updated_at = CURRENT_TIMESTAMP 
+                WHERE id = $4 
+                RETURNING *`,
+                [selectedServer?.id || null, connect || null, gotv || null, lobbyId]
             );
             // Создаём запись в matches как custom match
             const participants = await client.query(

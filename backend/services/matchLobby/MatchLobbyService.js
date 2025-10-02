@@ -533,6 +533,13 @@ class MatchLobbyService {
                 
                 // Сохраняем выбранные карты в матч
                 await this.saveSelectedMapsToMatch(client, lobbyId);
+                
+                // 🖥️ Генерируем JSON и загружаем на свободный сервер
+                try {
+                    await this.generateAndLoadMatchConfig(client, lobbyId, userId);
+                } catch (configError) {
+                    console.error('⚠️ Ошибка генерации/загрузки конфига, но матч создан:', configError);
+                }
             } else {
                 await client.query(
                     'UPDATE match_lobbies SET current_turn_team_id = $1 WHERE id = $2',
@@ -627,6 +634,176 @@ class MatchLobbyService {
         );
         
         return matchResult.rows[0];
+    }
+    
+    // 🖥️ Генерация JSON конфига и загрузка на сервер
+    static async generateAndLoadMatchConfig(client, lobbyId, userId) {
+        const path = require('path');
+        const fs = require('fs');
+        
+        // Получаем данные лобби и матча
+        const lobbyResult = await client.query(
+            `SELECT ml.*, m.id as match_id, m.team1_name, m.team2_name, m.match_format
+             FROM match_lobbies ml
+             LEFT JOIN matches m ON m.id = ml.match_id
+             WHERE ml.id = $1`,
+            [lobbyId]
+        );
+        
+        if (!lobbyResult.rows[0]) {
+            throw new Error('Лобби не найдено');
+        }
+        
+        const lobby = lobbyResult.rows[0];
+        const matchId = lobby.match_id;
+        
+        if (!matchId) {
+            throw new Error('Матч не найден');
+        }
+        
+        // Получаем выбранные карты
+        const mapsResult = await client.query(
+            `SELECT map_name 
+             FROM map_selections 
+             WHERE lobby_id = $1 AND action_type = 'pick'
+             ORDER BY action_order`,
+            [lobbyId]
+        );
+        
+        const maplist = mapsResult.rows.map(r => String(r.map_name));
+        
+        // Получаем участников матча (команды и игроки)
+        const participantsResult = await client.query(
+            `SELECT mlp.team_number, u.steam_id, u.username
+             FROM match_lobby_participants mlp
+             JOIN users u ON u.id = mlp.user_id
+             WHERE mlp.lobby_id = $1
+             ORDER BY mlp.team_number`,
+            [lobbyId]
+        );
+        
+        const team1Players = participantsResult.rows
+            .filter(p => p.team_number === 1)
+            .map(p => p.steam_id)
+            .filter(Boolean)
+            .map(String);
+            
+        const team2Players = participantsResult.rows
+            .filter(p => p.team_number === 2)
+            .map(p => p.steam_id)
+            .filter(Boolean)
+            .map(String);
+        
+        // Формируем конфиг
+        const matchFormat = lobby.match_format || 'bo1';
+        const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
+        const num_maps = numMapsByFormat[matchFormat] || maplist.length;
+        
+        const ts = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+        const matchid = `${matchFormat}-match${matchId}-${ts}`;
+        
+        const cfg = {
+            matchid,
+            num_maps,
+            maplist,
+            skip_veto: true,
+            side_type: 'standard',
+            team1: { 
+                name: lobby.team1_name || 'Team 1', 
+                players: team1Players 
+            },
+            team2: { 
+                name: lobby.team2_name || 'Team 2', 
+                players: team2Players 
+            }
+        };
+        
+        // Сохраняем JSON
+        const baseDir = path.join(__dirname, '..', '..', 'lobbies', String(lobbyId));
+        fs.mkdirSync(baseDir, { recursive: true });
+        const fileName = `${matchid}.json`;
+        const filePath = path.join(baseDir, fileName);
+        fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
+        
+        const publicUrl = `/lobby/${lobbyId}/${fileName}`;
+        const fullConfigUrl = `https://1337community.com${publicUrl}`;
+        
+        console.log(`✅ [Tournament] JSON конфиг сохранен: ${fullConfigUrl}`);
+        
+        // Ищем свободный сервер и загружаем конфиг
+        const rconService = require('../rconService');
+        const serversResult = await client.query(
+            'SELECT * FROM cs2_servers WHERE is_active = true ORDER BY id ASC'
+        );
+        
+        console.log(`🔍 [Tournament] Поиск свободного сервера среди ${serversResult.rows.length} активных...`);
+        
+        let selectedServer = null;
+        
+        for (const server of serversResult.rows) {
+            try {
+                console.log(`⏳ [Tournament] Проверка сервера ${server.name} (${server.host}:${server.port})...`);
+                
+                const result = await rconService.executeCommand(
+                    server.id,
+                    `matchzy_loadmatch_url "${fullConfigUrl}"`,
+                    {
+                        userId: userId,
+                        lobbyId: lobbyId,
+                        logToDb: true
+                    }
+                );
+                
+                const response = result.response || '';
+                
+                if (response.includes('A match is already setup') || 
+                    response.includes('already setup') ||
+                    response.includes('match already in progress')) {
+                    console.log(`⚠️ [Tournament] Сервер ${server.name} занят, пробуем следующий...`);
+                    continue;
+                }
+                
+                selectedServer = server;
+                
+                // Формируем ссылки подключения
+                const serverPass = server.server_password || '';
+                const connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
+                
+                const gotvHost = server.gotv_host || server.host;
+                const gotvPort = server.gotv_port || server.port;
+                const gotvPass = server.gotv_password || '';
+                const gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
+                
+                console.log(`✅ [Tournament] Конфиг загружен на сервер ${server.name}!`);
+                console.log(`📡 [Tournament] Connect: ${connect}`);
+                
+                // Обновляем матч с данными сервера
+                await client.query(
+                    `UPDATE matches 
+                     SET connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP
+                     WHERE id = $3`,
+                    [connect, gotv, matchId]
+                );
+                
+                // Обновляем статус сервера
+                await client.query(
+                    'UPDATE cs2_servers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                    ['in_use', server.id]
+                );
+                
+                break;
+                
+            } catch (serverError) {
+                console.error(`❌ [Tournament] Ошибка на сервере ${server.name}:`, serverError.message);
+                continue;
+            }
+        }
+        
+        if (!selectedServer) {
+            console.warn('⚠️ [Tournament] Не найдено свободных серверов!');
+        }
+        
+        return selectedServer;
     }
     
     // 📡 Подписка на обновления лобби (для WebSocket)

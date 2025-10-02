@@ -167,6 +167,10 @@ function isExcludedFromRateLimiting(path) {
   return excludedFromRateLimiting.some(pattern => pattern.test(path));
 }
 
+// Добавляем роут /lobby в публичные маршруты (для доступа серверов к JSON конфигам)
+publicRoutes.push(/^\/lobby\//);
+excludedFromRateLimiting.push(/^\/lobby\//);
+
 // Настройка лимита запросов - увеличенные значения под массовые подключения из одного IP (клуб/NAT)
 const strictLimiter = rateLimiter({
     windowMs: 15 * 60 * 1000, // 15 минут

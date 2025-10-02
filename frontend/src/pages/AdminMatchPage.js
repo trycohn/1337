@@ -694,29 +694,36 @@ function AdminMatchPage() {
                 </div>
             )}
 
-            {connectInfo && (
+            {/* Подключение к серверу */}
+            {lobby && lobby.status === 'match_created' && (
                 <div className="custom-match-mt-16">
-                    <h3>Подключение</h3>
-                    {connectInfo.connect && (
-                        <div className="list-row">
-                            <div className="list-row-left">
-                                <span>Игроки:</span>
-                                <code className="code-inline custom-match-code-inline">{connectInfo.connect}</code>
+                    <h3>Подключение к серверу</h3>
+                    {connectInfo && connectInfo.connect ? (
+                        <>
+                            <div className="list-row">
+                                <div className="list-row-left">
+                                    <span>Игроки:</span>
+                                    <code className="code-inline custom-match-code-inline">{connectInfo.connect}</code>
+                                </div>
+                                <div className="list-row-right">
+                                    <button className="btn btn-secondary" onClick={() => copy(connectInfo.connect)}>Копировать</button>
+                                </div>
                             </div>
-                            <div className="list-row-right">
-                                <button className="btn btn-secondary" onClick={() => copy(connectInfo.connect)}>Копировать</button>
-                            </div>
-                        </div>
-                    )}
-                    {connectInfo.gotv && (
-                        <div className="list-row custom-match-mt-8">
-                            <div className="list-row-left">
-                                <span>GOTV:</span>
-                                <code className="code-inline custom-match-code-inline">{connectInfo.gotv}</code>
-                            </div>
-                            <div className="list-row-right">
-                                <button className="btn btn-secondary" onClick={() => copy(connectInfo.gotv)}>Копировать</button>
-                            </div>
+                            {connectInfo.gotv && (
+                                <div className="list-row custom-match-mt-8">
+                                    <div className="list-row-left">
+                                        <span>GOTV:</span>
+                                        <code className="code-inline custom-match-code-inline">{connectInfo.gotv}</code>
+                                    </div>
+                                    <div className="list-row-right">
+                                        <button className="btn btn-secondary" onClick={() => copy(connectInfo.gotv)}>Копировать</button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="admin-error">
+                            ⚠️ Не удалось найти свободный сервер. Добавьте сервера в админ панели или проверьте что они активны и доступны.
                         </div>
                     )}
                 </div>
