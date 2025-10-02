@@ -699,11 +699,13 @@ class MatchLobbyService {
         const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
         const num_maps = numMapsByFormat[matchFormat] || maplist.length;
         
-        const ts = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
-        const matchid = `${matchFormat}-match${matchId}-${ts}`;
+        // MatchZy требует matchid как ЧИСЛО (integer)!
+        const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
+        const matchid = parseInt(`${matchId}${ts}`); // ЧИСЛО, не строка!
+        const fileName = `${matchFormat}-match${matchId}-${Date.now()}.json`;
         
         const cfg = {
-            matchid,
+            matchid, // ЧИСЛО для MatchZy
             num_maps,
             maplist,
             skip_veto: true,
@@ -721,14 +723,13 @@ class MatchLobbyService {
         // Сохраняем JSON
         const baseDir = path.join(__dirname, '..', '..', 'lobbies', String(lobbyId));
         fs.mkdirSync(baseDir, { recursive: true });
-        const fileName = `${matchid}.json`;
         const filePath = path.join(baseDir, fileName);
         fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
         
         const publicUrl = `/lobby/${lobbyId}/${fileName}`;
         const fullConfigUrl = `https://1337community.com${publicUrl}`;
         
-        console.log(`✅ [Tournament] JSON конфиг сохранен: ${fullConfigUrl}`);
+        console.log(`✅ [Tournament] JSON конфиг сохранен: ${fullConfigUrl} (matchid=${matchid})`);
         
         // Ищем свободный сервер и загружаем конфиг
         const rconService = require('../rconService');

@@ -1744,11 +1744,13 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             const numMapsByFormat = { bo1: 1, bo3: 3, bo5: 5 };
             const num_maps = numMapsByFormat[format] || 1;
 
-            // Формируем уникальный matchid и путь для сохранения
-            const ts = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
-            const matchid = `${format}-lobby${lobbyId}-${ts}`;
+            // Формируем уникальный matchid (ЧИСЛО для MatchZy!)
+            const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
+            const matchid = parseInt(`${lobbyId}${ts}`); // ЧИСЛО, не строка!
+            const fileName = `${format}-lobby${lobbyId}-${Date.now()}.json`;
+            
             const cfg = {
-                matchid,
+                matchid, // ЧИСЛО для MatchZy
                 num_maps,
                 maplist,
                 skip_veto: true,
@@ -1765,13 +1767,12 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 const fs = require('fs');
                 const baseDir = path.join(__dirname, '..', 'lobbies', String(lobbyId));
                 fs.mkdirSync(baseDir, { recursive: true });
-                const fileName = `${matchid}.json`;
                 const filePath = path.join(baseDir, fileName);
                 fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), 'utf8');
                 publicUrl = `/lobby/${lobbyId}/${fileName}`;
                 fullConfigUrl = `https://1337community.com${publicUrl}`;
                 configJsonSaved = true;
-                console.log(`✅ JSON конфиг сохранен: ${fullConfigUrl}`);
+                console.log(`✅ JSON конфиг сохранен: ${fullConfigUrl} (matchid=${matchid})`);
             } catch (writeErr) {
                 console.error('❌ Ошибка записи JSON конфига лобби', writeErr);
             }
