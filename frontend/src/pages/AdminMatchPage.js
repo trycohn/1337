@@ -592,8 +592,16 @@ function AdminMatchPage() {
                     {(() => {
                         const ready1 = lobby?.team1_ready === true;
                         const ready2 = lobby?.team2_ready === true;
-                        const canStart = !!lobbyId && (lobby?.status === 'ready' || (ready1 && ready2));
-                        const tip = `Готовность команд: ${ready1 ? 'Team_A — ready' : 'Team_A — not ready'}, ${ready2 ? 'Team_B — ready' : 'Team_B — not ready'}`;
+                        const hasFormat = !!lobby?.match_format;
+                        const canStart = !!lobbyId && hasFormat && (lobby?.status === 'ready' || (ready1 && ready2));
+                        
+                        let tip = '';
+                        if (!hasFormat) {
+                            tip = 'Сначала выберите формат матча (BO1, BO3 или BO5)';
+                        } else if (!ready1 || !ready2) {
+                            tip = `Готовность команд: ${ready1 ? 'Team_A — ready' : 'Team_A — not ready'}, ${ready2 ? 'Team_B — ready' : 'Team_B — not ready'}`;
+                        }
+                        
                         return (
                             <div className="custom-match-tooltip">
                                 <button
@@ -614,8 +622,9 @@ function AdminMatchPage() {
                                             }
                                         }
                                     }}
+                                    title={canStart ? 'Начать процедуру выбора карт' : tip}
                                 >Начать BAN/PICK</button>
-                                {!canStart && (
+                                {!canStart && tip && (
                                     <div className="custom-match-tooltip-bubble">{tip}</div>
                                 )}
                             </div>
