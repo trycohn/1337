@@ -1776,7 +1776,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 console.error('❌ Ошибка записи JSON конфига лобби', writeErr);
             }
 
-            // 🖥️ Поиск свободного сервера и загрузка конфига через RCON
+            // 🖥️ Поиск свободного сервера и загрузка конфига через RCON (с таймаутом)
             let selectedServer = null;
             let connect = null;
             let gotv = null;
@@ -1792,60 +1792,69 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                     
                     console.log(`🔍 Поиск свободного сервера среди ${serversResult.rows.length} активных...`);
                     
-                    for (const server of serversResult.rows) {
-                        try {
-                            console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
-                            
-                            // Пытаемся загрузить конфиг на сервер
-                            const result = await rconService.executeCommand(
-                                server.id,
-                                `matchzy_loadmatch_url "${fullConfigUrl}"`,
-                                {
-                                    userId: req.user.id,
-                                    lobbyId: lobbyId,
-                                    logToDb: true
+                    const SERVER_SEARCH_TIMEOUT = 15000; // 15 секунд макс на весь поиск
+                    const serverSearchPromise = (async () => {
+                        for (const server of serversResult.rows) {
+                            try {
+                                console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
+                                
+                                // Пытаемся загрузить конфиг на сервер (с таймаутом)
+                                const result = await Promise.race([
+                                    rconService.executeCommand(
+                                        server.id,
+                                        `matchzy_loadmatch_url "${fullConfigUrl}"`,
+                                        { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
+                                    ),
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('Server timeout')), 8000))
+                                ]);
+                                
+                                // Проверяем ответ сервера
+                                const response = result.response || '';
+                                
+                                if (response.includes('A match is already setup') || 
+                                    response.includes('already setup') ||
+                                    response.includes('match already in progress')) {
+                                    console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
+                                    continue;
                                 }
-                            );
-                            
-                            // Проверяем ответ сервера
-                            const response = result.response || '';
-                            
-                            if (response.includes('A match is already setup') || 
-                                response.includes('already setup') ||
-                                response.includes('match already in progress')) {
-                                console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
-                                continue; // Сервер занят, пробуем следующий
+                                
+                                // Если дошли сюда - команда успешно выполнена
+                                selectedServer = server;
+                                
+                                // Формируем ссылки подключения
+                                const serverPass = server.server_password || '';
+                                connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
+                                
+                                const gotvHost = server.gotv_host || server.host;
+                                const gotvPort = server.gotv_port || server.port;
+                                const gotvPass = server.gotv_password || '';
+                                gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
+                                
+                                console.log(`✅ Конфиг загружен на сервер ${server.name}!`);
+                                console.log(`📡 Connect: ${connect}`);
+                                console.log(`📺 GOTV: ${gotv}`);
+                                
+                                // Обновляем статус сервера
+                                await client.query(
+                                    'UPDATE cs2_servers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                                    ['in_use', server.id]
+                                );
+                                
+                                break;
+                                
+                            } catch (serverError) {
+                                console.error(`❌ Ошибка на сервере ${server.name}:`, serverError.message);
+                                continue;
                             }
-                            
-                            // Если дошли сюда - команда успешно выполнена
-                            selectedServer = server;
-                            
-                            // Формируем ссылки подключения
-                            const serverPass = server.server_password || '';
-                            connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
-                            
-                            const gotvHost = server.gotv_host || server.host;
-                            const gotvPort = server.gotv_port || server.port;
-                            const gotvPass = server.gotv_password || '';
-                            gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
-                            
-                            console.log(`✅ Конфиг загружен на сервер ${server.name}!`);
-                            console.log(`📡 Connect: ${connect}`);
-                            console.log(`📺 GOTV: ${gotv}`);
-                            
-                            // Обновляем статус сервера
-                            await client.query(
-                                'UPDATE cs2_servers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-                                ['in_use', server.id]
-                            );
-                            
-                            break; // Сервер найден, выходим из цикла
-                            
-                        } catch (serverError) {
-                            console.error(`❌ Ошибка на сервере ${server.name}:`, serverError.message);
-                            continue; // Пробуем следующий сервер
                         }
-                    }
+                    })();
+                    
+                    await Promise.race([
+                        serverSearchPromise,
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Server search timeout')), SERVER_SEARCH_TIMEOUT))
+                    ]).catch(() => {
+                        console.warn('⚠️ Таймаут поиска серверов, продолжаем без RCON');
+                    });
                     
                     if (!selectedServer) {
                         console.warn('⚠️ Не найдено свободных серверов! Лобби создано без привязки к серверу.');
