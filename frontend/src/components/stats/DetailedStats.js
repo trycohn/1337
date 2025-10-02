@@ -48,7 +48,6 @@ function DetailedStats({ userId }) {
     if (!stats || stats.total_matches === 0) {
         return (
             <div className="detailed-stats-empty">
-                <div className="empty-icon">📊</div>
                 <h3>Пока нет детальной статистики</h3>
                 <p>Сыграйте матчи на серверах 1337 для сбора детальной статистики</p>
             </div>
