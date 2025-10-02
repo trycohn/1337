@@ -99,6 +99,15 @@ function AdminPanel() {
     const [requests, setRequests] = useState([]);
     const [stats, setStats] = useState({});
     const [activeTab, setActiveTab] = useState('requests');
+    
+    // 🛡️ АНТИЧИТ: Trust Scores state
+    const [trustScores, setTrustScores] = useState([]);
+    const [trustStats, setTrustStats] = useState(null);
+    const [trustLoading, setTrustLoading] = useState(false);
+    const [trustFilter, setTrustFilter] = useState('all');
+    const [trustSort, setTrustSort] = useState('score_asc');
+    const [trustPagination, setTrustPagination] = useState({ total: 0, limit: 50, offset: 0 });
+    const [recheckingUserId, setRecheckingUserId] = useState(null);
     // Preloaded avatars state
     const [preAvatars, setPreAvatars] = useState([]);
     const [preAvatarsLoading, setPreAvatarsLoading] = useState(false);
@@ -280,6 +289,113 @@ function AdminPanel() {
             console.error('Ошибка загрузки статистики:', err);
         }
     }, []);
+    
+    // 🛡️ АНТИЧИТ: Загрузка Trust Scores
+    const fetchTrustScores = useCallback(async () => {
+        setTrustLoading(true);
+        try {
+            const action = trustFilter === 'all' ? '' : trustFilter;
+            const response = await api.get('/api/admin/trust-scores', {
+                params: {
+                    limit: trustPagination.limit,
+                    offset: trustPagination.offset,
+                    sort: trustSort,
+                    action: action || undefined
+                },
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                setTrustScores(response.data.data);
+                setTrustPagination(prev => ({
+                    ...prev,
+                    total: response.data.pagination.total
+                }));
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки Trust Scores:', err);
+        } finally {
+            setTrustLoading(false);
+        }
+    }, [trustFilter, trustSort, trustPagination.limit, trustPagination.offset]);
+    
+    // 🛡️ АНТИЧИТ: Загрузка статистики Trust Scores
+    const fetchTrustStats = useCallback(async () => {
+        try {
+            const response = await api.get('/api/admin/trust-scores/stats', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                setTrustStats(response.data.stats);
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки статистики Trust Scores:', err);
+        }
+    }, []);
+    
+    // 🛡️ АНТИЧИТ: Перепроверка Trust Score пользователя
+    const recheckTrustScore = async (userId) => {
+        setRecheckingUserId(userId);
+        try {
+            const response = await api.post(`/api/admin/trust-scores/${userId}/recheck`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                alert(`✅ Trust Score перепроверен:\n\nПользователь: ${response.data.user.username}\nНовый счет: ${response.data.trust_result.score}/100\nДействие: ${response.data.trust_result.action}`);
+                fetchTrustScores();
+                fetchTrustStats();
+            }
+        } catch (err) {
+            console.error('❌ Ошибка перепроверки Trust Score:', err);
+            alert('❌ Ошибка перепроверки Trust Score');
+        } finally {
+            setRecheckingUserId(null);
+        }
+    };
+    
+    // 🛡️ АНТИЧИТ: Бан пользователя
+    const banUser = async (userId, username) => {
+        const reason = prompt(`Укажите причину бана для пользователя ${username}:`);
+        if (!reason) return;
+        
+        try {
+            const response = await api.post(`/api/admin/users/${userId}/ban`, 
+                { reason },
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }}
+            );
+            
+            if (response.data.success) {
+                alert(`✅ Пользователь ${username} успешно забанен`);
+                fetchTrustScores();
+                fetchTrustStats();
+            }
+        } catch (err) {
+            console.error('❌ Ошибка бана пользователя:', err);
+            alert('❌ Ошибка бана пользователя');
+        }
+    };
+    
+    // 🛡️ АНТИЧИТ: Разбан пользователя
+    const unbanUser = async (userId, username) => {
+        if (!window.confirm(`Разбанить пользователя ${username}?`)) return;
+        
+        try {
+            const response = await api.post(`/api/admin/users/${userId}/unban`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (response.data.success) {
+                alert(`✅ Пользователь ${username} разбанен`);
+                fetchTrustScores();
+                fetchTrustStats();
+            }
+        } catch (err) {
+            console.error('❌ Ошибка разбана пользователя:', err);
+            alert('❌ Ошибка разбана пользователя');
+        }
+    };
 
     useEffect(() => {
         checkAdminAccess();
@@ -291,8 +407,13 @@ function AdminPanel() {
             fetchStats();
             fetchDefaultMapPool();
             fetchPreloadedAvatars();
+            // 🛡️ АНТИЧИТ: Загружаем Trust Scores при первой загрузке
+            if (activeTab === 'trustScores') {
+                fetchTrustScores();
+                fetchTrustStats();
+            }
         }
-    }, [user, fetchRequests, fetchStats]);
+    }, [user, fetchRequests, fetchStats, activeTab, fetchTrustScores, fetchTrustStats]);
 
     const fetchDefaultMapPool = useCallback(async () => {
         try {
@@ -598,6 +719,12 @@ function AdminPanel() {
                     onClick={() => setActiveTab('avatars')}
                 >
                     Предзагруженные аватарки
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'trustScores' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('trustScores')}
+                >
+                    🛡️ Trust Scores
                 </button>
             </div>
 
@@ -1086,6 +1213,274 @@ function AdminPanel() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+            
+            {/* 🛡️ АНТИЧИТ: Вкладка Trust Scores */}
+            {activeTab === 'trustScores' && (
+                <div className="trust-scores-tab">
+                    <h2>🛡️ Система Trust Scores (Античит)</h2>
+                    
+                    {/* Статистика */}
+                    {trustStats && (
+                        <div className="trust-stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-value">{trustStats.total_users || 0}</div>
+                                <div className="stat-label">Всего проверено</div>
+                            </div>
+                            <div className="stat-card stat-trusted">
+                                <div className="stat-value">{trustStats.trusted || 0}</div>
+                                <div className="stat-label">✅ Доверенные</div>
+                            </div>
+                            <div className="stat-card stat-normal">
+                                <div className="stat-value">{trustStats.normal || 0}</div>
+                                <div className="stat-label">Обычные</div>
+                            </div>
+                            <div className="stat-card stat-watch">
+                                <div className="stat-value">{trustStats.watch_list || 0}</div>
+                                <div className="stat-label">⚠️ На контроле</div>
+                            </div>
+                            <div className="stat-card stat-soft-ban">
+                                <div className="stat-value">{trustStats.soft_bans || 0}</div>
+                                <div className="stat-label">Требуют проверки</div>
+                            </div>
+                            <div className="stat-card stat-banned">
+                                <div className="stat-value">{trustStats.banned_users || 0}</div>
+                                <div className="stat-label">❌ В бане</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value">{trustStats.avg_score || 0}</div>
+                                <div className="stat-label">Средний Trust Score</div>
+                            </div>
+                            <div className="stat-card stat-vac">
+                                <div className="stat-value">{trustStats.users_with_vac || 0}</div>
+                                <div className="stat-label">С VAC банами</div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Фильтры и сортировка */}
+                    <div className="trust-filters">
+                        <div className="filter-group">
+                            <label>Фильтр по действию:</label>
+                            <select 
+                                className="status-filter"
+                                value={trustFilter}
+                                onChange={(e) => {
+                                    setTrustFilter(e.target.value);
+                                    setTrustPagination(prev => ({ ...prev, offset: 0 }));
+                                }}
+                            >
+                                <option value="all">Все</option>
+                                <option value="TRUSTED">✅ Доверенные</option>
+                                <option value="NORMAL">Обычные</option>
+                                <option value="WATCH_LIST">⚠️ На контроле</option>
+                                <option value="SOFT_BAN">Требуют проверки</option>
+                                <option value="HARD_BAN">❌ Заблокированные</option>
+                            </select>
+                        </div>
+                        
+                        <div className="filter-group">
+                            <label>Сортировка:</label>
+                            <select 
+                                className="status-filter"
+                                value={trustSort}
+                                onChange={(e) => setTrustSort(e.target.value)}
+                            >
+                                <option value="score_asc">По счету (возр.)</option>
+                                <option value="score_desc">По счету (убыв.)</option>
+                                <option value="recent">По дате (новые)</option>
+                                <option value="oldest">По дате (старые)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    {/* Таблица Trust Scores */}
+                    {trustLoading ? (
+                        <div className="admin-loading">Загрузка Trust Scores...</div>
+                    ) : (
+                        <>
+                            <div className="trust-scores-table">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Пользователь</th>
+                                            <th>Trust Score</th>
+                                            <th>Действие</th>
+                                            <th>Аккаунт</th>
+                                            <th>CS2</th>
+                                            <th>Steam</th>
+                                            <th>Баны</th>
+                                            <th>Статус</th>
+                                            <th>Проверен</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {trustScores.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="11" style={{ textAlign: 'center', padding: '32px', color: '#999' }}>
+                                                    Нет данных
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            trustScores.map((ts) => (
+                                                <tr key={ts.id} className={`trust-row trust-action-${ts.trust_action.toLowerCase()}`}>
+                                                    <td>{ts.user_id}</td>
+                                                    <td>
+                                                        <div className="user-cell">
+                                                            <strong>{ts.username}</strong>
+                                                            <span className="user-email">{ts.email}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className={`trust-score-badge score-${Math.floor(ts.trust_score / 20)}`}>
+                                                            {ts.trust_score}/100
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`trust-action-badge action-${ts.trust_action.toLowerCase()}`}>
+                                                            {ts.trust_action === 'TRUSTED' && '✅ Доверенный'}
+                                                            {ts.trust_action === 'NORMAL' && 'Обычный'}
+                                                            {ts.trust_action === 'WATCH_LIST' && '⚠️ Контроль'}
+                                                            {ts.trust_action === 'SOFT_BAN' && '🔸 Проверка'}
+                                                            {ts.trust_action === 'HARD_BAN' && '❌ Блокирован'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="account-info">
+                                                            <span>{ts.account_age_days || 0} дн.</span>
+                                                            <span className="info-secondary">Lvl {ts.steam_level || 0}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className="cs2-hours">{ts.cs2_hours || 0}ч</span>
+                                                    </td>
+                                                    <td>
+                                                        <a 
+                                                            href={ts.steam_url} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="steam-link"
+                                                        >
+                                                            {ts.profile_public ? '🔓' : '🔒'} Профиль
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <div className="bans-info">
+                                                            {ts.vac_bans > 0 && <span className="ban-badge vac">VAC: {ts.vac_bans}</span>}
+                                                            {ts.game_bans > 0 && <span className="ban-badge game">Game: {ts.game_bans}</span>}
+                                                            {ts.vac_bans === 0 && ts.game_bans === 0 && <span className="ban-badge clean">Чисто</span>}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`user-status ${ts.is_banned ? 'banned' : 'active'}`}>
+                                                            {ts.is_banned ? '❌ Забанен' : '✅ Активен'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span className="checked-date">
+                                                            {new Date(ts.checked_at).toLocaleDateString('ru-RU')}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div className="trust-actions">
+                                                            <button
+                                                                className="btn-small"
+                                                                onClick={() => recheckTrustScore(ts.user_id)}
+                                                                disabled={recheckingUserId === ts.user_id}
+                                                                title="Перепроверить Trust Score"
+                                                            >
+                                                                {recheckingUserId === ts.user_id ? '⏳' : '🔄'}
+                                                            </button>
+                                                            {!ts.is_banned ? (
+                                                                <button
+                                                                    className="btn-small danger"
+                                                                    onClick={() => banUser(ts.user_id, ts.username)}
+                                                                    title="Забанить пользователя"
+                                                                >
+                                                                    🚫
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    className="btn-small"
+                                                                    onClick={() => unbanUser(ts.user_id, ts.username)}
+                                                                    title="Разбанить пользователя"
+                                                                >
+                                                                    ✅
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* Пагинация */}
+                            {trustPagination.total > trustPagination.limit && (
+                                <div className="trust-pagination">
+                                    <button
+                                        className="btn"
+                                        onClick={() => setTrustPagination(prev => ({
+                                            ...prev,
+                                            offset: Math.max(0, prev.offset - prev.limit)
+                                        }))}
+                                        disabled={trustPagination.offset === 0}
+                                    >
+                                        ← Предыдущая
+                                    </button>
+                                    <span className="pagination-info">
+                                        Показано {trustPagination.offset + 1}—{Math.min(trustPagination.offset + trustPagination.limit, trustPagination.total)} из {trustPagination.total}
+                                    </span>
+                                    <button
+                                        className="btn"
+                                        onClick={() => setTrustPagination(prev => ({
+                                            ...prev,
+                                            offset: prev.offset + prev.limit
+                                        }))}
+                                        disabled={trustPagination.offset + trustPagination.limit >= trustPagination.total}
+                                    >
+                                        Следующая →
+                                    </button>
+                                </div>
+                            )}
+                            
+                            {/* Легенда */}
+                            <div className="trust-legend">
+                                <h3>Расшифровка Trust Score:</h3>
+                                <div className="legend-grid">
+                                    <div className="legend-item">
+                                        <span className="trust-score-badge score-4">80-100</span>
+                                        <span>✅ Доверенный - опытный аккаунт, чистая история</span>
+                                    </div>
+                                    <div className="legend-item">
+                                        <span className="trust-score-badge score-3">60-79</span>
+                                        <span>Обычный - нормальный пользователь</span>
+                                    </div>
+                                    <div className="legend-item">
+                                        <span className="trust-score-badge score-2">40-59</span>
+                                        <span>⚠️ На контроле - повышенное внимание</span>
+                                    </div>
+                                    <div className="legend-item">
+                                        <span className="trust-score-badge score-1">20-39</span>
+                                        <span>🔸 Требует проверки - подозрительный аккаунт</span>
+                                    </div>
+                                    <div className="legend-item">
+                                        <span className="trust-score-badge score-0">0-19</span>
+                                        <span>❌ Заблокирован - критически низкий счет</span>
+                                    </div>
+                                </div>
+                                <p className="legend-note">
+                                    <strong>Автоматическая блокировка:</strong> VAC бан &lt;1 года, Game бан &lt;6 месяцев<br />
+                                    <strong>Перепроверка:</strong> Раз в 7 дней при входе
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>

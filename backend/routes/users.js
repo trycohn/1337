@@ -428,13 +428,44 @@ router.get('/steam-callback', async (req, res) => {
         const steamId = openidParams['openid.claimed_id'].split('/').pop();
         console.log('Extracted Steam ID:', steamId);
 
+        // 🛡️ АНТИЧИТ: Импортируем сервис проверки Trust Score
+        const { verifyUserSteamAccount, needsTrustScoreRecheck } = require('../services/antiCheat');
+
         // Проверяем, существует ли пользователь с данным Steam ID
         const existingUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         console.log('Existing user with steam_id:', existingUser.rows);
 
         if (existingUser.rows.length > 0) {
-            // Если пользователь существует, создаем JWT и перенаправляем
+            // Если пользователь существует
             const user = existingUser.rows[0];
+            
+            // 🛡️ АНТИЧИТ: Проверяем, не забанен ли пользователь
+            if (user.is_banned) {
+                console.log('❌ User is banned, rejecting login');
+                return res.redirect(`https://1337community.com/auth-error?reason=banned&message=${encodeURIComponent(user.ban_reason || 'Your account has been banned')}`);
+            }
+            
+            // 🛡️ АНТИЧИТ: Перепроверяем Trust Score раз в 7 дней
+            const needsRecheck = await needsTrustScoreRecheck(user.id);
+            
+            if (needsRecheck) {
+                console.log('🔍 Trust Score recheck required for user:', user.id);
+                const trustResult = await verifyUserSteamAccount(steamId, user.id);
+                
+                if (trustResult.action === 'HARD_BAN') {
+                    // Баним аккаунт
+                    await pool.query(
+                        'UPDATE users SET is_banned = true, ban_reason = $1, banned_at = NOW() WHERE id = $2',
+                        [trustResult.reason, user.id]
+                    );
+                    console.log('❌ User banned due to Trust Score:', user.id);
+                    return res.redirect(`https://1337community.com/auth-error?reason=trust_score&message=${encodeURIComponent(trustResult.reason)}`);
+                }
+                
+                console.log(`✅ Trust Score OK: ${trustResult.score}/100 (${trustResult.action})`);
+            }
+            
+            // Создаем JWT и перенаправляем
             const token = jwt.sign(
                 { id: user.id, role: user.role, username: user.username },
                 process.env.JWT_SECRET,
@@ -443,7 +474,26 @@ router.get('/steam-callback', async (req, res) => {
             console.log('User exists, redirecting with token:', token);
             return res.redirect(`https://1337community.com/auth-callback?token=${token}`);
         } else {
-            // Если пользователь не существует, получаем его никнейм из Steam
+            // Если пользователь не существует
+            
+            // 🛡️ АНТИЧИТ: Проверяем Trust Score ПЕРЕД созданием аккаунта
+            console.log('🛡️ New user registration, checking Trust Score...');
+            const trustResult = await verifyUserSteamAccount(steamId);
+            
+            if (trustResult.action === 'HARD_BAN') {
+                console.log('❌ Registration blocked due to Trust Score:', trustResult.reason);
+                return res.redirect(`https://1337community.com/auth-error?reason=vac_ban&message=${encodeURIComponent(trustResult.reason || 'Your Steam account is not eligible for registration')}`);
+            }
+            
+            if (trustResult.action === 'SOFT_BAN') {
+                console.log('⚠️ Registration flagged for review:', trustResult.reason);
+                // Можно добавить дополнительную верификацию (email, SMS и т.д.)
+                // Пока пропускаем с предупреждением
+            }
+            
+            console.log(`✅ Trust Score OK for new user: ${trustResult.score}/100 (${trustResult.action})`);
+            
+            // Получаем никнейм из Steam
             const apiKey = process.env.STEAM_API_KEY;
             const steamUserResponse = await axios.get(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`);
             const steamNickname = steamUserResponse.data.response.players[0].personaname;
@@ -456,6 +506,10 @@ router.get('/steam-callback', async (req, res) => {
             );
             
             const newUser = newUserResult.rows[0];
+            
+            // 🛡️ АНТИЧИТ: Сохраняем Trust Score в БД
+            await verifyUserSteamAccount(steamId, newUser.id);
+            console.log('✅ Trust Score saved for new user:', newUser.id);
             
             // Создаем JWT для нового пользователя
             const token = jwt.sign(

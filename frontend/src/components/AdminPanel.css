@@ -547,4 +547,502 @@
     }
 }
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
+
+/* ============================================================================ */
+/* 🛡️ TRUST SCORES TAB */
+/* ============================================================================ */
+
+.trust-scores-tab {
+    padding: 24px 0;
+}
+
+.trust-scores-tab h2 {
+    color: #ffffff;
+    margin-bottom: 32px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Статистика Trust Scores */
+.trust-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.trust-stats-grid .stat-card {
+    background: #111111;
+    border: 1px solid #333333;
+    padding: 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.trust-stats-grid .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: #444444;
+}
+
+.trust-stats-grid .stat-trusted {
+    border-color: #00aa00;
+}
+
+.trust-stats-grid .stat-normal {
+    border-color: #666666;
+}
+
+.trust-stats-grid .stat-watch {
+    border-color: #ffaa00;
+}
+
+.trust-stats-grid .stat-soft-ban {
+    border-color: #ff6600;
+}
+
+.trust-stats-grid .stat-banned {
+    border-color: #ff0000;
+}
+
+.trust-stats-grid .stat-vac {
+    border-color: #990000;
+}
+
+/* Фильтры */
+.trust-filters {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.trust-filters .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.trust-filters label {
+    color: #999999;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Таблица Trust Scores */
+.trust-scores-table {
+    overflow-x: auto;
+    margin-bottom: 24px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #111111;
+    border: 1px solid #333333;
+}
+
+.admin-table thead {
+    background: #000000;
+    border-bottom: 2px solid #444444;
+}
+
+.admin-table th {
+    padding: 12px;
+    text-align: left;
+    color: #999999;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.admin-table td {
+    padding: 12px;
+    border-top: 1px solid #222222;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.admin-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+    background: #1a1a1a;
+}
+
+/* Trust Row подсветка по действию */
+.trust-row.trust-action-hard_ban {
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.trust-row.trust-action-soft_ban {
+    background: rgba(255, 102, 0, 0.03);
+}
+
+.trust-row.trust-action-watch_list {
+    background: rgba(255, 170, 0, 0.03);
+}
+
+.trust-row.trust-action-trusted {
+    background: rgba(0, 170, 0, 0.03);
+}
+
+/* User Cell */
+.user-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-cell strong {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.user-cell .user-email {
+    color: #666666;
+    font-size: 11px;
+}
+
+/* Trust Score Badge */
+.trust-score-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.trust-score-badge.score-4 {
+    background: #00aa00;
+    color: #000000;
+}
+
+.trust-score-badge.score-3 {
+    background: #666666;
+    color: #ffffff;
+}
+
+.trust-score-badge.score-2 {
+    background: #ffaa00;
+    color: #000000;
+}
+
+.trust-score-badge.score-1 {
+    background: #ff6600;
+    color: #ffffff;
+}
+
+.trust-score-badge.score-0 {
+    background: #ff0000;
+    color: #ffffff;
+}
+
+/* Trust Action Badge */
+.trust-action-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.trust-action-badge.action-trusted {
+    background: rgba(0, 170, 0, 0.15);
+    color: #00ff00;
+    border: 1px solid #00aa00;
+}
+
+.trust-action-badge.action-normal {
+    background: rgba(102, 102, 102, 0.15);
+    color: #cccccc;
+    border: 1px solid #666666;
+}
+
+.trust-action-badge.action-watch_list {
+    background: rgba(255, 170, 0, 0.15);
+    color: #ffaa00;
+    border: 1px solid #ffaa00;
+}
+
+.trust-action-badge.action-soft_ban {
+    background: rgba(255, 102, 0, 0.15);
+    color: #ff6600;
+    border: 1px solid #ff6600;
+}
+
+.trust-action-badge.action-hard_ban {
+    background: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+    border: 1px solid #ff0000;
+}
+
+/* Account Info */
+.account-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.account-info .info-secondary {
+    color: #666666;
+    font-size: 11px;
+}
+
+/* CS2 Hours */
+.cs2-hours {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Steam Link */
+.steam-link {
+    color: #66ccff;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.steam-link:hover {
+    text-decoration: underline;
+    color: #88ddff;
+}
+
+/* Bans Info */
+.bans-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ban-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ban-badge.vac {
+    background: #990000;
+    color: #ffffff;
+}
+
+.ban-badge.game {
+    background: #ff6600;
+    color: #ffffff;
+}
+
+.ban-badge.clean {
+    background: rgba(0, 170, 0, 0.2);
+    color: #00ff00;
+    border: 1px solid #00aa00;
+}
+
+/* User Status */
+.user-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.user-status.active {
+    background: rgba(0, 170, 0, 0.15);
+    color: #00ff00;
+}
+
+.user-status.banned {
+    background: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+}
+
+/* Checked Date */
+.checked-date {
+    color: #999999;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Trust Actions */
+.trust-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.trust-actions .btn-small {
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #000000;
+    border: 1px solid #ff0000;
+    color: #ffffff;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    text-align: center;
+}
+
+.trust-actions .btn-small:hover:not(:disabled) {
+    background: #111111;
+    border-color: #ff3333;
+}
+
+.trust-actions .btn-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.trust-actions .btn-small.danger {
+    border-color: #ff0000;
+    color: #ff0000;
+}
+
+.trust-actions .btn-small.danger:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000000;
+}
+
+/* Pagination */
+.trust-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.trust-pagination .pagination-info {
+    color: #999999;
+    font-size: 14px;
+}
+
+.trust-pagination .btn {
+    padding: 8px 16px;
+    background: #000000;
+    border: 1px solid #ff0000;
+    color: #ffffff;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.trust-pagination .btn:hover:not(:disabled) {
+    background: #111111;
+    border-color: #ff3333;
+}
+
+.trust-pagination .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #444444;
+}
+
+/* Trust Legend */
+.trust-legend {
+    margin-top: 32px;
+    padding: 20px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.trust-legend h3 {
+    color: #ffffff;
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+}
+
+.legend-item span:last-child {
+    color: #cccccc;
+    font-size: 13px;
+}
+
+.legend-note {
+    color: #999999;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #222222;
+}
+
+.legend-note strong {
+    color: #ffffff;
+}
+
+/* Responsive для Trust Scores */
+@media (max-width: 1200px) {
+    .trust-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .legend-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .trust-filters {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .trust-filters .filter-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .trust-scores-table {
+        font-size: 11px;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 8px 6px;
+        font-size: 11px;
+    }
+    
+    .trust-pagination {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .trust-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
  

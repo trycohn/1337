@@ -1967,7 +1967,283 @@ router.post('/match-lobby/:lobbyId/clear', authenticateToken, requireAdmin, asyn
     }
 });
 
-module.exports = router; 
+// ============================================================================
+// 🛡️ АНТИЧИТ: УПРАВЛЕНИЕ TRUST SCORES
+// ============================================================================
+
+/**
+ * GET /api/admin/trust-scores
+ * Получить список всех Trust Scores пользователей (только для админов)
+ */
+router.get('/trust-scores', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { 
+            limit = 100, 
+            offset = 0, 
+            sort = 'score_asc', 
+            action = null 
+        } = req.query;
+        
+        // Построение запроса с фильтрами
+        let orderBy = 'uts.trust_score ASC, uts.checked_at DESC';
+        
+        switch (sort) {
+            case 'score_desc':
+                orderBy = 'uts.trust_score DESC';
+                break;
+            case 'score_asc':
+                orderBy = 'uts.trust_score ASC';
+                break;
+            case 'recent':
+                orderBy = 'uts.checked_at DESC';
+                break;
+            case 'oldest':
+                orderBy = 'uts.checked_at ASC';
+                break;
+        }
+        
+        let whereClause = '';
+        const queryParams = [];
+        
+        if (action) {
+            whereClause = 'WHERE uts.trust_action = $3';
+            queryParams.push(parseInt(limit), parseInt(offset), action);
+        } else {
+            queryParams.push(parseInt(limit), parseInt(offset));
+        }
+        
+        const query = `
+            SELECT 
+                uts.*,
+                u.username,
+                u.email,
+                u.is_banned,
+                u.ban_reason,
+                u.banned_at,
+                u.created_at as user_created_at,
+                u.steam_url
+            FROM user_trust_scores uts
+            JOIN users u ON u.id = uts.user_id
+            ${whereClause}
+            ORDER BY ${orderBy}
+            LIMIT $1 OFFSET $2
+        `;
+        
+        const result = await pool.query(query, queryParams);
+        
+        // Получить общее количество
+        const countQuery = action 
+            ? 'SELECT COUNT(*) FROM user_trust_scores WHERE trust_action = $1'
+            : 'SELECT COUNT(*) FROM user_trust_scores';
+        
+        const countResult = await pool.query(
+            countQuery, 
+            action ? [action] : []
+        );
+        
+        const total = parseInt(countResult.rows[0].count);
+        
+        res.json({
+            success: true,
+            data: result.rows,
+            pagination: {
+                total,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                has_more: (parseInt(offset) + parseInt(limit)) < total
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка получения Trust Scores:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch trust scores' 
+        });
+    }
+});
+
+/**
+ * GET /api/admin/trust-scores/stats
+ * Получить статистику по Trust Scores (только для админов)
+ */
+router.get('/trust-scores/stats', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const statsQuery = `
+            SELECT 
+                COUNT(*) as total_users,
+                COUNT(CASE WHEN trust_action = 'HARD_BAN' THEN 1 END) as hard_bans,
+                COUNT(CASE WHEN trust_action = 'SOFT_BAN' THEN 1 END) as soft_bans,
+                COUNT(CASE WHEN trust_action = 'WATCH_LIST' THEN 1 END) as watch_list,
+                COUNT(CASE WHEN trust_action = 'NORMAL' THEN 1 END) as normal,
+                COUNT(CASE WHEN trust_action = 'TRUSTED' THEN 1 END) as trusted,
+                AVG(trust_score)::INTEGER as avg_score,
+                MIN(trust_score) as min_score,
+                MAX(trust_score) as max_score,
+                COUNT(CASE WHEN vac_bans > 0 THEN 1 END) as users_with_vac,
+                COUNT(CASE WHEN game_bans > 0 THEN 1 END) as users_with_game_bans
+            FROM user_trust_scores
+        `;
+        
+        const result = await pool.query(statsQuery);
+        
+        // Получить количество забаненных пользователей
+        const bannedQuery = `
+            SELECT COUNT(*) as banned_users
+            FROM users
+            WHERE is_banned = true
+        `;
+        
+        const bannedResult = await pool.query(bannedQuery);
+        
+        res.json({
+            success: true,
+            stats: {
+                ...result.rows[0],
+                banned_users: parseInt(bannedResult.rows[0].banned_users)
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка получения статистики Trust Scores:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to fetch trust scores statistics' 
+        });
+    }
+});
+
+/**
+ * POST /api/admin/trust-scores/:userId/recheck
+ * Принудительно перепроверить Trust Score пользователя (только для админов)
+ */
+router.post('/trust-scores/:userId/recheck', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Получить Steam ID пользователя
+        const userResult = await pool.query(
+            'SELECT id, username, steam_id FROM users WHERE id = $1',
+            [userId]
+        );
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'User not found' 
+            });
+        }
+        
+        const user = userResult.rows[0];
+        
+        if (!user.steam_id) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'User does not have Steam ID' 
+            });
+        }
+        
+        // Перепроверить Trust Score
+        const { verifyUserSteamAccount } = require('../services/antiCheat');
+        const trustResult = await verifyUserSteamAccount(user.steam_id, user.id);
+        
+        console.log(`✅ [Admin] Trust Score rechecked for user ${userId}: ${trustResult.score}/100`);
+        
+        // Если Trust Score критически низкий, предлагаем забанить
+        if (trustResult.action === 'HARD_BAN' && !user.is_banned) {
+            await pool.query(
+                'UPDATE users SET is_banned = true, ban_reason = $1, banned_at = NOW() WHERE id = $2',
+                [trustResult.reason, userId]
+            );
+            
+            console.log(`❌ [Admin] User ${userId} auto-banned due to Trust Score recheck`);
+        }
+        
+        res.json({
+            success: true,
+            trust_result: trustResult,
+            user: {
+                id: user.id,
+                username: user.username,
+                steam_id: user.steam_id
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка перепроверки Trust Score:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to recheck trust score' 
+        });
+    }
+});
+
+/**
+ * POST /api/admin/users/:userId/ban
+ * Забанить пользователя вручную (только для админов)
+ */
+router.post('/users/:userId/ban', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { reason } = req.body;
+        
+        if (!reason) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Ban reason is required' 
+            });
+        }
+        
+        await pool.query(
+            'UPDATE users SET is_banned = true, ban_reason = $1, banned_at = NOW() WHERE id = $2',
+            [reason, userId]
+        );
+        
+        console.log(`❌ [Admin] User ${userId} banned manually by admin ${req.user.id}. Reason: ${reason}`);
+        
+        res.json({
+            success: true,
+            message: 'User banned successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка бана пользователя:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to ban user' 
+        });
+    }
+});
+
+/**
+ * POST /api/admin/users/:userId/unban
+ * Разбанить пользователя (только для админов)
+ */
+router.post('/users/:userId/unban', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        await pool.query(
+            'UPDATE users SET is_banned = false, ban_reason = NULL, banned_at = NULL WHERE id = $1',
+            [userId]
+        );
+        
+        console.log(`✅ [Admin] User ${userId} unbanned by admin ${req.user.id}`);
+        
+        res.json({
+            success: true,
+            message: 'User unbanned successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ [Admin] Ошибка разбана пользователя:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to unban user' 
+        });
+    }
+});
+
 // История матчей пользователя (объединённая): турнирные + кастомные
 router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
     const { userId } = req.params;
@@ -2035,3 +2311,5 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
         client.release();
     }
 });
+
+module.exports = router;
