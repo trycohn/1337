@@ -1823,37 +1823,49 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                             try {
                                 console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                                 
-                                // Пытаемся загрузить конфиг на сервер (с таймаутом)
-                                const result = await Promise.race([
+                                // Отправляем команду загрузки (с коротким таймаутом - команда уходит в фон)
+                            let result;
+                            try {
+                                result = await Promise.race([
                                     rconService.executeCommand(
                                         server.id,
                                         `matchzy_loadmatch_url "${fullConfigUrl}"`,
                                         { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
                                     ),
-                                    new Promise((_, reject) => setTimeout(() => reject(new Error('Server timeout')), 8000))
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('No immediate response')), 3000))
                                 ]);
-                            
-                            // Проверяем ответ сервера
-                            const response = result.response || '';
-                            console.log(`📋 RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой ответ)');
-                            
-                            // Проверяем что сервер занят
-                            if (response.includes('A match is already setup') || 
-                                response.includes('already setup') ||
-                                response.includes('match already in progress')) {
-                                console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
-                                continue;
+                            } catch (timeoutErr) {
+                                // Таймаут - это нормально, команда ушла в фон на сервере
+                                if (timeoutErr.message === 'No immediate response') {
+                                    console.log(`✅ Команда отправлена на ${server.name}, сервер загружает конфиг...`);
+                                    selectedServer = server;
+                                } else {
+                                    throw timeoutErr; // Другая ошибка
+                                }
                             }
                             
-                            // Проверяем на ошибки загрузки
-                            if (response.includes('Error') || response.includes('Failed')) {
-                                console.log(`❌ Сервер ${server.name} вернул ошибку, пробуем следующий...`);
-                                continue;
+                            // Если получили быстрый ответ - проверяем его
+                            if (result && !selectedServer) {
+                                const response = result.response || '';
+                                console.log(`📋 RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой)');
+                                
+                                // Проверяем что сервер занят
+                                if (response.includes('A match is already setup') || 
+                                    response.includes('already setup') ||
+                                    response.includes('match already in progress')) {
+                                    console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
+                                    continue;
+                                }
+                                
+                                // Проверяем на ошибки
+                                if (response.includes('Error') || response.includes('Failed')) {
+                                    console.log(`❌ Сервер ${server.name} вернул ошибку, пробуем следующий...`);
+                                    continue;
+                                }
+                                
+                                console.log(`✅ Сервер ${server.name} подтвердил загрузку!`);
+                                selectedServer = server;
                             }
-                            
-                            // Если нет ошибок - считаем что команда прошла успешно
-                            console.log(`✅ Сервер ${server.name} принял команду загрузки конфига!`);
-                            selectedServer = server;
                                 
                                 // Формируем ссылки подключения
                                 const serverPass = server.server_password || '';

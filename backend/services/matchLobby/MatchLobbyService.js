@@ -755,36 +755,53 @@ class MatchLobbyService {
             try {
                 console.log(`⏳ [Tournament] Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                 
-                const result = await rconService.executeCommand(
-                    server.id,
-                    `matchzy_loadmatch_url "${fullConfigUrl}"`,
-                    {
-                        userId: userId,
-                        lobbyId: lobbyId,
-                        logToDb: true
+                // Отправляем команду загрузки (с коротким таймаутом - команда уходит в фон)
+                let result;
+                try {
+                    result = await Promise.race([
+                        rconService.executeCommand(
+                            server.id,
+                            `matchzy_loadmatch_url "${fullConfigUrl}"`,
+                            {
+                                userId: userId,
+                                lobbyId: lobbyId,
+                                logToDb: true
+                            }
+                        ),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('No immediate response')), 3000))
+                    ]);
+                } catch (timeoutErr) {
+                    // Таймаут - это нормально, команда ушла в фон на сервере
+                    if (timeoutErr.message === 'No immediate response') {
+                        console.log(`✅ [Tournament] Команда отправлена на ${server.name}, сервер загружает конфиг...`);
+                        selectedServer = server;
+                    } else {
+                        throw timeoutErr; // Другая ошибка
                     }
-                );
-                
-                const response = result.response || '';
-                console.log(`📋 [Tournament] RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой ответ)');
-                
-                // Проверяем что сервер занят
-                if (response.includes('A match is already setup') || 
-                    response.includes('already setup') ||
-                    response.includes('match already in progress')) {
-                    console.log(`⚠️ [Tournament] Сервер ${server.name} занят, пробуем следующий...`);
-                    continue;
                 }
                 
-                // Проверяем на ошибки загрузки
-                if (response.includes('Error') || response.includes('Failed')) {
-                    console.log(`❌ [Tournament] Сервер ${server.name} вернул ошибку, пробуем следующий...`);
-                    continue;
+                // Если получили быстрый ответ - проверяем его
+                if (result && !selectedServer) {
+                    const response = result.response || '';
+                    console.log(`📋 [Tournament] RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой)');
+                    
+                    // Проверяем что сервер занят
+                    if (response.includes('A match is already setup') || 
+                        response.includes('already setup') ||
+                        response.includes('match already in progress')) {
+                        console.log(`⚠️ [Tournament] Сервер ${server.name} занят, пробуем следующий...`);
+                        continue;
+                    }
+                    
+                    // Проверяем на ошибки
+                    if (response.includes('Error') || response.includes('Failed')) {
+                        console.log(`❌ [Tournament] Сервер ${server.name} вернул ошибку, пробуем следующий...`);
+                        continue;
+                    }
+                    
+                    console.log(`✅ [Tournament] Сервер ${server.name} подтвердил загрузку!`);
+                    selectedServer = server;
                 }
-                
-                // Если нет ошибок - считаем что команда прошла успешно
-                console.log(`✅ [Tournament] Сервер ${server.name} принял команду загрузки конфига!`);
-                selectedServer = server;
                 
                 // Формируем ссылки подключения
                 const serverPass = server.server_password || '';
