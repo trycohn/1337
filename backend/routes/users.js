@@ -353,6 +353,43 @@ router.post('/login', async (req, res) => {
         if (!validPassword) {
             return res.status(401).json({ message: 'Неверный email или пароль' });
         }
+        
+        // 🛡️ АНТИЧИТ: Проверяем флаг бана
+        if (user.is_banned) {
+            console.log('❌ Login blocked: user is banned', user.id);
+            return res.status(403).json({ 
+                message: 'Ваш аккаунт заблокирован',
+                reason: user.ban_reason,
+                banned_at: user.banned_at
+            });
+        }
+        
+        // 🛡️ АНТИЧИТ: Если привязан Steam ID — проверяем Trust Score
+        if (user.steam_id) {
+            const { needsTrustScoreRecheck, verifyUserSteamAccount } = require('../services/antiCheat');
+            
+            const needsRecheck = await needsTrustScoreRecheck(user.id);
+            
+            if (needsRecheck) {
+                console.log('🔍 Trust Score recheck for email/password login, user:', user.id);
+                const trustResult = await verifyUserSteamAccount(user.steam_id, user.id);
+                
+                if (trustResult.action === 'HARD_BAN') {
+                    // Автоматически баним
+                    await pool.query(
+                        'UPDATE users SET is_banned = true, ban_reason = $1, banned_at = NOW() WHERE id = $2',
+                        [trustResult.reason || 'Low Trust Score detected', user.id]
+                    );
+                    console.log('❌ User auto-banned on login due to Trust Score:', user.id);
+                    return res.status(403).json({ 
+                        message: 'Ваш аккаунт заблокирован',
+                        reason: trustResult.reason || 'Trust Score too low'
+                    });
+                }
+                
+                console.log(`✅ Trust Score OK: ${trustResult.score}/100 (${trustResult.action})`);
+            }
+        }
 
         const token = jwt.sign(
             { id: user.id, role: user.role, username: user.username },
@@ -538,11 +575,34 @@ router.post('/link-steam', authenticateToken, async (req, res) => {
 
     try {
         console.log('Linking Steam ID:', steamId, 'to user:', req.user.id);
+        
         const existingSteamUser = await pool.query('SELECT * FROM users WHERE steam_id = $1', [steamId]);
         if (existingSteamUser.rows.length > 0 && existingSteamUser.rows[0].id !== req.user.id) {
             console.error('Steam ID already linked to another user:', existingSteamUser.rows[0].id);
             return res.status(400).json({ error: 'Этот Steam ID уже привязан к другому пользователю' });
         }
+        
+        // 🛡️ АНТИЧИТ: Проверяем Trust Score ПЕРЕД привязкой Steam ID
+        console.log('🛡️ Checking Trust Score before linking Steam ID...');
+        const { verifyUserSteamAccount } = require('../services/antiCheat');
+        const trustResult = await verifyUserSteamAccount(steamId, req.user.id);
+        
+        if (trustResult.action === 'HARD_BAN') {
+            console.log('❌ Steam linking blocked due to Trust Score:', trustResult.reason);
+            return res.status(403).json({ 
+                error: 'Невозможно привязать этот Steam аккаунт',
+                reason: trustResult.reason || 'Steam account has VAC ban or low Trust Score',
+                trust_score: trustResult.score,
+                details: 'Ваш Steam аккаунт не соответствует требованиям безопасности платформы'
+            });
+        }
+        
+        if (trustResult.action === 'SOFT_BAN' || trustResult.action === 'WATCH_LIST') {
+            console.log(`⚠️ Steam linking flagged: Trust Score ${trustResult.score}/100 (${trustResult.action})`);
+            // Пропускаем, но логируем для модерации
+        }
+        
+        console.log(`✅ Trust Score OK for Steam linking: ${trustResult.score}/100 (${trustResult.action})`);
 
         // Пытаемся получить никнейм через Steam API при привязке
         let steamNickname = null;
