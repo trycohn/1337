@@ -158,6 +158,27 @@ function AdminPanel() {
     const [passwordResetValue, setPasswordResetValue] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState('');
 
+    // 🖥️ Управление CS2 серверами
+    const [servers, setServers] = useState([]);
+    const [serversLoading, setServersLoading] = useState(false);
+    const [serversError, setServersError] = useState('');
+    const [editingServer, setEditingServer] = useState(null);
+    const [showServerForm, setShowServerForm] = useState(false);
+    const [serverForm, setServerForm] = useState({
+        name: '',
+        description: '',
+        host: '',
+        port: 27015,
+        rcon_password: '',
+        server_password: '',
+        gotv_host: '',
+        gotv_port: 27020,
+        gotv_password: '',
+        max_slots: 10,
+        location: 'RU',
+        status: 'offline'
+    });
+
     async function adminFetchUserById() {
         if (!accountSearchId) return;
         try {
@@ -251,6 +272,117 @@ function AdminPanel() {
         } finally {
             setAccountLoading(false);
         }
+    }
+
+    // 🖥️ Функции для управления серверами
+    async function fetchServers() {
+        try {
+            setServersLoading(true);
+            setServersError('');
+            const response = await api.get('/api/servers', {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setServers(response.data.servers || []);
+        } catch (err) {
+            console.error('Ошибка загрузки серверов:', err);
+            setServersError(err?.response?.data?.error || 'Не удалось загрузить серверы');
+        } finally {
+            setServersLoading(false);
+        }
+    }
+
+    async function saveServer() {
+        try {
+            setServersLoading(true);
+            setServersError('');
+            
+            if (editingServer) {
+                await api.put(`/api/servers/${editingServer.id}`, serverForm, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+            } else {
+                await api.post('/api/servers', serverForm, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                });
+            }
+            
+            await fetchServers();
+            resetServerForm();
+        } catch (err) {
+            console.error('Ошибка сохранения сервера:', err);
+            setServersError(err?.response?.data?.error || 'Не удалось сохранить сервер');
+        } finally {
+            setServersLoading(false);
+        }
+    }
+
+    async function deleteServer(serverId) {
+        if (!window.confirm('Удалить сервер?')) return;
+        try {
+            setServersLoading(true);
+            setServersError('');
+            await api.delete(`/api/servers/${serverId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            await fetchServers();
+        } catch (err) {
+            console.error('Ошибка удаления сервера:', err);
+            setServersError(err?.response?.data?.error || 'Не удалось удалить сервер');
+        } finally {
+            setServersLoading(false);
+        }
+    }
+
+    async function checkServerStatus(serverId) {
+        try {
+            setServersError('');
+            const response = await api.post(`/api/servers/${serverId}/check`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            alert(response.data.message || 'Проверка выполнена');
+            await fetchServers();
+        } catch (err) {
+            console.error('Ошибка проверки сервера:', err);
+            alert(err?.response?.data?.error || 'Не удалось проверить сервер');
+        }
+    }
+
+    function editServer(server) {
+        setEditingServer(server);
+        setServerForm({
+            name: server.name,
+            description: server.description || '',
+            host: server.host,
+            port: server.port,
+            rcon_password: '',
+            server_password: '',
+            gotv_host: server.gotv_host || '',
+            gotv_port: server.gotv_port || 27020,
+            gotv_password: '',
+            max_slots: server.max_slots,
+            location: server.location || 'RU',
+            status: server.status
+        });
+        setShowServerForm(true);
+    }
+
+    function resetServerForm() {
+        setEditingServer(null);
+        setShowServerForm(false);
+        setServerForm({
+            name: '',
+            description: '',
+            host: '',
+            port: 27015,
+            rcon_password: '',
+            server_password: '',
+            gotv_host: '',
+            gotv_port: 27020,
+            gotv_password: '',
+            max_slots: 10,
+            location: 'RU',
+            status: 'offline'
+        });
     }
 
     const checkAdminAccess = useCallback(async () => {
@@ -839,6 +971,12 @@ function AdminPanel() {
                     onClick={() => setActiveTab('matchzyStats')}
                 >
                     📊 Stats
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'servers' ? 'active' : ''}`}
+                    onClick={() => { setActiveTab('servers'); fetchServers(); }}
+                >
+                    🖥️ Серверы CS
                 </button>
             </div>
 
@@ -2068,6 +2206,341 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                         <p className="info-note">
                             <strong>Настройка MatchZy:</strong> Добавьте webhook URL в конфиг сервера.
                             Детали в документации: ГОТОВО_ДЕТАЛЬНАЯ_СТАТИСТИКА_MATCHZY.md
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* 🖥️ Вкладка управления серверами */}
+            {activeTab === 'servers' && (
+                <div className="servers-tab">
+                    <h2>🖥️ Управление CS2 серверами</h2>
+                    
+                    {serversError && <div className="admin-error">{serversError}</div>}
+                    
+                    <div style={{ marginBottom: '20px' }}>
+                        <button 
+                            className="btn" 
+                            onClick={() => setShowServerForm(!showServerForm)}
+                            disabled={serversLoading}
+                        >
+                            {showServerForm ? 'Отменить' : '+ Добавить сервер'}
+                        </button>
+                    </div>
+
+                    {showServerForm && (
+                        <div style={{ 
+                            background: '#111', 
+                            border: '1px solid #ff0000', 
+                            padding: '20px', 
+                            marginBottom: '20px',
+                            borderRadius: '4px'
+                        }}>
+                            <h3>{editingServer ? 'Редактировать сервер' : 'Новый сервер'}</h3>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Название *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.name}
+                                        onChange={(e) => setServerForm({...serverForm, name: e.target.value})}
+                                        placeholder="Main Server"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        IP адрес *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.host}
+                                        onChange={(e) => setServerForm({...serverForm, host: e.target.value})}
+                                        placeholder="80.87.200.23"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Порт
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="map-input"
+                                        value={serverForm.port}
+                                        onChange={(e) => setServerForm({...serverForm, port: parseInt(e.target.value)})}
+                                        placeholder="27015"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        RCON пароль *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="map-input"
+                                        value={serverForm.rcon_password}
+                                        onChange={(e) => setServerForm({...serverForm, rcon_password: e.target.value})}
+                                        placeholder={editingServer ? 'Оставьте пустым для сохранения текущего' : 'rcon_password'}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Пароль сервера
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="map-input"
+                                        value={serverForm.server_password}
+                                        onChange={(e) => setServerForm({...serverForm, server_password: e.target.value})}
+                                        placeholder="server_pass"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        GOTV IP
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.gotv_host}
+                                        onChange={(e) => setServerForm({...serverForm, gotv_host: e.target.value})}
+                                        placeholder="80.87.200.23"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        GOTV порт
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="map-input"
+                                        value={serverForm.gotv_port}
+                                        onChange={(e) => setServerForm({...serverForm, gotv_port: parseInt(e.target.value)})}
+                                        placeholder="27020"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        GOTV пароль
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="map-input"
+                                        value={serverForm.gotv_password}
+                                        onChange={(e) => setServerForm({...serverForm, gotv_password: e.target.value})}
+                                        placeholder="gotv_pass"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Максимум слотов
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="map-input"
+                                        value={serverForm.max_slots}
+                                        onChange={(e) => setServerForm({...serverForm, max_slots: parseInt(e.target.value)})}
+                                        placeholder="10"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Локация
+                                    </label>
+                                    <select
+                                        className="map-input"
+                                        value={serverForm.location}
+                                        onChange={(e) => setServerForm({...serverForm, location: e.target.value})}
+                                    >
+                                        <option value="RU">RU - Россия</option>
+                                        <option value="EU">EU - Европа</option>
+                                        <option value="NA">NA - Северная Америка</option>
+                                        <option value="AS">AS - Азия</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Статус
+                                    </label>
+                                    <select
+                                        className="map-input"
+                                        value={serverForm.status}
+                                        onChange={(e) => setServerForm({...serverForm, status: e.target.value})}
+                                    >
+                                        <option value="offline">offline</option>
+                                        <option value="online">online</option>
+                                        <option value="in_use">in_use</option>
+                                        <option value="maintenance">maintenance</option>
+                                    </select>
+                                </div>
+
+                                <div style={{ gridColumn: '1 / -1' }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Описание
+                                    </label>
+                                    <textarea
+                                        className="map-input"
+                                        value={serverForm.description}
+                                        onChange={(e) => setServerForm({...serverForm, description: e.target.value})}
+                                        placeholder="Описание сервера"
+                                        rows="3"
+                                        style={{ width: '100%', resize: 'vertical' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                                <button 
+                                    className="btn" 
+                                    onClick={saveServer}
+                                    disabled={serversLoading || !serverForm.name || !serverForm.host || (!editingServer && !serverForm.rcon_password)}
+                                >
+                                    {serversLoading ? 'Сохранение...' : 'Сохранить'}
+                                </button>
+                                <button 
+                                    className="btn-small" 
+                                    onClick={resetServerForm}
+                                    disabled={serversLoading}
+                                >
+                                    Отмена
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {serversLoading && !showServerForm && <div className="admin-loading">Загрузка...</div>}
+
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse',
+                            background: '#111',
+                            border: '1px solid #333'
+                        }}>
+                            <thead>
+                                <tr style={{ background: '#000', borderBottom: '2px solid #ff0000' }}>
+                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>Название</th>
+                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>Адрес</th>
+                                    <th style={{ padding: '12px', textAlign: 'left', color: '#fff' }}>GOTV</th>
+                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Слоты</th>
+                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Локация</th>
+                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Статус</th>
+                                    <th style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {servers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: '#aaa' }}>
+                                            Нет серверов
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    servers.map(server => (
+                                        <tr key={server.id} style={{ borderBottom: '1px solid #333' }}>
+                                            <td style={{ padding: '12px' }}>
+                                                <div style={{ fontWeight: 'bold', color: '#fff' }}>{server.name}</div>
+                                                {server.description && (
+                                                    <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
+                                                        {server.description}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '12px', color: '#fff' }}>
+                                                {server.host}:{server.port}
+                                            </td>
+                                            <td style={{ padding: '12px', color: '#fff' }}>
+                                                {server.gotv_host ? `${server.gotv_host}:${server.gotv_port}` : '-'}
+                                            </td>
+                                            <td style={{ padding: '12px', textAlign: 'center', color: '#fff' }}>
+                                                {server.max_slots}
+                                            </td>
+                                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    background: '#222', 
+                                                    borderRadius: '4px',
+                                                    color: '#fff'
+                                                }}>
+                                                    {server.location}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    background: server.status === 'online' ? '#0a4' : 
+                                                               server.status === 'in_use' ? '#f80' : '#444',
+                                                    borderRadius: '4px',
+                                                    color: '#fff',
+                                                    fontSize: '12px'
+                                                }}>
+                                                    {server.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                    <button 
+                                                        className="btn-small" 
+                                                        onClick={() => checkServerStatus(server.id)}
+                                                        disabled={serversLoading}
+                                                        title="Проверить статус через RCON"
+                                                    >
+                                                        🔍
+                                                    </button>
+                                                    <button 
+                                                        className="btn-small" 
+                                                        onClick={() => editServer(server)}
+                                                        disabled={serversLoading}
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button 
+                                                        className="btn-small danger" 
+                                                        onClick={() => deleteServer(server.id)}
+                                                        disabled={serversLoading}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style={{ 
+                        marginTop: '20px', 
+                        padding: '16px', 
+                        background: '#111', 
+                        border: '1px solid #333',
+                        borderRadius: '4px'
+                    }}>
+                        <h4 style={{ marginTop: 0, color: '#fff' }}>ℹ️ Информация</h4>
+                        <p style={{ color: '#aaa', margin: '8px 0' }}>
+                            Здесь можно добавлять и управлять CS2 серверами для автоматизации матчей.
+                            RCON пароль используется для отправки команд на сервер.
+                        </p>
+                        <p style={{ color: '#aaa', margin: '8px 0' }}>
+                            <strong style={{ color: '#fff' }}>Функции:</strong> проверка статуса сервера, загрузка конфигов матчей, управление игровым процессом.
+                        </p>
+                        <p style={{ color: '#888', fontSize: '12px', margin: '8px 0' }}>
+                            API: GET /api/servers, POST /api/servers/:id/command, POST /api/servers/:id/check
                         </p>
                     </div>
                 </div>

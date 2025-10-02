@@ -28,6 +28,7 @@
     "passport-steam": "^1.0.18",
     "pg": "^8.14.1",
     "puppeteer": "^24.9.0",
+    "rcon-client": "^4.2.3",
     "redis": "^4.6.0",
     "socket.io": "^4.8.1",
     "steamapi": "^3.0.12",

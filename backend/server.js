@@ -338,6 +338,7 @@ const achievementsRouter = require('./routes/achievements'); // Роуты дл�
 // 🔗 СИСТЕМА РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ v1.0.0
 const referralsRouter = require('./routes/referrals');
 const statsRouter = require('./routes/stats'); // API для статистики платформы
+const serversRouter = require('./routes/servers'); // 🖥️ Управление CS2 серверами и RCON
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -363,6 +364,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/achievements', achievementsRouter); // Подключаем систему достижений
 // 🔗 РЕФЕРАЛЬНАЯ СИСТЕМА
 app.use('/api/referrals', referralsRouter);
+// 🖥️ CS2 СЕРВЕРЫ И RCON
+app.use('/api/servers', serversRouter);
 
 // Catch-all для SPA (React Router) - перенаправление на index.html
 app.get(/^\/(?!api).*/, (req, res) => {
