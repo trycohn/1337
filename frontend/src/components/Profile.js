@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
-import ProfileReputation from './ProfileReputation'; // 📊 Компонент репутации
+import ProfileReputation from './ProfileReputation'; // Компонент репутации
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -2457,7 +2457,6 @@ function Profile() {
                             onClick={() => switchTab('main')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">👤</span>
                                 <span>Основная</span>
                             </div>
                         </button>
@@ -2466,7 +2465,6 @@ function Profile() {
                             onClick={() => switchTab('stats')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">📊</span>
                                 <span>Статистика</span>
                             </div>
                         </button>
@@ -2475,7 +2473,6 @@ function Profile() {
                             onClick={() => switchTab('friends')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">👥</span>
                                 <span>Друзья</span>
                             </div>
                         </button>
@@ -2484,7 +2481,6 @@ function Profile() {
                             onClick={() => switchTab('teams')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">⚔️</span>
                                 <span>Мои команды</span>
                             </div>
                         </button>
@@ -2493,7 +2489,6 @@ function Profile() {
                             onClick={() => switchTab('matchhistory')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">📅</span>
                                 <span>История матчей</span>
                             </div>
                         </button>
@@ -2503,7 +2498,6 @@ function Profile() {
                             onClick={() => switchTab('achievements')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">🏆</span>
                                 <span>Достижения</span>
                                 {newAchievementsCount > 0 && (
                                     <span className="achievement-notification-badge">{newAchievementsCount}</span>
@@ -2517,7 +2511,6 @@ function Profile() {
                             onClick={() => switchTab('organization')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">🏢</span>
                                 <span>Организация</span>
                             </div>
                         </button>
@@ -2527,7 +2520,6 @@ function Profile() {
                             onClick={() => switchTab('tournaments')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">🏆</span>
                                 <span>Турниры</span>
                             </div>
                         </button>
@@ -2536,7 +2528,6 @@ function Profile() {
                             onClick={() => switchTab('reputation')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">📊</span>
                                 <span>Репутация</span>
                             </div>
                         </button>
@@ -2546,7 +2537,6 @@ function Profile() {
                             onClick={() => switchTab('v4analytics')}
                         >
                             <div className="nav-tab-content-profile">
-                                <span className="nav-tab-icon-profile">🔥</span>
                                 <span>Аналитика V4 ULTIMATE</span>
                             </div>
                         </button>
