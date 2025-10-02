@@ -1,0 +1,408 @@
+/* 📊 DETAILED STATS STYLES */
+
+.detailed-stats-container {
+    padding: 24px;
+    color: #ffffff;
+}
+
+.detailed-stats-loading {
+    text-align: center;
+    padding: 64px 32px;
+    color: #999999;
+}
+
+.detailed-stats-empty {
+    text-align: center;
+    padding: 64px 32px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+}
+
+.detailed-stats-empty .empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.detailed-stats-empty h3 {
+    color: #ffffff;
+    font-size: 22px;
+    margin: 0 0 12px 0;
+}
+
+.detailed-stats-empty p {
+    color: #999999;
+    margin: 0;
+}
+
+/* Navigation */
+.stats-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 16px;
+}
+
+.stats-nav button {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #999999;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.stats-nav button:hover {
+    color: #ffffff;
+}
+
+.stats-nav button.active {
+    color: #ffffff;
+    border-bottom-color: #ff0000;
+}
+
+/* Overview */
+.stats-overview h3 {
+    color: #ffffff;
+    font-size: 24px;
+    margin: 0 0 8px 0;
+}
+
+.stats-subtitle {
+    color: #666666;
+    font-size: 14px;
+    margin: 0 0 24px 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.stat-card-detailed {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-card-detailed .stat-label {
+    display: block;
+    color: #999999;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.stat-card-detailed .stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.stat-card-detailed .stat-breakdown {
+    color: #666666;
+    font-size: 13px;
+}
+
+/* Advanced Stats */
+.stats-advanced {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.stats-advanced h4 {
+    color: #ffffff;
+    font-size: 18px;
+    margin: 0 0 20px 0;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stats-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metric-label {
+    color: #999999;
+    font-size: 13px;
+}
+
+.metric-value {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.metric-detail {
+    color: #666666;
+    font-size: 12px;
+}
+
+/* Maps */
+.stats-maps h3 {
+    color: #ffffff;
+    margin-bottom: 24px;
+}
+
+.maps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.map-stat-card {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.map-header h4 {
+    color: #ffffff;
+    font-size: 18px;
+    margin: 0;
+}
+
+.map-matches {
+    color: #666666;
+    font-size: 13px;
+}
+
+.map-winrate {
+    margin-bottom: 16px;
+}
+
+.winrate-bar {
+    height: 8px;
+    background: #222222;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.winrate-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000 0%, #ff3333 100%);
+    transition: width 0.5s ease;
+}
+
+.winrate-text {
+    color: #cccccc;
+    font-size: 14px;
+}
+
+.map-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.map-stats-row > div {
+    text-align: center;
+}
+
+.map-stat-label {
+    display: block;
+    color: #999999;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.map-stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.map-sides {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.side-stat {
+    flex: 1;
+    padding: 6px;
+    background: #0a0a0a;
+    border-radius: 4px;
+    text-align: center;
+    color: #cccccc;
+}
+
+/* Weapons */
+.stats-weapons h3 {
+    color: #ffffff;
+    margin-bottom: 24px;
+}
+
+.weapons-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.weapon-card {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.weapon-name {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.weapon-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.weapon-stats-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.weapon-label {
+    color: #999999;
+    font-size: 11px;
+}
+
+.weapon-value {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Recent Matches */
+.stats-recent h3 {
+    color: #ffffff;
+    margin-bottom: 24px;
+}
+
+.recent-matches-table {
+    overflow-x: auto;
+}
+
+.recent-matches-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #111111;
+    border: 1px solid #333333;
+}
+
+.recent-matches-table th {
+    padding: 12px;
+    text-align: left;
+    background: #0a0a0a;
+    color: #999999;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333333;
+}
+
+.recent-matches-table td {
+    padding: 12px;
+    color: #ffffff;
+    border-top: 1px solid #222222;
+}
+
+.recent-matches-table tr.won {
+    background: rgba(0, 170, 0, 0.03);
+}
+
+.recent-matches-table tr.lost {
+    background: rgba(255, 0, 0, 0.03);
+}
+
+.result-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.result-badge.win {
+    background: rgba(0, 170, 0, 0.15);
+    color: #00ff00;
+}
+
+.result-badge.loss {
+    background: rgba(255, 0, 0, 0.15);
+    color: #ff0000;
+}
+
+.recent-matches-table td.good {
+    color: #00ff00;
+}
+
+.recent-matches-table td.bad {
+    color: #ff6666;
+}
+
+.stats-empty {
+    text-align: center;
+    padding: 48px;
+    color: #666666;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .maps-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .weapons-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .recent-matches-table {
+        font-size: 12px;
+    }
+    
+    .recent-matches-table th,
+    .recent-matches-table td {
+        padding: 8px 6px;
+    }
+}
+

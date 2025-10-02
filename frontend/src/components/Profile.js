@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
 import ProfileReputation from './ProfileReputation'; // Компонент репутации
+import DetailedStats from './stats/DetailedStats'; // 📊 Детальная статистика
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -3952,6 +3953,11 @@ function Profile() {
                         {/* 📊 REPUTATION TAB */}
                         {activeTab === 'reputation' && (
                             <ProfileReputation userId={user.id} />
+                        )}
+                        
+                        {/* 📊 DETAILED STATS TAB */}
+                        {activeTab === 'stats' && (
+                            <DetailedStats userId={user.id} />
                         )}
                         
                         {activeTab === 'matchhistory' && (

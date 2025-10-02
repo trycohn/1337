@@ -328,6 +328,8 @@ const modularTournamentsRouter = require('./routes/tournament'); // 🎯 ЕДИ�
 const tournamentPlayersRouter = require('./routes/tournamentPlayers');
 const matchesRouter = require('./routes/matches');
 const matchFeedbackRouter = require('./routes/matchFeedback'); // 🎮 Match Feedback система
+const matchzyRouter = require('./routes/matchzy'); // 📊 MatchZy webhook
+const detailedStatsRouter = require('./routes/stats'); // 📊 Детальная статистика API
 const statisticsRouter = require('./routes/statistics');
 const dotaStatsRouter = require('./routes/dotaStats');
 const notificationsRouter = require('./routes/notifications');
@@ -352,6 +354,8 @@ app.use('/api/tournaments', modularTournamentsRouter); // 🎯 ЕДИНСТВЕ�
 app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/matches', matchFeedbackRouter); // 🎮 Match Feedback endpoints
+app.use('/api/matchzy', matchzyRouter); // 📊 MatchZy webhook
+app.use('/api/player-stats', detailedStatsRouter); // 📊 Детальная статистика игроков (новое)
 app.use('/api/statistics', statisticsRouter);
 app.use('/api/stats', statsRouter); // Маршрут для общей статистики платформы
 app.use('/api/dota-stats', dotaStatsRouter);
