@@ -1845,9 +1845,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                             }
                             
                             // Проверяем успешную загрузку
-                            if (response.includes('Success') || 
-                                response.includes('[LoadMatchFromJSON]') ||
-                                response.includes('Starting warmup')) {
+                            if (response.includes('Success')) {
                                 console.log(`✅ Сервер ${server.name} подтвердил загрузку конфига!`);
                             }
                             
