@@ -686,6 +686,16 @@ function AdminMatchPage() {
                                     setTeam1Users([]);
                                     setTeam2Users([]);
                                     setConnectInfo(null);
+                                    try {
+                                        const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                        if (r?.data?.success) {
+                                            setLobby(r.data.lobby);
+                                            setSelections(r.data.selections || []);
+                                            setAvailableMaps(r.data.available_maps || []);
+                                            setTeam1Users(r.data.team1_users || []);
+                                            setTeam2Users(r.data.team2_users || []);
+                                        }
+                                    } catch(_) {}
                                 }
                             } catch (_) {}
                         }}>

@@ -46,7 +46,9 @@ router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res
 // =============================
 
 // Обеспечиваем наличие таблицы default_map_pool и базового наполнения
+let __mapsEnsured = false;
 async function ensureDefaultMapPool() {
+    if (__mapsEnsured) return;
     // Создаем таблицу, если её нет
     await pool.query(`
         CREATE TABLE IF NOT EXISTS default_map_pool (
@@ -103,6 +105,7 @@ async function ensureDefaultMapPool() {
             order += 1;
         }
     }
+    __mapsEnsured = true;
 }
 
 // Получить текущий дефолтный маппул (для админов)
@@ -1064,7 +1067,9 @@ router.post('/match/test-lobby/whitelist', authenticateToken, requireAdmin, asyn
 // =============================
 //  ADMIN LOBBY (отдельное лобби под админ-матч)
 // =============================
+let __adminLobbyEnsured = false;
 async function ensureAdminLobbyTables() {
+    if (__adminLobbyEnsured) return;
     await pool.query(`
         CREATE TABLE IF NOT EXISTS admin_match_lobbies (
             id SERIAL PRIMARY KEY,
@@ -1141,6 +1146,7 @@ async function ensureAdminLobbyTables() {
             PRIMARY KEY (lobby_id, user_id)
         );
     `);
+    __adminLobbyEnsured = true;
 }
 
 function determineNextTurnForFormat(matchFormat, actionIndex, firstPickerTeam) {
@@ -2008,7 +2014,7 @@ router.get('/match-lobby/:lobbyId/connect', authenticateToken, async (req, res) 
 });
 
 // Очистить лобби (создатель)
-router.post('/match-lobby/:lobbyId/clear', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/match-lobby/:lobbyId/clear', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const userId = req.user.id;
