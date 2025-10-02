@@ -400,19 +400,18 @@ function AdminMatchPage() {
         if (!user || !lobbyId) return;
         const token = localStorage.getItem('token');
         let timer = null;
-        let baseInterval = 1500;
         const getDelay = () => {
             const hidden = typeof document !== 'undefined' && document.hidden;
             const status = lobby?.status;
-            if (hidden) return 8000; // вкладка в фоне — реже
-            if (status === 'picking') return 1200; // активный этап — чаще
-            if (status === 'ready' || status === 'waiting') return 2000;
-            return baseInterval;
+            if (hidden) return 15000; // вкладка в фоне — реже
+            if (status === 'picking') return 3000; // активный этап — умеренно
+            if (status === 'ready' || status === 'waiting') return 5000;
+            return 4000; // дефолт
         };
         const onVisibility = () => { /* сбросим таймер на новый интервал */ };
         if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
         const pull = async () => {
-            if (pollInFlightRef.current) { timer = setTimeout(pull, 1500); return; }
+            if (pollInFlightRef.current) { timer = setTimeout(pull, 4000); return; }
             pollInFlightRef.current = true;
             try {
                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -818,29 +817,28 @@ function AdminMatchPage() {
                         format={lobby.match_format}
                         status={lobby.status}
                         onMapAction={async (mapName, action) => {
-                            const token = localStorage.getItem('token');
-                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
-                            if (data?.success) {
-                                // Страницу матча создаём сразу (match_id есть), но редирект делаем после завершения матча
-                                if (data.completed && data.match_id) {
-                                    setCreatedMatchId(data.match_id);
-                                }
-                                if (data.completed && data.config_json_url) setConfigJsonUrl(data.config_json_url);
-                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                if (r?.data?.success) {
-                                    setLobby(r.data.lobby);
-                                    setSelections(r.data.selections || []);
-                                    setAvailableMaps(r.data.available_maps || []);
-                                    setTeam1Users(r.data.team1_users || []);
-                                    setTeam2Users(r.data.team2_users || []);
-                                    setUnassignedUsers(r.data.unassigned_users || []);
-                                    if (['match_created','ready_to_create','completed'].includes(r.data.lobby?.status)) {
-                                        try {
-                                            const conn = await api.get(`/api/admin/match-lobby/${lobbyId}/connect`, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (conn?.data?.success) setConnectInfo(conn.data);
-                                        } catch (_) {}
+                            try {
+                                const token = localStorage.getItem('token');
+                                const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/select-map`, { mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
+                                if (data?.success) {
+                                    // Обновляем selections напрямую из ответа
+                                    if (data.selections) setSelections(data.selections);
+                                    if (data.available_maps) setAvailableMaps(data.available_maps);
+                                    // Если пик/бан завершён — сохраняем match_id и ссылки
+                                    if (data.completed) {
+                                        if (data.match_id) setCreatedMatchId(data.match_id);
+                                        if (data.connect && data.gotv) setConnectInfo({ connect: data.connect, gotv: data.gotv });
+                                    }
+                                    // Подтягиваем свежее состояние лобби (но не дублируем запросы)
+                                    const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (r?.data?.success) {
+                                        setLobby(r.data.lobby);
+                                        setSelections(r.data.selections || []);
+                                        setAvailableMaps(r.data.available_maps || []);
                                     }
                                 }
+                            } catch (err) {
+                                console.error('Ошибка выбора карты:', err);
                             }
                         }}
                         teamNames={{ 1: lobby.team1_name || 'Team_A', 2: lobby.team2_name || 'Team_B' }}
