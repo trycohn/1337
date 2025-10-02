@@ -1774,11 +1774,11 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 side_type: 'standard',
                 players_per_team, // динамическое значение
                 team1: { 
-                    name: lobbyFresh?.team1_name || 'TEAM_A', 
+                    name: (lobbyFresh?.team1_name && lobbyFresh.team1_name !== 'Команда 1') ? lobbyFresh.team1_name : 'TEAM_A', 
                     players: team1PlayersObj // объект {steam_id: nickname}
                 },
                 team2: { 
-                    name: lobbyFresh?.team2_name || 'TEAM_B', 
+                    name: (lobbyFresh?.team2_name && lobbyFresh.team2_name !== 'Команда 2') ? lobbyFresh.team2_name : 'TEAM_B', 
                     players: team2PlayersObj // объект {steam_id: nickname}
                 }
             };
@@ -1832,19 +1832,27 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                     ),
                                     new Promise((_, reject) => setTimeout(() => reject(new Error('Server timeout')), 8000))
                                 ]);
-                                
-                                // Проверяем ответ сервера
-                                const response = result.response || '';
-                                
-                                if (response.includes('A match is already setup') || 
-                                    response.includes('already setup') ||
-                                    response.includes('match already in progress')) {
-                                    console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
-                                    continue;
-                                }
-                                
-                                // Если дошли сюда - команда успешно выполнена
-                                selectedServer = server;
+                            
+                            // Проверяем ответ сервера
+                            const response = result.response || '';
+                            
+                            // Проверяем что сервер занят
+                            if (response.includes('A match is already setup') || 
+                                response.includes('already setup') ||
+                                response.includes('match already in progress')) {
+                                console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
+                                continue;
+                            }
+                            
+                            // Проверяем успешную загрузку
+                            if (response.includes('Success') || 
+                                response.includes('[LoadMatchFromJSON]') ||
+                                response.includes('Starting warmup')) {
+                                console.log(`✅ Сервер ${server.name} подтвердил загрузку конфига!`);
+                            }
+                            
+                            // Сервер принял команду
+                            selectedServer = server;
                                 
                                 // Формируем ссылки подключения
                                 const serverPass = server.server_password || '';

@@ -721,11 +721,11 @@ class MatchLobbyService {
             side_type: 'standard',
             players_per_team, // динамическое значение
             team1: { 
-                name: lobby.team1_name || 'Team 1', 
+                name: (lobby.team1_name && lobby.team1_name !== 'Команда 1') ? lobby.team1_name : 'TEAM_A', 
                 players: team1PlayersObj // объект {steam_id: nickname}
             },
             team2: { 
-                name: lobby.team2_name || 'Team 2', 
+                name: (lobby.team2_name && lobby.team2_name !== 'Команда 2') ? lobby.team2_name : 'TEAM_B', 
                 players: team2PlayersObj // объект {steam_id: nickname}
             }
         };
@@ -767,11 +767,19 @@ class MatchLobbyService {
                 
                 const response = result.response || '';
                 
+                // Проверяем что сервер занят
                 if (response.includes('A match is already setup') || 
                     response.includes('already setup') ||
                     response.includes('match already in progress')) {
                     console.log(`⚠️ [Tournament] Сервер ${server.name} занят, пробуем следующий...`);
                     continue;
+                }
+                
+                // Проверяем успешную загрузку
+                if (response.includes('Success') || 
+                    response.includes('[LoadMatchFromJSON]') ||
+                    response.includes('Starting warmup')) {
+                    console.log(`✅ [Tournament] Сервер ${server.name} подтвердил загрузку конфига!`);
                 }
                 
                 selectedServer = server;
