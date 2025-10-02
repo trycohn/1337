@@ -24,11 +24,6 @@ import {
 } from 'chart.js';
 import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
-// ✨ V4 ULTIMATE: Импорты революционных компонентов
-import { useV4ProfileHooks } from './V4ProfileHooks';
-import V4StatsDashboard from './V4StatsDashboard';
-import './V4Stats.css';
-
 import AchievementsPanel from './achievements/AchievementsPanel';
 import MobileProfileSheet from './MobileProfileSheet';
 import MyTeams from './MyTeams';
@@ -347,8 +342,6 @@ function Profile() {
         lastActivity: null
     });
 
-    // ✨ V4 ULTIMATE: Инициализация революционного хука
-    const v4Data = useV4ProfileHooks(user, activeTab);
 
     // 🏆 КОНСТАНТЫ КАТЕГОРИЙ ДОСТИЖЕНИЙ
     const achievementCategories = [
@@ -2445,7 +2438,7 @@ function Profile() {
                                 ...(user && user.role === 'admin' ? [{ key: 'achievements', label: 'Достижения' }] : []),
                                 ...((userOrganizations && userOrganizations.length > 0) ? [{ key: 'organization', label: 'Организация' }] : []),
                                 { key: 'tournaments', label: 'Турниры' },
-                            ].concat((user && user.role === 'admin') ? [{ key: 'v4analytics', label: 'Аналитика V4' }] : [])}
+                            ]}
                         />
                     </>
                 )}
@@ -2532,16 +2525,6 @@ function Profile() {
                                 <span>Репутация</span>
                             </div>
                         </button>
-                        {user && user.role === 'admin' && (
-                        <button 
-                            className={`nav-tab-profile ${activeTab === 'v4analytics' ? 'active' : ''}`} 
-                            onClick={() => switchTab('v4analytics')}
-                        >
-                            <div className="nav-tab-content-profile">
-                                <span>Аналитика V4 ULTIMATE</span>
-                            </div>
-                        </button>
-                        )}
                     </nav>
                 </div>
                 )}
@@ -3045,50 +3028,6 @@ function Profile() {
                                     </div>
                                 </div>
                                 )}
-
-                                {/* ✨ V4 ULTIMATE: скрыто для не-админов */}
-                                {user && user.role === 'admin' && (
-                                <V4StatsDashboard
-                                    v4Data={v4Data}
-                                    stats={stats}
-                                    requestEnhancedRecalculation={requestEnhancedRecalculation}
-                                    isRecalculating={isRecalculating}
-                                    recalculationStatus={recalculationStatus}
-                                    recalculationError={recalculationError}
-                                />
-                                )}
-                            </>
-                        )}
-                        
-                        {/* ✨ V4 ULTIMATE ANALYTICS TAB */}
-                        {user && user.role === 'admin' && activeTab === 'v4analytics' && (
-                            <>
-                                <div className="content-header">
-                                    <h2 className="content-title">🔥 Аналитика V4 ULTIMATE</h2>
-                                    <div className="v4-ultimate-badge">
-                                        <span>NEW</span>
-                                    </div>
-                                </div>
-                                
-                                {/* V4 ULTIMATE: Революционный дашборд статистики */}
-                                <div className="content-card v4-ultimate-section">
-                                    <div className="card-header">
-                                        <h3 className="card-title">🚀 V4 ULTIMATE ДАШБОРД</h3>
-                                        <div className="v4-ultimate-badge">
-                                            <span>ULTIMATE</span>
-                                        </div>
-                                    </div>
-                                    <div className="card-content">
-                                        <V4StatsDashboard
-                                            v4Data={v4Data}
-                                            stats={stats}
-                                            requestEnhancedRecalculation={requestEnhancedRecalculation}
-                                            isRecalculating={isRecalculating}
-                                            recalculationStatus={recalculationStatus}
-                                            recalculationError={recalculationError}
-                                        />
-                                    </div>
-                                </div>
                             </>
                         )}
                         

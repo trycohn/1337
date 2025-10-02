@@ -143,10 +143,6 @@ const publicRoutes = [
   /^\/api\/users\/faceit-login$/,  // FACEIT OAuth
   /^\/api\/users\/steam\/callback$/,  // Steam callback
   /^\/api\/users\/faceit-callback$/,  // FACEIT callback
-  /^\/api\/v4\/achievements($|\/)/,  // V4 API: Достижения
-  /^\/api\/v4\/enhanced-stats($|\/)/,  // V4 API: Расширенная статистика
-  /^\/api\/v4\/leaderboards($|\/)/,  // V4 API: Лидерборды
-  /^\/api\/v4\/user-achievements($|\/)/,  // V4 API: Достижения пользователя
   /^\/testdb$/  // Тестовый маршрут
 ];
 
@@ -339,8 +335,6 @@ const chatsRouter = require('./routes/chats');
 const organizersRouter = require('./routes/organizers');
 const adminRouter = require('./routes/admin');
 const achievementsRouter = require('./routes/achievements'); // Роуты для системы достижений
-// ✨ V4 ULTIMATE: Импорт революционных API
-const v4EnhancedStatsRouter = require('./routes/v4-enhanced-stats');
 // 🔗 СИСТЕМА РЕФЕРАЛЬНЫХ ПРИГЛАШЕНИЙ v1.0.0
 const referralsRouter = require('./routes/referrals');
 const statsRouter = require('./routes/stats'); // API для статистики платформы
@@ -367,8 +361,6 @@ app.use('/api/maps', mapsRouter);
 app.use('/api/organizers', organizersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/achievements', achievementsRouter); // Подключаем систему достижений
-// ✨ V4 ULTIMATE: Революционные API endpoints
-app.use('/api/v4', v4EnhancedStatsRouter);
 // 🔗 РЕФЕРАЛЬНАЯ СИСТЕМА
 app.use('/api/referrals', referralsRouter);
 
