@@ -329,16 +329,40 @@ function AdminMatchPage() {
     function handleDragStart(e, userId) {
         try { e.dataTransfer.setData('text/plain', String(userId)); } catch (_) {}
     }
-    function handleDrop(team) {
+    function handleDrop(team, targetUserId = null) {
         return async (e) => {
             e.preventDefault();
+            e.stopPropagation();
             const token = localStorage.getItem('token');
             let raw = '';
             try { raw = e.dataTransfer.getData('text/plain'); } catch (_) {}
-            const userId = Number(raw);
-            if (!userId || !lobbyId) return;
+            const draggedUserId = Number(raw);
+            if (!draggedUserId || !lobbyId) return;
+            
             try {
-                await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: userId, team, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                // Если дропнули на другого игрока (targetUserId) — меняем местами
+                if (targetUserId && targetUserId !== draggedUserId) {
+                    // Находим текущие команды обоих игроков
+                    let draggedTeam = null;
+                    let targetTeam = null;
+                    
+                    if (team1Users.some(u => u.id === draggedUserId)) draggedTeam = 1;
+                    else if (team2Users.some(u => u.id === draggedUserId)) draggedTeam = 2;
+                    
+                    if (team1Users.some(u => u.id === targetUserId)) targetTeam = 1;
+                    else if (team2Users.some(u => u.id === targetUserId)) targetTeam = 2;
+                    
+                    // Меняем местами: draggedUser → targetTeam, targetUser → draggedTeam
+                    if (draggedTeam !== null && targetTeam !== null) {
+                        await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: draggedUserId, team: targetTeam, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                        await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: targetUserId, team: draggedTeam, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                    }
+                } else {
+                    // Обычное перемещение в команду/пустой слот
+                    await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: draggedUserId, team, accept: true }, { headers: { Authorization: `Bearer ${token}` } });
+                }
+                
+                // Обновляем состояние
                 const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
                 if (r?.data?.success) {
                     setLobby(r.data.lobby);
@@ -355,7 +379,7 @@ function AdminMatchPage() {
                             const next = { ...prev };
                             for (const id of r.data.ready_user_ids) next[id] = true;
                             // снимаем готовность тех, кого нет в списке
-                            for (const u of [...team1Users, ...team2Users]) {
+                            for (const u of [...r.data.team1_users || [], ...r.data.team2_users || []]) {
                                 if (!r.data.ready_user_ids.includes(u.id)) next[u.id] = false;
                             }
                             return next;
@@ -874,8 +898,8 @@ function AdminMatchPage() {
                             </span>
                         </h4>
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
-                        {team1Users.map(u => (
-                            <div key={`t1-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                        {team1Users.map((u, idx) => (
+                            <div key={`t1-${u.id}`} className={`list-row custom-match-list-row ${idx === 0 ? 'custom-match-captain-row' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, u.id)} onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1, u.id)}>
                                 <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}
@@ -936,8 +960,8 @@ function AdminMatchPage() {
                             </span>
                         </h4>
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
-                        {team2Users.map(u => (
-                            <div key={`t2-${u.id}`} className="list-row custom-match-list-row" draggable onDragStart={(e)=>handleDragStart(e, u.id)}>
+                        {team2Users.map((u, idx) => (
+                            <div key={`t2-${u.id}`} className={`list-row custom-match-list-row ${idx === 0 ? 'custom-match-captain-row' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, u.id)} onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2, u.id)}>
                                 <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}

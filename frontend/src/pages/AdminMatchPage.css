@@ -368,3 +368,7 @@
 .custom-match-ready-toggle.off {
   color: #777;
 }
+.custom-match-captain-row {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}

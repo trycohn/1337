@@ -1101,6 +1101,8 @@ async function ensureAdminLobbyTables() {
     `);
     // Безопасно добавляем недостающую колонку declined
     await pool.query(`ALTER TABLE admin_lobby_invitations ADD COLUMN IF NOT EXISTS declined BOOLEAN DEFAULT FALSE`);
+    // Добавляем поле для фиксации порядка игроков в команде (капитан = team_position 1)
+    await pool.query(`ALTER TABLE admin_lobby_invitations ADD COLUMN IF NOT EXISTS team_position INTEGER DEFAULT 0`);
 
     // Присутствие пользователей в админ-лобби (heartbeats)
     await pool.query(`
@@ -1274,12 +1276,12 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         );
         const invRes = await client.query(
             `SELECT DISTINCT ON (i.user_id)
-                    i.user_id, i.team, i.accepted, i.declined, i.created_at,
+                    i.user_id, i.team, i.accepted, i.declined, i.created_at, i.updated_at, i.team_position,
                     u.username, u.avatar_url, u.steam_id
              FROM admin_lobby_invitations i
              JOIN users u ON u.id = i.user_id
              WHERE i.lobby_id = $1
-             ORDER BY i.user_id, i.created_at DESC`,
+             ORDER BY i.user_id, i.updated_at DESC`,
             [lobbyId]
         );
         console.log('[ADMIN_LOBBY][GET] invites raw', {
@@ -1303,12 +1305,14 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
                 });
             }
         }
-        // Группируем участников
+        // Группируем участников (сортируем по team_position для явной фиксации капитанов)
         const team1_users = invRes.rows
             .filter(r => r.team === 1 && r.accepted)
+            .sort((a, b) => (a.team_position || 0) - (b.team_position || 0) || a.id - b.id)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
         const team2_users = invRes.rows
             .filter(r => r.team === 2 && r.accepted)
+            .sort((a, b) => (a.team_position || 0) - (b.team_position || 0) || a.id - b.id)
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
         let unassigned_users = invRes.rows
             .filter(r => r.team === null && r.declined === false && (r.accepted === true || Number(r.user_id) === Number(lobby.created_by)))
@@ -1394,12 +1398,25 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, async (req, res) 
             team,
             accept
         });
+        
+        // Если назначаем в команду — определяем team_position (порядковый номер)
+        let teamPosition = 0;
+        if (team !== null && team !== undefined) {
+            const teamNum = Number(team);
+            const countRes = await pool.query(
+                `SELECT COUNT(*) as cnt FROM admin_lobby_invitations 
+                 WHERE lobby_id = $1 AND team = $2 AND accepted = TRUE`,
+                [lobbyId, teamNum]
+            );
+            teamPosition = (parseInt(countRes.rows[0]?.cnt) || 0) + 1;
+        }
+        
         const upsert = await pool.query(
-            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted, declined, updated_at)
-             VALUES ($1, $2, $3, $4, FALSE, NOW())
+            `INSERT INTO admin_lobby_invitations(lobby_id, user_id, team, accepted, declined, team_position, updated_at)
+             VALUES ($1, $2, $3, $4, FALSE, $5, NOW())
              ON CONFLICT (lobby_id, user_id)
-             DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted, declined = FALSE, updated_at = NOW()`,
-            [lobbyId, user_id, (team === null ? null : Number(team)), Boolean(accept)]
+             DO UPDATE SET team = EXCLUDED.team, accepted = admin_lobby_invitations.accepted OR EXCLUDED.accepted, declined = FALSE, team_position = EXCLUDED.team_position, updated_at = NOW()`,
+            [lobbyId, user_id, (team === null ? null : Number(team)), Boolean(accept), teamPosition]
         );
         const after = await pool.query('SELECT user_id, team, accepted, declined FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2', [lobbyId, user_id]);
         console.log('[ADMIN_LOBBY][INVITE] upserted', { lobbyId: Number(lobbyId), userId: Number(user_id), row: after.rows[0] });
@@ -1555,13 +1572,21 @@ router.post('/match-lobby/:lobbyId/self-assign', authenticateToken, async (req, 
     }
 });
 
-// Установить формат
-router.post('/match-lobby/:lobbyId/format', authenticateToken, requireAdmin, async (req, res) => {
+// Установить формат (админ или создатель лобби)
+router.post('/match-lobby/:lobbyId/format', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const { format } = req.body || {};
     if (!['bo1','bo3','bo5'].includes(format)) return res.status(400).json({ success: false, error: 'Неверный формат' });
     try {
+        // Проверка прав: админ или создатель лобби
+        const lobbyCheck = await pool.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        if (lobbyCheck.rows.length === 0) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const isCreator = Number(lobbyCheck.rows[0].created_by) === Number(req.user.id);
+        if (!(req.user.role === 'admin' || isCreator)) {
+            return res.status(403).json({ success: false, error: 'Нет прав на изменение формата' });
+        }
+        
         const r = await pool.query(
             `UPDATE admin_match_lobbies 
              SET match_format = $1,
@@ -1582,8 +1607,8 @@ router.post('/match-lobby/:lobbyId/format', authenticateToken, requireAdmin, asy
     }
 });
 
-// Готовность команд
-router.post('/match-lobby/:lobbyId/ready', authenticateToken, requireAdmin, async (req, res) => {
+// Готовность команд (админ или создатель лобби)
+router.post('/match-lobby/:lobbyId/ready', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
     const { team, ready } = req.body || {};
@@ -1593,6 +1618,19 @@ router.post('/match-lobby/:lobbyId/ready', authenticateToken, requireAdmin, asyn
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        
+        // Проверка прав: админ или создатель лобби
+        const lobbyCheck = await client.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (lobbyCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
+        const isCreator = Number(lobbyCheck.rows[0].created_by) === Number(req.user.id);
+        if (!(req.user.role === 'admin' || isCreator)) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ success: false, error: 'Нет прав на изменение готовности команд' });
+        }
+        
         const upd = await client.query(
             `UPDATE admin_match_lobbies SET ${col} = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
             [Boolean(ready), lobbyId]
@@ -2013,7 +2051,7 @@ router.get('/match-lobby/:lobbyId/connect', authenticateToken, async (req, res) 
     }
 });
 
-// Очистить лобби (создатель)
+// Очистить лобби (админ или создатель)
 router.post('/match-lobby/:lobbyId/clear', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId } = req.params;
@@ -2026,12 +2064,14 @@ router.post('/match-lobby/:lobbyId/clear', authenticateToken, async (req, res) =
             await client.query('ROLLBACK');
             return res.status(404).json({ success: false, error: 'Лобби не найдено' });
         }
-        if (Number(r.rows[0].created_by) !== Number(userId)) {
+        const isCreator = Number(r.rows[0].created_by) === Number(userId);
+        if (!(req.user.role === 'admin' || isCreator)) {
             await client.query('ROLLBACK');
-            return res.status(403).json({ success: false, error: 'Только создатель лобби может выполнять очистку' });
+            return res.status(403).json({ success: false, error: 'Нет прав на очистку лобби' });
         }
         await client.query('DELETE FROM admin_map_selections WHERE lobby_id = $1', [lobbyId]);
         await client.query('DELETE FROM admin_lobby_invitations WHERE lobby_id = $1', [lobbyId]);
+        await client.query('DELETE FROM admin_lobby_presence WHERE lobby_id = $1', [lobbyId]);
         const upd = await client.query(
             `UPDATE admin_match_lobbies
              SET status = 'waiting', match_format = NULL,
