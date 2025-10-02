@@ -1733,10 +1733,22 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                  WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
                 [lobbyId]
             );
-            const team1PlayersSteam = teamRes.rows.filter(r => Number(r.team) === 1)
-                .map(r => r.steam_id).filter(Boolean).map(String);
-            const team2PlayersSteam = teamRes.rows.filter(r => Number(r.team) === 2)
-                .map(r => r.steam_id).filter(Boolean).map(String);
+            
+            // Формируем объект players для MatchZy (steam_id: nickname)
+            const team1PlayersObj = {};
+            const team2PlayersObj = {};
+            
+            teamRes.rows.forEach(r => {
+                if (r.steam_id) {
+                    const steamId = String(r.steam_id);
+                    const nickname = r.username || 'Player';
+                    if (Number(r.team) === 1) {
+                        team1PlayersObj[steamId] = nickname;
+                    } else if (Number(r.team) === 2) {
+                        team2PlayersObj[steamId] = nickname;
+                    }
+                }
+            });
 
             // Читаем названия команд и формат
             const lobbyFresh = (await client.query('SELECT match_format, team1_name, team2_name FROM admin_match_lobbies WHERE id = $1', [lobbyId])).rows[0];
@@ -1755,8 +1767,15 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 maplist,
                 skip_veto: true,
                 side_type: 'standard',
-                team1: { name: 'TEAM_A', players: team1PlayersSteam },
-                team2: { name: 'TEAM_B', players: team2PlayersSteam }
+                players_per_team: 5,
+                team1: { 
+                    name: lobbyFresh?.team1_name || 'TEAM_A', 
+                    players: team1PlayersObj // объект {steam_id: nickname}
+                },
+                team2: { 
+                    name: lobbyFresh?.team2_name || 'TEAM_B', 
+                    players: team2PlayersObj // объект {steam_id: nickname}
+                }
             };
 
             let configJsonSaved = false;

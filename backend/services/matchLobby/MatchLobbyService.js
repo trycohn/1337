@@ -682,17 +682,21 @@ class MatchLobbyService {
             [lobbyId]
         );
         
-        const team1Players = participantsResult.rows
-            .filter(p => p.team_number === 1)
-            .map(p => p.steam_id)
-            .filter(Boolean)
-            .map(String);
-            
-        const team2Players = participantsResult.rows
-            .filter(p => p.team_number === 2)
-            .map(p => p.steam_id)
-            .filter(Boolean)
-            .map(String);
+        // Формируем объект players для MatchZy (steam_id: nickname)
+        const team1PlayersObj = {};
+        const team2PlayersObj = {};
+        
+        participantsResult.rows.forEach(p => {
+            if (p.steam_id) {
+                const steamId = String(p.steam_id);
+                const nickname = p.username || 'Player';
+                if (p.team_number === 1) {
+                    team1PlayersObj[steamId] = nickname;
+                } else if (p.team_number === 2) {
+                    team2PlayersObj[steamId] = nickname;
+                }
+            }
+        });
         
         // Формируем конфиг
         const matchFormat = lobby.match_format || 'bo1';
@@ -710,13 +714,14 @@ class MatchLobbyService {
             maplist,
             skip_veto: true,
             side_type: 'standard',
+            players_per_team: 5,
             team1: { 
                 name: lobby.team1_name || 'Team 1', 
-                players: team1Players 
+                players: team1PlayersObj // объект {steam_id: nickname}
             },
             team2: { 
                 name: lobby.team2_name || 'Team 2', 
-                players: team2Players 
+                players: team2PlayersObj // объект {steam_id: nickname}
             }
         };
         
