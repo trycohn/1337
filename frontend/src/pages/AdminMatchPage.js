@@ -700,14 +700,8 @@ function AdminMatchPage() {
 
             {(isAdmin || Number(lobby?.created_by) === Number(user?.id)) && (
                 <div className="custom-match-mt-16">
-                    <button className="btn btn-primary" onClick={createTestLobby} disabled={loading || !lobbyId}>
-                        {loading ? 'Запрашиваем…' : 'Подключения (если готово)'}
-                    </button>
-                    <button className="btn btn-secondary custom-match-ml-8" onClick={syncWhitelist} disabled={loading || (team1Users.length + team2Users.length === 0)}>
-                        Синхронизировать whitelist
-                    </button>
-                    {/* Очистка лобби — только создатель */}
-                    <button className="btn btn-secondary custom-match-ml-8" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
+                    {/* Очистка лобби — только админ или создатель */}
+                    <button className="btn btn-secondary" disabled={!lobbyId || !user || (lobby && user && lobby.created_by && Number(lobby.created_by) !== Number(user.id))}
                         onClick={async () => {
                             try {
                                 const token = localStorage.getItem('token');
