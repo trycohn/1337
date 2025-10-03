@@ -57,7 +57,9 @@ function CreateTournament() {
     // 🆕 Тип турнира: open | closed | final
     tournament_type: 'open',
     // (устаревшее поле – вычисляется из tournament_type)
-    is_series_final: false
+    is_series_final: false,
+    // 🆕 Режим CS2 для UI (5v5 или 2v2)
+    cs2_mode: '5v5'
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -264,11 +266,23 @@ function CreateTournament() {
   };
 
   const handleParticipantTypeChange = (e) => {
-    const participant_type = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      participant_type
-    }));
+    const value = e.target.value;
+    
+    // Для CS2 обрабатываем специальные значения
+    if (value === 'cs2_5v5' || value === 'cs2_2v2') {
+      setFormData(prev => ({
+        ...prev,
+        participant_type: 'team',
+        cs2_mode: value === 'cs2_5v5' ? '5v5' : '2v2',
+        team_size: value === 'cs2_5v5' ? 5 : 2
+      }));
+    } else {
+      // Для других игр просто устанавливаем participant_type
+      setFormData(prev => ({
+        ...prev,
+        participant_type: value
+      }));
+    }
   };
 
   // 🆕 Обработчик изменения игры
@@ -280,8 +294,10 @@ function CreateTournament() {
       const newData = {
         ...prev,
         game: selectedGame,
-        // Сбрасываем тип участников при смене игры
-        participant_type: isCS2Game(selectedGame) ? 'cs2_classic_5v5' : 'team'
+        // Для CS2 устанавливаем participant_type: 'team' и cs2_mode по умолчанию
+        participant_type: 'team',
+        cs2_mode: isCS2Game(selectedGame) ? '5v5' : prev.cs2_mode,
+        team_size: isCS2Game(selectedGame) ? 5 : prev.team_size
       };
       console.log('Новые данные после выбора игры:', newData);
       return newData;
@@ -596,7 +612,7 @@ function CreateTournament() {
                 <label>Тип участников</label>
                 <select
                   name="participant_type"
-                  value={formData.participant_type}
+                  value={isCS2Game(formData.game) ? `cs2_${formData.cs2_mode}` : formData.participant_type}
                   onChange={handleParticipantTypeChange}
                   disabled={!verificationStatus.canCreate}
                   required
@@ -604,8 +620,8 @@ function CreateTournament() {
                   <option value="">Выберите тип участников</option>
                   {isCS2Game(formData.game) ? (
                     <>
-                      <option value="cs2_classic_5v5">Классический 5х5</option>
-                      <option value="cs2_wingman_2v2">Wingman 2х2</option>
+                      <option value="cs2_5v5">Классический 5х5</option>
+                      <option value="cs2_2v2">Wingman 2х2</option>
                     </>
                   ) : (
                     <>
@@ -616,8 +632,8 @@ function CreateTournament() {
                 </select>
                 {isCS2Game(formData.game) && (
                   <small className="form-hint">
-                    {formData.participant_type === 'cs2_classic_5v5' && '🏆 Классический формат CS2: команды минимум 5 игроков'}
-                    {formData.participant_type === 'cs2_wingman_2v2' && '⚡ Wingman формат CS2: команды минимум 2 игрока'}
+                    {formData.cs2_mode === '5v5' && '🏆 Классический формат CS2: команды минимум 5 игроков'}
+                    {formData.cs2_mode === '2v2' && '⚡ Wingman формат CS2: команды минимум 2 игрока'}
                   </small>
                 )}
               </div>
