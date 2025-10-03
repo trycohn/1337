@@ -1823,49 +1823,42 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                             try {
                                 console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                                 
-                                // Отправляем команду загрузки (с коротким таймаутом - команда уходит в фон)
-                            let result;
-                            try {
-                                result = await Promise.race([
-                                    rconService.executeCommand(
-                                        server.id,
-                                        `matchzy_loadmatch_url "${fullConfigUrl}"`,
-                                        { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
-                                    ),
-                                    new Promise((_, reject) => setTimeout(() => reject(new Error('No immediate response')), 3000))
-                                ]);
-                            } catch (timeoutErr) {
-                                // Таймаут - это нормально, команда ушла в фон на сервере
-                                if (timeoutErr.message === 'No immediate response') {
-                                    console.log(`✅ Команда отправлена на ${server.name}, сервер загружает конфиг...`);
-                                    selectedServer = server;
-                                } else {
-                                    throw timeoutErr; // Другая ошибка
-                                }
-                            }
-                            
-                            // Если получили быстрый ответ - проверяем его
-                            if (result && !selectedServer) {
-                                const response = result.response || '';
-                                console.log(`📋 RCON ответ от ${server.name}:`, response ? response.substring(0, 200) : '(пустой)');
+                                // Проверяем статус сервера через кастомную команду
+                                const statusResult = await rconService.executeCommand(
+                                    server.id,
+                                    'css_mz_status',
+                                    { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
+                                );
                                 
-                                // Проверяем что сервер занят
-                                if (response.includes('A match is already setup') || 
-                                    response.includes('already setup') ||
-                                    response.includes('match already in progress')) {
-                                    console.log(`⚠️ Сервер ${server.name} занят, пробуем следующий...`);
+                                const statusResponse = statusResult.response || '';
+                                console.log(`📋 Статус от ${server.name}:`, statusResponse);
+                                
+                                // Парсим статус: ищем STATUS=...
+                                const statusMatch = statusResponse.match(/STATUS=(\w+)/);
+                                const serverStatus = statusMatch ? statusMatch[1].toLowerCase() : null;
+                                
+                                if (!serverStatus) {
+                                    console.log(`⚠️ Не удалось получить статус от ${server.name}, пропускаем...`);
                                     continue;
                                 }
                                 
-                                // Проверяем на ошибки
-                                if (response.includes('Error') || response.includes('Failed')) {
-                                    console.log(`❌ Сервер ${server.name} вернул ошибку, пробуем следующий...`);
+                                // Проверяем что сервер свободен
+                                if (serverStatus !== 'idle') {
+                                    console.log(`⚠️ Сервер ${server.name} занят (STATUS=${serverStatus}), пробуем следующий...`);
                                     continue;
                                 }
                                 
-                                console.log(`✅ Сервер ${server.name} подтвердил загрузку!`);
+                                console.log(`✅ Сервер ${server.name} свободен (STATUS=idle), загружаем конфиг...`);
+                                
+                                // Отправляем команду загрузки
+                                await rconService.executeCommand(
+                                    server.id,
+                                    `matchzy_loadmatch_url "${fullConfigUrl}"`,
+                                    { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
+                                );
+                                
+                                console.log(`✅ Команда загрузки отправлена на ${server.name}!`);
                                 selectedServer = server;
-                            }
                                 
                                 // Формируем ссылки подключения
                                 const serverPass = server.server_password || '';
