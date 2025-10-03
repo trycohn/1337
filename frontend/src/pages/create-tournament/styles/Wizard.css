@@ -150,6 +150,7 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
+  justify-content: flex-start;
 }
 
 .wizard-content input[type="checkbox"] {
