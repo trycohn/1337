@@ -124,6 +124,30 @@ function Step6_Preview({ wizardData, onEdit }) {
             label="Лобби матча" 
             value={rules.lobby_enabled ? 'Включено' : 'Выключено'} 
           />
+          {rules.lobby_enabled && rules.lobby_match_format && (
+            <PreviewField 
+              label="Формат матчей" 
+              value={
+                rules.lobby_match_format === 'bo1' ? 'Best of 1' :
+                rules.lobby_match_format === 'bo3' ? 'Best of 3' :
+                rules.lobby_match_format === 'bo5' ? 'Best of 5' :
+                'Выбор в лобби'
+              } 
+            />
+          )}
+          {rules.enable_final_format && (
+            <PreviewField 
+              label="Формат финальных матчей" 
+              value={
+                <span style={{ color: '#ff0000', fontWeight: '600' }}>
+                  {rules.final_match_format === 'bo1' ? 'Best of 1' :
+                   rules.final_match_format === 'bo3' ? 'Best of 3' :
+                   rules.final_match_format === 'bo5' ? 'Best of 5' :
+                   'Best of 3'} (особый)
+                </span>
+              } 
+            />
+          )}
         </div>
       </div>
 

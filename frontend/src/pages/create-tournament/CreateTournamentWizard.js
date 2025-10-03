@@ -76,6 +76,9 @@ function CreateTournamentWizard({ onBack }) {
       lobby_enabled: false,
       lobby_match_format: null,
       selected_maps: [],
+      // 🆕 Особый формат для финалов
+      enable_final_format: false,
+      final_match_format: 'bo3',
     },
     
     // Шаг 5: Брендинг
@@ -232,6 +235,8 @@ function CreateTournamentWizard({ onBack }) {
           lobby_enabled: wizardData.rules.lobby_enabled,
           lobby_match_format: wizardData.rules.lobby_enabled ? wizardData.rules.lobby_match_format : null,
           selected_maps: wizardData.rules.lobby_enabled ? wizardData.rules.selected_maps : [],
+          // 🆕 Особый формат для финалов
+          final_match_format: wizardData.rules.enable_final_format ? wizardData.rules.final_match_format : null,
           
           // Из branding (сохраняем как JSONB в поле branding)
           branding: {

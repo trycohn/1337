@@ -56,6 +56,8 @@ function CreateTournamentManual({ onBack }) {
     lobby_enabled: false,
     lobby_match_format: null,
     selected_maps: [],
+    enable_final_format: false, // 🆕 Особый формат финалов
+    final_match_format: 'bo3', // 🆕 Формат финальных матчей
     full_double_elimination: false,
     tournament_type: 'open',
     is_series_final: false,
@@ -151,6 +153,7 @@ function CreateTournamentManual({ onBack }) {
             lobby_enabled: isCS2Game(formData.game) ? formData.lobby_enabled : false,
             lobby_match_format: formData.lobby_enabled ? formData.lobby_match_format : null,
             selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
+            final_match_format: formData.enable_final_format ? formData.final_match_format : null, // 🆕 Особый формат для финалов
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
             access_type: (formData.tournament_type === 'closed' || formData.tournament_type === 'hidden') ? 'closed' : 'open',
             is_hidden: formData.tournament_type === 'hidden',
@@ -702,8 +705,40 @@ function CreateTournamentManual({ onBack }) {
                         <option value="bo3">Best of 3</option>
                         <option value="bo5">Best of 5</option>
                       </select>
-                      <small className="form-hint">Оставьте пустым, чтобы участники выбирали формат в лобби</small>
+                      <small className="form-hint">Формат применяется ко всем матчам, кроме финальных (если задан особый формат финала)</small>
                     </div>
+
+                    {/* 🆕 Особый формат для финала */}
+                    <div className="form-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          name="enable_final_format"
+                          checked={formData.enable_final_format}
+                          onChange={handleInputChange}
+                          disabled={!verificationStatus.canCreate}
+                        />
+                        <span>Особый формат матчей финала</span>
+                      </label>
+                      <small className="form-hint">Позволяет задать отдельный формат для финальных матчей (финал, полуфинал, гранд-финал)</small>
+                    </div>
+
+                    {formData.enable_final_format && (
+                      <div className="form-group" style={{ marginLeft: '30px', paddingLeft: '15px', borderLeft: '2px solid #ff0000' }}>
+                        <label>Формат финальных матчей</label>
+                        <select
+                          name="final_match_format"
+                          value={formData.final_match_format || 'bo3'}
+                          onChange={handleInputChange}
+                          disabled={!verificationStatus.canCreate}
+                        >
+                          <option value="bo1">Best of 1</option>
+                          <option value="bo3">Best of 3</option>
+                          <option value="bo5">Best of 5</option>
+                        </select>
+                        <small className="form-hint">Этот формат будет применяться к финалу, полуфиналам и гранд-финалу</small>
+                      </div>
+                    )}
 
                     <div className="form-group">
                       <label>Карты турнира (выберите 7 карт)</label>

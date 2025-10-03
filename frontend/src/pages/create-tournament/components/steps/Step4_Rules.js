@@ -82,7 +82,42 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
                   <option value="bo3">Best of 3</option>
                   <option value="bo5">Best of 5</option>
                 </select>
+                <small className="form-hint">
+                  Формат применяется ко всем матчам, кроме финальных (если задан особый формат финала)
+                </small>
               </div>
+
+              {/* 🆕 Особый формат для финала */}
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={data.enable_final_format || false}
+                    onChange={(e) => handleChange('enable_final_format', e.target.checked)}
+                  />
+                  <span>Особый формат матчей финала</span>
+                </label>
+                <small className="form-hint">
+                  Позволяет задать отдельный формат для финальных матчей (финал, полуфинал, гранд-финал)
+                </small>
+              </div>
+
+              {data.enable_final_format && (
+                <div className="form-group" style={{ marginLeft: '30px', paddingLeft: '15px', borderLeft: '2px solid #ff0000' }}>
+                  <label>Формат финальных матчей</label>
+                  <select
+                    value={data.final_match_format || 'bo3'}
+                    onChange={(e) => handleChange('final_match_format', e.target.value)}
+                  >
+                    <option value="bo1">Best of 1</option>
+                    <option value="bo3">Best of 3</option>
+                    <option value="bo5">Best of 5</option>
+                  </select>
+                  <small className="form-hint">
+                    Этот формат будет применяться к финалу, полуфиналам и гранд-финалу
+                  </small>
+                </div>
+              )}
 
               <div className="form-group">
                 <p><strong>Карты турнира:</strong></p>

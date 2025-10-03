@@ -183,6 +183,7 @@ class TournamentService {
             start_date, description, bracket_type, team_size, mix_rating_type,
             mix_type,
             lobby_enabled, lobby_match_format, selected_maps, full_double_elimination,
+            final_match_format, // 🆕 Особый формат для финалов
             require_faceit_linked, require_steam_linked,
             is_series_final,
             access_type,
@@ -204,6 +205,8 @@ class TournamentService {
             mix_rating_type: (format === 'mix' && mix_rating_type) ? mix_rating_type : null,
             mix_type: (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null),
             lobby_enabled: lobby_enabled || false,
+            lobby_match_format: lobby_match_format || null, // 🆕 Формат матчей по умолчанию
+            final_match_format: final_match_format || null, // 🆕 Особый формат для финалов
             // 🆕 НОВОЕ: Опция Full Double Elimination
             full_double_elimination: (bracket_type === 'double_elimination' && full_double_elimination) || false,
             // 🆕 Требования привязки аккаунтов (только для MIX)
