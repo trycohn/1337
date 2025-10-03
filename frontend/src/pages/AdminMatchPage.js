@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 // Удаляем прямой импорт socket.io-client; используем API + фоновые polling‑обновления
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
-import CustomMatchTour from '../components/tour/CustomMatchTour';
 import '../styles/components.css';
 import './AdminMatchPage.css';
 
@@ -48,9 +47,20 @@ function AdminMatchPage() {
     const pollInFlightRef = useRef(false);
     const teamConfirmInFlightRef = useRef({ 1: false, 2: false });
     const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
-    // Tour state
-    const [runTour, setRunTour] = useState(false);
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
+    
+    // Inline hints state
+    const [hints, setHints] = useState({
+        format: !localStorage.getItem('hint_format_used'),
+        invite: !localStorage.getItem('hint_invite_used'),
+        ready: !localStorage.getItem('hint_ready_used'),
+        pickban: !localStorage.getItem('hint_pickban_used'),
+    });
+
+    const dismissHint = useCallback((key) => {
+        localStorage.setItem(`hint_${key}_used`, 'true');
+        setHints(prev => ({ ...prev, [key]: false }));
+    }, []);
 
     // Presence helpers
     const lobbyPresenceSet = useMemo(() => {
@@ -565,38 +575,24 @@ function AdminMatchPage() {
 
     // Не блокируем страницу для приглашенных не-админов
 
-    // Автозапуск тура при первом визите
-    useEffect(() => {
-        const tourShown = localStorage.getItem('customMatch_tourCompleted');
-        console.log('[TOUR_TRIGGER] Check:', { tourShown, lobbyId, user: !!user });
-        if (!tourShown && lobbyId && user) {
-            console.log('[TOUR_TRIGGER] Will start tour in 2 seconds');
-            const timer = setTimeout(() => {
-                console.log('[TOUR_TRIGGER] Setting runTour = true');
-                setRunTour(true);
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [lobbyId, user]);
-
     return (
         <div className="custom-match-page">
-            <CustomMatchTour 
-                run={runTour} 
-                onTourEnd={() => setRunTour(false)} 
-            />
-            
-            {/* Кнопка помощи для повторного запуска тура */}
-            <button 
-                className="help-tour-btn"
-                onClick={() => setRunTour(true)}
-                title="Показать инструкцию"
-                aria-label="Показать интерактивный тур"
-            >
-                ?
-            </button>
-            
             <h2>МАТЧ — тестовое лобби</h2>
+            
+            {/* Подсказка: выбор формата */}
+            {hints.format && !lobby?.match_format && (
+                <div className="inline-hint inline-hint-info">
+                    <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="12" r="10" fill="#4a9eff"/>
+                        <text x="12" y="16" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="bold">i</text>
+                    </svg>
+                    <span className="hint-text">
+                        <strong>Выберите формат матча:</strong> BO1 (1 карта), BO3 (до 2 побед), BO5 (до 3 побед)
+                    </span>
+                    <button className="hint-close" onClick={() => dismissHint('format')} aria-label="Закрыть подсказку">×</button>
+                </div>
+            )}
+            
             <div className="custom-match-mt-8">
                 <div className="custom-match-format-tabs">
                     {['bo1','bo3','bo5'].map(fmt => (
@@ -666,6 +662,19 @@ function AdminMatchPage() {
             </div>
             
 
+            {/* Подсказка: приглашение игроков */}
+            {hints.invite && team1Users.length === 0 && team2Users.length === 0 && (
+                <div className="inline-hint inline-hint-success">
+                    <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#ffd700"/>
+                    </svg>
+                    <span className="hint-text">
+                        <strong>Добавьте игроков:</strong> Нажмите <strong>+</strong> в слотах команд или откройте панель справа для приглашения друзей
+                    </span>
+                    <button className="hint-close" onClick={() => dismissHint('invite')} aria-label="Закрыть подсказку">×</button>
+                </div>
+            )}
+            
             {/* Участники не в командах (dropzone) */}
             {unassignedUsers.length > 0 && (
                 <div className="custom-match-mt-16 custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(null)}>
@@ -853,6 +862,19 @@ function AdminMatchPage() {
 
             
 
+            {/* Подсказка: процедура pick/ban */}
+            {hints.pickban && lobby?.status === 'picking' && (
+                <div className="inline-hint inline-hint-info">
+                    <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#00ff00"/>
+                    </svg>
+                    <span className="hint-text">
+                        🎮 <strong>Капитаны выбирают карты по очереди.</strong> Выбранные карты будут подсвечены зелёным. После завершения появятся ссылки подключения к серверу
+                    </span>
+                    <button className="hint-close" onClick={() => dismissHint('pickban')} aria-label="Закрыть подсказку">×</button>
+                </div>
+            )}
+            
             {/* Доска выбора карт */}
             {lobby && lobby.match_format && availableMaps?.length > 0 && (
                 <div className="custom-match-mt-16">
@@ -920,6 +942,19 @@ function AdminMatchPage() {
                 </div>
             )}
 
+            {/* Подсказка: готовность игроков */}
+            {hints.ready && (team1Users.length > 0 || team2Users.length > 0) && lobby?.status === 'waiting' && (
+                <div className="inline-hint inline-hint-warning">
+                    <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#ffa500"/>
+                    </svg>
+                    <span className="hint-text">
+                        💡 <strong>Каждый игрок отмечает готовность.</strong> Первый в команде становится капитаном (золотая рамка). Админ может принудительно отметить команду готовой кнопкой "ready"
+                    </span>
+                    <button className="hint-close" onClick={() => dismissHint('ready')} aria-label="Закрыть подсказку">×</button>
+                </div>
+            )}
+            
             {/* Составы команд (dropzones с placeholder-слотами) */}
             <div className="custom-match-mt-16">
                 <h3>Состав команд</h3>
@@ -1173,6 +1208,26 @@ function AdminMatchPage() {
                         </div>
                     </div>
                 </div>
+            )}
+            
+            {/* Кнопка "Показать все подсказки" */}
+            {(!hints.format || !hints.invite || !hints.ready || !hints.pickban) && (
+                <button 
+                    className="show-hints-btn"
+                    onClick={() => {
+                        setHints({ format: true, invite: true, ready: true, pickban: true });
+                        localStorage.removeItem('hint_format_used');
+                        localStorage.removeItem('hint_invite_used');
+                        localStorage.removeItem('hint_ready_used');
+                        localStorage.removeItem('hint_pickban_used');
+                    }}
+                    title="Показать все подсказки"
+                >
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
+                    </svg>
+                    Подсказки
+                </button>
             )}
         </div>
     );

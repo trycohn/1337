@@ -1,417 +1,129 @@
-/* ===== Custom Match Page (prefixed) ===== */
-.custom-match-page {
-  padding: 16px;
-}
-.custom-match-mt-8 {
-  margin-top: 8px;
-}
-.custom-match-mt-12 {
-  margin-top: 12px;
-}
-.custom-match-mt-16 {
-  margin-top: 16px;
-}
-.custom-match-ml-8 {
-  margin-left: 8px;
-}
-.custom-match-row {
+/* Inline hints (прогрессивные встроенные подсказки) */
+.inline-hint {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.custom-match-row-lg {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: center;
-}
-.custom-match-muted {
-  opacity: 0.7;
-}
-.custom-match-danger-text {
-  color: #ff6666;
-}
-.custom-match-code-inline {
-  margin-left: 8px;
-}
-.custom-match-avatar-sm {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Статусы участников */
-.custom-match-status-dot {
-  position: relative;
-  padding-left: 18px;
-}
-.custom-match-status-dot::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transform: translateY(-50%);
-  background-color: transparent;
-  border: 2px solid #666;
-}
-.custom-match-status-online::before {
-  background-color: transparent;
-  border-color: #00c853;
-}
-.custom-match-status-offline::before {
-  background-color: transparent;
-  border-color: #666;
-}
-.custom-match-status-pending::before {
-  background-color: #999;
-  border-color: #999;
-}
-.custom-match-status-declined::before {
-  background-color: #ff3b30;
-  border-color: #ff3b30;
-}
-/* New: in lobby state (green filled) */
-.custom-match-status-inlobby::before {
-  background-color: #00c853;
-  border-color: #00c853;
-}
-
-/* DnD визуал */
-.custom-match-dropzone {
-  border: 1px dashed #333;
-  padding: 8px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 16px 0;
   border-radius: 6px;
-}
-.custom-match-list-row[draggable="true"] {
-  cursor: grab;
-}
-.custom-match-list-row[draggable="true"]:active {
-  cursor: grabbing;
-}
-
-/* Hover actions for pending invites */
-.custom-match-row-actions {
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out;
-}
-.custom-match-list-row:hover .custom-match-row-actions {
-  opacity: 1;
-}
-
-.list-row {
-  font-size: 18px;
-  font-weight: 600;
-}
-/* reserved: row styling hook if needed */
-
-/* Invite side panel */
-.custom-match-invite-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-.custom-match-invite-panel {
-  width: 280px;
-  height: 80vh;
-  background: #000;
-  border: 1px solid #333;
-  border-radius: 8px;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  margin-right: 16px;
-}
-.custom-match-invite-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid #333;
-}
-.custom-match-invite-title {
-  font-weight: 600;
+  font-size: 14px;
   color: #fff;
-  font-size: 18px;
-  margin-bottom: 6px;
+  animation: slideInDown 0.4s ease-out;
+  transition: all 0.3s ease;
 }
-.custom-match-invite-close {
-  background: transparent;
-  border: 1px solid #333;
-  color: #fff;
-  width: 28px;
-  height: 28px;
-  line-height: 26px;
-  border-radius: 4px;
-  cursor: pointer;
+
+.inline-hint:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
-.custom-match-invite-body {
-  padding: 8px 12px;
-  overflow: auto;
+
+/* Типы подсказок */
+.inline-hint-info {
+  background: rgba(74, 158, 255, 0.15);
+  border-left: 4px solid #4a9eff;
+}
+
+.inline-hint-success {
+  background: rgba(255, 215, 0, 0.15);
+  border-left: 4px solid #ffd700;
+}
+
+.inline-hint-warning {
+  background: rgba(255, 165, 0, 0.15);
+  border-left: 4px solid #ffa500;
+}
+
+.hint-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.hint-text {
   flex: 1;
-}
-.custom-match-invite-section + .custom-match-invite-section {
-  margin-top: 24px;
+  line-height: 1.6;
+  color: #ddd;
 }
 
-.custom-match-invite-section-title {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 6px;
+.hint-text strong {
   color: #fff;
   font-weight: 600;
 }
-.custom-match-plus-btn {
-  width: 22px;
-  height: 22px;
+
+.hint-close {
+  background: none;
   border: none;
-  color: #fff;
-  background: transparent;
-  line-height: 20px;
-  font-weight: 700;
+  color: #666;
+  font-size: 22px;
+  line-height: 1;
   cursor: pointer;
-  margin-right: 8px;
-}
-.custom-match-plus-btn:hover {
-  border: none !important;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.custom-match-plus-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.custom-match-invite-section input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #333;
-  border-radius: 4px;
-  background: #111;
+.hint-close:hover {
   color: #fff;
-  font-size: 14px;
-  outline: none;
+  transform: scale(1.2);
 }
 
-@media (max-width: 768px) {
-  .custom-match-invite-panel {
-    width: 100vw;
-    height: 100vh;
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Format tabs */
-.custom-match-format-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-.custom-match-format-tab {
-  padding: 8px 16px;
-  border: 1px solid #333;
-  background: #111;
-  color: #fff;
-  border-radius: 6px;
-}
-.custom-match-format-tab.active {
-  background: #000;
-  border-color: #ff0000;
-}
-.custom-match-format-actions {
-  display: flex;
-  justify-content: center;
-}
-.btn-disabled { opacity:.6; cursor:not-allowed; }
-.custom-match-tooltip{ position:relative; }
-.custom-match-tooltip-bubble{
-  position:absolute; top:100%; left:50%; transform:translateX(-50%);
-  background:#111; border:1px solid #333; color:#fff; padding:6px 8px; border-radius:6px; margin-top:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease-in-out;
-}
-.custom-match-tooltip-bubble.visible{ opacity:1; }
-
-/* Confirm modal */
-.custom-match-format-confirm {
-  width: 320px;
-  background: #000;
-  border: 1px solid #333;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-}
-.custom-match-format-confirm-body {
-  padding: 12px;
-  color: #fff;
-}
-.custom-match-format-confirm-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px;
-}
-/* Placeholder slots in teams */
-.custom-match-placeholder-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  border: 1px dashed #333;
-  border-radius: 6px;
-  margin-top: 8px;
-  cursor: pointer;
-}
-.custom-match-placeholder-slot:hover {
-  background: #111;
-}
-.custom-match-placeholder-inner {
-  display: flex;
-  align-items: center;
-}
-.custom-match-placeholder-inner .custom-match-plus {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #ff0000;
-  color: #000;
-  font-weight: 700;
-  text-align: center;
-  line-height: 18px;
-}
-
-/* Teams container */
-.custom-match-teams {
-  width: 100%;
-}
-.custom-match-teams.custom-match-row-lg {
-  grid-template-columns: 1fr auto 1fr;
-}
-.custom-match-vs-block {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 48px;
-  color: #fff;
-  padding: 8px 0;
-}
-.custom-match-team-column h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-.custom-match-team-ready-status {
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  border: 1px solid #333;
-}
-.custom-match-team-ready-status {
-  color: #999;
-}
-.custom-match-team-column h4 .custom-match-team-ready-status {
-  margin-left: 8px;
-}
-.custom-match-team-column h4 .custom-match-team-ready-status:before {
-  content: "";
-}
-
-.custom-match-page .list-row {
-  display: flex;
-  align-items: center;
-}
-.custom-match-page .list-row-left {
-  display: flex;
-  align-items: center;
-}
-.custom-match-page .list-row-right {
-  display: flex;
-  align-items: center;
-}
-
-.custom-match-ready-toggle {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  border: 1px solid #333;
-  margin-right: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #111;
-  color: #888;
-  cursor: pointer;
-}
-.custom-match-ready-toggle.on {
-  color: #00c853;
-  border-color: #00c853;
-}
-.custom-match-ready-toggle.off {
-  color: #777;
-}
-.custom-match-ready-toggle.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.custom-match-ready-icon {
-  display: block;
-  width: 14px;
-  height: 14px;
-  fill: currentColor;
-}
-.custom-match-ready-toggle.on {
-  color: #00c853;
-  border-color: #00c853;
-}
-.custom-match-ready-toggle.off {
-  color: #777;
-}
-.custom-match-captain-row {
-  border: 2px solid #ffd700 !important;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
-  border-radius: 8px;
-}
-
-/* Кнопка помощи (тур) */
-.help-tour-btn {
+/* Кнопка "Показать все подсказки" */
+.show-hints-btn {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #ff0000;
+  padding: 10px 16px;
+  background: rgba(255, 0, 0, 0.9);
+  border: 2px solid #ff0000;
+  border-radius: 24px;
   color: #fff;
-  font-size: 24px;
-  font-weight: bold;
-  border: none;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   z-index: 9999;
   box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
 }
 
-.help-tour-btn:hover {
-  transform: scale(1.1);
+.show-hints-btn:hover {
+  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 0, 0, 0.6);
-  background: #cc0000;
+  background: #ff0000;
 }
 
-.help-tour-btn:active {
-  transform: scale(0.95);
+.show-hints-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 @media (max-width: 768px) {
-  .help-tour-btn {
-    width: 44px;
-    height: 44px;
+  .inline-hint {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+  
+  .show-hints-btn {
     bottom: 16px;
     right: 16px;
-    font-size: 20px;
+    padding: 8px 14px;
+    font-size: 12px;
   }
 }
