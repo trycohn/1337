@@ -4,14 +4,14 @@
 
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
 const pool = require('../db');
 
 /**
  * POST /api/tournaments/drafts
  * Создание или обновление черновика
  */
-router.post('/drafts', auth, async (req, res) => {
+router.post('/drafts', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { draft_data, current_step, draft_name } = req.body;
@@ -104,7 +104,7 @@ router.post('/drafts', auth, async (req, res) => {
  * GET /api/tournaments/drafts
  * Получение всех черновиков пользователя
  */
-router.get('/drafts', auth, async (req, res) => {
+router.get('/drafts', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -144,7 +144,7 @@ router.get('/drafts', auth, async (req, res) => {
  * GET /api/tournaments/drafts/:id
  * Получение конкретного черновика
  */
-router.get('/drafts/:id', auth, async (req, res) => {
+router.get('/drafts/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const draftId = req.params.id;
@@ -193,7 +193,7 @@ router.get('/drafts/:id', auth, async (req, res) => {
  * PUT /api/tournaments/drafts/:id
  * Обновление черновика
  */
-router.put('/drafts/:id', auth, async (req, res) => {
+router.put('/drafts/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const draftId = req.params.id;
@@ -250,7 +250,7 @@ router.put('/drafts/:id', auth, async (req, res) => {
  * DELETE /api/tournaments/drafts/:id
  * Удаление черновика
  */
-router.delete('/drafts/:id', auth, async (req, res) => {
+router.delete('/drafts/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const draftId = req.params.id;
@@ -286,7 +286,7 @@ router.delete('/drafts/:id', auth, async (req, res) => {
  * POST /api/tournaments/drafts/cleanup
  * Ручная очистка устаревших черновиков (admin only)
  */
-router.post('/drafts/cleanup', auth, async (req, res) => {
+router.post('/drafts/cleanup', authenticateToken, async (req, res) => {
   try {
     // Проверка прав администратора
     if (req.user.role !== 'admin') {
@@ -318,7 +318,7 @@ router.post('/drafts/cleanup', auth, async (req, res) => {
  * GET /api/tournaments/drafts/stats
  * Статистика по черновикам (для админов)
  */
-router.get('/drafts/stats', auth, async (req, res) => {
+router.get('/drafts/stats', authenticateToken, async (req, res) => {
   try {
     // Проверка прав администратора
     if (req.user.role !== 'admin') {
