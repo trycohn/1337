@@ -1,0 +1,187 @@
+/* Стили для тура кастомного матча */
+.joyride-tooltip {
+    background: #111;
+    border: 2px solid #ff0000;
+    border-radius: 8px;
+    color: #fff;
+    max-width: 400px;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+.joyride-content {
+    padding: 20px;
+}
+
+.tour-step-content h4 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+}
+
+.tour-step-content p {
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #ccc;
+}
+
+.tour-step-content ul {
+    margin: 12px 0;
+    padding-left: 20px;
+}
+
+.tour-step-content li {
+    margin: 6px 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #ddd;
+}
+
+.tour-step-content strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.tour-tip {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid #ff0000;
+    font-size: 12px;
+    color: #ffd700 !important;
+    border-radius: 4px;
+}
+
+/* Галочка "Больше не показывать" */
+.joyride-skip-checkbox {
+    padding: 12px 20px;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+    background: #0a0a0a;
+}
+
+.joyride-skip-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #999;
+    user-select: none;
+}
+
+.joyride-skip-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #ff0000;
+}
+
+.joyride-skip-checkbox label:hover {
+    color: #fff;
+}
+
+/* Футер с кнопками */
+.joyride-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #0a0a0a;
+}
+
+.joyride-nav {
+    display: flex;
+    gap: 8px;
+}
+
+.joyride-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.joyride-btn-skip {
+    background: transparent;
+    color: #666;
+    border: 1px solid #333;
+}
+
+.joyride-btn-skip:hover {
+    color: #999;
+    border-color: #555;
+}
+
+.joyride-btn-back {
+    background: transparent;
+    color: #999;
+    border: 1px solid #333;
+}
+
+.joyride-btn-back:hover {
+    background: #222;
+    color: #fff;
+}
+
+.joyride-btn-next,
+.joyride-btn-finish {
+    background: #ff0000;
+    color: #fff;
+    border: 1px solid #ff0000;
+}
+
+.joyride-btn-next:hover,
+.joyride-btn-finish:hover {
+    background: #cc0000;
+    border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+    .joyride-tooltip {
+        max-width: 90vw;
+    }
+    
+    .joyride-content {
+        padding: 16px;
+    }
+    
+    .tour-step-content h4 {
+        font-size: 16px;
+    }
+    
+    .tour-step-content p,
+    .tour-step-content li {
+        font-size: 13px;
+    }
+    
+    .joyride-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .joyride-nav {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .joyride-btn {
+        flex: 1;
+    }
+}
+
+/* Кастомная стрелка (если нужна) */
+.joyride-tooltip [data-popper-arrow] {
+    display: none;
+}
+

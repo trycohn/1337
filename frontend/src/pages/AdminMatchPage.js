@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 // Удаляем прямой импорт socket.io-client; используем API + фоновые polling‑обновления
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
+import CustomMatchTour from '../components/tour/CustomMatchTour';
 import '../styles/components.css';
 import './AdminMatchPage.css';
 
@@ -47,6 +48,8 @@ function AdminMatchPage() {
     const pollInFlightRef = useRef(false);
     const teamConfirmInFlightRef = useRef({ 1: false, 2: false });
     const missingReadyCountersRef = useRef({}); // { [userId]: consecutive-misses }
+    // Tour state
+    const [runTour, setRunTour] = useState(false);
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
 
     // Presence helpers
@@ -562,8 +565,32 @@ function AdminMatchPage() {
 
     // Не блокируем страницу для приглашенных не-админов
 
+    // Автозапуск тура при первом визите
+    useEffect(() => {
+        const tourShown = localStorage.getItem('customMatch_tourCompleted');
+        if (!tourShown && lobbyId && user) {
+            const timer = setTimeout(() => setRunTour(true), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [lobbyId, user]);
+
     return (
         <div className="custom-match-page">
+            <CustomMatchTour 
+                run={runTour} 
+                onTourEnd={() => setRunTour(false)} 
+            />
+            
+            {/* Кнопка помощи для повторного запуска тура */}
+            <button 
+                className="help-tour-btn"
+                onClick={() => setRunTour(true)}
+                title="Показать инструкцию"
+                aria-label="Показать интерактивный тур"
+            >
+                ?
+            </button>
+            
             <h2>МАТЧ — тестовое лобби</h2>
             <div className="custom-match-mt-8">
                 <div className="custom-match-format-tabs">
