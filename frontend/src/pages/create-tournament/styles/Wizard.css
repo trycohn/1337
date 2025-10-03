@@ -159,6 +159,88 @@
 }
 
 /* ============================================
+   DATEPICKER ТЕМНАЯ ТЕМА
+   ============================================ */
+
+.wizard-content .date-picker-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.wizard-content .date-picker-input:focus {
+  outline: none;
+  border-color: #ff0000;
+}
+
+/* React DatePicker кастомизация */
+.react-datepicker {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333 !important;
+  color: #fff !important;
+  font-family: inherit;
+}
+
+.react-datepicker__header {
+  background-color: #111 !important;
+  border-bottom: 1px solid #333 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker__day-name {
+  color: #fff !important;
+}
+
+.react-datepicker__day {
+  color: #ccc !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #ff0000 !important;
+  color: #fff !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #ff0000 !important;
+  color: #fff !important;
+}
+
+.react-datepicker__day--disabled {
+  color: #444 !important;
+  cursor: not-allowed;
+}
+
+.react-datepicker__time-container {
+  border-left: 1px solid #333 !important;
+}
+
+.react-datepicker__time-list-item {
+  color: #ccc !important;
+}
+
+.react-datepicker__time-list-item:hover {
+  background-color: #ff0000 !important;
+  color: #fff !important;
+}
+
+.react-datepicker__time-list-item--selected {
+  background-color: #ff0000 !important;
+  color: #fff !important;
+}
+
+.react-datepicker__triangle {
+  display: none;
+}
+
+/* ============================================
    АДАПТИВНОСТЬ
    ============================================ */
 

@@ -1,16 +1,84 @@
 // frontend/src/pages/create-tournament/components/steps/Step4_Rules.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 /**
  * Шаг 4: Правила и настройки матчей
- * TODO: Добавить выбор карт для CS2
+ * Полная реализация с выбором карт CS2
  */
 function Step4_Rules({ data, format, basicInfo, onChange }) {
+  const [cs2Maps, setCs2Maps] = useState([]);
+  const [loadingMaps, setLoadingMaps] = useState(false);
+
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
   };
 
   const isCS2 = basicInfo.game === 'counter strike 2';
+
+  // Загрузка карт CS2 из БД
+  useEffect(() => {
+    if (!isCS2) return;
+
+    const fetchMaps = async () => {
+      try {
+        setLoadingMaps(true);
+        const response = await axios.get('/api/maps?game=Counter-Strike 2');
+        setCs2Maps(response.data);
+        console.log('✅ Загружено карт CS2:', response.data.length);
+        
+        // Автоматически выбираем все карты при включении лобби
+        if (data.lobby_enabled && (!data.selected_maps || data.selected_maps.length === 0)) {
+          const allMapNames = response.data.map(m => m.name);
+          if (allMapNames.length === 7) {
+            handleChange('selected_maps', allMapNames);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Ошибка загрузки карт CS2:', error);
+        // Fallback: стандартный пул карт
+        const fallbackMaps = [
+          { id: 1, name: 'de_mirage', display_name: 'Mirage' },
+          { id: 2, name: 'de_inferno', display_name: 'Inferno' },
+          { id: 3, name: 'de_nuke', display_name: 'Nuke' },
+          { id: 4, name: 'de_overpass', display_name: 'Overpass' },
+          { id: 5, name: 'de_vertigo', display_name: 'Vertigo' },
+          { id: 6, name: 'de_ancient', display_name: 'Ancient' },
+          { id: 7, name: 'de_anubis', display_name: 'Anubis' }
+        ];
+        setCs2Maps(fallbackMaps);
+      } finally {
+        setLoadingMaps(false);
+      }
+    };
+
+    fetchMaps();
+  }, [isCS2, data.lobby_enabled, data.selected_maps, handleChange]);
+
+  // Обработчик переключения карты
+  const handleMapToggle = (mapName) => {
+    const currentMaps = data.selected_maps || [];
+    const isSelected = currentMaps.includes(mapName);
+
+    if (isSelected) {
+      // Убираем карту
+      handleChange('selected_maps', currentMaps.filter(m => m !== mapName));
+    } else {
+      // Добавляем карту
+      handleChange('selected_maps', [...currentMaps, mapName]);
+    }
+  };
+
+  // Выбрать все карты
+  const handleSelectAllMaps = () => {
+    const allMapNames = cs2Maps.map(m => m.name);
+    handleChange('selected_maps', allMapNames);
+  };
+
+  // Снять выбор со всех карт
+  const handleDeselectAllMaps = () => {
+    handleChange('selected_maps', []);
+  };
 
   return (
     <div className="wizard-step step-rules">
@@ -119,11 +187,163 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
                 </div>
               )}
 
+              {/* Выбор карт турнира */}
               <div className="form-group">
-                <p><strong>Карты турнира:</strong></p>
-                <div style={{ color: '#888', fontSize: '14px', marginTop: '10px' }}>
-                  🚧 Выбор карт будет добавлен в следующей итерации
-                </div>
+                <label>Карты турнира (выберите 7 карт) *</label>
+                
+                {loadingMaps ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                    Загрузка карт...
+                  </div>
+                ) : (
+                  <>
+                    {/* Кнопки быстрого выбора */}
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '10px', 
+                      marginBottom: '15px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={handleSelectAllMaps}
+                        style={{ fontSize: '13px', padding: '6px 12px' }}
+                      >
+                        ✓ Выбрать все
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={handleDeselectAllMaps}
+                        style={{ fontSize: '13px', padding: '6px 12px' }}
+                      >
+                        ✗ Снять выбор
+                      </button>
+                      <div style={{ 
+                        marginLeft: 'auto', 
+                        padding: '6px 12px', 
+                        background: '#1a1a1a',
+                        border: '1px solid #333',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        color: (data.selected_maps?.length === 7) ? '#00ff00' : '#888'
+                      }}>
+                        Выбрано: {data.selected_maps?.length || 0}/7
+                      </div>
+                    </div>
+
+                    {/* Сетка карт */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                      gap: '12px'
+                    }}>
+                      {cs2Maps.map((map) => {
+                        const isSelected = (data.selected_maps || []).includes(map.name);
+                        
+                        return (
+                          <label
+                            key={map.id}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              padding: '12px',
+                              background: isSelected ? '#1a0000' : '#1a1a1a',
+                              border: `2px solid ${isSelected ? '#ff0000' : '#333'}`,
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              userSelect: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.borderColor = '#666';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) {
+                                e.currentTarget.style.borderColor = '#333';
+                              }
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              value={map.name}
+                              checked={isSelected}
+                              onChange={() => handleMapToggle(map.name)}
+                              style={{ display: 'none' }}
+                            />
+                            
+                            {/* Иконка чекбокса */}
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '4px',
+                              border: `2px solid ${isSelected ? '#ff0000' : '#666'}`,
+                              background: isSelected ? '#ff0000' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: '8px',
+                              fontSize: '14px',
+                              fontWeight: 'bold',
+                              color: '#fff'
+                            }}>
+                              {isSelected && '✓'}
+                            </div>
+
+                            {/* Название карты */}
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: isSelected ? '#fff' : '#ccc',
+                              textAlign: 'center'
+                            }}>
+                              {map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {/* Предупреждение о количестве карт */}
+                    {data.selected_maps && data.selected_maps.length !== 7 && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '10px 12px',
+                        background: 'rgba(255, 165, 0, 0.1)',
+                        border: '1px solid rgba(255, 165, 0, 0.3)',
+                        borderRadius: '6px',
+                        color: '#ffa500',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        ⚠️ Необходимо выбрать ровно 7 карт (выбрано: {data.selected_maps.length})
+                      </div>
+                    )}
+
+                    {data.selected_maps && data.selected_maps.length === 7 && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '10px 12px',
+                        background: 'rgba(0, 255, 0, 0.1)',
+                        border: '1px solid rgba(0, 255, 0, 0.3)',
+                        borderRadius: '6px',
+                        color: '#00ff00',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        ✓ Выбрано правильное количество карт
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </>
           )}

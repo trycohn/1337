@@ -49,6 +49,7 @@ function CreateTournamentWizard({ onBack }) {
       start_date: '',
       prize_pool: '',
       tournament_type: 'open', // open | closed | hidden | final
+      logo_file: null, // 🆕 Файл логотипа для загрузки
     },
     
     // Шаг 3: Формат
@@ -152,7 +153,14 @@ function CreateTournamentWizard({ onBack }) {
           wizardData.format.team_size
         );
       
-      case 4: // Правила (опционально)
+      case 4: // Правила
+        // Если лобби включено, проверяем карты
+        if (wizardData.rules.lobby_enabled) {
+          const selectedMaps = wizardData.rules.selected_maps || [];
+          if (selectedMaps.length !== 7) {
+            return false; // Нужно ровно 7 карт
+          }
+        }
         return true;
       
       case 5: // Брендинг (опционально)
@@ -248,6 +256,11 @@ function CreateTournamentWizard({ onBack }) {
             hide_1337_branding: wizardData.branding.hide_1337_branding,
           },
         };
+
+        // TODO: Обработка загрузки логотипа через FormData
+        // Если есть logo_file, нужно сначала загрузить файл, получить URL,
+        // затем добавить его в tournamentData.branding.logo_url
+        // Пока пропускаем, реализуем в следующей итерации
 
         const response = await axios.post(
           '/api/tournaments',

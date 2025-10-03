@@ -63,17 +63,55 @@ function Step6_Preview({ wizardData, onEdit }) {
         </div>
         
         <div style={{ marginTop: '15px' }}>
+          {/* Логотип турнира (если загружен) */}
+          {basicInfo.logo_file && (
+            <div style={{
+              marginBottom: '15px',
+              padding: '15px',
+              background: '#1a1a1a',
+              border: '1px solid #222',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '15px'
+            }}>
+              <div style={{ fontSize: '13px', color: '#888', fontWeight: '500', minWidth: '120px' }}>
+                Логотип
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '8px',
+                  border: '2px solid #ff0000',
+                  overflow: 'hidden',
+                  background: '#000'
+                }}>
+                  <img
+                    src={URL.createObjectURL(basicInfo.logo_file)}
+                    alt="Логотип"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <span style={{ fontSize: '14px', color: '#ccc' }}>
+                  {basicInfo.logo_file.name}
+                </span>
+              </div>
+            </div>
+          )}
+          
           <PreviewField label="Название" value={basicInfo.name || 'Не указано'} />
           <PreviewField label="Игра" value={basicInfo.game || 'Не указано'} />
           <PreviewField label="Дата начала" value={formatDate(basicInfo.start_date)} />
           <PreviewField label="Призовой фонд" value={basicInfo.prize_pool || 'Не указан'} />
+          <PreviewField label="Описание" value={basicInfo.description || 'Не указано'} isLong />
           <PreviewField 
             label="Тип турнира" 
             value={
-              basicInfo.tournament_type === 'open' ? 'Открытый' :
-              basicInfo.tournament_type === 'closed' ? 'Закрытый' :
-              basicInfo.tournament_type === 'hidden' ? 'Скрытый' :
-              basicInfo.tournament_type === 'final' ? 'Финал серии' :
+              basicInfo.tournament_type === 'open' ? '🌍 Открытый' :
+              basicInfo.tournament_type === 'closed' ? '🔒 Закрытый' :
+              basicInfo.tournament_type === 'hidden' ? '👻 Скрытый' :
+              basicInfo.tournament_type === 'final' ? '🏆 Финал серии' :
               'Открытый'
             } 
           />
@@ -167,6 +205,45 @@ function Step6_Preview({ wizardData, onEdit }) {
                 </span>
               } 
             />
+          )}
+          {rules.selected_maps && rules.selected_maps.length > 0 && (
+            <div style={{ 
+              marginTop: '12px',
+              padding: '12px',
+              background: '#1a1a1a',
+              border: '1px solid #222',
+              borderRadius: '6px'
+            }}>
+              <div style={{ 
+                fontSize: '13px', 
+                color: '#888', 
+                marginBottom: '10px',
+                fontWeight: '500'
+              }}>
+                Карты турнира ({rules.selected_maps.length})
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: '8px'
+              }}>
+                {rules.selected_maps.map((mapName, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#111',
+                      border: '1px solid #ff0000',
+                      borderRadius: '4px',
+                      fontSize: '13px',
+                      color: '#fff'
+                    }}
+                  >
+                    {mapName.replace('de_', '').charAt(0).toUpperCase() + mapName.replace('de_', '').slice(1)}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
