@@ -3,6 +3,27 @@
 /* ============================================
    TOURNAMENT WIZARD - ОСНОВНЫЕ СТИЛИ
    ============================================ */
+   .tournament-wizard {
+    --ct-bg-primary: #000000;
+    --ct-bg-secondary: #111111;
+    --ct-bg-tertiary: #1a1a1a;
+    --ct-text-primary: #ffffff;
+    --ct-text-secondary: #cccccc;
+    --ct-text-muted: #888888;
+    --ct-text-disabled: #666666;
+    --ct-border-color: #333333;
+    --ct-border-hover: #555555;
+    --ct-accent-success: #4caf50;
+    --ct-accent-error: #ff6b6b;
+    --ct-accent-warning: #ffcc66;
+    --ct-spacing-xs: 8px;
+    --ct-spacing-sm: 12px;
+    --ct-spacing-md: 16px;
+    --ct-spacing-lg: 24px;
+    --ct-spacing-xl: 32px;
+    --ct-spacing-2xl: 48px;
+    --ct-transition: all 0.2s ease;
+}
 
 .tournament-wizard {
   max-width: 1200px;
