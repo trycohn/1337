@@ -12,6 +12,48 @@ const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
 /**
+ * GET /api/stats/platform
+ * Сводная статистика платформы для главной страницы
+ */
+router.get('/platform', async (req, res) => {
+    try {
+        const [tournamentsRes, usersRes, matchesRes] = await Promise.all([
+            pool.query('SELECT COUNT(*)::int AS total FROM tournaments'),
+            pool.query('SELECT COUNT(*)::int AS total FROM users'),
+            pool.query('SELECT COUNT(*)::int AS total FROM matches')
+        ]);
+
+        let totalPrizePool = 0;
+        try {
+            // Суммируем призовые, если колонка существует и содержит число/денежную строку
+            const prizeRes = await pool.query(`
+                SELECT COALESCE(SUM(
+                    CASE 
+                        WHEN prize_pool ~ '^[0-9]+' THEN prize_pool::numeric
+                        ELSE 0
+                    END
+                ), 0)::bigint AS total
+                FROM tournaments
+            `);
+            totalPrizePool = Number(prizeRes.rows[0]?.total || 0);
+        } catch (_) {
+            // Если колонки prize_pool нет — оставляем 0
+            totalPrizePool = 0;
+        }
+
+        res.json({
+            total_tournaments: Number(tournamentsRes.rows[0]?.total || 0),
+            total_players: Number(usersRes.rows[0]?.total || 0),
+            total_matches: Number(matchesRes.rows[0]?.total || 0),
+            total_prize_pool: totalPrizePool
+        });
+    } catch (error) {
+        console.error('❌ [Stats API] Ошибка получения платформенной статистики:', error);
+        res.status(500).json({ error: 'Failed to get platform stats' });
+    }
+});
+
+/**
  * GET /api/stats/player/:userId
  * Получить агрегированную статистику игрока
  */
