@@ -325,6 +325,7 @@ const teamsRouter = require('./routes/teams');
 const gamesRouter = require('./routes/games');
 const mapsRouter = require('./routes/maps');
 const modularTournamentsRouter = require('./routes/tournament'); // 🎯 ЕДИНСТВЕННЫЙ АКТИВНЫЙ РОУТЕР (модульная архитектура v2.0)
+const tournamentDraftsRouter = require('./routes/tournament-drafts'); // 🆕 API черновиков турниров (Wizard)
 const tournamentPlayersRouter = require('./routes/tournamentPlayers');
 const matchesRouter = require('./routes/matches');
 const matchFeedbackRouter = require('./routes/matchFeedback'); // 🎮 Match Feedback система
@@ -350,6 +351,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/games', gamesRouter);
 app.use('/api/tournaments', modularTournamentsRouter); // 🎯 ЕДИНСТВЕННЫЙ АКТИВНЫЙ РОУТЕР (модульная архитектура v2.0)
+app.use('/api/tournaments', tournamentDraftsRouter); // 🆕 API черновиков турниров (подключается к /api/tournaments/drafts)
 app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/matches', matchFeedbackRouter); // 🎮 Match Feedback endpoints

@@ -9,7 +9,7 @@ import BracketSharePage from './pages/BracketSharePage';
 import Profile from './components/Profile'; // Добавляем импорт Profile
 import UserProfile from './components/UserProfile'; // Импортируем компонент UserProfile
 import OrganizerProfile from './components/OrganizerProfile'; // Импортируем компонент OrganizerProfile
-import CreateTournament from './components/CreateTournament'; // Импортируем компонент CreateTournament
+import CreateTournamentEntry from './pages/CreateTournamentEntry'; // 🆕 Новая точка входа для создания турниров (Wizard + Ручная настройка)
 import AdminPanel from './components/AdminPanel'; // Импортируем компонент AdminPanel
 import AuthPage from './pages/AuthPage'; // Добавляем импорт нового компонента
 import ForgotPasswordPage from './pages/ForgotPasswordPage'; // Импорт страницы восстановления пароля
@@ -95,7 +95,7 @@ function App() {
                                 <Route path="/teams/:teamId" element={<TeamProfile />} />
                                 <Route path="/user/:userId" element={<UserProfile />} /> {/* Публичный профиль пользователя */}
                                 <Route path="/organizer/:slug" element={<OrganizerProfile />} /> {/* Маршрут для профиля организатора */}
-                                <Route path="/create" element={<CreateTournament />} /> {/* Добавляем маршрут для создания турнира */}
+                                <Route path="/create" element={<CreateTournamentEntry />} /> {/* 🆕 Новая точка входа: Wizard + Ручная настройка */}
                                 <Route path="/messages" element={<PrivateRoute component={Messenger} />} />
                                 <Route path="/admin" element={<PrivateRoute component={AdminPanel} />} /> {/* Добавляем маршрут для админ панели */}
                                 <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
