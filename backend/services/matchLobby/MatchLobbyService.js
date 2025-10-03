@@ -765,8 +765,16 @@ class MatchLobbyService {
                 const statusResponse = statusResult.response || '';
                 console.log(`📋 [Tournament] Статус от ${server.name}:`, statusResponse);
                 
-                // Парсим ответ: 0 = свободен, 1 = занят
-                const isOccupied = statusResponse.trim() === '1';
+                // Парсим ответ: "matchzy_is_match_setup = 0" или "matchzy_is_match_setup = 1"
+                const match = statusResponse.match(/matchzy_is_match_setup\s*=\s*(\d+)/i);
+                const matchStatus = match ? match[1] : null;
+                
+                if (!matchStatus) {
+                    console.log(`⚠️ [Tournament] Не удалось распарсить статус от ${server.name}, пропускаем...`);
+                    continue;
+                }
+                
+                const isOccupied = matchStatus === '1';
                 
                 if (isOccupied) {
                     console.log(`⚠️ [Tournament] Сервер ${server.name} занят (matchzy_is_match_setup=1), пробуем следующий...`);
