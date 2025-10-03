@@ -23,29 +23,10 @@ router.get('/platform', async (req, res) => {
             pool.query('SELECT COUNT(*)::int AS total FROM matches')
         ]);
 
-        let totalPrizePool = 0;
-        try {
-            // Суммируем призовые, если колонка существует и содержит число/денежную строку
-            const prizeRes = await pool.query(`
-                SELECT COALESCE(SUM(
-                    CASE 
-                        WHEN prize_pool ~ '^[0-9]+' THEN prize_pool::numeric
-                        ELSE 0
-                    END
-                ), 0)::bigint AS total
-                FROM tournaments
-            `);
-            totalPrizePool = Number(prizeRes.rows[0]?.total || 0);
-        } catch (_) {
-            // Если колонки prize_pool нет — оставляем 0
-            totalPrizePool = 0;
-        }
-
         res.json({
             total_tournaments: Number(tournamentsRes.rows[0]?.total || 0),
             total_players: Number(usersRes.rows[0]?.total || 0),
-            total_matches: Number(matchesRes.rows[0]?.total || 0),
-            total_prize_pool: totalPrizePool
+            total_matches: Number(matchesRes.rows[0]?.total || 0)
         });
     } catch (error) {
         console.error('❌ [Stats API] Ошибка получения платформенной статистики:', error);

@@ -11,14 +11,12 @@ function HomePage() {
   const [animatedStats, setAnimatedStats] = useState({
     tournaments: 0,
     players: 0,
-    matches: 0,
-    prizePool: 0
+    matches: 0
   });
   const [realStats, setRealStats] = useState({
     tournaments: 0,
     players: 0,
-    matches: 0,
-    prizePool: 0
+    matches: 0
   });
   const [recentTournaments, setRecentTournaments] = useState([]);
   const [winners, setWinners] = useState([]);
@@ -52,8 +50,7 @@ function HomePage() {
         setRealStats({
           tournaments: stats.total_tournaments || 0,
           players: stats.total_players || 0,
-          matches: stats.total_matches || 0,
-          prizePool: stats.total_prize_pool || 0
+          matches: stats.total_matches || 0
         });
       } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
@@ -61,8 +58,7 @@ function HomePage() {
         setRealStats({
           tournaments: 150,
           players: 5000,
-          matches: 10000,
-          prizePool: 100000
+          matches: 10000
         });
       }
     };
@@ -146,7 +142,6 @@ function HomePage() {
           animateValue(0, realStats.tournaments, 2000, 'tournaments');
           animateValue(0, realStats.players, 2000, 'players');
           animateValue(0, realStats.matches, 2000, 'matches');
-          animateValue(0, realStats.prizePool, 2000, 'prizePool');
           setStatsLoaded(true);
           observer.unobserve(entry.target);
         }
@@ -311,10 +306,7 @@ function HomePage() {
                 <div className="stat-number">{animatedStats.matches.toLocaleString()}+</div>
                 <div className="stat-label">Матчей сыграно</div>
               </div>
-              <div className="stat-item">
-                <div className="stat-number">${animatedStats.prizePool.toLocaleString()}</div>
-                <div className="stat-label">Общий призовой фонд</div>
-              </div>
+              
             </div>
           </div>
         </section>
