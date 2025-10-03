@@ -190,18 +190,18 @@ function Step3_Format({ data, basicInfo, onChange }) {
             max="10"
             value={data.team_size || 5}
             onChange={(e) => handleChange('team_size', parseInt(e.target.value, 10))}
-            disabled={data.participant_type === 'cs2_5v5' || data.participant_type === 'cs2_2v2'}
+            disabled={!isMixFormat && isCS2} // 🆕 Блокируем для CS2 в Single/Double режиме
             style={
-              (data.participant_type === 'cs2_5v5' || data.participant_type === 'cs2_2v2') 
-                ? { opacity: 0.6, cursor: 'not-allowed' } 
+              (!isMixFormat && isCS2) 
+                ? { opacity: 0.6, cursor: 'not-allowed', background: '#0a0a0a' } 
                 : {}
             }
             required
           />
           <small className="form-hint">
-            {data.participant_type === 'cs2_5v5' && 'Фиксировано для режима 5х5'}
-            {data.participant_type === 'cs2_2v2' && 'Фиксировано для режима 2х2'}
-            {!data.participant_type?.startsWith('cs2_') && 'Количество игроков в одной команде'}
+            {!isMixFormat && isCS2 && data.team_size === 5 && '🔒 Фиксировано для режима Классический 5х5'}
+            {!isMixFormat && isCS2 && data.team_size === 2 && '🔒 Фиксировано для режима Wingman 2х2'}
+            {(isMixFormat || !isCS2) && 'Количество игроков в одной команде'}
           </small>
         </div>
 
