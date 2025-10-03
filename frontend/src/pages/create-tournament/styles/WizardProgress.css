@@ -1,0 +1,219 @@
+/* frontend/src/pages/create-tournament/styles/WizardProgress.css */
+
+/* ============================================
+   WIZARD PROGRESS - ПРОГРЕСС-БАР
+   ============================================ */
+
+.wizard-progress {
+  position: relative;
+  margin-bottom: 50px;
+}
+
+/* Линия прогресса */
+.progress-line {
+  position: absolute;
+  top: 30px;
+  left: 50px;
+  right: 50px;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  z-index: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0000 0%, #cc0000 100%);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* Шаги */
+.progress-steps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 1;
+}
+
+/* Отдельный шаг */
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Круг шага */
+.step-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #111;
+  border: 3px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+/* Активный шаг */
+.progress-step.active .step-circle {
+  border-color: #ff0000;
+  background: #1a0000;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+  animation: pulse 2s infinite;
+}
+
+/* Завершенный шаг */
+.progress-step.completed .step-circle {
+  border-color: #ff0000;
+  background: #ff0000;
+}
+
+.progress-step.completed .checkmark {
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Ожидающий шаг */
+.progress-step.pending .step-circle {
+  opacity: 0.5;
+}
+
+.progress-step.pending .step-icon {
+  opacity: 0.6;
+}
+
+/* Метки шагов */
+.step-label {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  display: block;
+}
+
+.step-short {
+  font-size: 12px;
+  color: #666;
+  display: none;
+}
+
+/* Активный шаг - яркий текст */
+.progress-step.active .step-title {
+  color: #ff0000;
+}
+
+/* Завершенный шаг - нормальный текст */
+.progress-step.completed .step-title {
+  color: #ccc;
+}
+
+/* Ожидающий шаг - тусклый текст */
+.progress-step.pending .step-title {
+  color: #666;
+}
+
+/* Индикатор прогресса (текст) */
+.progress-indicator {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #888;
+}
+
+.progress-percentage {
+  color: #ff0000;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .step-circle {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+
+  .step-title {
+    font-size: 13px;
+  }
+
+  .progress-line {
+    left: 40px;
+    right: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-line {
+    top: 25px;
+    left: 30px;
+    right: 30px;
+  }
+
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  /* Скрываем полные названия, показываем короткие */
+  .step-title {
+    display: none;
+  }
+
+  .step-short {
+    display: block;
+    font-size: 11px;
+  }
+
+  .progress-indicator {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-circle {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+    border-width: 2px;
+  }
+
+  .step-short {
+    font-size: 10px;
+  }
+
+  .progress-line {
+    left: 20px;
+    right: 20px;
+  }
+}
+

@@ -1,0 +1,187 @@
+/* frontend/src/pages/create-tournament/styles/Wizard.css */
+
+/* ============================================
+   TOURNAMENT WIZARD - ОСНОВНЫЕ СТИЛИ
+   ============================================ */
+
+.tournament-wizard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 80vh;
+}
+
+/* Заголовок Wizard */
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #333;
+}
+
+.wizard-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.wizard-header .btn-back {
+  background: transparent;
+  border: 1px solid #ff0000;
+  color: #ff0000;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.wizard-header .btn-back:hover {
+  background: #ff0000;
+  color: #fff;
+}
+
+.auto-save-indicator {
+  font-size: 13px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Контент шага */
+.wizard-content {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 40px;
+  margin-bottom: 30px;
+  min-height: 400px;
+}
+
+/* Заголовки шагов */
+.step-header {
+  margin-bottom: 30px;
+}
+
+.step-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 10px 0;
+}
+
+.step-description {
+  font-size: 15px;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* Секции внутри шагов */
+.step-section {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #222;
+}
+
+.step-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.step-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 15px 0;
+}
+
+/* Формы внутри шагов */
+.wizard-content .form-group {
+  margin-bottom: 20px;
+}
+
+.wizard-content label {
+  display: block;
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.wizard-content input,
+.wizard-content select,
+.wizard-content textarea {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.wizard-content input:focus,
+.wizard-content select:focus,
+.wizard-content textarea:focus {
+  outline: none;
+  border-color: #ff0000;
+}
+
+.wizard-content textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.wizard-content .form-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+/* Чекбоксы */
+.wizard-content .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.wizard-content input[type="checkbox"] {
+  width: auto;
+  cursor: pointer;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 768px) {
+  .tournament-wizard {
+    padding: 15px;
+  }
+
+  .wizard-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .wizard-header h1 {
+    font-size: 22px;
+  }
+
+  .wizard-content {
+    padding: 25px 20px;
+  }
+
+  .step-header h2 {
+    font-size: 20px;
+  }
+}
+

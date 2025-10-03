@@ -1,0 +1,131 @@
+/* frontend/src/pages/create-tournament/styles/WizardNavigation.css */
+
+/* ============================================
+   WIZARD NAVIGATION - КНОПКИ НАВИГАЦИИ
+   ============================================ */
+
+.wizard-navigation {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 2px solid #333;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-spacer {
+  flex-grow: 1;
+}
+
+/* Кнопки навигации */
+.nav-back,
+.nav-next,
+.nav-create {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Кнопка "Назад" */
+.nav-back {
+  background: transparent;
+  border: 2px solid #ff0000;
+  color: #ff0000;
+}
+
+.nav-back:hover {
+  background: #ff0000;
+  color: #fff;
+}
+
+/* Кнопка "Далее" */
+.nav-next {
+  background: #ff0000;
+  color: #fff;
+}
+
+.nav-next:hover:not(.disabled) {
+  background: #cc0000;
+  transform: translateX(5px);
+}
+
+/* Кнопка "Создать турнир" */
+.nav-create {
+  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  color: #fff;
+  padding: 16px 40px;
+  font-size: 18px;
+  box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+}
+
+.nav-create:hover:not(.disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.5);
+}
+
+/* Disabled состояние */
+.nav-next.disabled,
+.nav-create.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Подсказка */
+.nav-hint {
+  text-align: center;
+  margin-top: 15px;
+  padding: 12px;
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 6px;
+  color: #ffa500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 768px) {
+  .nav-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nav-spacer {
+    display: none;
+  }
+
+  .nav-back,
+  .nav-next,
+  .nav-create {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+  }
+
+  .nav-create {
+    font-size: 16px;
+  }
+
+  .nav-hint {
+    font-size: 13px;
+  }
+}
+
