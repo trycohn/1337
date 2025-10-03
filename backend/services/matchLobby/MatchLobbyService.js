@@ -755,32 +755,25 @@ class MatchLobbyService {
             try {
                 console.log(`⏳ [Tournament] Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                 
-                // Проверяем статус сервера через кастомную команду
+                // Проверяем занят ли сервер
                 const statusResult = await rconService.executeCommand(
                     server.id,
-                    'css_mz_status',
+                    'matchzy_is_match_setup',
                     { userId: userId, lobbyId: lobbyId, logToDb: true }
                 );
                 
                 const statusResponse = statusResult.response || '';
                 console.log(`📋 [Tournament] Статус от ${server.name}:`, statusResponse);
                 
-                // Парсим статус: ищем STATUS=...
-                const statusMatch = statusResponse.match(/STATUS=(\w+)/);
-                const serverStatus = statusMatch ? statusMatch[1].toLowerCase() : null;
+                // Парсим ответ: 0 = свободен, 1 = занят
+                const isOccupied = statusResponse.trim() === '1';
                 
-                if (!serverStatus) {
-                    console.log(`⚠️ [Tournament] Не удалось получить статус от ${server.name}, пропускаем...`);
+                if (isOccupied) {
+                    console.log(`⚠️ [Tournament] Сервер ${server.name} занят (matchzy_is_match_setup=1), пробуем следующий...`);
                     continue;
                 }
                 
-                // Проверяем что сервер свободен
-                if (serverStatus !== 'idle') {
-                    console.log(`⚠️ [Tournament] Сервер ${server.name} занят (STATUS=${serverStatus}), пробуем следующий...`);
-                    continue;
-                }
-                
-                console.log(`✅ [Tournament] Сервер ${server.name} свободен (STATUS=idle), загружаем конфиг...`);
+                console.log(`✅ [Tournament] Сервер ${server.name} свободен (matchzy_is_match_setup=0), загружаем конфиг...`);
                 
                 // Отправляем команду загрузки
                 await rconService.executeCommand(
