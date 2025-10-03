@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Joyride, { STATUS, ACTIONS, EVENTS } from 'react-joyride';
 import './CustomMatchTour.css';
 
@@ -15,7 +15,29 @@ const CustomMatchTour = ({ run, onTourEnd }) => {
         return skipped;
     });
 
+    // Debug логирование
+    useEffect(() => {
+        if (run) {
+            console.log('[TOUR] Starting tour, run:', run);
+            console.log('[TOUR] Target elements check:');
+            console.log('  .custom-match-format-tabs:', document.querySelector('.custom-match-format-tabs'));
+            console.log('  .custom-match-team-column:', document.querySelector('.custom-match-team-column'));
+        }
+    }, [run]);
+
     const steps = [
+        {
+            target: 'body',
+            content: (
+                <div className="tour-step-content">
+                    <h4>Добро пожаловать в кастомный матч!</h4>
+                    <p>Этот короткий тур поможет вам разобраться с функциями страницы.</p>
+                    <p className="tour-tip">💡 Вы можете пропустить любой шаг галочкой ниже</p>
+                </div>
+            ),
+            placement: 'center',
+            disableBeacon: true,
+        },
         {
             target: '.custom-match-format-tabs',
             content: (
@@ -66,7 +88,7 @@ const CustomMatchTour = ({ run, onTourEnd }) => {
             placement: 'left',
         },
         {
-            target: 'button:contains("Начать BAN/PICK")',
+            target: '.custom-match-format-actions button',
             content: (
                 <div className="tour-step-content">
                     <h4>Процедура Pick/Ban</h4>
