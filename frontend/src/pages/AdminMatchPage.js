@@ -50,17 +50,39 @@ function AdminMatchPage() {
     const readyStorageKey = useMemo(() => lobbyId ? `admin_lobby_player_ready_${lobbyId}` : null, [lobbyId]);
     
     // Inline hints state
-    const [hints, setHints] = useState({
-        format: !localStorage.getItem('hint_format_used'),
-        invite: !localStorage.getItem('hint_invite_used'),
-        ready: !localStorage.getItem('hint_ready_used'),
-        pickban: !localStorage.getItem('hint_pickban_used'),
+    const [hints, setHints] = useState(() => {
+        const initial = {
+            format: !localStorage.getItem('hint_format_used'),
+            invite: !localStorage.getItem('hint_invite_used'),
+            ready: !localStorage.getItem('hint_ready_used'),
+            pickban: !localStorage.getItem('hint_pickban_used'),
+        };
+        console.log('[HINTS] Initial state:', initial);
+        console.log('[HINTS] localStorage check:', {
+            format: localStorage.getItem('hint_format_used'),
+            invite: localStorage.getItem('hint_invite_used'),
+            ready: localStorage.getItem('hint_ready_used'),
+            pickban: localStorage.getItem('hint_pickban_used'),
+        });
+        return initial;
     });
 
     const dismissHint = useCallback((key) => {
+        console.log('[HINTS] Dismissing hint:', key);
         localStorage.setItem(`hint_${key}_used`, 'true');
         setHints(prev => ({ ...prev, [key]: false }));
     }, []);
+    
+    // Debug: логируем условия показа подсказок
+    useEffect(() => {
+        console.log('[HINTS] Current conditions:', {
+            'format hint': { show: hints.format, condition: !lobby?.match_format },
+            'invite hint': { show: hints.invite, condition: team1Users.length === 0 && team2Users.length === 0 },
+            'ready hint': { show: hints.ready, condition: (team1Users.length > 0 || team2Users.length > 0) && lobby?.status === 'waiting' },
+            'pickban ready hint': { show: hints.pickban, condition: lobby?.status === 'ready' && lobby?.team1_ready && lobby?.team2_ready },
+            'pickban picking hint': { show: hints.pickban, condition: lobby?.status === 'picking' && selections.length < 3 },
+        });
+    }, [hints, lobby, team1Users, team2Users, selections]);
 
     // Presence helpers
     const lobbyPresenceSet = useMemo(() => {
