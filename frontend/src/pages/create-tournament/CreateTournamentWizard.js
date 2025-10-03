@@ -55,10 +55,9 @@ function CreateTournamentWizard({ onBack }) {
     format: {
       format: '', // single | double | mix
       bracket_type: 'single_elimination',
-      participant_type: 'team',
-      team_size: 5,
-      max_teams: 16,
-      cs2_mode: '5v5', // для CS2: '5v5' | '2v2'
+      participant_type: 'team', // ✅ Всегда 'team' для Single/Double, 'solo' для Mix
+      team_size: 5, // 5 для 5v5, 2 для 2v2
+      max_teams: null, // null = не ограничено
       // Для Mix турниров
       mix_type: 'classic', // classic | full
       mix_rating_type: 'faceit',

@@ -96,8 +96,28 @@ function Step6_Preview({ wizardData, onEdit }) {
         <div style={{ marginTop: '15px' }}>
           <PreviewField label="Формат турнира" value={getFormatName(format.format)} />
           <PreviewField label="Тип сетки" value={getBracketTypeName(format.bracket_type)} />
-          <PreviewField label="Размер команды" value={`${format.team_size} игроков`} />
-          <PreviewField label="Максимум участников" value={`${format.max_teams} команд`} />
+          <PreviewField 
+            label="Тип участников" 
+            value={
+              format.participant_type === 'solo' ? 'Индивидуальный (Solo)' :
+              format.participant_type === 'team' && format.team_size === 2 ? 'Командный (Wingman 2х2)' :
+              format.participant_type === 'team' && format.team_size === 5 ? 'Командный (Классический 5х5)' :
+              format.participant_type === 'team' ? `Командный` :
+              'Командный'
+            } 
+          />
+          <PreviewField 
+            label="Размер команды" 
+            value={
+              format.participant_type === 'solo' 
+                ? `${format.team_size} игроков (автоформирование)` 
+                : `${format.team_size} игроков`
+            } 
+          />
+          <PreviewField 
+            label={format.format === 'mix' ? 'Максимум участников' : 'Максимум команд'} 
+            value={format.max_teams ? `${format.max_teams} ${format.format === 'mix' ? 'участников' : 'команд'}` : 'Не ограничено'} 
+          />
         </div>
       </div>
 
