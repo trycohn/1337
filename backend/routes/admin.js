@@ -1817,9 +1817,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                     
                     console.log(`🔍 Поиск свободного сервера среди ${serversResult.rows.length} активных...`);
                     
-                    const SERVER_SEARCH_TIMEOUT = 15000; // 15 секунд макс на весь поиск
-                    const serverSearchPromise = (async () => {
-                        for (const server of serversResult.rows) {
+                    // Поиск свободного сервера (без таймаута - проверяем все серверы)
+                    for (const server of serversResult.rows) {
                             try {
                                 console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                                 
@@ -1880,21 +1879,13 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                     ['in_use', server.id]
                                 );
                                 
-                                break;
+                                break; // Сервер найден, выходим из цикла
                                 
-                            } catch (serverError) {
-                                console.error(`❌ Ошибка на сервере ${server.name}:`, serverError.message);
-                                continue;
-                            }
+                        } catch (serverError) {
+                            console.error(`❌ Ошибка на сервере ${server.name}:`, serverError.message);
+                            continue; // Пробуем следующий сервер
                         }
-                    })();
-                    
-                    await Promise.race([
-                        serverSearchPromise,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Server search timeout')), SERVER_SEARCH_TIMEOUT))
-                    ]).catch(() => {
-                        console.warn('⚠️ Таймаут поиска серверов, продолжаем без RCON');
-                    });
+                    }
                     
                     if (!selectedServer) {
                         console.warn('⚠️ Не найдено свободных серверов! Лобби создано без привязки к серверу.');
