@@ -17,11 +17,15 @@ const CustomMatchTour = ({ run, onTourEnd }) => {
 
     // Debug логирование
     useEffect(() => {
+        console.log('[TOUR] Component mounted/updated, run:', run);
         if (run) {
-            console.log('[TOUR] Starting tour, run:', run);
+            console.log('[TOUR] Starting tour!');
             console.log('[TOUR] Target elements check:');
+            console.log('  body:', document.querySelector('body'));
             console.log('  .custom-match-format-tabs:', document.querySelector('.custom-match-format-tabs'));
             console.log('  .custom-match-team-column:', document.querySelector('.custom-match-team-column'));
+            console.log('[TOUR] Steps count:', steps.length);
+            console.log('[TOUR] Skipped steps:', skippedSteps);
         }
     }, [run]);
 

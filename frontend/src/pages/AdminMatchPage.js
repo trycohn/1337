@@ -568,8 +568,13 @@ function AdminMatchPage() {
     // Автозапуск тура при первом визите
     useEffect(() => {
         const tourShown = localStorage.getItem('customMatch_tourCompleted');
+        console.log('[TOUR_TRIGGER] Check:', { tourShown, lobbyId, user: !!user });
         if (!tourShown && lobbyId && user) {
-            const timer = setTimeout(() => setRunTour(true), 2000);
+            console.log('[TOUR_TRIGGER] Will start tour in 2 seconds');
+            const timer = setTimeout(() => {
+                console.log('[TOUR_TRIGGER] Setting runTour = true');
+                setRunTour(true);
+            }, 2000);
             return () => clearTimeout(timer);
         }
     }, [lobbyId, user]);
