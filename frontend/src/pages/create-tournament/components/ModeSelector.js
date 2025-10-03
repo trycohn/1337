@@ -50,6 +50,7 @@ function ModeSelector({ onSelect }) {
             className={`mode-card ${hoveredMode === mode.id ? 'hovered' : ''} ${
               mode.recommended ? 'recommended' : ''
             }`}
+            onClick={() => onSelect(mode.id)}
             onMouseEnter={() => setHoveredMode(mode.id)}
             onMouseLeave={() => setHoveredMode(null)}
           >
@@ -74,12 +75,10 @@ function ModeSelector({ onSelect }) {
               ))}
             </ul>
 
-            <button
-              className={`btn ${mode.recommended ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => onSelect(mode.id)}
-            >
-              Использовать
-            </button>
+            {/* Стрелка для визуального указания на кликабельность */}
+            <div className="mode-action-hint">
+              Нажмите для выбора →
+            </div>
           </div>
         ))}
       </div>

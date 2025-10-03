@@ -29,18 +29,29 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  user-select: none;
 }
 
 .mode-card:hover {
   border-color: #ff0000;
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2);
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(255, 0, 0, 0.3);
+}
+
+.mode-card:active {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.2);
 }
 
 /* Рекомендуемая карточка */
 .mode-card.recommended {
   border-color: #ff0000;
   background: linear-gradient(135deg, #111 0%, #1a0000 100%);
+}
+
+.mode-card.recommended:hover {
+  background: linear-gradient(135deg, #1a0000 0%, #220000 100%);
+  box-shadow: 0 15px 40px rgba(255, 0, 0, 0.4);
 }
 
 /* Бейджи */
@@ -134,36 +145,26 @@
   flex-shrink: 0;
 }
 
-/* Кнопка выбора */
-.mode-card .btn {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 8px;
+/* Подсказка действия (вместо кнопки) */
+.mode-action-hint {
+  margin-top: auto;
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  font-weight: 500;
+  border-top: 1px solid #222;
   transition: all 0.2s ease;
 }
 
-.mode-card .btn-primary {
-  background: #ff0000;
-  border: none;
-  color: #fff;
-}
-
-.mode-card .btn-primary:hover {
-  background: #cc0000;
-  transform: scale(1.02);
-}
-
-.mode-card .btn-secondary {
-  background: transparent;
-  border: 2px solid #ff0000;
+.mode-card:hover .mode-action-hint {
   color: #ff0000;
+  font-weight: 600;
 }
 
-.mode-card .btn-secondary:hover {
-  background: #ff0000;
+.mode-card.recommended .mode-action-hint {
   color: #fff;
+  border-top-color: rgba(255, 0, 0, 0.2);
 }
 
 /* Подсказка внизу */
@@ -228,6 +229,11 @@
 
   .mode-features li {
     font-size: 13px;
+  }
+
+  .mode-action-hint {
+    font-size: 13px;
+    padding: 14px;
   }
 
   .mode-hint {
