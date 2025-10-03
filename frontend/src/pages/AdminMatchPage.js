@@ -675,6 +675,19 @@ function AdminMatchPage() {
                 </div>
             )}
             
+            {/* Подсказка: начать процедуру BAN/PICK когда команды готовы */}
+            {hints.pickban && lobby?.status === 'ready' && lobby?.team1_ready && lobby?.team2_ready && (
+                <div className="inline-hint inline-hint-success">
+                    <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#00ff00"/>
+                    </svg>
+                    <span className="hint-text">
+                        ✅ <strong>Обе команды готовы!</strong> Нажмите кнопку <strong>"Начать BAN/PICK"</strong> выше, чтобы капитаны начали выбор карт
+                    </span>
+                    <button className="hint-close" onClick={() => dismissHint('pickban')} aria-label="Закрыть подсказку">×</button>
+                </div>
+            )}
+            
             {/* Участники не в командах (dropzone) */}
             {unassignedUsers.length > 0 && (
                 <div className="custom-match-mt-16 custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(null)}>
@@ -862,8 +875,8 @@ function AdminMatchPage() {
 
             
 
-            {/* Подсказка: процедура pick/ban */}
-            {hints.pickban && lobby?.status === 'picking' && (
+            {/* Подсказка: процедура pick/ban во время выбора карт */}
+            {lobby?.status === 'picking' && selections.length < 3 && (
                 <div className="inline-hint inline-hint-info">
                     <svg className="hint-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="#00ff00"/>
