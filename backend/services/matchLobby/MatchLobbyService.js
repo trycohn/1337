@@ -783,8 +783,8 @@ class MatchLobbyService {
                 
                 console.log(`✅ [Tournament] Сервер ${server.name} свободен (matchzy_is_match_setup=0), загружаем конфиг...`);
                 
-                // Отправляем команду загрузки
-                await rconService.executeCommand(
+                // Отправляем команду загрузки (НЕ ЖДЕМ ответа - команда выполняется в фоне)
+                rconService.executeCommand(
                     server.id,
                     `matchzy_loadmatch_url "${fullConfigUrl}"`,
                     {
@@ -792,7 +792,9 @@ class MatchLobbyService {
                         lobbyId: lobbyId,
                         logToDb: true
                     }
-                );
+                ).catch(err => {
+                    console.error(`⚠️ [Tournament] Ошибка загрузки конфига на ${server.name}:`, err.message);
+                });
                 
                 console.log(`✅ [Tournament] Команда загрузки отправлена на ${server.name}!`);
                 selectedServer = server;

@@ -32,13 +32,14 @@ class RconService {
     /**
      * Создать RCON соединение с сервером
      */
-    async connect(server) {
+    async connect(server, useCache = false) {
         const connectionKey = `${server.host}:${server.port}`;
         
-        // Проверяем существующее соединение
-        if (this.connections.has(connectionKey)) {
+        // Проверяем существующее соединение (только если useCache=true)
+        if (useCache && this.connections.has(connectionKey)) {
             const existing = this.connections.get(connectionKey);
             if (existing.authenticated) {
+                console.log(`🔄 RCON переиспользуем соединение ${connectionKey}`);
                 return existing;
             }
         }
@@ -51,7 +52,9 @@ class RconService {
                 timeout: this.connectionTimeout
             });
 
-            this.connections.set(connectionKey, rcon);
+            if (useCache) {
+                this.connections.set(connectionKey, rcon);
+            }
             
             console.log(`✅ RCON подключен к серверу ${server.name} (${connectionKey})`);
             return rcon;
@@ -85,22 +88,25 @@ class RconService {
      */
     async executeCommand(serverId, command, options = {}) {
         const startTime = Date.now();
-        const { userId = null, lobbyId = null, logToDb = true } = options;
+        const { userId = null, lobbyId = null, logToDb = true, useCache = false } = options;
         
         let server, rcon, response, status, errorMessage;
+        let shouldCloseConnection = !useCache; // Закрываем если не кешируем
         
         try {
             // Получаем данные сервера
             server = await this.getServerById(serverId);
             
-            // Подключаемся
-            rcon = await this.connect(server);
+            // Подключаемся (с опцией кеширования)
+            rcon = await this.connect(server, useCache);
             
-            // Выполняем команду
+            // Выполняем команду с уменьшенным таймаутом
+            const cmdTimeout = command.includes('matchzy_is_match_setup') ? 3000 : this.commandTimeout;
+            
             response = await Promise.race([
                 rcon.send(command),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), this.commandTimeout)
+                    setTimeout(() => reject(new Error('Timeout')), cmdTimeout)
                 )
             ]);
             
@@ -111,6 +117,15 @@ class RconService {
             status = 'failed';
             errorMessage = error.message;
             console.error(`❌ Ошибка выполнения RCON команды:`, error.message);
+        } finally {
+            // Закрываем соединение если не кешируем
+            if (shouldCloseConnection && rcon) {
+                try {
+                    await rcon.end();
+                } catch (e) {
+                    // Игнорируем ошибки закрытия
+                }
+            }
         }
         
         const duration = Date.now() - startTime;

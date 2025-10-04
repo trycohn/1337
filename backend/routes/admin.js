@@ -1710,6 +1710,9 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
         // Следующий ход
         const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
         if (next.completed) {
+            const T0 = Date.now();
+            console.log(`⏱️ [T+0ms] Начало генерации конфига и поиска сервера`);
+            
             // Завершено — формируем JSON конфиг матча
             // (поднимем статус до 'match_created' сразу после записи файла + генерации ссылок)
 
@@ -1783,6 +1786,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 }
             };
 
+            console.log(`⏱️ [T+${Date.now()-T0}ms] Данные собраны, генерируем JSON файл`);
+            
             let configJsonSaved = false;
             let publicUrl = null;
             let fullConfigUrl = null;
@@ -1796,7 +1801,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 publicUrl = `/lobby/${lobbyId}/${fileName}`;
                 fullConfigUrl = `https://1337community.com${publicUrl}`;
                 configJsonSaved = true;
-                console.log(`✅ JSON конфиг сохранен: ${fullConfigUrl} (matchid=${matchid})`);
+                console.log(`✅ [T+${Date.now()-T0}ms] JSON конфиг сохранен: ${fullConfigUrl} (matchid=${matchid})`);
             } catch (writeErr) {
                 console.error('❌ Ошибка записи JSON конфига лобби', writeErr);
             }
@@ -1818,9 +1823,9 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                     console.log(`🔍 Поиск свободного сервера среди ${serversResult.rows.length} активных...`);
                     
                     // Поиск свободного сервера (без таймаута - проверяем все серверы)
-                    for (const server of serversResult.rows) {
+                        for (const server of serversResult.rows) {
                             try {
-                                console.log(`⏳ Проверка сервера ${server.name} (${server.host}:${server.port})...`);
+                                console.log(`⏳ [T+${Date.now()-T0}ms] Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                                 
                                 // Проверяем занят ли сервер
                                 const statusResult = await rconService.executeCommand(
@@ -1830,7 +1835,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 );
                                 
                                 const statusResponse = statusResult.response || '';
-                                console.log(`📋 Статус от ${server.name}:`, statusResponse);
+                                console.log(`📋 [T+${Date.now()-T0}ms] Статус от ${server.name}:`, statusResponse);
                                 
                                 // Парсим ответ: "matchzy_is_match_setup = 0" или "matchzy_is_match_setup = 1"
                                 const match = statusResponse.match(/matchzy_is_match_setup\s*=\s*(\d+)/i);
@@ -1850,15 +1855,19 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 
                                 console.log(`✅ Сервер ${server.name} свободен (matchzy_is_match_setup=0), загружаем конфиг...`);
                                 
-                                // Отправляем команду загрузки
-                                await rconService.executeCommand(
+                                // Отправляем команду загрузки (НЕ ЖДЕМ ответа - команда выполняется в фоне)
+                                rconService.executeCommand(
                                     server.id,
                                     `matchzy_loadmatch_url "${fullConfigUrl}"`,
                                     { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
-                                );
+                                ).catch(err => {
+                                    console.error(`⚠️ Ошибка загрузки конфига на ${server.name}:`, err.message);
+                                });
                                 
-                                console.log(`✅ Команда загрузки отправлена на ${server.name}!`);
+                                console.log(`✅ [T+${Date.now()-T0}ms] Команда загрузки отправлена на ${server.name}!`);
                                 selectedServer = server;
+                                
+                                console.log(`⏱️ [T+${Date.now()-T0}ms] Формируем ссылки подключения`);
                                 
                                 // Формируем ссылки подключения
                                 const serverPass = server.server_password || '';
@@ -1896,6 +1905,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 }
             }
 
+            console.log(`⏱️ [T+${Date.now()-T0}ms] Обновляем лобби в БД`);
+            
             // Обновляем лобби с данными сервера (если найден)
             const updStatus = await client.query(
                 `UPDATE admin_match_lobbies 
@@ -1908,6 +1919,9 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 RETURNING *`,
                 [selectedServer?.id || null, connect || null, gotv || null, lobbyId]
             );
+            
+            console.log(`⏱️ [T+${Date.now()-T0}ms] Создаем запись матча`);
+            
             // Создаём запись в matches как custom match
             const participants = await client.query(
                 `SELECT i.team, i.user_id, u.username, u.steam_id
@@ -1953,7 +1967,10 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             // Привязываем лобби к матчу
             await client.query('UPDATE admin_match_lobbies SET match_id = $1 WHERE id = $2', [newMatchId, lobbyId]);
 
+            console.log(`⏱️ [T+${Date.now()-T0}ms] Коммит транзакции`);
             await client.query('COMMIT');
+            
+            console.log(`⏱️ [T+${Date.now()-T0}ms] Возвращаем ответ клиенту`);
             return res.json({ success: true, completed: true, config_json_url: publicUrl, matchid, maplist, connect, gotv, lobby: updStatus.rows[0], match_id: newMatchId, match_status: 'scheduled' });
         } else {
             const upd = await client.query(
