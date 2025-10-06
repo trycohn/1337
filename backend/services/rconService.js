@@ -140,15 +140,20 @@ class RconService {
         // Логируем в БД
         if (logToDb && server) {
             try {
+                console.log(`🔹 Логирование в БД (cs2_server_commands)...`);
                 await pool.query(
                     `INSERT INTO cs2_server_commands 
                     (server_id, lobby_id, command, response, status, error_message, executed_by, duration_ms)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
                     [serverId, lobbyId, command, response || null, status, errorMessage || null, userId, duration]
                 );
+                console.log(`🔹 Команда залогирована в БД`);
             } catch (dbError) {
-                console.error('Ошибка логирования RCON команды в БД:', dbError.message);
+                console.error('❌ Ошибка логирования RCON команды в БД:', dbError.message);
+                console.error('❌ Детали ошибки БД:', dbError);
             }
+        } else {
+            console.log(`🔹 Пропуск логирования в БД (logToDb=${logToDb})`);
         }
         
         if (status === 'failed') {

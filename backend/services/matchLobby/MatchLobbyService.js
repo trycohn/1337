@@ -759,7 +759,7 @@ class MatchLobbyService {
                 const statusResult = await rconService.executeCommand(
                     server.id,
                     'matchzy_is_match_setup',
-                    { userId: userId, lobbyId: lobbyId, logToDb: true }
+                    { userId: userId, lobbyId: lobbyId, logToDb: false } // ВРЕМЕННО отключено
                 );
                 
                 const statusResponse = statusResult.response || '';
@@ -790,7 +790,7 @@ class MatchLobbyService {
                     {
                         userId: userId,
                         lobbyId: lobbyId,
-                        logToDb: true
+                        logToDb: false // ВРЕМЕННО отключено
                     }
                 ).catch(err => {
                     console.error(`⚠️ [Tournament] Ошибка загрузки конфига на ${server.name}:`, err.message);
