@@ -41,6 +41,7 @@ function AdminMatchPage() {
     const inviteSearchDebounce = useRef(null);
     const inviteSearchInputRef = useRef(null);
     const [formatConfirm, setFormatConfirm] = useState({ open: false, target: null });
+    const [startPickPending, setStartPickPending] = useState(false);
     // Per‑player readiness
     const [playerReady, setPlayerReady] = useState({}); // { [userId]: boolean }
     const playerReadyRef = useRef({});
@@ -655,21 +656,26 @@ function AdminMatchPage() {
                         return (
                             <div className="custom-match-tooltip">
                                 <button
-                                    className={`btn btn-secondary ${!canStart ? 'btn-disabled' : ''}`}
-                                    disabled={!canStart}
+                                    className={`btn btn-secondary ${(!canStart || startPickPending) ? 'btn-disabled' : ''}`}
+                                    disabled={!canStart || startPickPending}
                                     onClick={async () => {
+                                        setStartPickPending(true);
                                         const token = localStorage.getItem('token');
-                                        const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
-                                        if (data?.success) {
-                                            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (r?.data?.success) {
-                                                setLobby(r.data.lobby);
-                                                setSelections(r.data.selections || []);
-                                                setAvailableMaps(r.data.available_maps || []);
-                                                setTeam1Users(r.data.team1_users || []);
-                                                setTeam2Users(r.data.team2_users || []);
-                                                setUnassignedUsers(r.data.unassigned_users || []);
+                                        try {
+                                            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (data?.success) {
+                                                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+                                                if (r?.data?.success) {
+                                                    setLobby(r.data.lobby);
+                                                    setSelections(r.data.selections || []);
+                                                    setAvailableMaps(r.data.available_maps || []);
+                                                    setTeam1Users(r.data.team1_users || []);
+                                                    setTeam2Users(r.data.team2_users || []);
+                                                    setUnassignedUsers(r.data.unassigned_users || []);
+                                                }
                                             }
+                                        } finally {
+                                            setStartPickPending(false);
                                         }
                                     }}
                                     title={canStart ? 'Начать процедуру выбора карт' : tip}
@@ -832,6 +838,11 @@ function AdminMatchPage() {
                                     </div>
                                 </div>
                             )}
+                            <div className="custom-match-mt-12">
+                                <a className="btn btn-primary custom-match-ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
+                                    Подключиться к матчу
+                                </a>
+                            </div>
                         </>
                     ) : (
                         <div className="admin-error">
@@ -998,7 +1009,7 @@ function AdminMatchPage() {
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1)}>
                         <h4>
                             {lobby?.team1_name || 'Team_A'}
-                            <span className="custom-match-team-ready-status custom-match-ml-8">
+                            <span className={`custom-match-team-ready-status custom-match-ml-8 ${lobby?.team1_ready === true ? 'ready' : 'not-ready'}`}>
                                 {lobby?.team1_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
@@ -1060,7 +1071,7 @@ function AdminMatchPage() {
                     <div className="custom-match-team-column custom-match-dropzone" onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2)}>
                         <h4>
                             {lobby?.team2_name || 'Team_B'}
-                            <span className="custom-match-team-ready-status custom-match-ml-8">
+                            <span className={`custom-match-team-ready-status custom-match-ml-8 ${lobby?.team2_ready === true ? 'ready' : 'not-ready'}`}>
                                 {lobby?.team2_ready === true ? 'ready' : 'not ready'}
                             </span>
                         </h4>
@@ -1119,8 +1130,8 @@ function AdminMatchPage() {
                 </div>
             </div>
 
-            {/* Кнопка подключиться после завершения */}
-            {(connectInfo?.connect || ['match_created','ready_to_create','completed'].includes(lobby?.status)) && (
+            {/* Управление созданием матча (без кнопки подключения — она перенесена выше) */}
+            {(connectInfo?.connect || ['ready_to_create','completed'].includes(lobby?.status)) && (
                 <div className="custom-match-mt-16">
                     {['ready_to_create','completed'].includes(lobby?.status) && Number(lobby?.created_by) === Number(user?.id) && (
                         <button className="btn btn-primary" onClick={async () => {
@@ -1128,11 +1139,6 @@ function AdminMatchPage() {
                             const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/create-match`, {}, { headers: { Authorization: `Bearer ${token}` } });
                             if (data?.success) setConnectInfo({ connect: data.connect, gotv: data.gotv });
                         }}>СОЗДАЕМ МАТЧ?</button>
-                    )}
-                    {connectInfo?.connect && (
-                        <a className="btn btn-primary custom-match-ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
-                            Подключиться к матчу
-                        </a>
                     )}
                 </div>
             )}

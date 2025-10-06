@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../axios';
 import './AdminPanel.css';
-import './AdminPanel.css';
 import { ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext'; // Добавляем AuthContext
+import TemplatesManagement from './admin/TemplatesManagement'; // 🆕 Управление шаблонами турниров
 
 function UploadMapImage() {
     const [mapKey, setMapKey] = useState('mirage');
@@ -953,6 +953,12 @@ function AdminPanel() {
                     onClick={() => { setActiveTab('servers'); fetchServers(); }}
                 >
                     🖥️ Серверы CS
+                </button>
+                <button 
+                    className={`nav-tab ${activeTab === 'templates' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('templates')}
+                >
+                    📋 Шаблоны
                 </button>
             </div>
 
@@ -2384,6 +2390,11 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                         </p>
                     </div>
                 </div>
+            )}
+
+            {/* 📋 Вкладка управления шаблонами турниров */}
+            {activeTab === 'templates' && (
+                <TemplatesManagement />
             )}
         </div>
     );

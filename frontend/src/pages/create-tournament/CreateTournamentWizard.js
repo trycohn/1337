@@ -306,6 +306,45 @@ function CreateTournamentWizard({ onBack }) {
     });
   };
 
+  // Применение шаблона ко всем шагам Wizard
+  const applyTemplate = useCallback((templateConfig) => {
+    console.log('📋 Применяем шаблон:', templateConfig);
+    
+    setWizardData(prev => ({
+      ...prev,
+      // Обновляем basicInfo
+      basicInfo: {
+        ...prev.basicInfo,
+        game: templateConfig.game || prev.basicInfo.game,
+        tournament_type: templateConfig.tournament_type || prev.basicInfo.tournament_type,
+      },
+      // Обновляем format
+      format: {
+        ...prev.format,
+        format: templateConfig.format || prev.format.format,
+        bracket_type: templateConfig.bracket_type || prev.format.bracket_type,
+        participant_type: templateConfig.participant_type || prev.format.participant_type,
+        team_size: templateConfig.team_size || prev.format.team_size,
+        max_teams: templateConfig.max_teams || prev.format.max_teams,
+        mix_type: templateConfig.mix_type || prev.format.mix_type,
+        mix_rating_type: templateConfig.mix_rating_type || prev.format.mix_rating_type,
+      },
+      // Обновляем rules
+      rules: {
+        ...prev.rules,
+        seeding_type: templateConfig.seeding_type || prev.rules.seeding_type,
+        lobby_enabled: templateConfig.lobby_enabled !== undefined 
+          ? templateConfig.lobby_enabled 
+          : prev.rules.lobby_enabled,
+        lobby_match_format: templateConfig.lobby_match_format || prev.rules.lobby_match_format,
+        final_match_format: templateConfig.final_match_format || prev.rules.final_match_format,
+        enable_final_format: !!templateConfig.final_match_format,
+      },
+    }));
+    
+    console.log('✅ Шаблон применен ко всем шагам');
+  }, []);
+
   // Рендер текущего шага
   const renderStep = () => {
     switch (currentStep) {
@@ -314,14 +353,7 @@ function CreateTournamentWizard({ onBack }) {
           <Step1_Template
             data={wizardData.template}
             onChange={(template) => updateStepData('template', template)}
-            onApplyTemplate={(templateData) => {
-              // Применяем данные шаблона ко всем шагам
-              setWizardData(prev => ({
-                ...prev,
-                format: { ...prev.format, ...templateData.format },
-                rules: { ...prev.rules, ...templateData.rules },
-              }));
-            }}
+            onApplyTemplate={applyTemplate}
           />
         );
       

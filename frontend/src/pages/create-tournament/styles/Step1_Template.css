@@ -1,0 +1,250 @@
+/* frontend/src/pages/create-tournament/styles/Step1_Template.css */
+
+/* ============================================
+   STEP 1: ВЫБОР ШАБЛОНА ТУРНИРА
+   ============================================ */
+
+/* Категории шаблонов */
+.template-categories {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.category-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 2px solid #333;
+  color: #888;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.category-btn:hover {
+  border-color: #ff0000;
+  color: #fff;
+}
+
+.category-btn.active {
+  background: #ff0000;
+  border-color: #ff0000;
+  color: #fff;
+}
+
+/* Сетка шаблонов */
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Карточка шаблона */
+.template-card {
+  position: relative;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+
+.template-card:hover {
+  border-color: #ff0000;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2);
+}
+
+.template-card.selected {
+  border-color: #ff0000;
+  background: linear-gradient(135deg, #111 0%, #1a0000 100%);
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+}
+
+/* Кастомный шаблон (Создать с нуля) */
+.template-card.custom {
+  border-style: dashed;
+}
+
+.template-card.custom:hover {
+  border-style: solid;
+}
+
+/* Официальный бейдж */
+.official-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Иконка шаблона */
+.template-icon {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* Название шаблона */
+.template-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+/* Описание шаблона */
+.template-description {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+  margin: 0 0 20px 0;
+  flex-grow: 1;
+  text-align: center;
+}
+
+/* Конфигурация шаблона */
+.template-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.config-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.config-value {
+  color: #ccc;
+  font-weight: 600;
+}
+
+/* Фичи кастомного шаблона */
+.template-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.template-features span {
+  font-size: 13px;
+  color: #888;
+}
+
+/* Статистика использования */
+.template-stats {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid #222;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Подсказка о выбранном шаблоне */
+.template-hint {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  background: #1a1a1a;
+  border: 1px solid #ff0000;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 30px;
+}
+
+.template-hint .hint-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.template-hint .hint-content {
+  flex-grow: 1;
+}
+
+.template-hint strong {
+  color: #fff;
+  font-size: 15px;
+}
+
+.template-hint small {
+  color: #888;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .templates-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .template-categories {
+    gap: 8px;
+  }
+
+  .category-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .template-card {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .template-icon {
+    font-size: 40px;
+  }
+
+  .template-name {
+    font-size: 18px;
+  }
+
+  .template-hint {
+    padding: 15px;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hint-icon {
+    font-size: 24px;
+  }
+}
+

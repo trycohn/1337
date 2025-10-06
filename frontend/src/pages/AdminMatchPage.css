@@ -308,8 +308,17 @@
   border-radius: 10px;
   border: 1px solid #333;
 }
-.custom-match-team-ready-status {
-  color: #999;
+.custom-match-team-ready-status { color: #999; }
+.custom-match-team-ready-status.ready {
+  color: #00c853;
+  border-color: #00c853;
+  background: rgba(0, 200, 83, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.25) inset;
+}
+.custom-match-team-ready-status.not-ready {
+  color: #aaa;
+  border-color: #333;
+  background: transparent;
 }
 .custom-match-team-column h4 .custom-match-team-ready-status {
   margin-left: 8px;
