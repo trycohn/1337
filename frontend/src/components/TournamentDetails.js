@@ -2467,6 +2467,14 @@ function TournamentDetails() {
         // dataWithPlayers может содержать поле players для командных турниров
         const data = dataWithPlayers || newParticipantData;
         
+        console.log('🔍 [handleAddParticipant] НАЧАЛО:', {
+            dataWithPlayers,
+            newParticipantData,
+            finalData: data,
+            tournamentType: tournament?.participant_type,
+            tournamentFormat: tournament?.format
+        });
+        
         if (!data.display_name?.trim()) {
             setMessage('Укажите ' + (tournament?.participant_type === 'team' ? 'название команды' : 'имя участника'));
             setTimeout(() => setMessage(''), 3000);
@@ -2477,15 +2485,21 @@ function TournamentDetails() {
             setLoading(true);
             const isTeamTournament = tournament?.participant_type === 'team';
             
-            console.log('👤 Добавляем ' + (isTeamTournament ? 'команду' : 'участника') + ':', data);
+            console.log('👤 [handleAddParticipant] Добавляем ' + (isTeamTournament ? 'команду' : 'участника') + ':', data);
+            console.log('🔍 [handleAddParticipant] isTeamTournament:', isTeamTournament);
+            console.log('🔍 [handleAddParticipant] players в data:', data.players);
 
             // Для командных турниров используем специальный API endpoint
             if (isTeamTournament) {
+                console.log('🎯 [handleAddParticipant] Выполняем логику для КОМАНДНОГО турнира');
+                
                 const token = localStorage.getItem('token');
                 const payload = {
                     teamName: data.display_name.trim(),
                     players: data.players || []
                 };
+                
+                console.log('📡 [handleAddParticipant] Отправляем запрос к /add-team:', payload);
                 
                 const response = await api.post(`/api/tournaments/${id}/add-team`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -2510,6 +2524,8 @@ function TournamentDetails() {
                     setTimeout(() => setMessage(''), 3000);
                 }
             } else {
+                console.log('🎯 [handleAddParticipant] Выполняем логику для SOLO турнира');
+                
                 // Для solo турниров используем существующий метод
                 const result = await tournamentManagement.addUnregisteredParticipant(data);
                 

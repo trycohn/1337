@@ -24,6 +24,15 @@ const AddParticipantModal = ({
     if (!isOpen) return null;
 
     const isTeamTournament = tournamentType === 'team';
+    
+    // 🔍 DEBUG: Логируем параметры модалки
+    console.log('🔍 [AddParticipantModal] Открыта модалка:', {
+        isOpen,
+        tournamentType,
+        isTeamTournament,
+        showPlayersList,
+        teamPlayers: teamPlayers.length
+    });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -58,8 +67,20 @@ const AddParticipantModal = ({
                 .map(p => p.nickname.trim())
                 .filter(n => n.length > 0);
             
+            console.log('🔍 [AddParticipantModal] Отправка команды с игроками:', {
+                ...newParticipantData,
+                players,
+                playersCount: players.length
+            });
+            
             onSubmit({ ...newParticipantData, players });
         } else {
+            console.log('🔍 [AddParticipantModal] Отправка участника:', {
+                isTeamTournament,
+                showPlayersList,
+                data: newParticipantData
+            });
+            
             onSubmit(newParticipantData);
         }
     };
