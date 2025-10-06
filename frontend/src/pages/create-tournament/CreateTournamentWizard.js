@@ -92,8 +92,12 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
     
     // Шаг 5: Брендинг
     branding: {
-      logo_url: null,
-      banner_url: null,
+      logo_file: null,      // Файл для загрузки
+      logo_preview: null,   // URL предпросмотра
+      logo_url: null,       // URL после загрузки на сервер
+      banner_file: null,    // Файл баннера
+      banner_preview: null, // URL предпросмотра баннера
+      banner_url: null,     // URL баннера после загрузки
       primary_color: '#ff0000',
       secondary_color: '#111111',
       sponsors: [],

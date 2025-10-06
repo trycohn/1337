@@ -262,6 +262,45 @@ function Step6_Preview({ wizardData, onEdit }) {
         </div>
         
         <div style={{ marginTop: '15px' }}>
+          {/* Логотип */}
+          {(branding.logo_preview || branding.logo_url) && (
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px', fontWeight: '500' }}>
+                Логотип
+              </div>
+              <img
+                src={branding.logo_preview || branding.logo_url}
+                alt="Логотип"
+                style={{ 
+                  maxWidth: '150px', 
+                  maxHeight: '150px', 
+                  borderRadius: '8px',
+                  border: '2px solid #333'
+                }}
+              />
+            </div>
+          )}
+
+          {/* Баннер */}
+          {(branding.banner_preview || branding.banner_url) && (
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px', fontWeight: '500' }}>
+                Баннер
+              </div>
+              <img
+                src={branding.banner_preview || branding.banner_url}
+                alt="Баннер"
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '150px', 
+                  borderRadius: '8px',
+                  border: '2px solid #333'
+                }}
+              />
+            </div>
+          )}
+
+          {/* Цвета */}
           <PreviewField 
             label="Основной цвет" 
             value={
@@ -269,11 +308,27 @@ function Step6_Preview({ wizardData, onEdit }) {
                 <div style={{ 
                   width: '30px', 
                   height: '30px', 
-                  background: branding.primary_color,
+                  background: branding.primary_color || '#ff0000',
                   border: '1px solid #333',
                   borderRadius: '4px'
                 }} />
-                {branding.primary_color}
+                {branding.primary_color || '#ff0000'}
+              </div>
+            } 
+          />
+          
+          <PreviewField 
+            label="Дополнительный цвет" 
+            value={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ 
+                  width: '30px', 
+                  height: '30px', 
+                  background: branding.secondary_color || '#111111',
+                  border: '1px solid #333',
+                  borderRadius: '4px'
+                }} />
+                {branding.secondary_color || '#111111'}
               </div>
             } 
           />
