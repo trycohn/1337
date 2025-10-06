@@ -332,6 +332,9 @@ router.delete('/:id/participate', authenticateToken, verifyEmailRequired, Partic
 // 👤 Ручное добавление незарегистрированного участника (для администраторов)
 router.post('/:id/add-participant', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.addParticipant);
 
+// 👥 Ручное добавление незарегистрированной команды с игроками (для администраторов командных турниров)
+router.post('/:id/add-team', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.addTeamWithPlayers);
+
 // 🗑️ Удаление участника (для администраторов)
 router.delete('/:id/participants/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.removeParticipant);
 

@@ -62,6 +62,96 @@ class ParticipantController {
         res.json({ message: 'Участник успешно добавлен' });
     });
 
+    // 👥 Ручное добавление незарегистрированной команды с игроками (для командных турниров)
+    static addTeamWithPlayers = asyncHandler(async (req, res) => {
+        const { id } = req.params;
+        const { teamName, players } = req.body;
+        
+        // Валидация
+        if (!teamName || !teamName.trim()) {
+            return res.status(400).json({ error: 'Укажите название команды' });
+        }
+
+        const tournamentId = parseInt(id);
+        if (isNaN(tournamentId)) {
+            return res.status(400).json({ error: 'Неверный ID турнира' });
+        }
+
+        // Проверяем турнир
+        const tournament = await TournamentRepository.getById(tournamentId);
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Проверяем что турнир командный
+        if (tournament.participant_type !== 'team') {
+            return res.status(400).json({ error: 'Этот метод работает только для командных турниров' });
+        }
+
+        // Проверяем права доступа (создатель или администратор)
+        const isCreator = tournament.created_by === req.user.id;
+        if (!isCreator) {
+            const pool = require('../../db');
+            const adminCheck = await pool.query(
+                'SELECT * FROM tournament_admins WHERE tournament_id = $1 AND user_id = $2',
+                [tournamentId, req.user.id]
+            );
+            if (adminCheck.rows.length === 0) {
+                return res.status(403).json({ error: 'Только создатель или администратор может добавлять команды' });
+            }
+        }
+
+        // Проверяем, что турнир активен (не началась сетка)
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Турнир неактивен' });
+        }
+
+        // Проверяем, не сгенерирована ли уже сетка
+        const pool = require('../../db');
+        const matchesCheck = await pool.query(
+            'SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1',
+            [tournamentId]
+        );
+        if (parseInt(matchesCheck.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Нельзя добавлять команды после генерации сетки' });
+        }
+
+        // Создаем команду
+        const teamResult = await pool.query(
+            'INSERT INTO tournament_teams (tournament_id, name, creator_id) VALUES ($1, $2, $3) RETURNING id',
+            [tournamentId, teamName.trim(), null] // creator_id = null для незарегистрированных команд
+        );
+
+        const teamId = teamResult.rows[0].id;
+
+        // Добавляем игроков команды, если они указаны
+        if (players && Array.isArray(players) && players.length > 0) {
+            for (const playerNick of players) {
+                if (playerNick && playerNick.trim()) {
+                    // Создаем незарегистрированного участника для каждого игрока
+                    await pool.query(
+                        'INSERT INTO tournament_participants (tournament_id, user_id, name, team_id, in_team) VALUES ($1, $2, $3, $4, $5)',
+                        [tournamentId, null, playerNick.trim(), teamId, true]
+                    );
+                }
+            }
+        }
+
+        // Логируем событие
+        await logTournamentEvent(tournamentId, req.user.id, 'team_added', {
+            teamId,
+            teamName: teamName.trim(),
+            playersCount: players?.length || 0
+        });
+
+        res.json({ 
+            success: true,
+            message: 'Команда успешно добавлена',
+            teamId,
+            teamName: teamName.trim()
+        });
+    });
+
     // 🗑️ Удаление участника
     static removeParticipant = asyncHandler(async (req, res) => {
         const { id, participantId } = req.params;

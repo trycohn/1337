@@ -37,6 +37,7 @@ import MatchDetailsModal from './tournament/modals/MatchDetailsModal';
 import ParticipantSearchModal from './tournament/modals/ParticipantSearchModal';
 import AddParticipantModal from './tournament/modals/AddParticipantModal';
 import ThirdPlaceMatchModal from './tournament/modals/ThirdPlaceMatchModal';
+import TeamSelectionModal from './modals/TeamSelectionModal';
 import TournamentFloatingActionPanel from './tournament/TournamentFloatingActionPanel';
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
@@ -196,6 +197,18 @@ function TournamentDetails() {
         if (tabParam && ['info', 'bracket', 'participants', 'results', 'management'].includes(tabParam)) {
             setActiveTab(tabParam);
             return;
+        }
+        
+        // 🆕 Проверяем параметр invite для автоматического открытия модалки выбора команды
+        const inviteParam = urlParams.get('invite');
+        if (inviteParam === 'team' && tournament?.participant_type === 'team' && user && !isParticipating) {
+            // Открываем модалку выбора команды после загрузки турнира
+            setTimeout(() => {
+                openModal('teamSelection');
+                // Удаляем параметр из URL
+                const newUrl = window.location.pathname + window.location.search.replace(/[?&]invite=team/, '');
+                window.history.replaceState({}, '', newUrl);
+            }, 500);
         }
         // Если вкладка не задана, и это CS2 — переключаем на участников
         const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
@@ -2449,84 +2462,122 @@ function TournamentDetails() {
         }
     }, [id, fetchTournamentData]);
 
-    // 👤 Обработчик добавления незарегистрированного участника
-    const handleAddParticipant = useCallback(async () => {
-        if (!newParticipantData.display_name?.trim()) {
-            setMessage('Укажите имя участника');
+    // 👤 Обработчик добавления незарегистрированного участника/команды
+    const handleAddParticipant = useCallback(async (dataWithPlayers) => {
+        // dataWithPlayers может содержать поле players для командных турниров
+        const data = dataWithPlayers || newParticipantData;
+        
+        if (!data.display_name?.trim()) {
+            setMessage('Укажите ' + (tournament?.participant_type === 'team' ? 'название команды' : 'имя участника'));
             setTimeout(() => setMessage(''), 3000);
             return;
         }
 
         try {
             setLoading(true);
-            console.log('👤 Добавляем участника:', newParticipantData);
-
-            const result = await tournamentManagement.addUnregisteredParticipant(newParticipantData);
+            const isTeamTournament = tournament?.participant_type === 'team';
             
-            if (result.success) {
-                console.log('✅ Участник успешно добавлен:', result.data);
-                
-                // 🚀 МГНОВЕННОЕ ОБНОВЛЕНИЕ СОСТОЯНИЯ - добавляем участника в локальное состояние
-                const newParticipant = {
-                    id: result.data?.id || Date.now(), // временный ID если не вернулся с сервера
-                    name: newParticipantData.display_name,
-                    display_name: newParticipantData.display_name,
-                    email: newParticipantData.email || null,
-                    faceit_elo: newParticipantData.faceit_elo || null,
-                    cs2_premier_rank: newParticipantData.cs2_premier_rank || null,
-                    user_id: null, // незарегистрированный участник
-                    avatar_url: null,
-                    in_team: false,
-                    created_at: new Date().toISOString()
+            console.log('👤 Добавляем ' + (isTeamTournament ? 'команду' : 'участника') + ':', data);
+
+            // Для командных турниров используем специальный API endpoint
+            if (isTeamTournament) {
+                const token = localStorage.getItem('token');
+                const payload = {
+                    teamName: data.display_name.trim(),
+                    players: data.players || []
                 };
                 
-                // Обновляем состояние участников немедленно
-                setTournament(prev => ({
-                    ...prev,
-                    participants: [...(prev.participants || []), newParticipant]
-                }));
-                
-                // Обновляем originalParticipants для микс турниров
-                setOriginalParticipants(prev => [...prev, newParticipant]);
-                
-                console.log('🚀 Участник добавлен в локальное состояние мгновенно');
-                
-                // Закрываем модальное окно
-                closeModal('addParticipant');
-                
-                // Очищаем форму
-                setNewParticipantData({
-                    display_name: '',
-                    email: '',
-                    faceit_elo: '',
-                    cs2_premier_rank: ''
+                const response = await api.post(`/api/tournaments/${id}/add-team`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
                 
-                // Очищаем кеш турнира для следующих запросов
-                const cacheKey = `tournament_cache_${id}`;
-                const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
-                localStorage.removeItem(cacheKey);
-                localStorage.removeItem(cacheTimestampKey);
-                
-                // Обновляем данные турнира в фоне для синхронизации с сервером
-                setTimeout(() => {
-                    fetchTournamentData();
-                }, 1000);
-                
-                setMessage(`${newParticipantData.display_name} добавлен в турнир`);
-                setTimeout(() => setMessage(''), 3000);
+                if (response.data) {
+                    console.log('✅ Команда успешно добавлена:', response.data);
+                    
+                    // Закрываем модальное окно и очищаем форму
+                    closeModal('addParticipant');
+                    setNewParticipantData({
+                        display_name: '',
+                        email: '',
+                        faceit_elo: '',
+                        cs2_premier_rank: ''
+                    });
+                    
+                    // Обновляем данные турнира
+                    await fetchTournamentData();
+                    
+                    setMessage(`Команда "${data.display_name}" добавлена в турнир`);
+                    setTimeout(() => setMessage(''), 3000);
+                }
             } else {
-                setMessage(`${result.error || 'Ошибка при добавлении участника'}`);
-                setTimeout(() => setMessage(''), 5000);
+                // Для solo турниров используем существующий метод
+                const result = await tournamentManagement.addUnregisteredParticipant(data);
+                
+                if (result.success) {
+                    console.log('✅ Участник успешно добавлен:', result.data);
+                    
+                    // 🚀 МГНОВЕННОЕ ОБНОВЛЕНИЕ СОСТОЯНИЯ - добавляем участника в локальное состояние
+                    const newParticipant = {
+                        id: result.data?.id || Date.now(), // временный ID если не вернулся с сервера
+                        name: data.display_name,
+                        display_name: data.display_name,
+                        email: data.email || null,
+                        faceit_elo: data.faceit_elo || null,
+                        cs2_premier_rank: data.cs2_premier_rank || null,
+                        user_id: null, // незарегистрированный участник
+                        avatar_url: null,
+                        in_team: false,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    // Обновляем состояние участников немедленно
+                    setTournament(prev => ({
+                        ...prev,
+                        participants: [...(prev.participants || []), newParticipant]
+                    }));
+                    
+                    // Обновляем originalParticipants для микс турниров
+                    setOriginalParticipants(prev => [...prev, newParticipant]);
+                    
+                    console.log('🚀 Участник добавлен в локальное состояние мгновенно');
+                    
+                    // Закрываем модальное окно
+                    closeModal('addParticipant');
+                    
+                    // Очищаем форму
+                    setNewParticipantData({
+                        display_name: '',
+                        email: '',
+                        faceit_elo: '',
+                        cs2_premier_rank: ''
+                    });
+                    
+                    // Очищаем кеш турнира для следующих запросов
+                    const cacheKey = `tournament_cache_${id}`;
+                    const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                    localStorage.removeItem(cacheKey);
+                    localStorage.removeItem(cacheTimestampKey);
+                    
+                    // Обновляем данные турнира в фоне для синхронизации с сервером
+                    setTimeout(() => {
+                        fetchTournamentData();
+                    }, 1000);
+                    
+                    setMessage(`${data.display_name} добавлен в турнир`);
+                    setTimeout(() => setMessage(''), 3000);
+                } else {
+                    setMessage(`${result.error || 'Ошибка при добавлении участника'}`);
+                    setTimeout(() => setMessage(''), 5000);
+                }
             }
         } catch (error) {
-            console.error('❌ Ошибка при добавлении участника:', error);
-            setMessage(`Ошибка при добавлении участника: ${error.message}`);
+            console.error('❌ Ошибка при добавлении:', error);
+            setMessage(`Ошибка: ${error.response?.data?.error || error.message}`);
             setTimeout(() => setMessage(''), 5000);
         } finally {
             setLoading(false);
         }
-    }, [newParticipantData, tournamentManagement, id, fetchTournamentData, closeModal, setMessage, setLoading]);
+    }, [newParticipantData, tournament, tournamentManagement, id, fetchTournamentData, closeModal, setMessage, setLoading]);
 
     // Обработка ошибок загрузки
     if (loading) {
@@ -2617,17 +2668,28 @@ function TournamentDetails() {
                                                         window.location.href = '/register?action=participate';
                                                         return;
                                                     }
+                                                    
                                                     const participantType = tournament.participant_type;
-                                                    const payload = tournament.format === 'mix'
-                                                        ? {}
-                                                        : participantType === 'solo' ? {} : { teamId: null, newTeamName: null };
+                                                    
+                                                    // Для командных турниров открываем модалку выбора команды
+                                                    if (participantType === 'team' && tournament.format !== 'mix') {
+                                                        openModal('teamSelection');
+                                                        return;
+                                                    }
+                                                    
+                                                    // Для solo и mix турниров отправляем запрос напрямую
+                                                    const payload = tournament.format === 'mix' ? {} : {};
                                                     const token = localStorage.getItem('token');
                                                     await api.post(`/api/tournaments/${tournament.id}/participate`, payload, {
                                                         headers: { Authorization: `Bearer ${token}` }
                                                     });
                                                     await fetchTournamentData();
+                                                    setMessage('Вы успешно зарегистрированы в турнире');
+                                                    setTimeout(() => setMessage(''), 3000);
                                                 } catch (e) {
                                                     console.error('Ошибка участия:', e);
+                                                    setMessage(e.response?.data?.error || 'Ошибка при регистрации');
+                                                    setTimeout(() => setMessage(''), 5000);
                                                 }
                                             }}
                                         >
@@ -2778,6 +2840,7 @@ function TournamentDetails() {
                         setNewParticipantData={setNewParticipantData}
                         onSubmit={handleAddParticipant}
                         isLoading={loading}
+                        tournamentType={tournament?.participant_type || 'solo'}
                     />
                 )}
 
@@ -2887,6 +2950,33 @@ function TournamentDetails() {
                         onConfirm={handleDeleteTournament}
                         tournament={tournament}
                         isLoading={isDeletingTournament}
+                    />
+                )}
+
+                {/* 👥 Модальное окно выбора команды для участия */}
+                {modals.teamSelection && (
+                    <TeamSelectionModal
+                        onClose={() => closeModal('teamSelection')}
+                        onTeamSelected={async (team) => {
+                            try {
+                                const token = localStorage.getItem('token');
+                                await api.post(`/api/tournaments/${tournament.id}/participate`, {
+                                    teamId: team.id
+                                }, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                });
+                                closeModal('teamSelection');
+                                await fetchTournamentData();
+                                setMessage('Вы успешно зарегистрированы в турнире');
+                                setTimeout(() => setMessage(''), 3000);
+                            } catch (e) {
+                                console.error('Ошибка регистрации с командой:', e);
+                                setMessage(e.response?.data?.error || 'Ошибка при регистрации');
+                                setTimeout(() => setMessage(''), 5000);
+                            }
+                        }}
+                        tournamentId={tournament?.id}
+                        user={user}
                     />
                 )}
 

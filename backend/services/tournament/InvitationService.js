@@ -67,7 +67,10 @@ class InvitationService {
         );
 
         // Отправляем уведомление приглашенному пользователю
-        const notificationMessage = `Вы приглашены в турнир "${tournament.name}" пользователем ${inviterUsername}`;
+        const isTeamTournament = tournament.participant_type === 'team';
+        const notificationMessage = isTeamTournament 
+            ? `Вы приглашены в командный турнир "${tournament.name}" пользователем ${inviterUsername}. Перейдите на страницу турнира и зарегистрируйте свою команду для участия.`
+            : `Вы приглашены в турнир "${tournament.name}" пользователем ${inviterUsername}`;
         const notificationResult = await pool.query(
             'INSERT INTO notifications (user_id, message, type, tournament_id, invitation_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
             [user.id, notificationMessage, 'tournament_invite', tournamentId, invitationResult.rows[0].id]
