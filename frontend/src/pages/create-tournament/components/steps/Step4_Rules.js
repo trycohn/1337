@@ -9,6 +9,7 @@ import axios from 'axios';
 function Step4_Rules({ data, format, basicInfo, onChange }) {
   const [cs2Maps, setCs2Maps] = useState([]);
   const [loadingMaps, setLoadingMaps] = useState(false);
+  const [mapsInitialized, setMapsInitialized] = useState(false); // 🆕 Флаг инициализации
 
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
@@ -16,9 +17,10 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
 
   const isCS2 = basicInfo.game === 'counter strike 2';
 
-  // Загрузка карт CS2 из БД
+  // Загрузка карт CS2 из БД (только один раз)
   useEffect(() => {
     if (!isCS2) return;
+    if (cs2Maps.length > 0) return; // Уже загружены
 
     const fetchMaps = async () => {
       try {
@@ -26,14 +28,6 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
         const response = await axios.get('/api/maps?game=Counter-Strike 2');
         setCs2Maps(response.data);
         console.log('✅ Загружено карт CS2:', response.data.length);
-        
-        // Автоматически выбираем все карты при включении лобби
-        if (data.lobby_enabled && (!data.selected_maps || data.selected_maps.length === 0)) {
-          const allMapNames = response.data.map(m => m.name);
-          if (allMapNames.length === 7) {
-            handleChange('selected_maps', allMapNames);
-          }
-        }
       } catch (error) {
         console.error('❌ Ошибка загрузки карт CS2:', error);
         // Fallback: стандартный пул карт
@@ -53,7 +47,22 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
     };
 
     fetchMaps();
-  }, [isCS2, data.lobby_enabled, data.selected_maps, handleChange]);
+  }, [isCS2, cs2Maps.length]);
+
+  // Автовыбор всех карт при включении лобби (только один раз)
+  useEffect(() => {
+    if (!data.lobby_enabled) return;
+    if (!cs2Maps.length) return;
+    if (mapsInitialized) return; // Уже инициализировано
+    if (data.selected_maps && data.selected_maps.length > 0) return; // Уже есть выбранные
+
+    // Автоматически выбираем все карты
+    const allMapNames = cs2Maps.map(m => m.name);
+    if (allMapNames.length === 7) {
+      handleChange('selected_maps', allMapNames);
+      setMapsInitialized(true); // 🆕 Помечаем что инициализация выполнена
+    }
+  }, [data.lobby_enabled, cs2Maps.length, mapsInitialized, data.selected_maps]); // Убрали handleChange из зависимостей
 
   // Обработчик переключения карты
   const handleMapToggle = (mapName) => {
@@ -234,73 +243,29 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
                     </div>
 
                     {/* Сетка карт */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                      gap: '12px'
-                    }}>
+                    <div className="maps-grid">
                       {cs2Maps.map((map) => {
                         const isSelected = (data.selected_maps || []).includes(map.name);
                         
                         return (
                           <label
                             key={map.id}
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              padding: '12px',
-                              background: isSelected ? '#1a0000' : '#1a1a1a',
-                              border: `2px solid ${isSelected ? '#ff0000' : '#333'}`,
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              userSelect: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = '#666';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.borderColor = '#333';
-                              }
-                            }}
+                            className={`map-card ${isSelected ? 'selected' : ''}`}
                           >
                             <input
                               type="checkbox"
                               value={map.name}
                               checked={isSelected}
                               onChange={() => handleMapToggle(map.name)}
-                              style={{ display: 'none' }}
                             />
                             
                             {/* Иконка чекбокса */}
-                            <div style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '4px',
-                              border: `2px solid ${isSelected ? '#ff0000' : '#666'}`,
-                              background: isSelected ? '#ff0000' : 'transparent',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginBottom: '8px',
-                              fontSize: '14px',
-                              fontWeight: 'bold',
-                              color: '#fff'
-                            }}>
+                            <div className="map-checkbox-icon">
                               {isSelected && '✓'}
                             </div>
 
                             {/* Название карты */}
-                            <span style={{
-                              fontSize: '14px',
-                              fontWeight: '600',
-                              color: isSelected ? '#fff' : '#ccc',
-                              textAlign: 'center'
-                            }}>
+                            <span className="map-name">
                               {map.display_name || map.name.replace('de_', '').charAt(0).toUpperCase() + map.name.replace('de_', '').slice(1)}
                             </span>
                           </label>

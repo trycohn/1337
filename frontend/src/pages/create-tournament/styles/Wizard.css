@@ -262,6 +262,82 @@
 }
 
 /* ============================================
+   MAPS GRID - ВЫБОР КАРТ CS2
+   ============================================ */
+
+.maps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.map-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.map-card:hover {
+  border-color: #666;
+}
+
+.map-card.selected {
+  background: #1a0000;
+  border-color: #ff0000;
+}
+
+.map-card.selected:hover {
+  border-color: #ff0000;
+}
+
+.map-card input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-checkbox-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid #666;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.map-card.selected .map-checkbox-icon {
+  border-color: #ff0000;
+  background: #ff0000;
+}
+
+.map-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+  text-align: center;
+  transition: color 0.2s ease;
+}
+
+.map-card.selected .map-name {
+  color: #fff;
+}
+
+/* ============================================
    АДАПТИВНОСТЬ
    ============================================ */
 
