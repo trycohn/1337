@@ -31,6 +31,8 @@ const TournamentParticipants = ({
         cs2_premier_rank: ''
     });
     const [message, setMessage] = useState('');
+    const [showPlayersList, setShowPlayersList] = useState(false);
+    const [teamPlayers, setTeamPlayers] = useState([{ nickname: '' }]);
     
     // 🔗 СОСТОЯНИЕ ДЛЯ РЕФЕРАЛЬНОГО МОДАЛЬНОГО ОКНА
     const [referralModal, setReferralModal] = useState(false);
@@ -188,41 +190,102 @@ const TournamentParticipants = ({
         }
     }, [tournamentManagement, onTournamentUpdate]);
 
-    // Добавление незарегистрированного пользователя
+    // Добавление незарегистрированного пользователя/команды
     const addUnregisteredParticipant = useCallback(async () => {
+        const isTeamTournament = tournament?.participant_type === 'team';
+        const entityName = isTeamTournament ? 'команду' : 'участника';
+        
         if (!newParticipantData.display_name.trim()) {
-            setMessage('❌ Укажите имя участника');
+            setMessage(`❌ Укажите ${isTeamTournament ? 'название команды' : 'имя участника'}`);
             setTimeout(() => setMessage(''), 3000);
             return;
         }
 
+        console.log('🔍 [TournamentParticipants] addUnregisteredParticipant вызван:', {
+            tournament: tournament?.participant_type,
+            isTeamTournament,
+            data: newParticipantData
+        });
+
         try {
-            const result = await tournamentManagement.addUnregisteredParticipant(newParticipantData);
-            
-            if (result.success) {
-                setMessage(`✅ ${newParticipantData.display_name} добавлен в турнир`);
-                setNewParticipantModal(false);
-                setNewParticipantData({
-                    display_name: '',
-                    email: '',
-                    faceit_elo: '',
-                    cs2_premier_rank: ''
+            if (isTeamTournament) {
+                // Для командных турниров используем новый API
+                console.log('🎯 [TournamentParticipants] Добавляем команду через /add-team');
+                
+                const token = localStorage.getItem('token');
+                
+                // Собираем игроков если указаны
+                const players = showPlayersList 
+                    ? teamPlayers.map(p => p.nickname.trim()).filter(n => n.length > 0)
+                    : [];
+                
+                const payload = {
+                    teamName: newParticipantData.display_name.trim(),
+                    players
+                };
+                
+                console.log('📡 [TournamentParticipants] Отправляем команду:', payload);
+                
+                const response = await fetch(`/api/tournaments/${tournament.id}/add-team`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
                 });
                 
-                // Обновляем данные турнира
-                if (onTournamentUpdate) {
-                    await onTournamentUpdate();
+                const data = await response.json();
+                
+                if (response.ok) {
+                    setMessage(`✅ Команда "${newParticipantData.display_name}" добавлена в турнир`);
+                    setNewParticipantModal(false);
+                    setNewParticipantData({
+                        display_name: '',
+                        email: '',
+                        faceit_elo: '',
+                        cs2_premier_rank: ''
+                    });
+                    setShowPlayersList(false);
+                    setTeamPlayers([{ nickname: '' }]);
+                    
+                    if (onTournamentUpdate) {
+                        await onTournamentUpdate();
+                    }
+                } else {
+                    setMessage(`❌ ${data.error || 'Ошибка при добавлении команды'}`);
                 }
             } else {
-                setMessage(`❌ ${result.message || 'Ошибка при добавлении участника'}`);
+                // Для solo турниров используем существующий метод
+                console.log('🎯 [TournamentParticipants] Добавляем участника через /add-participant');
+                
+                const result = await tournamentManagement.addUnregisteredParticipant(newParticipantData);
+                
+                if (result.success) {
+                    setMessage(`✅ ${newParticipantData.display_name} добавлен в турнир`);
+                    setNewParticipantModal(false);
+                    setNewParticipantData({
+                        display_name: '',
+                        email: '',
+                        faceit_elo: '',
+                        cs2_premier_rank: ''
+                    });
+                    
+                    // Обновляем данные турнира
+                    if (onTournamentUpdate) {
+                        await onTournamentUpdate();
+                    }
+                } else {
+                    setMessage(`❌ ${result.message || 'Ошибка при добавлении участника'}`);
+                }
             }
         } catch (error) {
-            console.error('❌ Ошибка добавления участника:', error);
-            setMessage('❌ Ошибка при добавлении участника');
+            console.error('❌ Ошибка добавления:', error);
+            setMessage(`❌ Ошибка при добавлении ${entityName}`);
         } finally {
             setTimeout(() => setMessage(''), 5000);
         }
-    }, [tournamentManagement, newParticipantData, onTournamentUpdate]);
+    }, [tournamentManagement, newParticipantData, onTournamentUpdate, tournament]);
 
     // Удаление участника
     const removeParticipant = useCallback(async (participantId, participantName) => {
@@ -649,17 +712,21 @@ const TournamentParticipants = ({
                 <div className="modal-overlay" onClick={() => setNewParticipantModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Добавить незарегистрированного участника</h3>
+                            <h3>➕ Добавить {tournament?.participant_type === 'team' ? 'незарегистрированную команду' : 'незарегистрированного участника'}</h3>
                             <button 
                                 className="modal-close"
-                                onClick={() => setNewParticipantModal(false)}
+                                onClick={() => {
+                                    setNewParticipantModal(false);
+                                    setShowPlayersList(false);
+                                    setTeamPlayers([{ nickname: '' }]);
+                                }}
                             >
                                 ✕
                             </button>
                         </div>
                         <div className="modal-body">
                             <div className="form-group">
-                                <label htmlFor="display_name">Имя участника *</label>
+                                <label htmlFor="display_name">{tournament?.participant_type === 'team' ? 'Название команды' : 'Имя участника'} *</label>
                                 <input
                                     type="text"
                                     id="display_name"
@@ -668,10 +735,80 @@ const TournamentParticipants = ({
                                         ...prev,
                                         display_name: e.target.value
                                     }))}
-                                    placeholder="Введите имя участника"
+                                    placeholder={tournament?.participant_type === 'team' ? 'Введите название команды' : 'Введите имя участника'}
                                     required
                                 />
                             </div>
+                            
+                            {/* Для командных турниров - добавление игроков */}
+                            {tournament?.participant_type === 'team' && (
+                                <div className="form-group">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={showPlayersList}
+                                            onChange={(e) => {
+                                                setShowPlayersList(e.target.checked);
+                                                if (!e.target.checked) {
+                                                    setTeamPlayers([{ nickname: '' }]);
+                                                }
+                                            }}
+                                        />
+                                        <span style={{ marginLeft: '8px' }}>Указать игроков команды?</span>
+                                    </label>
+
+                                    {showPlayersList && (
+                                        <div style={{ marginTop: '12px' }}>
+                                            {teamPlayers.map((player, index) => (
+                                                <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={player.nickname}
+                                                        onChange={(e) => {
+                                                            const updated = [...teamPlayers];
+                                                            updated[index] = { nickname: e.target.value };
+                                                            setTeamPlayers(updated);
+                                                        }}
+                                                        placeholder={`Ник игрока ${index + 1}`}
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                    {teamPlayers.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setTeamPlayers(teamPlayers.filter((_, i) => i !== index))}
+                                                            style={{
+                                                                padding: '8px 12px',
+                                                                background: '#ff0000',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => setTeamPlayers([...teamPlayers, { nickname: '' }])}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    background: '#111',
+                                                    color: '#fff',
+                                                    border: '1px solid #ff0000',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    marginTop: '4px'
+                                                }}
+                                            >
+                                                ➕ Добавить игрока
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label htmlFor="email">Email</label>
                                 <input
@@ -724,7 +861,7 @@ const TournamentParticipants = ({
                                 onClick={addUnregisteredParticipant}
                                 disabled={!newParticipantData.display_name.trim()}
                             >
-                                Добавить участника
+                                Добавить {tournament?.participant_type === 'team' ? 'команду' : 'участника'}
                             </button>
                         </div>
                     </div>
