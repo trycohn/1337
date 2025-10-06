@@ -758,8 +758,7 @@ class MatchLobbyService {
                 // Проверяем занят ли сервер
                 const statusResult = await rconService.executeCommand(
                     server.id,
-                    'matchzy_is_match_setup',
-                    { userId: userId, lobbyId: lobbyId, logToDb: false } // ВРЕМЕННО отключено
+                    'matchzy_is_match_setup'
                 );
                 
                 const statusResponse = statusResult.response || '';
@@ -786,12 +785,7 @@ class MatchLobbyService {
                 // Отправляем команду загрузки (НЕ ЖДЕМ ответа - команда выполняется в фоне)
                 rconService.executeCommand(
                     server.id,
-                    `matchzy_loadmatch_url "${fullConfigUrl}"`,
-                    {
-                        userId: userId,
-                        lobbyId: lobbyId,
-                        logToDb: false // ВРЕМЕННО отключено
-                    }
+                    `matchzy_loadmatch_url "${fullConfigUrl}"`
                 ).catch(err => {
                     console.error(`⚠️ [Tournament] Ошибка загрузки конфига на ${server.name}:`, err.message);
                 });

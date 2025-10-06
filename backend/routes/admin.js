@@ -1832,8 +1832,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 
                                 const statusResult = await rconService.executeCommand(
                                     server.id,
-                                    'matchzy_is_match_setup',
-                                    { userId: req.user.id, lobbyId: lobbyId, logToDb: false } // ВРЕМЕННО отключено
+                                    'matchzy_is_match_setup'
                                 );
                                 
                                 console.log(`📥 [T+${Date.now()-T0}ms] RCON команда вернулась, обрабатываем результат...`);
@@ -1864,8 +1863,7 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 // Отправляем команду загрузки (НЕ ЖДЕМ ответа - команда выполняется в фоне)
                                 rconService.executeCommand(
                                     server.id,
-                                    `matchzy_loadmatch_url "${fullConfigUrl}"`,
-                                    { userId: req.user.id, lobbyId: lobbyId, logToDb: false } // ВРЕМЕННО отключено
+                                    `matchzy_loadmatch_url "${fullConfigUrl}"`
                                 ).catch(err => {
                                     console.error(`⚠️ Ошибка загрузки конфига на ${server.name}:`, err.message);
                                 });
