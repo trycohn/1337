@@ -1,0 +1,132 @@
+/* frontend/src/pages/create-tournament/styles/AutoSaveIndicator.css */
+
+/* ============================================
+   AUTOSAVE INDICATOR - ИНДИКАТОР АВТОСОХРАНЕНИЯ
+   ============================================ */
+
+.autosave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease;
+}
+
+/* Состояние: Сохранение */
+.autosave-indicator.saving {
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  color: #ffa500;
+}
+
+/* Состояние: Сохранено */
+.autosave-indicator.saved {
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  color: #4caf50;
+}
+
+/* Состояние: Ошибка */
+.autosave-indicator.error {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #ff6b6b;
+}
+
+/* Спиннер загрузки */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: #ffa500;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Галочка (сохранено) */
+.checkmark {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #4caf50;
+  animation: scaleIn 0.3s ease;
+}
+
+/* Иконка ошибки */
+.error-icon {
+  font-size: 16px;
+  animation: shake 0.5s ease;
+}
+
+/* Текст индикатора */
+.indicator-text {
+  white-space: nowrap;
+}
+
+/* ============================================
+   АНИМАЦИИ
+   ============================================ */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* ============================================
+   АДАПТИВНОСТЬ
+   ============================================ */
+
+@media (max-width: 768px) {
+  .autosave-indicator {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .indicator-text {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+

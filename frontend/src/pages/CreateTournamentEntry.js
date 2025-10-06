@@ -1,20 +1,69 @@
 // frontend/src/pages/CreateTournamentEntry.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import ModeSelector from './create-tournament/components/ModeSelector';
 import CreateTournamentWizard from './create-tournament/CreateTournamentWizard';
 import CreateTournamentManual from './create-tournament/CreateTournamentManual';
+import DraftRecoveryModal from './create-tournament/components/DraftRecoveryModal';
 import './create-tournament/styles/CreateTournamentEntry.css';
 
 /**
  * Точка входа для создания турнира
  * Позволяет пользователю выбрать между Wizard и ручной настройкой
+ * Проверяет наличие сохраненного черновика
  */
 function CreateTournamentEntry() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [mode, setMode] = useState(null); // null | 'wizard' | 'manual'
+  const [savedDraft, setSavedDraft] = useState(null); // Найденный черновик
+  const [showDraftModal, setShowDraftModal] = useState(false); // Показывать модалку
+  const [checkingDraft, setCheckingDraft] = useState(true); // Проверка черновика
+  const [draftToLoad, setDraftToLoad] = useState(null); // Черновик для загрузки в Wizard
+
+  // Проверка наличия сохраненного черновика
+  useEffect(() => {
+    const checkForDraft = async () => {
+      if (!user) {
+        setCheckingDraft(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setCheckingDraft(false);
+          return;
+        }
+
+        const response = await axios.get('/api/tournaments/drafts', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const drafts = response.data.drafts || [];
+        
+        if (drafts.length > 0) {
+          // Берем последний сохраненный черновик
+          const latestDraft = drafts[0];
+          setSavedDraft(latestDraft);
+          setShowDraftModal(true);
+          console.log('📋 Найден сохраненный черновик:', latestDraft);
+        }
+      } catch (error) {
+        console.error('❌ Ошибка проверки черновика:', error);
+      } finally {
+        setCheckingDraft(false);
+      }
+    };
+
+    if (!authLoading && user) {
+      checkForDraft();
+    } else {
+      setCheckingDraft(false);
+    }
+  }, [user, authLoading]);
 
   // Проверка верификации
   const getVerificationStatus = () => {
@@ -24,12 +73,46 @@ function CreateTournamentEntry() {
     return { canCreate: true, reason: 'verified' };
   };
 
+  // Восстановление черновика
+  const handleRestoreDraft = () => {
+    setDraftToLoad(savedDraft);
+    setShowDraftModal(false);
+    setMode('wizard'); // Открываем Wizard с черновиком
+  };
+
+  // Удаление черновика
+  const handleDeleteDraft = async () => {
+    if (!window.confirm('Вы уверены? Все несохраненные данные будут удалены.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/tournaments/drafts/${savedDraft.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('🗑️ Черновик удален');
+      setSavedDraft(null);
+      setShowDraftModal(false);
+    } catch (error) {
+      console.error('❌ Ошибка удаления черновика:', error);
+      alert('Ошибка удаления черновика');
+    }
+  };
+
+  // Начать создание нового (игнорировать черновик)
+  const handleStartNew = () => {
+    setShowDraftModal(false);
+    // Не удаляем черновик, просто закрываем модалку
+  };
+
   // Отображение загрузки
-  if (authLoading) {
+  if (authLoading || checkingDraft) {
     return (
       <div className="create-tournament-entry loading">
         <div className="loading-spinner"></div>
-        <p>Проверка авторизации...</p>
+        <p>{authLoading ? 'Проверка авторизации...' : 'Проверка черновиков...'}</p>
       </div>
     );
   }
@@ -90,7 +173,22 @@ function CreateTournamentEntry() {
   // Режим выбран - показываем соответствующий компонент
   return (
     <div className="create-tournament-entry">
-      {mode === 'wizard' && <CreateTournamentWizard onBack={() => setMode(null)} />}
+      {/* Модалка восстановления черновика */}
+      {showDraftModal && savedDraft && (
+        <DraftRecoveryModal
+          draft={savedDraft}
+          onRestore={handleRestoreDraft}
+          onDelete={handleDeleteDraft}
+          onCancel={handleStartNew}
+        />
+      )}
+
+      {mode === 'wizard' && (
+        <CreateTournamentWizard 
+          onBack={() => setMode(null)} 
+          initialDraft={draftToLoad} // 🆕 Передаем черновик для восстановления
+        />
+      )}
       {mode === 'manual' && <CreateTournamentManual onBack={() => setMode(null)} />}
     </div>
   );

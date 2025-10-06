@@ -13,6 +13,7 @@ import {
 // Компоненты Wizard
 import WizardProgress from './components/WizardProgress';
 import WizardNavigation from './components/WizardNavigation';
+import AutoSaveIndicator from './components/AutoSaveIndicator';
 
 // Шаги Wizard (временно заглушки, реализуем позже)
 import Step1_Template from './components/steps/Step1_Template';
@@ -28,13 +29,21 @@ import './styles/Wizard.css';
  * Wizard-интерфейс создания турнира
  * Пошаговый процесс с автосохранением и предпросмотром
  */
-function CreateTournamentWizard({ onBack }) {
+function CreateTournamentWizard({ onBack, initialDraft }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { runWithLoader } = useLoaderAutomatic();
 
   // Текущий шаг (1-6)
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(
+    initialDraft?.current_step || 1 // 🆕 Восстанавливаем шаг из черновика
+  );
+
+  // 🆕 Статус автосохранения
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [lastSavedAt, setLastSavedAt] = useState(
+    initialDraft?.last_saved_at ? new Date(initialDraft.last_saved_at) : null
+  );
 
   // Данные всех шагов
   const [wizardData, setWizardData] = useState({
@@ -94,8 +103,25 @@ function CreateTournamentWizard({ onBack }) {
     },
   });
 
+  // 🆕 Загрузка данных из черновика при инициализации
+  useEffect(() => {
+    if (initialDraft && initialDraft.draft_data) {
+      console.log('📋 Восстанавливаем черновик:', initialDraft);
+      setWizardData(initialDraft.draft_data);
+      
+      // Показываем уведомление
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  }, [initialDraft]);
+
   // Сохранение черновика (автосохранение каждые 30 секунд)
   useEffect(() => {
+    // Не сохраняем если данные пустые (первая загрузка)
+    if (!wizardData.basicInfo.name && !wizardData.format.format) {
+      return;
+    }
+
     const autoSaveInterval = setInterval(() => {
       saveDraft();
     }, 30000);
@@ -110,6 +136,9 @@ function CreateTournamentWizard({ onBack }) {
       const token = localStorage.getItem('token');
       if (!token) return;
 
+      // Показываем индикатор сохранения
+      setSaveStatus('saving');
+
       await axios.post(
         '/api/tournaments/drafts',
         {
@@ -120,8 +149,26 @@ function CreateTournamentWizard({ onBack }) {
       );
       
       console.log('✅ Черновик автоматически сохранен');
+      
+      // Успешное сохранение
+      setSaveStatus('saved');
+      setLastSavedAt(new Date());
+      
+      // Через 3 секунды скрываем индикатор "Сохранено"
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+      
     } catch (error) {
       console.error('❌ Ошибка автосохранения черновика:', error);
+      
+      // Показываем ошибку
+      setSaveStatus('error');
+      
+      // Через 5 секунд скрываем ошибку
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 5000);
     }
   }, [wizardData, currentStep]);
 
@@ -413,10 +460,20 @@ function CreateTournamentWizard({ onBack }) {
         <button className="btn-back" onClick={onBack}>
           ← Назад к выбору режима
         </button>
-        <h1>Мастер создания турнира</h1>
-        <div className="auto-save-indicator">
-          💾 Автосохранение включено
-        </div>
+        <h1>
+          Мастер создания турнира
+          {initialDraft && (
+            <span style={{ 
+              fontSize: '14px', 
+              fontWeight: 'normal', 
+              color: '#888', 
+              marginLeft: '12px' 
+            }}>
+              (восстановлено из черновика)
+            </span>
+          )}
+        </h1>
+        <AutoSaveIndicator status={saveStatus} lastSavedAt={lastSavedAt} />
       </div>
 
       {/* Прогресс-бар */}
