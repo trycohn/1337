@@ -1,7 +1,7 @@
 // frontend/src/pages/create-tournament/components/steps/Step1_Template.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import '../styles/Step1_Template.css';
+import '../../styles/Step1_Template.css';
 
 /**
  * Шаг 1: Выбор шаблона турнира
