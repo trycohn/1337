@@ -326,7 +326,6 @@ function CreateTournamentManual({ onBack }) {
   const handleLogoChange = useCallback((e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    setLogoFile(file);
     const url = URL.createObjectURL(file);
     setLogoPreview(url);
   }, []);
