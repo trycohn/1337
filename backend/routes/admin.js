@@ -1828,14 +1828,20 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 console.log(`⏳ [T+${Date.now()-T0}ms] Проверка сервера ${server.name} (${server.host}:${server.port})...`);
                                 
                                 // Проверяем занят ли сервер
+                                console.log(`🔍 [T+${Date.now()-T0}ms] Отправка matchzy_is_match_setup...`);
+                                
                                 const statusResult = await rconService.executeCommand(
                                     server.id,
                                     'matchzy_is_match_setup',
                                     { userId: req.user.id, lobbyId: lobbyId, logToDb: true }
                                 );
                                 
+                                console.log(`📥 [T+${Date.now()-T0}ms] RCON команда вернулась, обрабатываем результат...`);
+                                console.log(`📥 [T+${Date.now()-T0}ms] statusResult:`, JSON.stringify(statusResult));
+                                
                                 const statusResponse = statusResult.response || '';
                                 console.log(`📋 [T+${Date.now()-T0}ms] Статус от ${server.name}:`, statusResponse);
+                                console.log(`📋 [T+${Date.now()-T0}ms] Тип response:`, typeof statusResponse, 'Длина:', statusResponse.length);
                                 
                                 // Парсим ответ: "matchzy_is_match_setup = 0" или "matchzy_is_match_setup = 1"
                                 const match = statusResponse.match(/matchzy_is_match_setup\s*=\s*(\d+)/i);

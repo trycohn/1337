@@ -103,12 +103,16 @@ class RconService {
             // Выполняем команду с уменьшенным таймаутом
             const cmdTimeout = command.includes('matchzy_is_match_setup') ? 3000 : this.commandTimeout;
             
+            console.log(`🔹 RCON отправка команды: ${command}`);
+            
             response = await Promise.race([
                 rcon.send(command),
                 new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Timeout')), cmdTimeout)
                 )
             ]);
+            
+            console.log(`🔹 RCON ответ получен, длина: ${response ? response.length : 0} символов`);
             
             status = 'success';
             console.log(`✅ RCON команда выполнена на ${server.name}: ${command}`);
@@ -121,14 +125,17 @@ class RconService {
             // Закрываем соединение если не кешируем
             if (shouldCloseConnection && rcon) {
                 try {
+                    console.log(`🔹 Закрываем RCON соединение...`);
                     await rcon.end();
+                    console.log(`🔹 RCON соединение закрыто`);
                 } catch (e) {
-                    // Игнорируем ошибки закрытия
+                    console.error(`⚠️ Ошибка закрытия RCON:`, e.message);
                 }
             }
         }
         
         const duration = Date.now() - startTime;
+        console.log(`🔹 Общая длительность команды: ${duration}ms`);
         
         // Логируем в БД
         if (logToDb && server) {
