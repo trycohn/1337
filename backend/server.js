@@ -351,8 +351,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/teams', teamsRouter);
 app.use('/api/games', gamesRouter);
+app.use('/api/tournaments', tournamentDraftsRouter); // 🆕 API черновиков турниров (ДОЛЖЕН БЫТЬ ПЕРЕД modularTournamentsRouter!)
 app.use('/api/tournaments', modularTournamentsRouter); // 🎯 ЕДИНСТВЕННЫЙ АКТИВНЫЙ РОУТЕР (модульная архитектура v2.0)
-app.use('/api/tournaments', tournamentDraftsRouter); // 🆕 API черновиков турниров (подключается к /api/tournaments/drafts)
 app.use('/api/tournament-templates', tournamentTemplatesRouter); // 🆕 API шаблонов турниров (Wizard Step 1)
 app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);

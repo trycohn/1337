@@ -30,7 +30,6 @@ function CreateTournamentManual({ onBack }) {
   const { user, loading: authLoading } = useAuth();
   const [games, setGames] = useState([]);
   const [cs2Maps, setCs2Maps] = useState([]);
-  const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const titleRef = useRef(null);
   const fileInputRef = useRef(null);
