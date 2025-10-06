@@ -101,7 +101,7 @@ const useTournamentManagement = (tournamentId) => {
         }
     }, [getAuthHeaders]);
 
-    // Добавление зарегистрированного участника
+    // Добавление зарегистрированного участника (напрямую, без приглашения)
     const addRegisteredParticipant = useCallback(async (userId, userName) => {
         setIsLoading(true);
         setError(null);
@@ -117,6 +117,33 @@ const useTournamentManagement = (tournamentId) => {
             return { success: true, data: response.data };
         } catch (error) {
             const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при добавлении участника';
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        } finally {
+            setIsLoading(false);
+        }
+    }, [tournamentId, getAuthHeaders]);
+
+    // Приглашение зарегистрированного участника (отправка приглашения с уведомлением)
+    const inviteRegisteredParticipant = useCallback(async (userId, userName) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            console.log('📧 Отправляем приглашение пользователю:', { userId, userName, tournamentId });
+            
+            const response = await axios.post(`/api/tournaments/${tournamentId}/invite`, {
+                username: userName, // Backend ожидает username, а не participantName
+                // userId передается автоматически через username
+            }, {
+                headers: getAuthHeaders()
+            });
+
+            console.log('✅ Приглашение успешно отправлено:', response.data);
+            return { success: true, data: response.data, message: 'Приглашение отправлено' };
+        } catch (error) {
+            console.error('❌ Ошибка при отправке приглашения:', error);
+            const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Ошибка при отправке приглашения';
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -499,6 +526,7 @@ const useTournamentManagement = (tournamentId) => {
         addGuestParticipant,
         searchUsers,
         addRegisteredParticipant,
+        inviteRegisteredParticipant,
         removeParticipant,
         startTournament,
         endTournament,
@@ -506,7 +534,7 @@ const useTournamentManagement = (tournamentId) => {
         saveMatchResult,
         
         // 🆕 ALIAS-ФУНКЦИИ ДЛЯ СОВМЕСТИМОСТИ
-        inviteParticipant: addRegisteredParticipant, // Алиас для приглашения зарегистрированного пользователя
+        inviteParticipant: inviteRegisteredParticipant, // Алиас для ПРИГЛАШЕНИЯ зарегистрированного пользователя
         addUnregisteredParticipant: addGuestParticipant, // Алиас для добавления незарегистрированного участника
         
         // Утилиты
