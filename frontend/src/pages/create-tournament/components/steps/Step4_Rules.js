@@ -16,6 +16,16 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
   };
 
   const isCS2 = basicInfo.game === 'counter strike 2';
+  
+  // 🔍 DEBUG: Проверяем условия для листа ожидания
+  console.log('🔍 [Step4_Rules] Проверка условий листа ожидания:', {
+    format: format?.format,
+    participant_type: format?.participant_type,
+    isSingleElimination: format?.format === 'single_elimination',
+    isDoubleElimination: format?.format === 'double_elimination',
+    isTeam: format?.participant_type === 'team',
+    shouldShow: format && (format.format === 'single_elimination' || format.format === 'double_elimination') && format.participant_type === 'team'
+  });
 
   // Загрузка карт CS2 из БД (только один раз)
   useEffect(() => {
