@@ -159,7 +159,7 @@ function CreateTournamentManual({ onBack }) {
             final_match_format: formData.enable_final_format ? formData.final_match_format : null, // 🆕 Особый формат для финалов
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
             // 🆕 Лист ожидания для командных турниров
-            waiting_list_enabled: formData.participant_type === 'team' && formData.format !== 'mix' ? formData.waiting_list_enabled : false,
+            waiting_list_enabled: formData.participant_type === 'team' && (formData.format === 'single' || formData.format === 'double') ? formData.waiting_list_enabled : false,
             waiting_list_require_faceit: formData.waiting_list_enabled ? formData.waiting_list_require_faceit : false,
             waiting_list_require_steam: formData.waiting_list_enabled ? formData.waiting_list_require_steam : false,
             access_type: (formData.tournament_type === 'closed' || formData.tournament_type === 'hidden') ? 'closed' : 'open',
@@ -780,7 +780,7 @@ function CreateTournamentManual({ onBack }) {
             )}
 
             {/* Лист ожидания для командных турниров Single/Double Elimination */}
-            {(formData.format === 'single_elimination' || formData.format === 'double_elimination') && formData.participant_type === 'team' && (
+            {(formData.format === 'single' || formData.format === 'double') && formData.participant_type === 'team' && (
               <div className="form-group full-width">
                 <label className="checkbox-label">
                   <input
