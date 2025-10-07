@@ -168,7 +168,12 @@ function AdminPanel() {
         name: '',
         host: '',
         port: 27015,
-        rcon_password: ''
+        rcon_password: '',
+        db_host: '',
+        db_port: 3306,
+        db_user: '',
+        db_password: '',
+        db_name: ''
     });
 
     async function adminFetchUserById() {
@@ -345,7 +350,12 @@ function AdminPanel() {
             name: server.name,
             host: server.host,
             port: server.port,
-            rcon_password: ''
+            rcon_password: '',
+            db_host: server.db_host || '',
+            db_port: server.db_port || 3306,
+            db_user: server.db_user || '',
+            db_password: '',
+            db_name: server.db_name || ''
         });
         setShowServerForm(true);
     }
@@ -357,7 +367,12 @@ function AdminPanel() {
             name: '',
             host: '',
             port: 27015,
-            rcon_password: ''
+            rcon_password: '',
+            db_host: '',
+            db_port: 3306,
+            db_user: '',
+            db_password: '',
+            db_name: ''
         });
     }
 
@@ -2270,6 +2285,77 @@ ${reports.map((r, i) => `${i+1}. ${r.reviewer_name}: ${r.fairness_rating || r.be
                                         value={serverForm.rcon_password}
                                         onChange={(e) => setServerForm({...serverForm, rcon_password: e.target.value})}
                                         placeholder={editingServer ? 'Оставьте пустым чтобы не менять' : 'Введите RCON пароль'}
+                                    />
+                                </div>
+                            </div>
+
+                            <h4 style={{ marginTop: '20px', marginBottom: '12px', color: '#fff', borderTop: '1px solid #333', paddingTop: '16px' }}>
+                                База данных (для статистики матчей)
+                            </h4>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        БД Host
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.db_host}
+                                        onChange={(e) => setServerForm({...serverForm, db_host: e.target.value})}
+                                        placeholder="localhost"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        БД Порт
+                                    </label>
+                                    <input
+                                        type="number"
+                                        className="map-input"
+                                        value={serverForm.db_port}
+                                        onChange={(e) => setServerForm({...serverForm, db_port: parseInt(e.target.value)})}
+                                        placeholder="3306"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        БД Пользователь
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.db_user}
+                                        onChange={(e) => setServerForm({...serverForm, db_user: e.target.value})}
+                                        placeholder="root"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        БД Пароль
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className="map-input"
+                                        value={serverForm.db_password}
+                                        onChange={(e) => setServerForm({...serverForm, db_password: e.target.value})}
+                                        placeholder={editingServer ? 'Оставьте пустым чтобы не менять' : 'Пароль БД'}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', color: '#fff' }}>
+                                        Название БД
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="map-input"
+                                        value={serverForm.db_name}
+                                        onChange={(e) => setServerForm({...serverForm, db_name: e.target.value})}
+                                        placeholder="matchzy_stats"
                                     />
                                 </div>
                             </div>

@@ -52,7 +52,8 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
             ...server,
             rcon_password: '***',
             server_password: server.server_password ? '***' : null,
-            gotv_password: server.gotv_password ? '***' : null
+            gotv_password: server.gotv_password ? '***' : null,
+            db_password: server.db_password ? '***' : null
         }));
         
         res.json({ success: true, servers });
@@ -84,7 +85,8 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
             ...result.rows[0],
             rcon_password: '***',
             server_password: result.rows[0].server_password ? '***' : null,
-            gotv_password: result.rows[0].gotv_password ? '***' : null
+            gotv_password: result.rows[0].gotv_password ? '***' : null,
+            db_password: result.rows[0].db_password ? '***' : null
         };
         
         res.json({ success: true, server });
@@ -105,7 +107,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
             name,
             host,
             port,
-            rcon_password
+            rcon_password,
+            db_host,
+            db_port,
+            db_user,
+            db_password,
+            db_name
         } = req.body;
         
         // Валидация обязательных полей
@@ -119,8 +126,9 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         
         const result = await pool.query(
             `INSERT INTO cs2_servers 
-            (name, host, port, rcon_password, gotv_host, gotv_port)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            (name, host, port, rcon_password, gotv_host, gotv_port,
+             db_host, db_port, db_user, db_password, db_name)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *`,
             [
                 name,
@@ -128,7 +136,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
                 serverPort,
                 rcon_password,
                 host, // GOTV использует тот же IP
-                serverPort // GOTV использует тот же порт
+                serverPort, // GOTV использует тот же порт
+                db_host || null,
+                db_port || 3306,
+                db_user || null,
+                db_password || null,
+                db_name || null
             ]
         );
         
@@ -136,7 +149,8 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
             ...result.rows[0],
             rcon_password: '***',
             server_password: result.rows[0].server_password ? '***' : null,
-            gotv_password: result.rows[0].gotv_password ? '***' : null
+            gotv_password: result.rows[0].gotv_password ? '***' : null,
+            db_password: result.rows[0].db_password ? '***' : null
         };
         
         console.log(`✅ Создан новый сервер: ${name} (${host}:${port})`);
@@ -169,7 +183,12 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             name,
             host,
             port,
-            rcon_password
+            rcon_password,
+            db_host,
+            db_port,
+            db_user,
+            db_password,
+            db_name
         } = req.body;
         
         // Проверяем существование сервера
@@ -200,6 +219,26 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             updates.push(`rcon_password = $${paramIndex++}`);
             params.push(rcon_password);
         }
+        if (db_host !== undefined) {
+            updates.push(`db_host = $${paramIndex++}`);
+            params.push(db_host || null);
+        }
+        if (db_port !== undefined) {
+            updates.push(`db_port = $${paramIndex++}`);
+            params.push(db_port || 3306);
+        }
+        if (db_user !== undefined) {
+            updates.push(`db_user = $${paramIndex++}`);
+            params.push(db_user || null);
+        }
+        if (db_password !== undefined && db_password !== '') {
+            updates.push(`db_password = $${paramIndex++}`);
+            params.push(db_password);
+        }
+        if (db_name !== undefined) {
+            updates.push(`db_name = $${paramIndex++}`);
+            params.push(db_name || null);
+        }
         
         updates.push(`updated_at = CURRENT_TIMESTAMP`);
         params.push(id);
@@ -212,7 +251,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             ...result.rows[0],
             rcon_password: '***',
             server_password: result.rows[0].server_password ? '***' : null,
-            gotv_password: result.rows[0].gotv_password ? '***' : null
+            gotv_password: result.rows[0].gotv_password ? '***' : null,
+            db_password: result.rows[0].db_password ? '***' : null
         };
         
         console.log(`✅ Сервер обновлен: ${server.name}`);
