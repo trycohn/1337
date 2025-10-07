@@ -778,6 +778,57 @@ function CreateTournamentManual({ onBack }) {
                 )}
               </div>
             )}
+
+            {/* Лист ожидания для командных турниров */}
+            {formData.format !== 'mix' && formData.participant_type === 'team' && (
+              <div className="form-group full-width">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="waiting_list_enabled"
+                    checked={formData.waiting_list_enabled}
+                    onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_enabled: e.target.checked }))}
+                    disabled={!verificationStatus.canCreate}
+                  />
+                  <span>Включить лист ожидания для соло игроков?</span>
+                </label>
+                <small className="form-hint">
+                  📋 Игроки без команд смогут заявиться в лист ожидания, после чего вы сможете добавить их в команды вручную
+                </small>
+
+                {formData.waiting_list_enabled && (
+                  <div style={{ marginTop: '16px', paddingLeft: '30px', paddingTop: '12px', borderLeft: '2px solid #ff0000' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          name="waiting_list_require_faceit"
+                          checked={formData.waiting_list_require_faceit}
+                          onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_require_faceit: e.target.checked }))}
+                          disabled={!verificationStatus.canCreate}
+                        />
+                        <span>Требовать привязку FACEIT аккаунта</span>
+                      </label>
+                      
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          name="waiting_list_require_steam"
+                          checked={formData.waiting_list_require_steam}
+                          onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_require_steam: e.target.checked }))}
+                          disabled={!verificationStatus.canCreate}
+                        />
+                        <span>Требовать привязку Steam ID</span>
+                      </label>
+                      
+                      <small className="form-hint" style={{ marginTop: '8px', color: '#888' }}>
+                        ⚠️ Игроки без требуемых привязок не смогут заявиться в лист ожидания
+                      </small>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
