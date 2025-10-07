@@ -292,7 +292,7 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
           
           // Лист ожидания для командных турниров (из шага Формат, но может быть переопределено в Правилах)
           waiting_list_enabled: wizardData.format.participant_type === 'team' && 
-                               (wizardData.format.format === 'single_elimination' || wizardData.format.format === 'double_elimination')
+                               (wizardData.format.format === 'single' || wizardData.format.format === 'double')
             ? (wizardData.format.waiting_list_enabled || false) : false,
           waiting_list_require_faceit: wizardData.format.waiting_list_enabled 
             ? (wizardData.format.waiting_list_require_faceit || false) : false,

@@ -21,10 +21,10 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
   console.log('🔍 [Step4_Rules] Проверка условий листа ожидания:', {
     format: format?.format,
     participant_type: format?.participant_type,
-    isSingleElimination: format?.format === 'single_elimination',
-    isDoubleElimination: format?.format === 'double_elimination',
+    isSingle: format?.format === 'single',
+    isDouble: format?.format === 'double',
     isTeam: format?.participant_type === 'team',
-    shouldShow: format && (format.format === 'single_elimination' || format.format === 'double_elimination') && format.participant_type === 'team'
+    shouldShow: format && (format.format === 'single' || format.format === 'double') && format.participant_type === 'team'
   });
 
   // Загрузка карт CS2 из БД (только один раз)
@@ -326,7 +326,7 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
       )}
 
       {/* Лист ожидания для командных турниров Single/Double Elimination */}
-      {format && (format.format === 'single_elimination' || format.format === 'double_elimination') && format.participant_type === 'team' && (
+      {format && (format.format === 'single' || format.format === 'double') && format.participant_type === 'team' && (
         <div className="step-section">
           <h3>📋 Лист ожидания</h3>
           
