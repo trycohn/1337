@@ -522,7 +522,7 @@ const TournamentParticipants = ({
                                         {isAdminOrCreator && (
                                             <div className="team-actions-participants">
                                                 <button 
-                                                    className="edit-team-btn-participants"
+                                                    className="btn btn-secondary"
                                                     onClick={() => {
                                                         if (!isLoadingInitial) {
                                                             setSelectedTeam(team);
@@ -534,7 +534,7 @@ const TournamentParticipants = ({
                                                     ✏️
                                                 </button>
                                                 <button 
-                                                    className="remove-team-btn-participants"
+                                                    className="btn btn-secondary"
                                                     onClick={() => !isLoadingInitial && removeParticipant(team.id, team.name)}
                                                     title="Удалить команду"
                                                 >
