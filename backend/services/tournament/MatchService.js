@@ -219,6 +219,223 @@ class MatchService {
     }
 
     /**
+     * 🔄 Редактирование завершенного матча с ограничениями
+     * @param {number} matchId - ID матча
+     * @param {Object} editData - Данные для редактирования
+     * @param {number} userId - ID пользователя
+     * @returns {Object} Результат редактирования
+     */
+    static async editCompletedMatch(matchId, editData, userId) {
+        console.log(`✏️ [MatchService] Редактирование завершенного матча ${matchId}`);
+        console.log(`📊 Данные для редактирования:`, {
+            maps_data: editData.maps_data?.length || 0,
+            userId
+        });
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // 1. Получаем данные матча
+            const matchResult = await client.query(
+                `SELECT m.*, t.format as tournament_format, t.id as tournament_id
+                 FROM matches m 
+                 JOIN tournaments t ON m.tournament_id = t.id 
+                 WHERE m.id = $1`,
+                [matchId]
+            );
+            
+            if (matchResult.rows.length === 0) {
+                throw new Error('Матч не найден');
+            }
+            
+            const match = matchResult.rows[0];
+            console.log(`✅ Матч найден: ${match.team1_id} vs ${match.team2_id}, статус: ${match.status}`);
+            
+            // 2. Проверка прав доступа
+            await this._checkMatchAccess(match.tournament_id, userId);
+            
+            // 3. Проверяем, что матч завершен
+            if (match.status !== 'completed') {
+                throw new Error('Можно редактировать только завершенные матчи');
+            }
+            
+            // 4. Проверяем наличие всех участников
+            if (!match.team1_id || !match.team2_id) {
+                throw new Error('Не все участники матча определены. Редактирование невозможно.');
+            }
+            
+            // 5. Проверяем, есть ли последующие матчи, которые уже сыграны
+            const hasPlayedNextMatches = await this._checkPlayedNextMatches(client, match);
+            
+            console.log(`🔍 Проверка последующих матчей:`, {
+                hasPlayedNextMatches,
+                next_match_id: match.next_match_id,
+                loser_next_match_id: match.loser_next_match_id
+            });
+            
+            // 6. Если есть сыгранные следующие матчи, разрешаем только редактирование карт
+            if (hasPlayedNextMatches) {
+                console.log(`⚠️ Есть сыгранные следующие матчи. Разрешено только редактирование счета на картах.`);
+                
+                // Проверяем, что пытаются изменить только данные карт
+                if (editData.winner_team_id && editData.winner_team_id !== match.winner_team_id) {
+                    throw new Error('Нельзя изменить победителя матча, так как уже сыграны следующие матчи с участием команд из этого матча');
+                }
+                
+                // Обновляем только данные карт
+                if (editData.maps_data && Array.isArray(editData.maps_data)) {
+                    await client.query(
+                        `UPDATE matches SET maps_data = $1 WHERE id = $2`,
+                        [JSON.stringify(editData.maps_data), matchId]
+                    );
+                    
+                    console.log(`✅ Обновлены данные карт для матча ${matchId}`);
+                }
+            } else {
+                // 7. Если нет сыгранных следующих матчей, разрешаем полное редактирование
+                console.log(`✅ Нет сыгранных следующих матчей. Разрешено полное редактирование.`);
+                
+                let finalWinnerId = editData.winner_team_id || match.winner_team_id;
+                let finalScore1 = editData.score1 !== undefined ? editData.score1 : match.score1;
+                let finalScore2 = editData.score2 !== undefined ? editData.score2 : match.score2;
+                let mapsData = editData.maps_data || match.maps_data;
+                
+                // Пересчитываем счет на основе карт, если есть несколько карт
+                if (Array.isArray(mapsData) && mapsData.length > 1) {
+                    let team1Wins = 0;
+                    let team2Wins = 0;
+                    
+                    mapsData.forEach(map => {
+                        const m1 = parseInt(map.score1 || map.team1_score || 0);
+                        const m2 = parseInt(map.score2 || map.team2_score || 0);
+                        if (m1 > m2) team1Wins++;
+                        else if (m2 > m1) team2Wins++;
+                    });
+                    
+                    finalScore1 = team1Wins;
+                    finalScore2 = team2Wins;
+                    
+                    // Определяем победителя
+                    if (team1Wins > team2Wins) finalWinnerId = match.team1_id;
+                    else if (team2Wins > team1Wins) finalWinnerId = match.team2_id;
+                }
+                
+                // Обновляем результат матча
+                await client.query(
+                    `UPDATE matches 
+                     SET winner_team_id = $1, score1 = $2, score2 = $3, maps_data = $4
+                     WHERE id = $5`,
+                    [finalWinnerId, finalScore1, finalScore2, JSON.stringify(mapsData), matchId]
+                );
+                
+                console.log(`✅ Полностью обновлен матч ${matchId}: winner=${finalWinnerId}, score=${finalScore1}:${finalScore2}`);
+                
+                // 8. Обновляем последующие матчи, если изменился победитель
+                if (finalWinnerId !== match.winner_team_id) {
+                    await this._updateNextMatches(client, match, finalWinnerId);
+                }
+            }
+            
+            // 9. Логируем событие
+            await logTournamentEvent(match.tournament_id, userId, 'match_edited', { 
+                matchId, 
+                hasPlayedNextMatches,
+                editedFields: hasPlayedNextMatches ? ['maps_data'] : ['winner', 'score', 'maps_data']
+            });
+            
+            await client.query('COMMIT');
+            
+            // 10. Получаем обновленный матч
+            const updatedMatch = await MatchRepository.getById(matchId);
+            
+            // 11. Отправляем обновление через WebSocket
+            broadcastTournamentUpdate(match.tournament_id, { matchId, updated: true }, 'matchEdited');
+            
+            console.log(`✅ Матч ${matchId} успешно отредактирован`);
+            
+            return {
+                success: true,
+                match: updatedMatch,
+                limitedEdit: hasPlayedNextMatches,
+                message: hasPlayedNextMatches 
+                    ? 'Изменены только данные карт, так как уже сыграны следующие матчи'
+                    : 'Матч полностью отредактирован'
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ Ошибка редактирования матча ${matchId}:`, error.message);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * Проверка наличия сыгранных последующих матчей
+     * @private
+     */
+    static async _checkPlayedNextMatches(client, match) {
+        const nextMatchIds = [];
+        
+        if (match.next_match_id) nextMatchIds.push(match.next_match_id);
+        if (match.loser_next_match_id) nextMatchIds.push(match.loser_next_match_id);
+        
+        if (nextMatchIds.length === 0) {
+            return false;
+        }
+        
+        const result = await client.query(
+            `SELECT id, status, winner_team_id 
+             FROM matches 
+             WHERE id = ANY($1::int[]) 
+             AND status = 'completed' 
+             AND winner_team_id IS NOT NULL`,
+            [nextMatchIds]
+        );
+        
+        return result.rows.length > 0;
+    }
+
+    /**
+     * Обновление последующих матчей при изменении победителя
+     * @private
+     */
+    static async _updateNextMatches(client, match, newWinnerId) {
+        console.log(`🔄 Обновление последующих матчей для матча ${match.id}, новый победитель: ${newWinnerId}`);
+        
+        const oldWinnerId = match.winner_team_id;
+        const loserId = oldWinnerId === match.team1_id ? match.team2_id : match.team1_id;
+        const newLoserId = newWinnerId === match.team1_id ? match.team2_id : match.team1_id;
+        
+        // Обновляем матч победителя
+        if (match.next_match_id) {
+            await client.query(
+                `UPDATE matches 
+                 SET team1_id = CASE WHEN team1_id = $1 THEN $2 ELSE team1_id END,
+                     team2_id = CASE WHEN team2_id = $1 THEN $2 ELSE team2_id END
+                 WHERE id = $3 AND status != 'completed'`,
+                [oldWinnerId, newWinnerId, match.next_match_id]
+            );
+            console.log(`✅ Обновлен матч победителя: ${match.next_match_id}`);
+        }
+        
+        // Обновляем матч проигравшего (для Double Elimination)
+        if (match.loser_next_match_id) {
+            await client.query(
+                `UPDATE matches 
+                 SET team1_id = CASE WHEN team1_id = $1 THEN $2 ELSE team1_id END,
+                     team2_id = CASE WHEN team2_id = $1 THEN $2 ELSE team2_id END
+                 WHERE id = $3 AND status != 'completed'`,
+                [loserId, newLoserId, match.loser_next_match_id]
+            );
+            console.log(`✅ Обновлен матч проигравшего: ${match.loser_next_match_id}`);
+        }
+    }
+
+    /**
      * 🔥 УПРОЩЕННАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ РЕЗУЛЬТАТА МАТЧА (БЕЗ ТАЙМАУТОВ)
      * @private
      */

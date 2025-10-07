@@ -5,6 +5,7 @@ import { ensureHttps } from '../../utils/userHelpers';
 import { getParticipantInfo } from '../../utils/participantHelpers';
 import MatchMetaTags from '../SEO/MatchMetaTags';
 import MatchShareModal from './modals/MatchShareModal';
+import EditMatchResultModal from './modals/EditMatchResultModal'; // ✏️ Модальное окно редактирования
 import { MatchFeedbackManager } from '../feedback'; // 🎮 Match Feedback система
 import api from '../../axios'; // 🔧 ИСПРАВЛЕНО: импорт axios
 import './MatchDetailsPage.css';
@@ -32,6 +33,10 @@ const MatchDetailsPage = () => {
     const [editingMapKey, setEditingMapKey] = useState(null);
     const [userIsAdmin, setUserIsAdmin] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
+    
+    // ✏️ Редактирование завершенного матча
+    const [isEditMatchModalOpen, setIsEditMatchModalOpen] = useState(false);
+    const [editMatchData, setEditMatchData] = useState(null);
     
     // 🎮 FEEDBACK: State для системы обратной связи
     const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
@@ -209,6 +214,66 @@ const MatchDetailsPage = () => {
             alert('Матч завершён');
         } catch (e) {
             alert(e.message || 'Ошибка завершения матча');
+        }
+    };
+
+    // ✏️ Обработчик редактирования завершенного матча
+    const handleEditMatch = () => {
+        if (!isAdminOrCreator) return;
+        
+        // Проверяем наличие всех участников
+        if (!match.team1_id || !match.team2_id) {
+            alert('Не все участники матча определены. Редактирование невозможно.');
+            return;
+        }
+        
+        // Открываем модальное окно с текущими данными
+        setEditMatchData({
+            maps_data: match.maps_data || [],
+            score1: match.score1,
+            score2: match.score2,
+            winner_team_id: match.winner_team_id
+        });
+        setIsEditMatchModalOpen(true);
+    };
+
+    // ✏️ Сохранение отредактированного матча
+    const handleSaveEditedMatch = async (updatedData) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Нужна авторизация');
+                return;
+            }
+
+            const resp = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/result`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify(updatedData)
+            });
+
+            const result = await resp.json();
+
+            if (!resp.ok) {
+                throw new Error(result.message || result.error || 'Не удалось сохранить изменения');
+            }
+
+            // Показываем сообщение с учетом ограничений
+            if (result.limitedEdit) {
+                alert(result.message || 'Изменены только данные карт, так как уже сыграны следующие матчи');
+            } else {
+                alert('Матч успешно отредактирован');
+            }
+
+            // Закрываем модальное окно и обновляем данные
+            setIsEditMatchModalOpen(false);
+            await fetchMatchDetails();
+
+        } catch (e) {
+            alert(e.message || 'Ошибка редактирования матча');
         }
     };
 
@@ -865,11 +930,26 @@ const MatchDetailsPage = () => {
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
                     <div className="match-status-bar-buttons">
                         {isAdminOrCreator && (
-                            <button className="btn btn-primary" onClick={handleCompleteMatch} title="Завершить матч и зафиксировать результат">
-                                Завершить матч
-                            </button>
+                            <>
+                                {match.status === 'completed' ? (
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={handleEditMatch} 
+                                        title="Редактировать результат матча"
+                                    >
+                                        ✏️ Редактировать матч
+                                    </button>
+                                ) : (
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={handleCompleteMatch} 
+                                        title="Завершить матч и зафиксировать результат"
+                                    >
+                                        Завершить матч
+                                    </button>
+                                )}
+                            </>
                         )}
-                        {/* Редактирование итога — по клику на карту */}
                         <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
                             🔗 Поделиться
                         </button>
@@ -1032,6 +1112,15 @@ const MatchDetailsPage = () => {
                 onClose={() => setIsShareModalOpen(false)}
                 selectedMatch={match}
                 tournament={tournament}
+            />
+            
+            {/* ✏️ Модальное окно редактирования результата */}
+            <EditMatchResultModal
+                isOpen={isEditMatchModalOpen}
+                onClose={() => setIsEditMatchModalOpen(false)}
+                matchData={editMatchData}
+                match={match}
+                onSave={handleSaveEditedMatch}
             />
             
             {/* 🎮 FEEDBACK: Система обратной связи после матча */}

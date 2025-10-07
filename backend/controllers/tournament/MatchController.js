@@ -102,6 +102,65 @@ class MatchController {
             });
         }
     });
+
+    /**
+     * ✏️ Редактирование завершенного матча
+     */
+    static editMatchResult = asyncHandler(async (req, res) => {
+        const startTime = Date.now();
+        const matchId = parseInt(req.params.matchId);
+        const userId = req.user.id;
+        
+        console.log(`✏️ [MatchController] Редактирование результата матча ${matchId}`);
+        console.log(`👤 Пользователь: ${req.user.username} (ID: ${userId})`);
+        console.log(`📊 Данные:`, req.body);
+        
+        try {
+            const result = await MatchService.editCompletedMatch(matchId, req.body, userId);
+            
+            const duration = Date.now() - startTime;
+            console.log(`✅ [MatchController] Матч отредактирован за ${duration}ms`);
+            
+            res.json({
+                success: true,
+                message: result.message,
+                data: result.match,
+                limitedEdit: result.limitedEdit,
+                duration
+            });
+            
+        } catch (error) {
+            const duration = Date.now() - startTime;
+            console.error(`❌ [MatchController] Ошибка редактирования (${duration}ms):`, error.message);
+            
+            let userMessage = 'Произошла ошибка при редактировании матча';
+            let statusCode = 500;
+            
+            if (error.message.includes('не найден')) {
+                userMessage = 'Матч не найден';
+                statusCode = 404;
+            } else if (error.message.includes('права')) {
+                userMessage = 'Недостаточно прав для редактирования';
+                statusCode = 403;
+            } else if (error.message.includes('не все участники')) {
+                userMessage = error.message;
+                statusCode = 400;
+            } else if (error.message.includes('следующие матчи')) {
+                userMessage = error.message;
+                statusCode = 409;
+            } else if (error.message.includes('завершенные матчи')) {
+                userMessage = 'Можно редактировать только завершенные матчи';
+                statusCode = 400;
+            }
+            
+            res.status(statusCode).json({
+                success: false,
+                message: userMessage,
+                error: error.message,
+                duration
+            });
+        }
+    });
     
     /**
      * 📋 Получение матчей турнира

@@ -321,6 +321,9 @@ router.get('/:id/match/:matchId/share-image', ShareController.generateMatchShare
 // Сохранение результата матча
 router.post('/:id/matches/:matchId/result', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.saveMatchResult);
 
+// Редактирование результата завершенного матча
+router.put('/:id/matches/:matchId/result', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, MatchController.editMatchResult);
+
 // 👥 **УПРАВЛЕНИЕ УЧАСТНИКАМИ** (БАЗОВЫЕ МЕТОДЫ)
 
 // Участие в турнире
