@@ -779,8 +779,8 @@ function CreateTournamentManual({ onBack }) {
               </div>
             )}
 
-            {/* Лист ожидания для командных турниров */}
-            {formData.format !== 'mix' && formData.participant_type === 'team' && (
+            {/* Лист ожидания для командных турниров Single/Double Elimination */}
+            {(formData.format === 'single_elimination' || formData.format === 'double_elimination') && formData.participant_type === 'team' && (
               <div className="form-group full-width">
                 <label className="checkbox-label">
                   <input

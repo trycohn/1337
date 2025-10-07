@@ -290,14 +290,14 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
                                 wizardData.format.mix_rating_type === 'premier' 
             ? wizardData.format.require_steam_linked : false,
           
-          // Лист ожидания для командных турниров
+          // Лист ожидания для командных турниров (из шага Формат, но может быть переопределено в Правилах)
           waiting_list_enabled: wizardData.format.participant_type === 'team' && 
-                               wizardData.format.format !== 'mix' 
-            ? wizardData.format.waiting_list_enabled : false,
+                               (wizardData.format.format === 'single_elimination' || wizardData.format.format === 'double_elimination')
+            ? (wizardData.format.waiting_list_enabled || false) : false,
           waiting_list_require_faceit: wizardData.format.waiting_list_enabled 
-            ? wizardData.format.waiting_list_require_faceit : false,
+            ? (wizardData.format.waiting_list_require_faceit || false) : false,
           waiting_list_require_steam: wizardData.format.waiting_list_enabled 
-            ? wizardData.format.waiting_list_require_steam : false,
+            ? (wizardData.format.waiting_list_require_steam || false) : false,
           
           // Из rules
           rules: wizardData.rules.rules,

@@ -314,6 +314,55 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
           )}
         </div>
       )}
+
+      {/* Лист ожидания для командных турниров Single/Double Elimination */}
+      {format && (format.format === 'single_elimination' || format.format === 'double_elimination') && format.participant_type === 'team' && (
+        <div className="step-section">
+          <h3>📋 Лист ожидания</h3>
+          
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={format.waiting_list_enabled || false}
+                onChange={(e) => onChange({ ...format, waiting_list_enabled: e.target.checked })}
+              />
+              <span>Включить лист ожидания для соло игроков?</span>
+            </label>
+            <small className="form-hint">
+              📋 Игроки без команд смогут заявиться в лист ожидания, после чего вы сможете добавить их в команды вручную
+            </small>
+          </div>
+
+          {format.waiting_list_enabled && (
+            <div style={{ marginTop: '16px', paddingLeft: '30px', paddingTop: '12px', borderLeft: '2px solid #ff0000' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={format.waiting_list_require_faceit || false}
+                    onChange={(e) => onChange({ ...format, waiting_list_require_faceit: e.target.checked })}
+                  />
+                  <span>Требовать привязку FACEIT аккаунта</span>
+                </label>
+                
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={format.waiting_list_require_steam || false}
+                    onChange={(e) => onChange({ ...format, waiting_list_require_steam: e.target.checked })}
+                  />
+                  <span>Требовать привязку Steam ID</span>
+                </label>
+                
+                <small className="form-hint" style={{ marginTop: '8px', color: '#888' }}>
+                  ⚠️ Игроки без требуемых привязок не смогут заявиться в лист ожидания
+                </small>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
