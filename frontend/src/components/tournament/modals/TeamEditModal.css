@@ -1,0 +1,441 @@
+/* Модалка редактирования команды */
+.team-edit-modal {
+    background: #000;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    max-width: 900px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+}
+
+.team-edit-modal.with-waiting-list {
+    max-width: 1200px;
+}
+
+.team-edit-modal .modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ff0000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.team-edit-modal .modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #fff;
+}
+
+.team-edit-modal .close-btn {
+    background: transparent;
+    border: none;
+    color: #ff0000;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.team-edit-modal .close-btn:hover {
+    background: #111;
+    border-radius: 4px;
+}
+
+.team-edit-modal .error-message {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid #ff0000;
+    color: #ff0000;
+    padding: 12px;
+    margin: 12px 20px;
+    border-radius: 4px;
+}
+
+.team-edit-modal .success-message {
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+    padding: 12px;
+    margin: 12px 20px;
+    border-radius: 4px;
+}
+
+/* Тело модалки */
+.team-edit-modal .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.team-edit-modal .modal-body.two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.team-edit-modal .modal-body.single-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Панели */
+.waiting-list-panel,
+.team-roster-panel,
+.simple-edit-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.waiting-list-panel h4,
+.team-roster-panel h4,
+.current-members-section h4,
+.add-members-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: #fff;
+    border-bottom: 1px solid #111;
+    padding-bottom: 8px;
+}
+
+/* Списки участников */
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Скроллбар */
+.members-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.members-list::-webkit-scrollbar-track {
+    background: #111;
+    border-radius: 3px;
+}
+
+.members-list::-webkit-scrollbar-thumb {
+    background: #ff0000;
+    border-radius: 3px;
+}
+
+/* Участник в листе ожидания */
+.waiting-participant {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.waiting-participant:hover {
+    border-color: #ff0000;
+    transform: translateX(-2px);
+}
+
+/* Участник в команде */
+.team-member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 6px;
+}
+
+.member-info,
+.participant-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.member-avatar,
+.participant-avatar,
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.member-avatar img,
+.participant-avatar img,
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #ff0000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #000;
+}
+
+.member-details,
+.participant-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.member-name,
+.participant-name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.captain-badge {
+    color: #ffd700;
+    font-size: 14px;
+}
+
+.member-rating,
+.participant-rating {
+    font-size: 12px;
+    color: #888;
+}
+
+/* Кнопки */
+.add-to-team-btn {
+    background: #111;
+    border: 1px solid #ff0000;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.add-to-team-btn:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.add-to-team-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.remove-member-btn {
+    background: transparent;
+    border: 1px solid #ff0000;
+    color: #ff0000;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.remove-member-btn:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.remove-member-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Статистика команды */
+.team-stats {
+    margin-top: 12px;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 6px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 14px;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Секция добавления */
+.add-members-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.search-section,
+.unregistered-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.search-section label,
+.unregistered-section label {
+    font-size: 14px;
+    color: #888;
+}
+
+.search-section input,
+.unregistered-section input {
+    padding: 10px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.search-section input:focus,
+.unregistered-section input:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.searching {
+    font-size: 12px;
+    color: #888;
+    padding: 8px;
+}
+
+/* Результаты поиска */
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 4px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.add-user-btn {
+    background: #111;
+    border: 1px solid #ff0000;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.add-user-btn:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.add-user-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Форма незарегистрированного */
+.unregistered-form {
+    display: flex;
+    gap: 8px;
+}
+
+.unregistered-form input {
+    flex: 1;
+}
+
+.add-unregistered-btn {
+    background: #111;
+    border: 1px solid #ff0000;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.add-unregistered-btn:hover:not(:disabled) {
+    background: #ff0000;
+    color: #000;
+}
+
+.add-unregistered-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Пустое состояние */
+.empty-message {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+    font-size: 14px;
+}
+
+/* Футер */
+.team-edit-modal .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #ff0000;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .team-edit-modal {
+        max-width: 95%;
+        max-height: 90vh;
+    }
+    
+    .team-edit-modal .modal-body.two-column {
+        grid-template-columns: 1fr;
+    }
+    
+    .waiting-list-panel,
+    .team-roster-panel {
+        max-height: 300px;
+    }
+}

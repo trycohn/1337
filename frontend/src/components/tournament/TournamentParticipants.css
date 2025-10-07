@@ -100,6 +100,28 @@
     color: #888888;
 }
 
+/* Действия с командой */
+.team-actions-participants {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-team-btn-participants {
+    background: #111;
+    border: 1px solid #ff0000;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.edit-team-btn-participants:hover {
+    background: #ff0000;
+    color: #000;
+}
+
 .remove-team-btn-participants {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);

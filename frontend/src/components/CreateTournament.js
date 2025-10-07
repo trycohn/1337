@@ -59,7 +59,11 @@ function CreateTournament() {
     // (устаревшее поле – вычисляется из tournament_type)
     is_series_final: false,
     // 🆕 Режим CS2 для UI (5v5 или 2v2)
-    cs2_mode: '5v5'
+    cs2_mode: '5v5',
+    // 🆕 Лист ожидания для командных турниров
+    waiting_list_enabled: false,
+    waiting_list_require_faceit: false,
+    waiting_list_require_steam: false
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -170,6 +174,10 @@ function CreateTournament() {
             selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
             // 🆕 НОВОЕ: Опция Full Double Elimination
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
+            // 🆕 Лист ожидания для командных турниров
+            waiting_list_enabled: formData.participant_type === 'team' && formData.format !== 'mix' ? formData.waiting_list_enabled : false,
+            waiting_list_require_faceit: formData.waiting_list_enabled ? formData.waiting_list_require_faceit : false,
+            waiting_list_require_steam: formData.waiting_list_enabled ? formData.waiting_list_require_steam : false,
             // 🆕 Тип доступа
             access_type: (formData.tournament_type === 'closed' || formData.tournament_type === 'hidden') ? 'closed' : 'open',
             is_hidden: formData.tournament_type === 'hidden',
@@ -635,6 +643,50 @@ function CreateTournament() {
                     {formData.cs2_mode === '5v5' && '🏆 Классический формат CS2: команды минимум 5 игроков'}
                     {formData.cs2_mode === '2v2' && '⚡ Wingman формат CS2: команды минимум 2 игрока'}
                   </small>
+                )}
+              </div>
+            )}
+
+            {/* Лист ожидания для командных турниров */}
+            {formData.format !== 'mix' && formData.participant_type === 'team' && (
+              <div className="form-group full-width">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="waiting_list_enabled"
+                    checked={formData.waiting_list_enabled}
+                    onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_enabled: e.target.checked }))}
+                    disabled={!verificationStatus.canCreate}
+                  />
+                  <span>Включить лист ожидания для соло игроков</span>
+                </label>
+                <small className="form-hint">
+                  📋 Игроки без команд смогут заявиться в лист ожидания, после чего вы сможете добавить их в команды
+                </small>
+
+                {formData.waiting_list_enabled && (
+                  <div style={{ marginTop: '12px', paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="waiting_list_require_faceit"
+                        checked={formData.waiting_list_require_faceit}
+                        onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_require_faceit: e.target.checked }))}
+                        disabled={!verificationStatus.canCreate}
+                      />
+                      <span>Требовать привязку FACEIT аккаунта</span>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="waiting_list_require_steam"
+                        checked={formData.waiting_list_require_steam}
+                        onChange={(e) => setFormData(prev => ({ ...prev, waiting_list_require_steam: e.target.checked }))}
+                        disabled={!verificationStatus.canCreate}
+                      />
+                      <span>Требовать привязку Steam ID</span>
+                    </label>
+                  </div>
                 )}
               </div>
             )}

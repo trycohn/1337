@@ -5,6 +5,8 @@ import { faCrown } from '@fortawesome/free-solid-svg-icons';
 // TeamGenerator рендерится в TournamentDetails (первым блоком)
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
+import TeamEditModal from './modals/TeamEditModal';
+import WaitingListPanel from './WaitingListPanel';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
 import { getAvatarCategoryClass } from '../../utils/avatarCategory';
@@ -36,6 +38,10 @@ const TournamentParticipants = ({
     
     // 🔗 СОСТОЯНИЕ ДЛЯ РЕФЕРАЛЬНОГО МОДАЛЬНОГО ОКНА
     const [referralModal, setReferralModal] = useState(false);
+    
+    // 🔧 СОСТОЯНИЕ ДЛЯ МОДАЛКИ РЕДАКТИРОВАНИЯ КОМАНДЫ
+    const [teamEditModal, setTeamEditModal] = useState(false);
+    const [selectedTeam, setSelectedTeam] = useState(null);
 
     // Хук для управления турниром
     const tournamentManagement = useTournamentManagement(tournament?.id);
@@ -514,13 +520,27 @@ const TournamentParticipants = ({
                                             </span>
                                         </div>
                                         {isAdminOrCreator && (
-                                            <button 
-                                                className="remove-team-btn-participants"
-                                                onClick={() => !isLoadingInitial && removeParticipant(team.id, team.name)}
-                                                title="Удалить команду"
-                                            >
-                                                🗑️
-                                            </button>
+                                            <div className="team-actions-participants">
+                                                <button 
+                                                    className="edit-team-btn-participants"
+                                                    onClick={() => {
+                                                        if (!isLoadingInitial) {
+                                                            setSelectedTeam(team);
+                                                            setTeamEditModal(true);
+                                                        }
+                                                    }}
+                                                    title="Редактировать состав команды"
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button 
+                                                    className="remove-team-btn-participants"
+                                                    onClick={() => !isLoadingInitial && removeParticipant(team.id, team.name)}
+                                                    title="Удалить команду"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                     <div className="team-members-participants">
@@ -875,6 +895,30 @@ const TournamentParticipants = ({
                     onClose={() => setReferralModal(false)}
                     tournament={tournament}
                     user={user}
+                />
+            )}
+
+            {/* Модальное окно редактирования команды */}
+            {teamEditModal && selectedTeam && (
+                <TeamEditModal
+                    isOpen={teamEditModal}
+                    onClose={() => {
+                        setTeamEditModal(false);
+                        setSelectedTeam(null);
+                    }}
+                    team={selectedTeam}
+                    tournament={tournament}
+                    onTeamUpdated={onTournamentUpdate}
+                />
+            )}
+
+            {/* Панель листа ожидания */}
+            {tournament?.waiting_list_enabled && (
+                <WaitingListPanel
+                    tournament={tournament}
+                    user={user}
+                    isAdminOrCreator={isAdminOrCreator}
+                    onUpdate={onTournamentUpdate}
                 />
             )}
         </div>

@@ -335,6 +335,24 @@ router.post('/:id/add-participant', authenticateToken, verifyEmailRequired, veri
 // 👥 Ручное добавление незарегистрированной команды с игроками (для администраторов командных турниров)
 router.post('/:id/add-team', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.addTeamWithPlayers);
 
+// 🔧 УПРАВЛЕНИЕ СОСТАВОМ КОМАНД
+const TeamMemberController = require('../controllers/tournament/TeamMemberController');
+// Добавить участника в команду
+router.post('/:id/teams/:teamId/members', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TeamMemberController.addTeamMember);
+// Удалить участника из команды
+router.delete('/:id/teams/:teamId/members/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TeamMemberController.removeTeamMember);
+// Получить состав команды
+router.get('/:id/teams/:teamId/members', authenticateToken, TeamMemberController.getTeamMembers);
+
+// 📋 ЛИСТ ОЖИДАНИЯ
+const WaitingListController = require('../controllers/tournament/WaitingListController');
+// Присоединиться к листу ожидания (для игроков)
+router.post('/:id/waiting-list/join', authenticateToken, verifyEmailRequired, WaitingListController.joinWaitingList);
+// Получить список ожидающих (для админов)
+router.get('/:id/waiting-list', authenticateToken, verifyAdminOrCreator, WaitingListController.getWaitingList);
+// Назначить игрока из листа в команду (для админов)
+router.post('/:id/waiting-list/:participantId/assign', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, WaitingListController.assignToTeam);
+
 // 🗑️ Удаление участника (для администраторов)
 router.delete('/:id/participants/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.removeParticipant);
 
