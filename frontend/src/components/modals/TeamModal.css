@@ -201,22 +201,6 @@
     color: #666;
 }
 
-.remove-member-btn {
-    background: #ffebee;
-    border: 1px solid #ffcdd2;
-    color: #c62828;
-    padding: 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.2s;
-}
-
-.remove-member-btn:hover {
-    background: #ffcdd2;
-    transform: scale(1.1);
-}
-
 /* РљРЅРѕРїРєРё СѓРїСЂР°РІР»РµРЅРёСЏ */
 .team-actions {
     display: flex;

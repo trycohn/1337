@@ -288,7 +288,7 @@ const TeamEditModal = ({
                 </div>
                 {showRemove && (
                     <button 
-                        className="remove-member-btn"
+                        className="btn btn-primary"
                         onClick={() => handleRemoveMember(member.id, member.name || member.username)}
                         disabled={loading}
                     >

@@ -348,7 +348,7 @@ const TeamModal = ({ team, onClose, onTeamUpdated, onTeamDeleted, currentUser })
                                                 </div>
                                                 {isCurrentUserCaptain && member.id !== currentUser.id && (
                                                     <button 
-                                                        className="remove-member-btn"
+                                                        className="btn btn-secondary"
                                                         onClick={() => removeMember(member.id, member.username)}
                                                         disabled={loading}
                                                         title="Удалить из команды"
