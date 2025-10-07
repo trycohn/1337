@@ -444,7 +444,18 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
             data={wizardData.rules}
             format={wizardData.format}
             basicInfo={wizardData.basicInfo}
-            onChange={(data) => updateStepData('rules', data)}
+            onChange={(updatedData) => {
+              // Step4 теперь может обновлять и format (для листа ожидания)
+              if (updatedData.waiting_list_enabled !== undefined || 
+                  updatedData.waiting_list_require_faceit !== undefined ||
+                  updatedData.waiting_list_require_steam !== undefined) {
+                // Это обновление format (опции листа ожидания)
+                updateStepData('format', updatedData);
+              } else {
+                // Это обновление rules
+                updateStepData('rules', updatedData);
+              }
+            }}
           />
         );
       
