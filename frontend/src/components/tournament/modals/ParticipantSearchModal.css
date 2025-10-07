@@ -46,6 +46,6 @@
 .action-button:focus { outline: 2px solid rgba(0, 123, 255, 0.5); outline-offset: 2px; }
 .search-input-field:focus { outline: none; }
 /* Режимы модального окна */
-.search-modal-content.admin-mode .search-modal-header { background: linear-gradient(135deg, #ff6b35, #f7931e); }
+.search-modal-content.admin-mode .search-modal-header { background: #1a1a1a; }
 .search-modal-content.admin-mode .search-modal-header h3 { color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
-.search-modal-content.participant-mode .search-modal-header { background: linear-gradient(135deg, #28a745, #20c997); } 
+.search-modal-content.participant-mode .search-modal-header {background: #1a1a1a; } 
