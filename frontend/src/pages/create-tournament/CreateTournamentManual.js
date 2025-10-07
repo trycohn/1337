@@ -60,7 +60,11 @@ function CreateTournamentManual({ onBack }) {
     full_double_elimination: false,
     tournament_type: 'open',
     is_series_final: false,
-    cs2_mode: '5v5'
+    cs2_mode: '5v5',
+    // 🆕 Лист ожидания для командных турниров
+    waiting_list_enabled: false,
+    waiting_list_require_faceit: false,
+    waiting_list_require_steam: false
   });
   const { runWithLoader } = useLoaderAutomatic();
 
@@ -154,6 +158,10 @@ function CreateTournamentManual({ onBack }) {
             selected_maps: formData.lobby_enabled ? formData.selected_maps : [],
             final_match_format: formData.enable_final_format ? formData.final_match_format : null, // 🆕 Особый формат для финалов
             full_double_elimination: formData.bracket_type === 'double_elimination' ? formData.full_double_elimination : false,
+            // 🆕 Лист ожидания для командных турниров
+            waiting_list_enabled: formData.participant_type === 'team' && formData.format !== 'mix' ? formData.waiting_list_enabled : false,
+            waiting_list_require_faceit: formData.waiting_list_enabled ? formData.waiting_list_require_faceit : false,
+            waiting_list_require_steam: formData.waiting_list_enabled ? formData.waiting_list_require_steam : false,
             access_type: (formData.tournament_type === 'closed' || formData.tournament_type === 'hidden') ? 'closed' : 'open',
             is_hidden: formData.tournament_type === 'hidden',
             is_series_final: formData.tournament_type === 'final'

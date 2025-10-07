@@ -74,6 +74,10 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
       wins_to_win: 4,
       require_faceit_linked: false,
       require_steam_linked: false,
+      // 🆕 Лист ожидания для командных турниров
+      waiting_list_enabled: false,
+      waiting_list_require_faceit: false,
+      waiting_list_require_steam: false,
     },
     
     // Шаг 4: Правила и карты
@@ -285,6 +289,15 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
           require_steam_linked: wizardData.format.format === 'mix' && 
                                 wizardData.format.mix_rating_type === 'premier' 
             ? wizardData.format.require_steam_linked : false,
+          
+          // Лист ожидания для командных турниров
+          waiting_list_enabled: wizardData.format.participant_type === 'team' && 
+                               wizardData.format.format !== 'mix' 
+            ? wizardData.format.waiting_list_enabled : false,
+          waiting_list_require_faceit: wizardData.format.waiting_list_enabled 
+            ? wizardData.format.waiting_list_require_faceit : false,
+          waiting_list_require_steam: wizardData.format.waiting_list_enabled 
+            ? wizardData.format.waiting_list_require_steam : false,
           
           // Из rules
           rules: wizardData.rules.rules,
