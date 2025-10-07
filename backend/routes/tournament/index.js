@@ -336,7 +336,7 @@ router.post('/:id/add-participant', authenticateToken, verifyEmailRequired, veri
 router.post('/:id/add-team', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, ParticipantController.addTeamWithPlayers);
 
 // 🔧 УПРАВЛЕНИЕ СОСТАВОМ КОМАНД
-const TeamMemberController = require('../controllers/tournament/TeamMemberController');
+const TeamMemberController = require('../../controllers/tournament/TeamMemberController');
 // Добавить участника в команду
 router.post('/:id/teams/:teamId/members', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TeamMemberController.addTeamMember);
 // Удалить участника из команды
@@ -345,7 +345,7 @@ router.delete('/:id/teams/:teamId/members/:participantId', authenticateToken, ve
 router.get('/:id/teams/:teamId/members', authenticateToken, TeamMemberController.getTeamMembers);
 
 // 📋 ЛИСТ ОЖИДАНИЯ
-const WaitingListController = require('../controllers/tournament/WaitingListController');
+const WaitingListController = require('../../controllers/tournament/WaitingListController');
 // Присоединиться к листу ожидания (для игроков)
 router.post('/:id/waiting-list/join', authenticateToken, verifyEmailRequired, WaitingListController.joinWaitingList);
 // Получить список ожидающих (для админов)
