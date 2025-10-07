@@ -1701,11 +1701,26 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
         const countRes = await client.query('SELECT COUNT(*)::int AS c FROM admin_map_selections WHERE lobby_id = $1', [lobbyId]);
         const actionIndex = countRes.rows[0].c;
         const turnTeam = lobby.current_turn_team;
-        // Сохраняем действие
+        // Сохраняем действие (admin_map_selections)
         await client.query(
             `INSERT INTO admin_map_selections(lobby_id, map_name, action_type, team, action_order)
              VALUES ($1, $2, $3, $4, $5)`,
             [lobbyId, mapName, action, turnTeam, actionIndex + 1]
+        );
+        // Дублируем в историю veto для будущей страницы матча
+        await client.query(
+            `INSERT INTO matchzy_pickban_steps(lobby_id, series_type, step_index, action, team_name, team_id, mapname, actor_steamid64)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+            [
+                lobbyId,
+                lobby.match_format || 'bo1',
+                actionIndex + 1,
+                action,
+                (turnTeam === 1 ? lobby.team1_name : lobby.team2_name) || null,
+                turnTeam,
+                mapName,
+                null
+            ]
         );
         // Следующий ход
         const next = determineNextTurnForFormat(lobby.match_format, actionIndex + 1, lobby.first_picker_team);
