@@ -937,7 +937,7 @@ const MatchDetailsPage = () => {
                                         onClick={handleEditMatch} 
                                         title="Редактировать результат матча"
                                     >
-                                        ✏️ Редактировать матч
+                                        Редактировать матч
                                     </button>
                                 ) : (
                                     <button 
@@ -951,7 +951,7 @@ const MatchDetailsPage = () => {
                             </>
                         )}
                         <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
-                            🔗 Поделиться
+                            Поделиться
                         </button>
                     </div>
                 </div>

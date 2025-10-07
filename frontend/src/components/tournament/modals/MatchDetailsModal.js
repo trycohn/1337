@@ -367,7 +367,7 @@ const MatchDetailsModal = ({
                                 disabled={!canEditByTournamentStatus}
                                 title={tournamentStatusMessage || "Редактировать результат матча"}
                             >
-                                ✏️ Редактировать результат
+                                Редактировать результат
                             </button>
                         )}
                     </div>

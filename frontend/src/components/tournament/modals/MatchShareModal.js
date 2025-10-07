@@ -128,7 +128,7 @@ const MatchShareModal = ({
                 <div className="modal-system-header">
                     <div>
                         <h2 className="modal-system-title">
-                            🔗 Поделиться результатом матча
+                            Поделиться результатом матча
                         </h2>
                         <p className="modal-system-subtitle">
                             Поделитесь результатом с друзьями в социальных сетях
