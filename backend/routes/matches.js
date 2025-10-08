@@ -152,8 +152,8 @@ router.get('/custom/:id/stats', async (req, res) => {
         const stepsRes = await client.query(
             `SELECT step_index, action, team_name, team_id, mapname, created_at
              FROM matchzy_pickban_steps
-             WHERE our_match_id = $1 OR lobby_id = $2
-             ORDER BY step_index ASC, id ASC`, [matchId, lobbyId]
+             WHERE our_match_id = $1 OR lobby_id = $2 OR tournament_lobby_id = $3
+             ORDER BY step_index ASC, id ASC`, [matchId, lobbyId, lobbyId]
         );
 
         res.json({
@@ -208,8 +208,8 @@ router.get('/tournament/:id/stats', async (req, res) => {
 
         // 2) Находим matchzy матч, привязанный к этому лобби либо через admin лобби
         const m = await client.query(
-            'SELECT * FROM matchzy_matches WHERE tournament_lobby_id = $1 OR our_match_id = $2 ORDER BY end_time DESC NULLS LAST LIMIT 1',
-            [lobbyId, matchId]
+            'SELECT * FROM matchzy_matches WHERE tournament_lobby_id = $1 OR our_match_id = $2 OR lobby_id = $3 ORDER BY end_time DESC NULLS LAST LIMIT 1',
+            [lobbyId, matchId, lobbyId]
         );
         if (!m.rows[0]) return res.status(404).json({ success: false, error: 'Статистика матча ещё не импортирована' });
         const mz = m.rows[0];

@@ -513,6 +513,24 @@ class MatchLobbyService {
                  VALUES ($1, $2, $3, $4, $5)`,
                 [lobbyId, mapName, action, lobby.user_team_id, actionOrder]
             );
+
+            // Дублируем шаг в историю pick/ban для страницы матча (турнирное лобби)
+            try {
+                await client.query(
+                    `INSERT INTO matchzy_pickban_steps (tournament_lobby_id, series_type, step_index, action, team_name, team_id, mapname, actor_steamid64)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                    [
+                        lobbyId,
+                        lobby.match_format || 'bo1',
+                        actionOrder,
+                        action,
+                        lobby.user_team_id === 1 ? lobby.team1_name : lobby.team2_name,
+                        lobby.user_team_id,
+                        mapName,
+                        null
+                    ]
+                );
+            } catch (_) {}
             
             // Определяем следующий ход
             const nextTurn = await this.determineNextTurn(
