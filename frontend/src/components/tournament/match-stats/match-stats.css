@@ -74,6 +74,54 @@
   background: #111;
 }
 
+/* ===== Leaders panel ===== */
+.leaders-title { color: #c1c1c1; font-weight: 700; margin-bottom: 8px; }
+.leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 12px;
+}
+.leader-card {
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(94, 141, 141, 0) 0deg, #5E8D8D 180deg, rgba(94, 141, 141, 0) 360deg);
+  padding: 12px;
+  color: #a7a7a7;
+  min-height: 100px;
+}
+.leader-card .leader-title { color: #c1c1c1; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+.leader-card .leader-name { color: #fff; font-weight: 600; margin-top: 4px; }
+.leader-card .leader-label { color: #c1c1c1; }
+.leader-card .leader-value { color: #a7a7a7; }
+
+.leader-mvp {
+  grid-column: span 2;
+  grid-row: span 2;
+  background: conic-gradient(from 36.86deg at 50.56% 50%, rgba(167, 125, 42, 0) 0deg, #A77D2A 180deg, rgba(65, 49, 16, 0) 360deg);
+  position: relative;
+}
+.leader-mvp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 8px;
+  pointer-events: none;
+}
+.leader-mvp .leader-title { font-size: 14px; }
+.leader-mvp .leader-metrics { margin-top: 8px; display: grid; gap: 6px; }
+
+.leaders-footnote { opacity:.6; font-size:12px; margin-top:6px; }
+
+@media (max-width: 1024px) {
+  .leaders-grid { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+  .leader-mvp { grid-column: span 3; grid-row: span 2; }
+}
+@media (max-width: 640px) {
+  .leaders-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+  .leader-mvp { grid-column: span 2; grid-row: span 2; }
+}
+
 @media (max-width: 768px) {
   .table thead { display: none; }
   .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
