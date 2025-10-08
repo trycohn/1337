@@ -16,7 +16,7 @@ const AnomalyDetector = require('../services/stats/AnomalyDetector');
  * Webhook от MatchZy когда матч завершен (триггер для получения статистики из БД)
  */
 router.post('/match-end', async (req, res) => {
-    console.log('🎯 [MatchZy] Получен сигнал о завершении матча');
+    console.log('🎯 [MatchZy] Получен webhook');
     
     try {
         // Проверка токена (если настроен в .env)
@@ -33,32 +33,33 @@ router.post('/match-end', async (req, res) => {
             }
         }
         
-        const { matchid, event, winner, team1_series_score, team2_series_score, time_until_restore } = req.body;
+        const eventData = req.body;
+        const { matchid, event, winner, team1_series_score, team2_series_score } = eventData;
         
-        if (!matchid) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'matchid is required' 
-            });
+        // ФИЛЬТРУЕМ: обрабатываем только series_end
+        if (event !== 'series_end') {
+            console.log(`ℹ️ [MatchZy] Событие "${event}" игнорируется (ждем series_end)`);
+            return res.status(200).send('OK'); // Всё равно возвращаем 200!
         }
         
-        console.log(`📊 [MatchZy] Webhook series_end:`, {
+        if (!matchid) {
+            console.log('⚠️ [MatchZy] matchid не указан в webhook');
+            return res.status(200).send('OK'); // Всё равно 200
+        }
+        
+        console.log(`📊 [MatchZy] series_end получен:`, {
             matchid,
-            event: event || 'series_end',
             score: `${team1_series_score || 0}:${team2_series_score || 0}`,
             winner: winner?.team || 'N/A'
         });
         
         // Быстро отвечаем серверу что webhook получен
-        res.json({ 
-            success: true, 
-            message: 'Webhook received, processing stats in background' 
-        });
+        res.status(200).send('OK');
         
         // Запускаем импорт статистики в фоне (с задержкой 2 сек чтобы MatchZy успел записать в БД)
         setTimeout(async () => {
             try {
-                console.log(`⏳ [MatchZy] Начинаем импорт статистики через 2 секунды...`);
+                console.log(`⏳ [MatchZy] Начинаем импорт статистики для matchid=${matchid}...`);
                 await importStatsForMatch(parseInt(matchid));
             } catch (error) {
                 console.error(`❌ [MatchZy] Ошибка импорта статистики для matchid=${matchid}:`, error.message);
@@ -67,10 +68,7 @@ router.post('/match-end', async (req, res) => {
         
     } catch (error) {
         console.error('❌ [MatchZy] Ошибка webhook:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to process webhook' 
-        });
+        res.status(200).send('OK'); // Даже при ошибке возвращаем 200
     }
 });
 
