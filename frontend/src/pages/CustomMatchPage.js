@@ -13,6 +13,7 @@ function CustomMatchPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [stats, setStats] = useState(null);
+    const [basic, setBasic] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
 
     useEffect(() => {
@@ -22,9 +23,22 @@ function CustomMatchPage() {
                 const r = await api.get(`/api/matches/custom/${id}/stats`);
                 if (!mounted) return;
                 if (r?.data?.success) setStats(r.data);
-                else setError('Статистика матча не найдена');
+                else {
+                    // fallback: базовая инфа о матче и шагах пик/бан
+                    try {
+                        const fb = await api.get(`/api/matches/${id}`);
+                        if (fb?.data?.match) setBasic(fb.data);
+                        else setError('Матч не найден');
+                    } catch (_) { setError('Матч не найден'); }
+                }
             } catch (e) {
-                setError('Не удалось загрузить статистику матча');
+                try {
+                    const fb = await api.get(`/api/matches/${id}`);
+                    if (fb?.data?.match) setBasic(fb.data);
+                    else setError('Матч не найден');
+                } catch (_) {
+                    setError('Не удалось загрузить статистику матча');
+                }
             } finally {
                 setLoading(false);
             }
