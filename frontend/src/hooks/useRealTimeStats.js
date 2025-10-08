@@ -1,109 +1,100 @@
-import { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * useRealTimeStats - Хук для получения live обновлений статистики
- * Подключается к WebSocket и обновляет статистику в реальном времени
+ * useRealTimeStats — нативный WebSocket-клиент для /ws/stats
+ * Совместим с backend/services/realTimeStatsService.js (ws, не socket.io)
  */
 function useRealTimeStats(userId, onStatsUpdate) {
     const [connected, setConnected] = useState(false);
-    const socketRef = useRef(null);
-    const reconnectTimeoutRef = useRef(null);
+    const wsRef = useRef(null);
+    const reconnectDelayRef = useRef(1000);
+    const updateHandlerRef = useRef(onStatsUpdate);
+
+    // Держим актуальный колбэк в ref, чтобы не пересоздавать соединение
+    useEffect(() => {
+        updateHandlerRef.current = onStatsUpdate;
+    }, [onStatsUpdate]);
 
     useEffect(() => {
         if (!userId) return;
 
-        const connectSocket = () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const host = (process.env.REACT_APP_WS_HOST || window.location.host);
+        const wsUrl = `${protocol}://${host}/ws/stats`;
+        const token = localStorage.getItem('token');
 
-            console.log('🔌 [Real-time] Подключение к WebSocket для статистики...');
+        let closedByUser = false;
 
-            const socket = io(process.env.REACT_APP_WS_URL || window.location.origin, {
-                path: '/ws/stats',
-                transports: ['websocket', 'polling'],
-                auth: { token },
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 5
-            });
+        const connect = () => {
+            try {
+                console.log('🔌 [Real-time] Подключение к', wsUrl);
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
 
-            socket.on('connect', () => {
-                console.log('✅ [Real-time] Подключено к WebSocket');
-                setConnected(true);
-                
-                // Подписываемся на обновления статистики
-                socket.emit('subscribe:stats', { userId });
-            });
+                ws.onopen = () => {
+                    setConnected(true);
+                    reconnectDelayRef.current = 1000; // сброс backoff
+                    // Аутентификация/подписка согласно backend API
+                    ws.send(JSON.stringify({
+                        type: 'subscribe_stats',
+                        userId,
+                        token
+                    }));
+                };
 
-            socket.on('disconnect', (reason) => {
-                console.log('❌ [Real-time] Отключено от WebSocket:', reason);
-                setConnected(false);
-            });
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'stats_update' && updateHandlerRef.current) {
+                            updateHandlerRef.current({ type: 'stats', data: msg.data });
+                        } else if ((msg.type === 'achievement_unlocked' || msg.type === 'achievement') && updateHandlerRef.current) {
+                            updateHandlerRef.current({ type: 'achievement', data: msg.data });
+                        } else if ((msg.type === 'level_up' || msg.type === 'levelUp') && updateHandlerRef.current) {
+                            updateHandlerRef.current({ type: 'levelUp', data: msg.data });
+                        }
+                    } catch (_) {}
+                };
 
-            socket.on('connect_error', (error) => {
-                console.error('❌ [Real-time] Ошибка подключения:', error.message);
-                setConnected(false);
-            });
+                ws.onerror = () => {
+                    // Ошибку логируем, авто-reconnect сработает в onclose
+                };
 
-            // Обновления статистики
-            socket.on('stats:updated', (data) => {
-                console.log('📊 [Real-time] Получено обновление статистики');
-                if (onStatsUpdate) {
-                    onStatsUpdate(data);
-                }
-            });
-
-            // Уведомление о новом достижении
-            socket.on('achievement:unlocked', (data) => {
-                console.log('🏆 [Real-time] Разблокировано достижение:', data.achievement);
-                if (onStatsUpdate) {
-                    onStatsUpdate({ type: 'achievement', data });
-                }
-            });
-
-            // Обновление уровня
-            socket.on('level:up', (data) => {
-                console.log('⭐ [Real-time] Повышение уровня:', data.newLevel);
-                if (onStatsUpdate) {
-                    onStatsUpdate({ type: 'levelUp', data });
-                }
-            });
-
-            socketRef.current = socket;
+                ws.onclose = () => {
+                    setConnected(false);
+                    if (closedByUser) return;
+                    // Экспоненциальный backoff до 30s
+                    const delay = Math.min(reconnectDelayRef.current, 30000);
+                    setTimeout(() => {
+                        reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, 30000);
+                        connect();
+                    }, delay);
+                };
+            } catch (e) {
+                // Попытка повторного подключения с backoff
+                setTimeout(connect, reconnectDelayRef.current);
+                reconnectDelayRef.current = Math.min(reconnectDelayRef.current * 2, 30000);
+            }
         };
 
-        connectSocket();
+        connect();
 
         return () => {
-            if (socketRef.current) {
-                console.log('🔌 [Real-time] Отключение от WebSocket');
-                socketRef.current.disconnect();
-                socketRef.current = null;
-            }
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-            }
+            closedByUser = true;
+            try { wsRef.current && wsRef.current.close(); } catch (_) {}
+            wsRef.current = null;
         };
-    }, [userId, onStatsUpdate]);
+    }, [userId]);
 
-    const subscribeToUser = (targetUserId) => {
-        if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.emit('subscribe:stats', { userId: targetUserId });
+    const send = (payload) => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify(payload));
         }
     };
 
-    const unsubscribeFromUser = (targetUserId) => {
-        if (socketRef.current && socketRef.current.connected) {
-            socketRef.current.emit('unsubscribe:stats', { userId: targetUserId });
-        }
-    };
+    const subscribeToUser = (targetUserId) => send({ type: 'subscribe_stats', userId: targetUserId, token: localStorage.getItem('token') });
+    const unsubscribeFromUser = (targetUserId) => send({ type: 'unsubscribe_stats', userId: targetUserId });
 
-    return {
-        connected,
-        subscribeToUser,
-        unsubscribeFromUser
-    };
+    return { connected, subscribeToUser, unsubscribeFromUser };
 }
 
 export default useRealTimeStats;

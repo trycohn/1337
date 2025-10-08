@@ -2316,18 +2316,24 @@ router.get('/:userId/friends-comparison', async (req, res) => {
         
         const friendIds = friendsResult.rows.map(r => r.friend_id);
         
-        // Получаем статистику друзей
-        const friendsStatsResult = await pool.query(`
-            SELECT 
-                user_id,
-                solo_wins,
-                solo_losses,
-                team_wins,
-                team_losses,
-                tournaments
-            FROM user_statistics
-            WHERE user_id = ANY($1::int[])
-        `, [friendIds]);
+        // Получаем статистику друзей (graceful: если таблицы/данных нет)
+        let friendsStatsResult = { rows: [] };
+        try {
+            friendsStatsResult = await pool.query(`
+                SELECT 
+                    user_id,
+                    solo_wins,
+                    solo_losses,
+                    team_wins,
+                    team_losses,
+                    tournaments
+                FROM user_statistics
+                WHERE user_id = ANY($1::int[])
+            `, [friendIds]);
+        } catch (statsErr) {
+            console.warn('⚠️ [friends-comparison] Таблица user_statistics недоступна, возвращаем безопасные значения');
+            friendsStatsResult = { rows: [] };
+        }
         
         // Вычисляем средние показатели
         let totalWinrate = 0;
@@ -2353,7 +2359,7 @@ router.get('/:userId/friends-comparison', async (req, res) => {
             totalTournaments += tournaments;
         });
         
-        const friendsCount = friendsStatsResult.rows.length;
+        const friendsCount = friendsResult.rows.length; // считаем всех друзей, даже без статистики
         
         res.json({
             hasFriends: true,
