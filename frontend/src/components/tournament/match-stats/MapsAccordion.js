@@ -18,7 +18,7 @@ function mapImage(name) {
   return imgs[map] || '/images/maps/mirage.jpg';
 }
 
-export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap }) {
+export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compact = false }) {
   const [open, setOpen] = useState(null);
   if (!Array.isArray(maps) || maps.length === 0) return null;
   return (
@@ -43,8 +43,8 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap }) {
               </div>
               {isOpen && (
                 <div style={{padding:'8px 12px'}}>
-                  <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={t1} />
-                  <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={t2} />
+                  <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={t1} compact={compact} />
+                  <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={t2} compact={compact} />
                 </div>
               )}
             </div>

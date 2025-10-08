@@ -185,8 +185,11 @@ function CustomMatchPage() {
             <PickBanTimeline steps={pickban} />
 
             <LeadersPanel leaders={leaders} />
-            <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} />
-            <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} />
+            <div className="custom-match-mt-12 compact-toggle">
+                <label><input type="checkbox" onChange={(e)=>setExpandedMap(prev=>prev)} /> Компактный режим таблиц</label>
+            </div>
+            <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={true} />
+            <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={true} />
 
             <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
         </div>

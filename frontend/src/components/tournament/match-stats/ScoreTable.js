@@ -1,7 +1,7 @@
 import React from 'react';
 import { fmt, pct } from './formatters';
 
-export function ScoreTable({ title, rows }) {
+export function ScoreTable({ title, rows, compact = false }) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return (
     <div className="custom-match-mt-16">
@@ -17,17 +17,17 @@ export function ScoreTable({ title, rows }) {
               <th>K/D</th>
               <th>ADR</th>
               <th>HS%</th>
-              <th>Acc</th>
-              <th>RWS*</th>
-              <th>Entry%</th>
-              <th>1v1%</th>
-              <th>1v2%</th>
-              <th>5k</th>
-              <th>4k</th>
-              <th>3k</th>
-              <th>2k</th>
-              <th>UtlDmg</th>
-              <th>Flashed</th>
+              {!compact && (<th>Acc</th>)}
+              {!compact && (<th>RWS*</th>)}
+              {!compact && (<th>Entry%</th>)}
+              {!compact && (<th>1v1%</th>)}
+              {!compact && (<th>1v2%</th>)}
+              {!compact && (<th>5k</th>)}
+              {!compact && (<th>4k</th>)}
+              {!compact && (<th>3k</th>)}
+              {!compact && (<th>2k</th>)}
+              {!compact && (<th>UtlDmg</th>)}
+              {!compact && (<th>Flashed</th>)}
             </tr>
           </thead>
           <tbody>
@@ -40,17 +40,17 @@ export function ScoreTable({ title, rows }) {
                 <td data-label="K/D">{fmt(p.kd, 2)}</td>
                 <td data-label="ADR">{fmt(p.adr, 1)}</td>
                 <td data-label="HS%">{pct(p.hs)}</td>
-                <td data-label="Acc">{pct(p.acc)}</td>
-                <td data-label="RWS*">{fmt(p.rws, 1)}</td>
-                <td data-label="Entry%">{pct(p.entry)}</td>
-                <td data-label="1v1%">{pct(p.clutch1)}</td>
-                <td data-label="1v2%">{pct(p.clutch2)}</td>
-                <td data-label="5k">{p.enemy5ks||0}</td>
-                <td data-label="4k">{p.enemy4ks||0}</td>
-                <td data-label="3k">{p.enemy3ks||0}</td>
-                <td data-label="2k">{p.enemy2ks||0}</td>
-                <td data-label="UtlDmg">{p.utility_damage||0}</td>
-                <td data-label="Flashed">{p.enemies_flashed||0}</td>
+                {!compact && (<td data-label="Acc">{pct(p.acc)}</td>)}
+                {!compact && (<td data-label="RWS*">{fmt(p.rws, 1)}</td>)}
+                {!compact && (<td data-label="Entry%">{pct(p.entry)}</td>)}
+                {!compact && (<td data-label="1v1%">{pct(p.clutch1)}</td>)}
+                {!compact && (<td data-label="1v2%">{pct(p.clutch2)}</td>)}
+                {!compact && (<td data-label="5k">{p.enemy5ks||0}</td>)}
+                {!compact && (<td data-label="4k">{p.enemy4ks||0}</td>)}
+                {!compact && (<td data-label="3k">{p.enemy3ks||0}</td>)}
+                {!compact && (<td data-label="2k">{p.enemy2ks||0}</td>)}
+                {!compact && (<td data-label="UtlDmg">{p.utility_damage||0}</td>)}
+                {!compact && (<td data-label="Flashed">{p.enemies_flashed||0}</td>)}
               </tr>
             ))}
           </tbody>

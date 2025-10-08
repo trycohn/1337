@@ -86,4 +86,11 @@
   }
 }
 
+/* Переключатель компактного режима (можно использовать общий класс) */
+.compact-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
 
