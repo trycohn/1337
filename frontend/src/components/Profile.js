@@ -6,6 +6,9 @@ import ProfileReputation from './ProfileReputation'; // Компонент ре�
 import DetailedStats from './stats/DetailedStats'; // 📊 Детальная статистика
 import ProfileShowcase from './ProfileShowcase'; // 🏆 Витрина достижений
 import PlayerForm from './PlayerForm'; // 🔥 Текущая форма игрока
+import PlayerLevel from './PlayerLevel'; // ⭐ Система уровней
+import FriendsComparison from './FriendsComparison'; // 👥 Сравнение с друзьями
+import useRealTimeStats from '../hooks/useRealTimeStats'; // 🔌 Real-time обновления
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -196,6 +199,25 @@ function Profile() {
     const [activeTab, setActiveTab] = useState('main');
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
     const [sheetOpen, setSheetOpen] = useState(false);
+
+    // 🔌 Real-time обновления через WebSocket
+    const handleRealTimeUpdate = (update) => {
+        console.log('📊 [Profile] Получено real-time обновление:', update);
+        
+        if (update.type === 'achievement') {
+            // Показываем уведомление о новом достижении
+            console.log('🏆 Новое достижение разблокировано!');
+            // Можно добавить toast-уведомление
+        } else if (update.type === 'levelUp') {
+            console.log('⭐ Повышение уровня!', update.data);
+            // Можно добавить celebration анимацию
+        } else {
+            // Обновляем статистику
+            fetchUserStats();
+        }
+    };
+
+    const { connected: wsConnected } = useRealTimeStats(user?.id, handleRealTimeUpdate);
 
     // 🔧 Глобально, безусловно регистрируем обработчик ресайза (исключаем условные вызовы хуков)
     useEffect(() => {
@@ -2407,7 +2429,7 @@ function Profile() {
                         </div>
                         
                         {/* 🏆 Витрина достижений */}
-                        {stats && <ProfileShowcase stats={stats} />}
+                        {stats && <ProfileShowcase stats={stats} userId={user.id} />}
                     </div>
                     
                     {/* Убраны быстрые статблоки из хедера по запросу */}
@@ -2654,7 +2676,19 @@ function Profile() {
                             <>
                                 <div className="content-header">
                                     <h2 className="content-title">Статистика</h2>
+                                    {wsConnected && (
+                                        <div className="realtime-indicator">
+                                            <span className="realtime-dot"></span>
+                                            <span className="realtime-text">Live</span>
+                                        </div>
+                                    )}
                                 </div>
+                                
+                                {/* ⭐ Player Level & Progress */}
+                                <PlayerLevel userId={user.id} stats={stats} />
+                                
+                                {/* 👥 Friends Comparison */}
+                                <FriendsComparison userId={user.id} stats={stats} />
                                 
                                 {/* 📊 DETAILED STATS - FIRST BLOCK */}
                                 <div className="content-card">
