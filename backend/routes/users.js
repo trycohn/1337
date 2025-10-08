@@ -2245,6 +2245,52 @@ router.get('/profile/:userId', async (req, res) => {
     }
 });
 
+// Получение истории турниров пользователя
+router.get('/:userId/tournament-history', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`🏆 Запрос истории турниров для пользователя ID: ${userId}`);
+        
+        // Получаем все турниры, в которых пользователь участвовал в составе команд
+        const historyResult = await pool.query(`
+            SELECT DISTINCT
+                ut.id as team_id,
+                ut.name as team_name,
+                ut.avatar_url as team_avatar,
+                t.id as tournament_id,
+                t.name as tournament_name,
+                t.start_date as tournament_date,
+                t.game,
+                t.winner_team_id,
+                tt.id as tournament_team_id,
+                -- Определяем результат на основе winner_team_id
+                CASE
+                    WHEN t.winner_team_id = tt.id THEN 'Победитель'
+                    ELSE 'Участник'
+                END as result,
+                -- Определяем placement (если есть)
+                CASE
+                    WHEN t.winner_team_id = tt.id THEN 1
+                    ELSE NULL
+                END as placement
+            FROM user_team_members utm
+            JOIN user_teams ut ON utm.team_id = ut.id
+            JOIN tournament_teams tt ON tt.team_id = ut.id
+            JOIN tournaments t ON t.id = tt.tournament_id
+            WHERE utm.user_id = $1
+            ORDER BY t.start_date DESC, t.id DESC
+        `, [userId]);
+        
+        console.log(`✅ Найдено ${historyResult.rows.length} записей истории турниров`);
+        
+        res.json(historyResult.rows);
+    } catch (err) {
+        console.error('❌ Ошибка получения истории турниров:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении истории турниров' });
+    }
+});
+
 // Функция для получения правильного склонения слова "минута"
 function getMinutesWord(minutes) {
     if (minutes >= 11 && minutes <= 14) {

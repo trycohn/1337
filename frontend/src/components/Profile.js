@@ -5,6 +5,7 @@ import api from '../axios';
 import ProfileReputation from './ProfileReputation'; // Компонент репутации
 import DetailedStats from './stats/DetailedStats'; // 📊 Детальная статистика
 import ProfileShowcase from './ProfileShowcase'; // 🏆 Витрина достижений
+import PlayerForm from './PlayerForm'; // 🔥 Текущая форма игрока
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -146,6 +147,25 @@ function Profile() {
     const [showModal, setShowModal] = useState(false);
     const [steamNickname, setSteamNickname] = useState('');
     const [premierRank, setPremierRank] = useState(0);
+    const [recentMatches, setRecentMatches] = useState([]);
+    
+    // Загрузка недавних матчей
+    useEffect(() => {
+        if (user && user.id) {
+            loadRecentMatches();
+        }
+    }, [user]);
+    
+    const loadRecentMatches = async () => {
+        try {
+            const response = await api.get(`/api/player-stats/player/${user.id}/recent?limit=10`);
+            if (response.data.success) {
+                setRecentMatches(response.data.matches);
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки недавних матчей:', error);
+        }
+    };
     
     // Avatar states
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -2651,6 +2671,8 @@ function Profile() {
                                     </div>
                                     <div className="card-content">
                                         <DetailedStats userId={user.id} />
+                                        {/* 🔥 Player Form - Current streak and trend */}
+                                        <PlayerForm recentMatches={recentMatches} stats={stats} />
                                     </div>
                                 </div>
                                 
