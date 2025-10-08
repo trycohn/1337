@@ -1,5 +1,5 @@
 // 🎮 MatchLobbyPage - Страница лобби матча для CS2
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../../../context/UserContext';
 // Убираем прямое WS‑подключение; используем polling API для live
@@ -20,6 +20,7 @@ function MatchLobbyPage() {
     const [error, setError] = useState(null);
     const [ready, setReady] = useState(false);
     const [selectedFormat, setSelectedFormat] = useState(null);
+    const redirectedRef = useRef(false);
 
     // 🔄 Polling вместо WS
     useEffect(() => {
@@ -36,6 +37,14 @@ function MatchLobbyPage() {
                     if (data.success) {
                         setLobby(data.lobby);
                         if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
+                        // 🧭 Авто-редирект на страницу матча ПОСЛЕ завершения матча на сервере
+                        if (!redirectedRef.current && data.lobby.status === 'completed' && data.lobby.match_id) {
+                            redirectedRef.current = true;
+                            const tId = data.lobby.tournament_id;
+                            const target = tId ? `/tournaments/${tId}/match/${data.lobby.match_id}` : `/matches/custom/${data.lobby.match_id}`;
+                            try { navigate(target); } catch(_) {}
+                            return; // прекращаем дальнейший pull
+                        }
                         setError(null);
                     }
                 }

@@ -838,6 +838,13 @@ function AdminMatchPage() {
                                     </div>
                                 </div>
                             )}
+                            {lobby?.match_id && (
+                                <div className="custom-match-mt-12">
+                                    <a className="btn btn-secondary" href={`/matches/custom/${lobby.match_id}`} target="_blank" rel="noreferrer">
+                                        Открыть страницу матча
+                                    </a>
+                                </div>
+                            )}
                             <div className="custom-match-mt-12">
                                 <a className="btn btn-primary custom-match-ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
                                     Подключиться к матчу
