@@ -1142,6 +1142,12 @@
     animation: slideOut 0.3s ease;
 }
 
+.modal-content.match-history-modal {
+    max-width: 1000px;
+    height: auto;
+    padding: 32px;
+}
+
 @keyframes slideIn {
     from {
         transform: translateY(-50px);
