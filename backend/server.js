@@ -151,6 +151,7 @@ const publicRoutes = [
   /^\/api\/users\/faceit-login$/,  // FACEIT OAuth
   /^\/api\/users\/steam\/callback$/,  // Steam callback
   /^\/api\/users\/faceit-callback$/,  // FACEIT callback
+  /^\/api\/matchzy\/match-end$/,  // MatchZy webhook (имеет свою проверку токена)
   /^\/testdb$/  // Тестовый маршрут
 ];
 
