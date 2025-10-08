@@ -149,24 +149,6 @@ function Profile() {
     const [premierRank, setPremierRank] = useState(0);
     const [recentMatches, setRecentMatches] = useState([]);
     
-    // Загрузка недавних матчей
-    useEffect(() => {
-        if (user && user.id) {
-            loadRecentMatches();
-        }
-    }, [user]);
-    
-    const loadRecentMatches = async () => {
-        try {
-            const response = await api.get(`/api/player-stats/player/${user.id}/recent?limit=10`);
-            if (response.data.success) {
-                setRecentMatches(response.data.matches);
-            }
-        } catch (error) {
-            console.error('Ошибка загрузки недавних матчей:', error);
-        }
-    };
-    
     // Avatar states
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -947,6 +929,16 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(response.data);
+            
+            // Загружаем недавние матчи для отображения формы
+            try {
+                const recentResponse = await api.get(`/api/player-stats/player/${user.id}/recent?limit=10`);
+                if (recentResponse.data.success) {
+                    setRecentMatches(recentResponse.data.matches);
+                }
+            } catch (err) {
+                console.log('⚠️ Не удалось загрузить недавние матчи:', err);
+            }
             
             // Показываем финальный статус успеха
             if (!recalculationError && shouldRecalculate) {
@@ -3948,7 +3940,6 @@ function Profile() {
                             </>
                         )}
                     </div>
-                </div>
             </div>
             
             {/* Modals */}
