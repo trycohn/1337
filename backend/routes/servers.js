@@ -355,45 +355,5 @@ router.post('/:id/command', authenticateToken, requireAdmin, async (req, res) =>
     }
 });
 
-/**
- * Получить историю команд сервера
- * GET /api/servers/:id/commands
- */
-router.get('/:id/commands', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { limit = 50, offset = 0 } = req.query;
-        
-        const result = await pool.query(
-            `SELECT 
-                c.*,
-                u.username as executed_by_username
-            FROM cs2_server_commands c
-            LEFT JOIN users u ON u.id = c.executed_by
-            WHERE c.server_id = $1
-            ORDER BY c.executed_at DESC
-            LIMIT $2 OFFSET $3`,
-            [id, limit, offset]
-        );
-        
-        const countResult = await pool.query(
-            'SELECT COUNT(*) FROM cs2_server_commands WHERE server_id = $1',
-            [id]
-        );
-        
-        res.json({ 
-            success: true, 
-            commands: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
-        
-    } catch (error) {
-        console.error('Ошибка получения истории команд:', error);
-        res.status(500).json({ error: 'Не удалось получить историю команд' });
-    }
-});
-
 module.exports = router;
 

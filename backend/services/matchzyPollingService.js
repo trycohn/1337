@@ -24,11 +24,40 @@ function getConfig() {
   };
 }
 
-async function withMySql(fn) {
-  const cfg = getConfig();
-  if (cfg.driver !== 'mysql') throw new Error('Only MySQL driver is supported for now');
+async function withMySql(fn, serverId = null) {
   if (!mysql) throw new Error('mysql2 is not installed');
-  const conn = await mysql.createConnection(cfg.mysql);
+  
+  let dbConfig;
+  
+  // Если указан serverId - берем данные из cs2_servers
+  if (serverId) {
+    const serverResult = await pool.query(
+      'SELECT db_host, db_port, db_user, db_password, db_name FROM cs2_servers WHERE id = $1',
+      [serverId]
+    );
+    
+    if (!serverResult.rows[0] || !serverResult.rows[0].db_host) {
+      throw new Error(`Данные БД не настроены для сервера ID ${serverId}`);
+    }
+    
+    const s = serverResult.rows[0];
+    dbConfig = {
+      host: s.db_host,
+      port: s.db_port || 3306,
+      user: s.db_user,
+      password: s.db_password,
+      database: s.db_name
+    };
+    
+    console.log(`🔌 Подключение к БД сервера ${serverId}: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
+  } else {
+    // Fallback на .env (для обратной совместимости)
+    const cfg = getConfig();
+    dbConfig = cfg.mysql;
+    console.log(`🔌 Подключение к БД из .env: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
+  }
+  
+  const conn = await mysql.createConnection(dbConfig);
   try { return await fn(conn); } finally { try { await conn.end(); } catch (_) {} }
 }
 
@@ -160,18 +189,54 @@ async function pollOnce() {
   const cfg = getConfig();
   if (!cfg.enabled) return;
   if (cfg.driver !== 'mysql') return; // пока только MySQL
+  
   try {
-    await withMySql(async (conn) => {
-      const [rows] = await conn.execute(
-        `SELECT * FROM matchzy_stats_matches WHERE end_time IS NOT NULL ORDER BY end_time DESC LIMIT 20`
-      );
-      for (const row of rows) {
-        // импортируем, если в PG ещё нет
-        const exists = await pool.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [row.matchid]);
-        if (!exists.rows[0]) { await importMatchFromMySql(row, conn); }
-        await linkOurRefs(Number(row.matchid));
+    // Получаем все серверы с настроенными данными БД
+    const serversResult = await pool.query(
+      'SELECT id, name, db_host FROM cs2_servers WHERE is_active = true AND db_host IS NOT NULL'
+    );
+    
+    if (serversResult.rows.length === 0) {
+      console.log('⚠️ [matchzy-poll] Нет серверов с настроенными данными БД, используем .env');
+      // Fallback на старую логику с .env
+      await withMySql(async (conn) => {
+        const [rows] = await conn.execute(
+          `SELECT * FROM matchzy_stats_matches WHERE end_time IS NOT NULL ORDER BY end_time DESC LIMIT 20`
+        );
+        for (const row of rows) {
+          const exists = await pool.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [row.matchid]);
+          if (!exists.rows[0]) { await importMatchFromMySql(row, conn); }
+          await linkOurRefs(Number(row.matchid));
+        }
+      });
+      return;
+    }
+    
+    // Проверяем БД каждого сервера
+    for (const server of serversResult.rows) {
+      try {
+        console.log(`🔍 [matchzy-poll] Опрос БД сервера ${server.name}...`);
+        
+        await withMySql(async (conn) => {
+          const [rows] = await conn.execute(
+            `SELECT * FROM matchzy_stats_matches WHERE end_time IS NOT NULL ORDER BY end_time DESC LIMIT 20`
+          );
+          
+          for (const row of rows) {
+            const exists = await pool.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [row.matchid]);
+            if (!exists.rows[0]) { 
+              await importMatchFromMySql(row, conn);
+              console.log(`✅ [matchzy-poll] Импортирован матч ${row.matchid} с сервера ${server.name}`);
+            }
+            await linkOurRefs(Number(row.matchid));
+          }
+        }, server.id); // ← передаем serverId
+        
+      } catch (serverError) {
+        console.error(`❌ [matchzy-poll] Ошибка опроса сервера ${server.name}:`, serverError.message);
       }
-    });
+    }
+    
   } catch (e) {
     console.error('❌ [matchzy-poll] Ошибка опроса:', e.message);
   }
@@ -195,6 +260,6 @@ async function start() {
 
 function stop() { if (timer) { clearTimeout(timer); timer = null; } }
 
-module.exports = { start, stop, pollOnce };
+module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql };
 
 

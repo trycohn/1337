@@ -12,11 +12,154 @@ const StatsProcessor = require('../services/stats/StatsProcessor');
 const AnomalyDetector = require('../services/stats/AnomalyDetector');
 
 /**
+ * POST /api/matchzy/match-end
+ * Webhook от MatchZy когда матч завершен (триггер для получения статистики из БД)
+ */
+router.post('/match-end', async (req, res) => {
+    console.log('🎯 [MatchZy] Получен сигнал о завершении матча');
+    
+    try {
+        // Проверка токена (если настроен в .env)
+        if (process.env.MATCHZY_SECRET_TOKEN) {
+            const token = req.headers['x-matchzy-token'] || 
+                         req.headers['authorization']?.replace('Bearer ', '');
+            
+            if (token !== process.env.MATCHZY_SECRET_TOKEN) {
+                console.log('❌ [MatchZy] Неверный токен авторизации');
+                return res.status(401).json({ 
+                    success: false, 
+                    error: 'Unauthorized' 
+                });
+            }
+        }
+        
+        const { matchid, event, winner, team1_series_score, team2_series_score, time_until_restore } = req.body;
+        
+        if (!matchid) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'matchid is required' 
+            });
+        }
+        
+        console.log(`📊 [MatchZy] Webhook series_end:`, {
+            matchid,
+            event: event || 'series_end',
+            score: `${team1_series_score || 0}:${team2_series_score || 0}`,
+            winner: winner?.team || 'N/A'
+        });
+        
+        // Быстро отвечаем серверу что webhook получен
+        res.json({ 
+            success: true, 
+            message: 'Webhook received, processing stats in background' 
+        });
+        
+        // Запускаем импорт статистики в фоне (с задержкой 2 сек чтобы MatchZy успел записать в БД)
+        setTimeout(async () => {
+            try {
+                console.log(`⏳ [MatchZy] Начинаем импорт статистики через 2 секунды...`);
+                await importStatsForMatch(parseInt(matchid));
+            } catch (error) {
+                console.error(`❌ [MatchZy] Ошибка импорта статистики для matchid=${matchid}:`, error.message);
+            }
+        }, 2000); // 2 секунды задержка
+        
+    } catch (error) {
+        console.error('❌ [MatchZy] Ошибка webhook:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to process webhook' 
+        });
+    }
+});
+
+/**
+ * Импорт статистики матча из БД сервера
+ */
+async function importStatsForMatch(matchid) {
+    const pool = require('../db');
+    const { withMySql } = require('../services/matchzyPollingService');
+    
+    console.log(`🔍 [MatchZy] Начинаем импорт статистики для matchid=${matchid}`);
+    
+    try {
+        // 1. Извлекаем lobby_id из matchid
+        const lobbyId = deriveLobbyIdFromMatchId(matchid);
+        
+        if (!lobbyId) {
+            console.log(`⚠️ [MatchZy] Не удалось извлечь lobby_id из matchid=${matchid}`);
+            return;
+        }
+        
+        console.log(`🔍 [MatchZy] Извлечен lobby_id=${lobbyId} из matchid=${matchid}`);
+        
+        // 2. Находим server_id по lobby_id
+        const lobbyResult = await pool.query(
+            'SELECT server_id FROM admin_match_lobbies WHERE id = $1',
+            [lobbyId]
+        );
+        
+        if (!lobbyResult.rows[0]?.server_id) {
+            console.log(`⚠️ [MatchZy] Не найден server_id для lobby_id=${lobbyId}`);
+            return;
+        }
+        
+        const serverId = lobbyResult.rows[0].server_id;
+        console.log(`🖥️ [MatchZy] Найден server_id=${serverId}`);
+        
+        // 3. Подключаемся к БД этого сервера и импортируем статистику
+        await withMySql(async (conn) => {
+            console.log(`📥 [MatchZy] Запрашиваем данные из БД сервера...`);
+            
+            // Получаем данные матча
+            const [matches] = await conn.execute(
+                'SELECT * FROM matchzy_stats_matches WHERE matchid = ?',
+                [matchid]
+            );
+            
+            if (matches.length === 0) {
+                console.log(`⚠️ [MatchZy] Матч ${matchid} не найден в БД сервера (еще не записан?)`);
+                return;
+            }
+            
+            const matchRow = matches[0];
+            console.log(`✅ [MatchZy] Найден матч: ${matchRow.team1_name} ${matchRow.team1_score}:${matchRow.team2_score} ${matchRow.team2_name}`);
+            
+            // Импортируем матч
+            const { importMatchFromMySql } = require('../services/matchzyPollingService');
+            await importMatchFromMySql(matchRow, conn);
+            
+            console.log(`✅ [MatchZy] Статистика матча ${matchid} успешно импортирована!`);
+            
+        }, serverId);
+        
+    } catch (error) {
+        console.error(`❌ [MatchZy] Ошибка импорта:`, error.message);
+        throw error;
+    }
+}
+
+/**
+ * Извлечь lobby_id из matchid
+ */
+function deriveLobbyIdFromMatchId(matchid) {
+    try {
+        const s = String(matchid);
+        if (s.length <= 8) return null;
+        const lobbyId = Number(s.slice(0, -8));
+        return Number.isInteger(lobbyId) && lobbyId > 0 ? lobbyId : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+/**
  * POST /api/matchzy/stats
- * Webhook для приема статистики от MatchZy
+ * Webhook для приема статистики от MatchZy (legacy, для совместимости)
  */
 router.post('/stats', async (req, res) => {
-    console.log('📊 [MatchZy] Получены данные от MatchZy webhook');
+    console.log('📊 [MatchZy] Получены данные от MatchZy webhook (legacy)');
     
     try {
         // 1. Валидация токена (безопасность)
