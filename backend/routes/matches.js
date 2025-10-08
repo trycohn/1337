@@ -25,8 +25,9 @@ router.get('/custom/:id/stats', async (req, res) => {
         const maps = mapsRes.rows;
         const players = playersRes.rows;
 
-        // 4) Подсчёт раундов всей серии
+        // 4) Подсчёт раундов всей серии и по картам
         const totalRounds = maps.reduce((acc, r) => acc + Number(r.team1_score || 0) + Number(r.team2_score || 0), 0) || 1;
+        const roundsByMap = new Map(maps.map(r => [Number(r.mapnumber), (Number(r.team1_score||0)+Number(r.team2_score||0)) || 1]));
 
         // 5) Агрегируем игроков по steamid64 (сумма по картам)
         const bySteam = new Map();
@@ -73,23 +74,58 @@ router.get('/custom/:id/stats', async (req, res) => {
             return { kd, adr, hs, acc, entry, clutch1, clutch2, rws };
         }
 
-        // 7) Сборка игроков по командам
+        // 7) Сборка игроков по командам (сумма) и по картам
         const team1Name = mz.team1_name || lob.rows[0].team1_name || 'TEAM_A';
         const team2Name = mz.team2_name || lob.rows[0].team2_name || 'TEAM_B';
         const team1 = [];
         const team2 = [];
+        const playersByMap = {}; // { mapnumber: { team1:[], team2:[] } }
+        function pushToTeam(listObj, a, metrics) {
+            const row = { ...a, ...metrics };
+            if (a.team === team1Name) listObj.team1.push(row);
+            else if (a.team === team2Name) listObj.team2.push(row);
+            else {
+                const t = (a.team||'').toLowerCase();
+                if (t.includes(team1Name.toLowerCase())) listObj.team1.push(row);
+                else if (t.includes(team2Name.toLowerCase())) listObj.team2.push(row);
+                else (listObj.team1.length <= listObj.team2.length ? listObj.team1 : listObj.team2).push(row);
+            }
+        }
         for (const a of bySteam.values()) {
             const metrics = metricFor(a);
-            const row = { ...a, ...metrics };
-            if (a.team === team1Name) team1.push(row);
-            else if (a.team === team2Name) team2.push(row);
+            if (a.team === team1Name) team1.push({ ...a, ...metrics });
+            else if (a.team === team2Name) team2.push({ ...a, ...metrics });
             else {
-                // если имена в matchzy не совпали, распределим по наибольшей схожести
                 const t = (a.team||'').toLowerCase();
-                if (t.includes(team1Name.toLowerCase())) team1.push(row);
-                else if (t.includes(team2Name.toLowerCase())) team2.push(row);
-                else team1.length <= team2.length ? team1.push(row) : team2.push(row);
+                if (t.includes(team1Name.toLowerCase())) team1.push({ ...a, ...metrics });
+                else if (t.includes(team2Name.toLowerCase())) team2.push({ ...a, ...metrics });
+                else team1.length <= team2.length ? team1.push({ ...a, ...metrics }) : team2.push({ ...a, ...metrics });
             }
+        }
+        // По картам: пересчитываем метрики с раундами конкретной карты
+        for (const p of players) {
+            const mapno = Number(p.mapnumber);
+            const rounds = roundsByMap.get(mapno) || 1;
+            const a = {
+                steamid64: String(p.steamid64),
+                team: p.team, name: p.name,
+                kills: p.kills||0, deaths: p.deaths||0, assists: p.assists||0, damage: p.damage||0,
+                head_shot_kills: p.head_shot_kills||0, shots_fired_total: p.shots_fired_total||0,
+                shots_on_target_total: p.shots_on_target_total||0, entry_count: p.entry_count||0, entry_wins: p.entry_wins||0,
+                v1_count: p.v1_count||0, v1_wins: p.v1_wins||0, v2_count: p.v2_count||0, v2_wins: p.v2_wins||0,
+                enemy5ks: p.enemy5ks||0, enemy4ks: p.enemy4ks||0, enemy3ks: p.enemy3ks||0, enemy2ks: p.enemy2ks||0,
+                utility_damage: p.utility_damage||0, enemies_flashed: p.enemies_flashed||0
+            };
+            const kd = a.deaths > 0 ? a.kills / a.deaths : a.kills;
+            const adr = rounds > 0 ? a.damage / rounds : 0;
+            const hs = a.kills > 0 ? a.head_shot_kills / a.kills : 0;
+            const acc = a.shots_fired_total > 0 ? a.shots_on_target_total / a.shots_fired_total : 0;
+            const entry = a.entry_count > 0 ? a.entry_wins / a.entry_count : 0;
+            const clutch1 = a.v1_count > 0 ? a.v1_wins / a.v1_count : 0;
+            const clutch2 = a.v2_count > 0 ? a.v2_wins / a.v2_count : 0;
+            const rws = teamDamage[a.team] > 0 ? (a.damage / teamDamage[a.team]) * 100 : 0;
+            if (!playersByMap[mapno]) playersByMap[mapno] = { team1: [], team2: [] };
+            pushToTeam(playersByMap[mapno], a, { kd, adr, hs, acc, entry, clutch1, clutch2, rws });
         }
 
         // 8) Лидеры
@@ -147,6 +183,7 @@ router.get('/custom/:id/stats', async (req, res) => {
                 end_time: r.end_time
             })),
             playersByTeam: { team1, team2 },
+            playersByMap,
             leaders,
             pickban: stepsRes.rows
         });
