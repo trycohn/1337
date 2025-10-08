@@ -24,13 +24,22 @@ router.post('/match-end', async (req, res) => {
             const token = req.headers['x-matchzy-token'] || 
                          req.headers['authorization']?.replace('Bearer ', '');
             
+            console.log('🔑 [MatchZy] Проверка токена:');
+            console.log('   Получен токен:', token ? token.substring(0, 20) + '...' : 'ОТСУТСТВУЕТ');
+            console.log('   Ожидаемый токен:', process.env.MATCHZY_SECRET_TOKEN ? process.env.MATCHZY_SECRET_TOKEN.substring(0, 20) + '...' : 'НЕ УСТАНОВЛЕН');
+            console.log('   Headers:', JSON.stringify(req.headers));
+            
             if (token !== process.env.MATCHZY_SECRET_TOKEN) {
-                console.log('❌ [MatchZy] Неверный токен авторизации');
+                console.log('❌ [MatchZy] Токены не совпадают!');
                 return res.status(401).json({ 
                     success: false, 
                     error: 'Unauthorized' 
                 });
             }
+            
+            console.log('✅ [MatchZy] Токен валиден');
+        } else {
+            console.log('⚠️ [MatchZy] MATCHZY_SECRET_TOKEN не установлен в .env - пропускаем проверку');
         }
         
         const eventData = req.body;
