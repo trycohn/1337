@@ -6,6 +6,8 @@ import { LeadersPanel } from '../components/tournament/match-stats/LeadersPanel'
 import { ScoreTable } from '../components/tournament/match-stats/ScoreTable';
 import { MapsAccordion } from '../components/tournament/match-stats/MapsAccordion';
 import '../components/tournament/match-stats/match-stats.css';
+import { SkeletonCards, SkeletonTable, SkeletonMapTiles } from '../components/tournament/match-stats/Skeletons';
+import { StatusPanel } from '../components/tournament/match-stats/StatusPanel';
 
 function CustomMatchPage() {
     const { id } = useParams();
@@ -15,12 +17,13 @@ function CustomMatchPage() {
     const [stats, setStats] = useState(null);
     const [basic, setBasic] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
+    const [pollVersion, setPollVersion] = useState(0);
 
     useEffect(() => {
         let mounted = true;
         (async () => {
             try {
-                const r = await api.get(`/api/matches/custom/${id}/stats`);
+                const r = await api.get(`/api/matches/custom/${id}/stats?v=${pollVersion}`);
                 if (!mounted) return;
                 if (r?.data?.success) setStats(r.data);
                 else {
@@ -44,10 +47,58 @@ function CustomMatchPage() {
             }
         })();
         return () => { mounted = false; };
-    }, [id]);
+    }, [id, pollVersion]);
+
+    // Построение вью‑модели из fallback /api/matches/:id
+    const fallbackView = useMemo(() => {
+        if (!basic?.match) return null;
+        const m = basic.match || {};
+        const team1Players = Array.isArray(m.team1_players) ? m.team1_players : [];
+        const team2Players = Array.isArray(m.team2_players) ? m.team2_players : [];
+        const zeroify = (u) => ({
+            steamid64: String(u.steam_id || u.steamid64 || u.user_id || Math.random()),
+            name: u.username || u.name || 'Player',
+            team: m.team1_name && team1Players.includes(u) ? m.team1_name : m.team2_name,
+            kills: 0, deaths: 0, assists: 0, damage: 0,
+            head_shot_kills: 0, shots_fired_total: 0, shots_on_target_total: 0,
+            entry_count: 0, entry_wins: 0, v1_count: 0, v1_wins: 0, v2_count: 0, v2_wins: 0,
+            enemy5ks: 0, enemy4ks: 0, enemy3ks: 0, enemy2ks: 0,
+            utility_damage: 0, enemies_flashed: 0,
+            kd: 0, adr: 0, hs: 0, acc: 0, entry: 0, clutch1: 0, clutch2: 0, rws: 0
+        });
+        const playersByTeam = {
+            team1: team1Players.map(zeroify),
+            team2: team2Players.map(zeroify)
+        };
+        const mapsData = Array.isArray(m.maps_data) ? m.maps_data : [];
+        const maps = mapsData.map((x, idx) => ({
+            mapnumber: typeof x.index === 'number' ? x.index - 1 : idx,
+            mapname: x.map || x.map_name || 'unknown',
+            team1_score: x.team1_score || x.score1 || 0,
+            team2_score: x.team2_score || x.score2 || 0
+        }));
+        const playersByMap = {};
+        for (const mp of maps) {
+            playersByMap[mp.mapnumber] = { team1: playersByTeam.team1, team2: playersByTeam.team2 };
+        }
+        const pickban = Array.isArray(basic.veto_steps)
+            ? basic.veto_steps.map(s => ({ step_index: s.action_order, action: s.action_type, team_id: s.team_id, mapname: s.map_name }))
+            : [];
+        const match = {
+            team1_name: m.team1_name || 'Команда 1',
+            team2_name: m.team2_name || 'Команда 2',
+            team1_score: m.score1 ?? null,
+            team2_score: m.score2 ?? null,
+            connect: m.connect_url || null,
+            gotv: m.gotv_url || null
+        };
+        return { match, maps, playersByTeam, playersByMap, leaders: null, pickban };
+    }, [basic]);
+
+    const view = stats || fallbackView;
 
     if (loading) return <div className="container"><h2>Загрузка матча…</h2></div>;
-    if (error) return (
+    if (error && !view) return (
         <div className="container">
             <h2>Ошибка</h2>
             <p>{error}</p>
@@ -55,7 +106,7 @@ function CustomMatchPage() {
         </div>
     );
 
-    const { match, maps, playersByTeam, playersByMap, leaders, pickban } = stats || {};
+    const { match, maps, playersByTeam, playersByMap, leaders, pickban } = view || {};
     const titleLeft = match?.team1_name || 'Команда 1';
     const titleRight = match?.team2_name || 'Команда 2';
     const score1 = match?.team1_score ?? '-';
@@ -196,16 +247,30 @@ function CustomMatchPage() {
                 </div>
             )}
 
-            <PickBanTimeline steps={pickban} />
-
-            <LeadersPanel leaders={leaders} />
+            {(!stats && !leaders) ? (<SkeletonCards count={6} />) : (<LeadersPanel leaders={leaders} />)}
             <div className="custom-match-mt-12 compact-toggle">
                 <label><input type="checkbox" onChange={(e)=>setExpandedMap(prev=>prev)} /> Компактный режим таблиц</label>
             </div>
-            <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={true} />
-            <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={true} />
+            {(!stats && (!playersByTeam?.team1?.length && !playersByTeam?.team2?.length)) ? (
+                <SkeletonTable rows={8} />
+            ) : (
+                <>
+                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={true} />
+                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={true} />
+                </>
+            )}
 
-            <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
+            {!stats && (!maps || maps.length === 0) ? (
+                <SkeletonMapTiles count={3} />
+            ) : (
+                <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
+            )}
+
+            {!stats && (
+                <div className="custom-match-mt-16">
+                    <StatusPanel completedAt={null} onRefresh={() => setPollVersion(v => v + 1)} />
+                </div>
+            )}
         </div>
     );
 }

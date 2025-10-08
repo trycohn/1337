@@ -4,6 +4,8 @@ import { LeadersPanel } from './match-stats/LeadersPanel';
 import { ScoreTable } from './match-stats/ScoreTable';
 import './match-stats/match-stats.css';
 import { MapsAccordion } from './match-stats/MapsAccordion';
+import { SkeletonCards, SkeletonTable, SkeletonMapTiles } from './match-stats/Skeletons';
+import { StatusPanel } from './match-stats/StatusPanel';
 import { useUser } from '../../context/UserContext';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
@@ -41,6 +43,7 @@ const MatchDetailsPage = () => {
     // 🆕 Лобби-статистика для турнирного матча
     const [lobbyStats, setLobbyStats] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
+    const [pollVersion, setPollVersion] = useState(0);
     
     // ✏️ Редактирование завершенного матча
     const [isEditMatchModalOpen, setIsEditMatchModalOpen] = useState(false);
@@ -65,7 +68,7 @@ const MatchDetailsPage = () => {
 
     useEffect(() => {
         fetchMatchDetails();
-    }, [tournamentId, matchId]);
+    }, [tournamentId, matchId, pollVersion]);
     
     // 🎮 FEEDBACK: Проверка нужно ли показать feedback
     useEffect(() => {
@@ -119,7 +122,7 @@ const MatchDetailsPage = () => {
             setMatch(matchInfo);
             // 🆕 Лобби-статистика (если матч создан через лобби)
             try {
-                const ls = await api.get(`/api/matches/tournament/${matchId}/stats`);
+                const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
                 if (ls?.data?.success) {
                     // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
                     const s = ls.data;
@@ -1129,6 +1132,20 @@ const MatchDetailsPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Скелетоны и панель ожидания до прихода статистики */}
+            {!lobbyStats && (
+                <>
+                    <SkeletonCards count={6} />
+                    <div className="custom-match-mt-12 compact-toggle">
+                        <label><input type="checkbox" onChange={()=>{}} /> Компактный режим таблиц</label>
+                    </div>
+                    <SkeletonTable rows={8} />
+                    <div className="custom-match-mt-16">
+                        <StatusPanel completedAt={null} onRefresh={() => setPollVersion(v => v + 1)} />
+                    </div>
+                </>
+            )}
 
             {/* Карты */}
             {renderMapPool()}
