@@ -1,0 +1,228 @@
+/* Friends Comparison Styles */
+
+.friends-comparison {
+    background: #0a0a0a;
+    border: 1px solid #222222;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.friends-comparison.loading {
+    padding: 20px;
+}
+
+.comparison-header {
+    padding: 16px 20px;
+    background: #111111;
+    border-bottom: 1px solid #222222;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.comparison-header:hover {
+    background: #1a1a1a;
+}
+
+.header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.comparison-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-icon {
+    font-size: 20px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.overall-badge {
+    padding: 6px 12px;
+    border: 2px solid;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.expand-btn {
+    background: none;
+    border: none;
+    color: #999999;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s ease;
+}
+
+.expand-btn:hover {
+    color: #ffffff;
+}
+
+.loading-text {
+    color: #666666;
+    font-size: 14px;
+}
+
+/* Comparison Details */
+.comparison-details {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.comparison-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metric-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metric-icon {
+    font-size: 18px;
+}
+
+.metric-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #cccccc;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metric-values {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.user-value {
+    color: #ffffff;
+}
+
+.vs {
+    color: #666666;
+    font-size: 14px;
+    font-weight: 400;
+    text-transform: uppercase;
+}
+
+.avg-value {
+    color: #999999;
+    font-size: 18px;
+}
+
+.metric-bar {
+    width: 100%;
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #333333;
+}
+
+.metric-fill {
+    height: 100%;
+    transition: width 1s ease-out;
+    position: relative;
+}
+
+.metric-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.metric-percentile {
+    font-size: 12px;
+    color: #999999;
+    text-align: right;
+}
+
+.comparison-footer {
+    padding-top: 12px;
+    border-top: 1px solid #222222;
+    text-align: center;
+}
+
+.friends-count {
+    font-size: 12px;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .comparison-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .header-main {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .overall-badge {
+        align-self: flex-start;
+    }
+
+    .expand-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+    }
+
+    .comparison-details {
+        padding: 16px;
+    }
+
+    .metric-values {
+        font-size: 20px;
+    }
+
+    .avg-value {
+        font-size: 16px;
+    }
+}
+

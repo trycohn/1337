@@ -2291,6 +2291,95 @@ router.get('/:userId/tournament-history', async (req, res) => {
     }
 });
 
+// Сравнение статистики с друзьями
+router.get('/:userId/friends-comparison', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`👥 Запрос сравнения с друзьями для пользователя ID: ${userId}`);
+        
+        // Получаем список друзей
+        const friendsResult = await pool.query(`
+            SELECT DISTINCT
+                CASE
+                    WHEN f.user_id = $1 THEN f.friend_id
+                    ELSE f.user_id
+                END as friend_id
+            FROM friends f
+            WHERE (f.user_id = $1 OR f.friend_id = $1)
+            AND f.status = 'accepted'
+        `, [userId]);
+        
+        if (friendsResult.rows.length === 0) {
+            return res.json({ hasFriends: false, friendsCount: 0 });
+        }
+        
+        const friendIds = friendsResult.rows.map(r => r.friend_id);
+        
+        // Получаем статистику друзей (graceful: если таблицы/данных нет)
+        let friendsStatsResult = { rows: [] };
+        try {
+            friendsStatsResult = await pool.query(`
+                SELECT 
+                    user_id,
+                    solo_wins,
+                    solo_losses,
+                    team_wins,
+                    team_losses,
+                    tournaments
+                FROM user_statistics
+                WHERE user_id = ANY($1::int[])
+            `, [friendIds]);
+        } catch (statsErr) {
+            console.warn('⚠️ [friends-comparison] Таблица user_statistics недоступна, возвращаем безопасные значения');
+            friendsStatsResult = { rows: [] };
+        }
+        
+        // Вычисляем средние показатели
+        let totalWinrate = 0;
+        let totalMatches = 0;
+        let totalTournaments = 0;
+        const friendsWinrates = [];
+        const friendsMatches = [];
+        const friendsTournaments = [];
+        
+        friendsStatsResult.rows.forEach(friend => {
+            const wins = (friend.solo_wins || 0) + (friend.team_wins || 0);
+            const losses = (friend.solo_losses || 0) + (friend.team_losses || 0);
+            const matches = wins + losses;
+            const winrate = matches > 0 ? (wins / matches) * 100 : 0;
+            const tournaments = Array.isArray(friend.tournaments) ? friend.tournaments.length : 0;
+            
+            friendsWinrates.push(winrate);
+            friendsMatches.push(matches);
+            friendsTournaments.push(tournaments);
+            
+            totalWinrate += winrate;
+            totalMatches += matches;
+            totalTournaments += tournaments;
+        });
+        
+        const friendsCount = friendsResult.rows.length; // считаем всех друзей, даже без статистики
+        
+        res.json({
+            hasFriends: true,
+            friendsCount,
+            avgWinrate: friendsCount > 0 ? totalWinrate / friendsCount : 50,
+            avgMatches: friendsCount > 0 ? totalMatches / friendsCount : 0,
+            avgTournaments: friendsCount > 0 ? totalTournaments / friendsCount : 0,
+            friendsWinrates,
+            friendsMatches,
+            friendsTournaments
+        });
+        
+        console.log(`✅ Сравнение с ${friendsCount} друзьями загружено`);
+        
+    } catch (err) {
+        console.error('❌ Ошибка получения сравнения с друзьями:', err);
+        res.status(500).json({ error: 'Ошибка сервера при получении сравнения' });
+    }
+});
+
 // Функция для получения правильного склонения слова "минута"
 function getMinutesWord(minutes) {
     if (minutes >= 11 && minutes <= 14) {

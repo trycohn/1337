@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAchievements } from './achievements/useAchievements';
 import './ProfileShowcase.css';
 
 /**
  * ProfileShowcase - Витрина достижений профиля
  * Отображает ключевые достижения и статистику пользователя
  */
-function ProfileShowcase({ stats, achievements }) {
+function ProfileShowcase({ stats, userId }) {
+    const { 
+        userAchievements, 
+        playerLevel, 
+        playerXP,
+        isLoading 
+    } = useAchievements(userId);
     // Вычисляем основные достижения
     const showcaseItems = [];
 
@@ -60,18 +67,19 @@ function ProfileShowcase({ stats, achievements }) {
         }
     }
 
-    // Добавляем достижения из системы ачивок (если есть)
-    if (achievements && achievements.length > 0) {
-        const recentAchievements = achievements
-            .filter(a => a.unlocked)
+    // Добавляем достижения из системы ачивок (реальные данные)
+    if (userAchievements && userAchievements.length > 0) {
+        const recentUnlocked = userAchievements
+            .filter(ua => ua.unlocked_at)
+            .sort((a, b) => new Date(b.unlocked_at) - new Date(a.unlocked_at))
             .slice(0, 2);
         
-        recentAchievements.forEach(ach => {
+        recentUnlocked.forEach(ua => {
             showcaseItems.push({
-                icon: ach.icon || '⭐',
-                label: ach.name,
+                icon: ua.icon || '⭐',
+                label: ua.achievement_name || 'Достижение',
                 value: '',
-                tier: ach.rarity || 'bronze'
+                tier: ua.rarity || 'bronze'
             });
         });
     }

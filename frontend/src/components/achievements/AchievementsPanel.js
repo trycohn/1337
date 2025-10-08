@@ -194,15 +194,33 @@ const AchievementsPanel = ({ userId }) => {
                         </div>
                     </div>
                     
-                    {stats.dailyStreak > 0 && (
-                        <div className="daily-streak">
-                            <div className="streak-icon">🔥</div>
-                            <div className="streak-info">
-                                <div className="streak-number">{stats.dailyStreak}</div>
-                                <div className="streak-label">дней подряд</div>
+                    <div className="level-right-section">
+                        {stats.dailyStreak > 0 && (
+                            <div className="daily-streak">
+                                <div className="streak-icon">🔥</div>
+                                <div className="streak-info">
+                                    <div className="streak-number">{stats.dailyStreak}</div>
+                                    <div className="streak-label">дней подряд</div>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                        
+                        {/* 💡 Прогноз до следующего уровня */}
+                        {stats.level < 100 && (
+                            <div className="level-forecast-mini">
+                                <div className="forecast-title">💡 До следующего уровня:</div>
+                                <div className="forecast-values">
+                                    <span className="forecast-value">
+                                        ~{Math.ceil((stats.level * 1000 - stats.currentXP) / 50)} турниров
+                                    </span>
+                                    <span className="forecast-separator">или</span>
+                                    <span className="forecast-value">
+                                        ~{Math.ceil((stats.level * 1000 - stats.currentXP) / 15)} матчей
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
