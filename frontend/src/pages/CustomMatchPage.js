@@ -4,6 +4,7 @@ import api from '../axios';
 import { PickBanTimeline } from '../components/tournament/match-stats/PickBanTimeline';
 import { LeadersPanel } from '../components/tournament/match-stats/LeadersPanel';
 import { ScoreTable } from '../components/tournament/match-stats/ScoreTable';
+import { MapsAccordion } from '../components/tournament/match-stats/MapsAccordion';
 import '../components/tournament/match-stats/match-stats.css';
 
 function CustomMatchPage() {
@@ -187,39 +188,7 @@ function CustomMatchPage() {
             <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} />
             <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} />
 
-            <div className="custom-match-mt-16">
-                <h3>Карты серии</h3>
-                <div>
-                    {(maps||[]).map((m) => {
-                        const open = expandedMap === m.mapnumber;
-                        const team1 = playersByMap?.[m.mapnumber]?.team1 || [];
-                        const team2 = playersByMap?.[m.mapnumber]?.team2 || [];
-                        return (
-                            <div key={m.mapnumber} className="custom-match-mt-8" style={{border:'1px solid #333', borderRadius:6, background:'#111'}}>
-                                <div
-                                    className="list-row"
-                                    style={{cursor:'pointer', padding:8}}
-                                    onClick={() => setExpandedMap(open ? null : m.mapnumber)}
-                                >
-                                    <div className="list-row-left">
-                                        <strong>Map {m.mapnumber + 1}: {m.mapname}</strong>
-                                        <span className="custom-match-ml-8">{titleLeft} {m.team1_score} : {m.team2_score} {titleRight}</span>
-                                        {m.picked_by && (<span className="custom-match-ml-8">picked by {m.picked_by}</span>)}
-                                        {m.is_decider && (<span className="custom-match-ml-8">decider</span>)}
-                                    </div>
-                                    <div className="list-row-right">{open ? '▲' : '▼'}</div>
-                                </div>
-                                {open && (
-                                    <div style={{padding:'8px 12px'}}>
-                                        <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={team1} />
-                                        <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={team2} />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
+            <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
         </div>
     );
 }

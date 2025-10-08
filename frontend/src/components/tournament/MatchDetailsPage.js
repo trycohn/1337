@@ -3,6 +3,7 @@ import { PickBanTimeline } from './match-stats/PickBanTimeline';
 import { LeadersPanel } from './match-stats/LeadersPanel';
 import { ScoreTable } from './match-stats/ScoreTable';
 import './match-stats/match-stats.css';
+import { MapsAccordion } from './match-stats/MapsAccordion';
 import { useUser } from '../../context/UserContext';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
@@ -675,35 +676,7 @@ const MatchDetailsPage = () => {
             };
 
             const mapsAccordion = (
-                <div className="custom-match-mt-16">
-                    <h3>Карты серии</h3>
-                    <div>
-                        {(maps||[]).map(mp => {
-                            const open = expandedMap === mp.mapnumber;
-                            const t1 = playersByMap?.[mp.mapnumber]?.team1 || [];
-                            const t2 = playersByMap?.[mp.mapnumber]?.team2 || [];
-                            return (
-                                <div key={mp.mapnumber} className="custom-match-mt-8" style={{border:'1px solid #333', borderRadius:6, background:'#111'}}>
-                                    <div className="list-row" style={{cursor:'pointer', padding:8}} onClick={() => setExpandedMap(open?null:mp.mapnumber)}>
-                                        <div className="list-row-left">
-                                            <strong>Map {mp.mapnumber + 1}: {mp.mapname}</strong>
-                                            <span className="custom-match-ml-8">{titleLeft} {mp.team1_score} : {mp.team2_score} {titleRight}</span>
-                                            {mp.picked_by && (<span className="custom-match-ml-8">picked by {mp.picked_by}</span>)}
-                                            {mp.is_decider && (<span className="custom-match-ml-8">decider</span>)}
-                                        </div>
-                                        <div className="list-row-right">{open ? '▲' : '▼'}</div>
-                                    </div>
-                                    {open && (
-                                        <div style={{padding:'8px 12px'}}>
-                                            <ScoreTable title={`${titleLeft} — ${mp.mapname}`} rows={t1} />
-                                            <ScoreTable title={`${titleRight} — ${mp.mapname}`} rows={t2} />
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
             );
 
             return (
