@@ -6,7 +6,6 @@ import ProfileReputation from './ProfileReputation'; // Компонент ре�
 import DetailedStats from './stats/DetailedStats'; // 📊 Детальная статистика
 import ProfileShowcase from './ProfileShowcase'; // 🏆 Витрина достижений
 import PlayerForm from './PlayerForm'; // 🔥 Текущая форма игрока
-import PlayerLevel from './PlayerLevel'; // ⭐ Система уровней
 import FriendsComparison from './FriendsComparison'; // 👥 Сравнение с друзьями
 import useRealTimeStats from '../hooks/useRealTimeStats'; // 🔌 Real-time обновления
 import './Profile.css';
@@ -2473,7 +2472,7 @@ function Profile() {
                                 { key: 'friends', label: 'Друзья' },
                                 { key: 'teams', label: 'Мои команды' },
                                 { key: 'matchhistory', label: 'История матчей' },
-                                ...(user && user.role === 'admin' ? [{ key: 'achievements', label: 'Достижения' }] : []),
+                                { key: 'achievements', label: 'Достижения' },
                                 ...((userOrganizations && userOrganizations.length > 0) ? [{ key: 'organization', label: 'Организация' }] : []),
                                 { key: 'tournaments', label: 'Турниры' },
                                 { key: 'reputation', label: 'Репутация' },
@@ -2512,17 +2511,15 @@ function Profile() {
                         >
                             <span className="tab-label-profile">История матчей</span>
                         </button>
-                        {user && user.role === 'admin' && (
-                            <button 
-                                className={`tab-button-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
-                                onClick={() => switchTab('achievements')}
-                            >
-                                <span className="tab-label-profile">Достижения</span>
-                                {newAchievementsCount > 0 && (
-                                    <span className="achievement-notification-badge">{newAchievementsCount}</span>
-                                )}
-                            </button>
-                        )}
+                        <button 
+                            className={`tab-button-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
+                            onClick={() => switchTab('achievements')}
+                        >
+                            <span className="tab-label-profile">Достижения</span>
+                            {newAchievementsCount > 0 && (
+                                <span className="achievement-notification-badge">{newAchievementsCount}</span>
+                            )}
+                        </button>
                         {userOrganizations && userOrganizations.length > 0 && (
                             <button 
                                 className={`tab-button-profile ${activeTab === 'organization' ? 'active' : ''}`} 
@@ -2683,9 +2680,6 @@ function Profile() {
                                         </div>
                                     )}
                                 </div>
-                                
-                                {/* ⭐ Player Level & Progress */}
-                                <PlayerLevel userId={user.id} stats={stats} />
                                 
                                 {/* 👥 Friends Comparison */}
                                 <FriendsComparison userId={user.id} stats={stats} />
@@ -3926,8 +3920,8 @@ function Profile() {
                             </>
                         )}
                         
-                        {/* Achievements Tab (admin only) */}
-                        {user && user.role === 'admin' && activeTab === 'achievements' && (
+                        {/* Achievements Tab */}
+                        {activeTab === 'achievements' && (
                             <AchievementsPanel userId={user.id} />
                         )}
                         
