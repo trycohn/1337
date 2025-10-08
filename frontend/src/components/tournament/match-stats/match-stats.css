@@ -1,0 +1,71 @@
+/* Единые стили для блоков статистики матчей (монохромная тема) */
+
+.custom-match-mt-8 { margin-top: 8px; }
+.custom-match-mt-12 { margin-top: 12px; }
+.custom-match-mt-16 { margin-top: 16px; }
+.custom-match-ml-8 { margin-left: 8px; }
+
+/* Заголовки секций */
+.match-stats-section h3,
+.custom-match-mt-16 > h3 {
+  color: #fff;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+/* Бэйджи (Pick/Ban шаги) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid #ff0000;
+  border-radius: 6px;
+  background: #111;
+  color: #fff;
+  font-size: 13px;
+}
+.badge:hover { background: #111111; }
+
+/* Таблица статистики */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #000;
+  color: #fff;
+  font-size: 14px;
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: #111;
+  border-bottom: 1px solid #333;
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+.table tbody td {
+  border-top: 1px solid #222;
+  padding: 8px 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.table tbody tr:hover { background: #0b0b0b; }
+
+/* Контейнеры-строки */
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-row-left { display: flex; align-items: center; }
+.list-row-right { display: flex; align-items: center; }
+
+/* Аккордеоны карт */
+.match-accordion {
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #111;
+}
+
+

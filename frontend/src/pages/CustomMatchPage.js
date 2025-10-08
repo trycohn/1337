@@ -1,24 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../axios';
+import { PickBanTimeline } from '../components/tournament/match-stats/PickBanTimeline';
+import { LeadersPanel } from '../components/tournament/match-stats/LeadersPanel';
+import { ScoreTable } from '../components/tournament/match-stats/ScoreTable';
+import '../components/tournament/match-stats/match-stats.css';
 
 function CustomMatchPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [data, setData] = useState(null);
+    const [stats, setStats] = useState(null);
+    const [expandedMap, setExpandedMap] = useState(null);
 
     useEffect(() => {
         let mounted = true;
         (async () => {
             try {
-                const r = await api.get(`/api/matches/${id}`);
+                const r = await api.get(`/api/matches/custom/${id}/stats`);
                 if (!mounted) return;
-                if (r?.data?.match) setData(r.data);
-                else setError('Матч не найден');
+                if (r?.data?.success) setStats(r.data);
+                else setError('Статистика матча не найдена');
             } catch (e) {
-                setError('Не удалось загрузить матч');
+                setError('Не удалось загрузить статистику матча');
             } finally {
                 setLoading(false);
             }
@@ -35,18 +40,109 @@ function CustomMatchPage() {
         </div>
     );
 
-    const { match, veto_steps } = data || {};
-    const picks = Array.isArray(veto_steps) ? veto_steps.filter(s => s.action_type === 'pick') : [];
-    const bans = Array.isArray(veto_steps) ? veto_steps.filter(s => s.action_type === 'ban') : [];
-    const titleLeft = match.team1_name || 'Команда 1';
-    const titleRight = match.team2_name || 'Команда 2';
-    const score1 = match.score1 ?? '-';
-    const score2 = match.score2 ?? '-';
+    const { match, maps, playersByTeam, playersByMap, leaders, pickban } = stats || {};
+    const titleLeft = match?.team1_name || 'Команда 1';
+    const titleRight = match?.team2_name || 'Команда 2';
+    const score1 = match?.team1_score ?? '-';
+    const score2 = match?.team2_score ?? '-';
+
+    function fmt(v, d = 2) { return Number.isFinite(v) ? Number(v).toFixed(d) : '0.00'; }
+    function pct(v) { return Number.isFinite(v) ? `${Math.round(v * 100)}%` : '0%'; }
+
+    function ScoreTable({ title, rows }) {
+        if (!Array.isArray(rows) || rows.length === 0) return null;
+        return (
+            <div className="custom-match-mt-16">
+                <h3>{title}</h3>
+                <div style={{overflowX:'auto'}}>
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Игрок</th>
+                                <th>K</th>
+                                <th>D</th>
+                                <th>A</th>
+                                <th>K/D</th>
+                                <th>ADR</th>
+                                <th>HS%</th>
+                                <th>Acc</th>
+                                <th>RWS*</th>
+                                <th>Entry%</th>
+                                <th>1v1%</th>
+                                <th>1v2%</th>
+                                <th>5k</th>
+                                <th>4k</th>
+                                <th>3k</th>
+                                <th>2k</th>
+                                <th>UtlDmg</th>
+                                <th>Flashed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((p) => (
+                                <tr key={`${p.steamid64}-${p.name}`}>
+                                    <td>{p.name}</td>
+                                    <td>{p.kills}</td>
+                                    <td>{p.deaths}</td>
+                                    <td>{p.assists}</td>
+                                    <td>{fmt(p.kd, 2)}</td>
+                                    <td>{fmt(p.adr, 1)}</td>
+                                    <td>{pct(p.hs)}</td>
+                                    <td>{pct(p.acc)}</td>
+                                    <td>{fmt(p.rws, 1)}</td>
+                                    <td>{pct(p.entry)}</td>
+                                    <td>{pct(p.clutch1)}</td>
+                                    <td>{pct(p.clutch2)}</td>
+                                    <td>{p.enemy5ks||0}</td>
+                                    <td>{p.enemy4ks||0}</td>
+                                    <td>{p.enemy3ks||0}</td>
+                                    <td>{p.enemy2ks||0}</td>
+                                    <td>{p.utility_damage||0}</td>
+                                    <td>{p.enemies_flashed||0}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
+    }
+
+    function LeadersPanel({ leaders }) {
+        if (!leaders) return null;
+        const Card = ({ title, value, name }) => (
+            <div style={{border:'1px solid #333', borderRadius:6, padding:'8px 12px', background:'#111', minWidth:180}}>
+                <div style={{opacity:.8, fontSize:12}}>{title}</div>
+                <div style={{fontWeight:700, fontSize:18}}>{value}</div>
+                <div style={{opacity:.9}}>{name || '-'}</div>
+            </div>
+        );
+        return (
+            <div className="custom-match-mt-16">
+                <h3>Лидеры матча</h3>
+                <div style={{display:'flex', flexWrap:'wrap', gap:12}}>
+                    <Card title="MVP*" value={(leaders.mvpApprox?.damage ?? 0) + ' dmg'} name={leaders.mvpApprox?.name} />
+                    <Card title="Most Kills" value={leaders.kills?.kills ?? 0} name={leaders.kills?.name} />
+                    <Card title="Most Damage" value={leaders.damage?.damage ?? 0} name={leaders.damage?.name} />
+                    <Card title="Highest ADR" value={(leaders.adr ? leaders.adr.adr?.toFixed(1) : '0.0')} name={leaders.adr?.name} />
+                    <Card title="Highest HS%" value={`${Math.round((leaders.hsPercent?.hs || 0)*100)}%`} name={leaders.hsPercent?.name} />
+                    <Card title="Best Entry%" value={`${Math.round((leaders.entryWinRate?.entry || 0)*100)}%`} name={leaders.entryWinRate?.name} />
+                    <Card title="Clutch 1v1" value={`${Math.round((leaders.clutch1?.clutch1 || 0)*100)}%`} name={leaders.clutch1?.name} />
+                    <Card title="Clutch 1v2" value={`${Math.round((leaders.clutch2?.clutch2 || 0)*100)}%`} name={leaders.clutch2?.name} />
+                    <Card title="Accuracy" value={`${Math.round((leaders.accuracy?.acc || 0)*100)}%`} name={leaders.accuracy?.name} />
+                    <Card title="5k / 4k / 3k" value={`${leaders.fiveKs?.enemy5ks||0} / ${leaders.fourKs?.enemy4ks||0} / ${leaders.threeKs?.enemy3ks||0}`} name={leaders.fiveKs?.name || leaders.fourKs?.name || leaders.threeKs?.name} />
+                    <Card title="Flashed" value={leaders.flashed?.enemies_flashed || 0} name={leaders.flashed?.name} />
+                    <Card title="Utility Dmg" value={leaders.utilityDamage?.utility_damage || 0} name={leaders.utilityDamage?.name} />
+                </div>
+                <div style={{opacity:.6, fontSize:12, marginTop:6}}>Показатели с * являются приблизительными до появления раунд‑логов.</div>
+            </div>
+        );
+    }
 
     return (
         <div className="container">
             <div className="custom-match-mt-16">
-                <h2>Custom match — {match.game || 'CS2'}</h2>
+                <h2>Custom match — CS2</h2>
                 <div className="list-row">
                     <div className="list-row-left">
                         <strong>{titleLeft}</strong> vs <strong>{titleRight}</strong>
@@ -57,83 +153,73 @@ function CustomMatchPage() {
                 </div>
             </div>
 
-            {(match.connect_url || match.gotv_url) && (
+            {(match?.connect || match?.server_ip) && (
                 <div className="custom-match-mt-16">
                     <h3>Подключение</h3>
-                    {match.connect_url && (
+                    {match.connect && (
                         <div className="list-row">
                             <div className="list-row-left">
                                 <span>Игроки:</span>
-                                <code className="code-inline">{match.connect_url}</code>
+                                <code className="code-inline">{match.connect}</code>
                             </div>
                             <div className="list-row-right">
-                                <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(match.connect_url)}>Копировать</button>
+                                <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(match.connect)}>Копировать</button>
                             </div>
                         </div>
                     )}
-                    {match.gotv_url && (
+                    {match.gotv && (
                         <div className="list-row custom-match-mt-8">
                             <div className="list-row-left">
                                 <span>GOTV:</span>
-                                <code className="code-inline">{match.gotv_url}</code>
+                                <code className="code-inline">{match.gotv}</code>
                             </div>
                             <div className="list-row-right">
-                                <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(match.gotv_url)}>Копировать</button>
+                                <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(match.gotv)}>Копировать</button>
                             </div>
                         </div>
                     )}
                 </div>
             )}
 
-            {Array.isArray(match.maps_data) && match.maps_data.length > 0 && (
-                <div className="custom-match-mt-16">
-                    <h3>Карты</h3>
-                    <ul>
-                        {match.maps_data.map((m) => (
-                            <li key={m.order}>Карта {m.index}: {m.map}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+            <PickBanTimeline steps={pickban} />
 
-            {(picks.length > 0 || bans.length > 0) && (
-                <div className="custom-match-mt-16">
-                    <h3>Пики / Баны</h3>
-                    {picks.length > 0 && (
-                        <div className="custom-match-mt-8">
-                            <strong>Пики:</strong>
-                            <ul>
-                                {picks.map((s) => (
-                                    <li key={`pick-${s.action_order}`}>{s.action_order}. {s.map_name} (team {s.team_id || '?'})</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {bans.length > 0 && (
-                        <div className="custom-match-mt-8">
-                            <strong>Баны:</strong>
-                            <ul>
-                                {bans.map((s) => (
-                                    <li key={`ban-${s.action_order}`}>{s.action_order}. {s.map_name} (team {s.team_id || '?'})</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                </div>
-            )}
+            <LeadersPanel leaders={leaders} />
+            <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} />
+            <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} />
 
-            {Array.isArray(veto_steps) && veto_steps.length > 0 && (
-                <div className="custom-match-mt-16">
-                    <h3>История пик/бан</h3>
-                    <ol>
-                        {veto_steps.map((s) => (
-                            <li key={s.action_order}>
-                                {s.action_order}. {s.action_type.toUpperCase()} — {s.map_name} (team {s.team_id || '?'})
-                            </li>
-                        ))}
-                    </ol>
+            <div className="custom-match-mt-16">
+                <h3>Карты серии</h3>
+                <div>
+                    {(maps||[]).map((m) => {
+                        const open = expandedMap === m.mapnumber;
+                        const team1 = playersByMap?.[m.mapnumber]?.team1 || [];
+                        const team2 = playersByMap?.[m.mapnumber]?.team2 || [];
+                        return (
+                            <div key={m.mapnumber} className="custom-match-mt-8" style={{border:'1px solid #333', borderRadius:6, background:'#111'}}>
+                                <div
+                                    className="list-row"
+                                    style={{cursor:'pointer', padding:8}}
+                                    onClick={() => setExpandedMap(open ? null : m.mapnumber)}
+                                >
+                                    <div className="list-row-left">
+                                        <strong>Map {m.mapnumber + 1}: {m.mapname}</strong>
+                                        <span className="custom-match-ml-8">{titleLeft} {m.team1_score} : {m.team2_score} {titleRight}</span>
+                                        {m.picked_by && (<span className="custom-match-ml-8">picked by {m.picked_by}</span>)}
+                                        {m.is_decider && (<span className="custom-match-ml-8">decider</span>)}
+                                    </div>
+                                    <div className="list-row-right">{open ? '▲' : '▼'}</div>
+                                </div>
+                                {open && (
+                                    <div style={{padding:'8px 12px'}}>
+                                        <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={team1} />
+                                        <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={team2} />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
-            )}
+            </div>
         </div>
     );
 }

@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { PickBanTimeline } from './match-stats/PickBanTimeline';
+import { LeadersPanel } from './match-stats/LeadersPanel';
+import { ScoreTable } from './match-stats/ScoreTable';
+import './match-stats/match-stats.css';
 import { useUser } from '../../context/UserContext';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ensureHttps } from '../../utils/userHelpers';
@@ -33,6 +37,9 @@ const MatchDetailsPage = () => {
     const [editingMapKey, setEditingMapKey] = useState(null);
     const [userIsAdmin, setUserIsAdmin] = useState(false);
     const [currentUserId, setCurrentUserId] = useState(null);
+    // 🆕 Лобби-статистика для турнирного матча
+    const [lobbyStats, setLobbyStats] = useState(null);
+    const [expandedMap, setExpandedMap] = useState(null);
     
     // ✏️ Редактирование завершенного матча
     const [isEditMatchModalOpen, setIsEditMatchModalOpen] = useState(false);
@@ -109,6 +116,27 @@ const MatchDetailsPage = () => {
             const tournamentInfo = tournamentData.data || tournamentData;
             
             setMatch(matchInfo);
+            // 🆕 Лобби-статистика (если матч создан через лобби)
+            try {
+                const ls = await api.get(`/api/matches/tournament/${matchId}/stats`);
+                if (ls?.data?.success) {
+                    // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
+                    const s = ls.data;
+                    matchInfo.maps_data = s.maps?.map(m => ({
+                        map_name: m.mapname,
+                        team1_score: m.team1_score,
+                        team2_score: m.team2_score
+                    })) || matchInfo.maps_data;
+                    matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
+                        action_type: x.action,
+                        team_id: x.team_id,
+                        map_name: x.mapname
+                    })) : matchInfo.selections) || [];
+                    // Присвоим, чтобы отрисовали блоки карт и историю
+                    setMatch({ ...matchInfo });
+                    setLobbyStats(s);
+                }
+            } catch (_) { /* нет лобби-статистики — не критично */ }
             setTournament(tournamentInfo);
             
             // Загружаем историю матчей команд
@@ -562,7 +590,134 @@ const MatchDetailsPage = () => {
     }
 
     const renderMapPool = () => {
-        // 1) Сыгранные карты из результата матча (для отображения счётов)
+        // Если есть лобби-статистика — используем её для идентичного UI кастомному матчу
+        if (lobbyStats && lobbyStats.success) {
+            const { match: m, maps, playersByTeam, playersByMap, pickban } = lobbyStats;
+            const titleLeft = m.team1_name || 'Команда 1';
+            const titleRight = m.team2_name || 'Команда 2';
+
+            const fmt = (v, d=2) => (Number.isFinite(v) ? Number(v).toFixed(d) : '0.00');
+            const pct = (v) => (Number.isFinite(v) ? `${Math.round(v*100)}%` : '0%');
+
+            const ScoreTable = ({ title, rows }) => {
+                if (!Array.isArray(rows) || rows.length===0) return null;
+                return (
+                    <div className="custom-match-mt-16">
+                        <h3>{title}</h3>
+                        <div style={{overflowX:'auto'}}>
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>Игрок</th><th>K</th><th>D</th><th>A</th><th>K/D</th><th>ADR</th><th>HS%</th><th>Acc</th><th>RWS*</th><th>Entry%</th><th>1v1%</th><th>1v2%</th><th>5k</th><th>4k</th><th>3k</th><th>2k</th><th>UtlDmg</th><th>Flashed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map(p => (
+                                        <tr key={`${p.steamid64}-${p.name}`}>
+                                            <td>{p.name}</td>
+                                            <td>{p.kills}</td>
+                                            <td>{p.deaths}</td>
+                                            <td>{p.assists}</td>
+                                            <td>{fmt(p.kd,2)}</td>
+                                            <td>{fmt(p.adr,1)}</td>
+                                            <td>{pct(p.hs)}</td>
+                                            <td>{pct(p.acc)}</td>
+                                            <td>{fmt(p.rws,1)}</td>
+                                            <td>{pct(p.entry)}</td>
+                                            <td>{pct(p.clutch1)}</td>
+                                            <td>{pct(p.clutch2)}</td>
+                                            <td>{p.enemy5ks||0}</td>
+                                            <td>{p.enemy4ks||0}</td>
+                                            <td>{p.enemy3ks||0}</td>
+                                            <td>{p.enemy2ks||0}</td>
+                                            <td>{p.utility_damage||0}</td>
+                                            <td>{p.enemies_flashed||0}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            };
+
+            const pickbanView = <PickBanTimeline steps={pickban} />;
+
+            const LeadersPanel = ({ leaders }) => {
+                if (!leaders) return null;
+                const Card = ({ title, value, name }) => (
+                    <div style={{border:'1px solid #333', borderRadius:6, padding:'8px 12px', background:'#111', minWidth:180}}>
+                        <div style={{opacity:.8, fontSize:12}}>{title}</div>
+                        <div style={{fontWeight:700, fontSize:18}}>{value}</div>
+                        <div style={{opacity:.9}}>{name || '-'}</div>
+                    </div>
+                );
+                return (
+                    <div className="custom-match-mt-16">
+                        <h3>Лидеры матча</h3>
+                        <div style={{display:'flex', flexWrap:'wrap', gap:12}}>
+                            <Card title="MVP*" value={(leaders.mvpApprox?.damage ?? 0) + ' dmg'} name={leaders.mvpApprox?.name} />
+                            <Card title="Most Kills" value={leaders.kills?.kills ?? 0} name={leaders.kills?.name} />
+                            <Card title="Most Damage" value={leaders.damage?.damage ?? 0} name={leaders.damage?.name} />
+                            <Card title="Highest ADR" value={(leaders.adr ? leaders.adr.adr?.toFixed(1) : '0.0')} name={leaders.adr?.name} />
+                            <Card title="Highest HS%" value={`${Math.round((leaders.hsPercent?.hs || 0)*100)}%`} name={leaders.hsPercent?.name} />
+                            <Card title="Best Entry%" value={`${Math.round((leaders.entryWinRate?.entry || 0)*100)}%`} name={leaders.entryWinRate?.name} />
+                            <Card title="Clutch 1v1" value={`${Math.round((leaders.clutch1?.clutch1 || 0)*100)}%`} name={leaders.clutch1?.name} />
+                            <Card title="Clutch 1v2" value={`${Math.round((leaders.clutch2?.clutch2 || 0)*100)}%`} name={leaders.clutch2?.name} />
+                            <Card title="Accuracy" value={`${Math.round((leaders.accuracy?.acc || 0)*100)}%`} name={leaders.accuracy?.name} />
+                            <Card title="5k / 4k / 3k" value={`${leaders.fiveKs?.enemy5ks||0} / ${leaders.fourKs?.enemy4ks||0} / ${leaders.threeKs?.enemy3ks||0}`} name={leaders.fiveKs?.name || leaders.fourKs?.name || leaders.threeKs?.name} />
+                            <Card title="Flashed" value={leaders.flashed?.enemies_flashed || 0} name={leaders.flashed?.name} />
+                            <Card title="Utility Dmg" value={leaders.utilityDamage?.utility_damage || 0} name={leaders.utilityDamage?.name} />
+                        </div>
+                        <div style={{opacity:.6, fontSize:12, marginTop:6}}>Показатели с * являются приблизительными до появления раунд‑логов.</div>
+                    </div>
+                );
+            };
+
+            const mapsAccordion = (
+                <div className="custom-match-mt-16">
+                    <h3>Карты серии</h3>
+                    <div>
+                        {(maps||[]).map(mp => {
+                            const open = expandedMap === mp.mapnumber;
+                            const t1 = playersByMap?.[mp.mapnumber]?.team1 || [];
+                            const t2 = playersByMap?.[mp.mapnumber]?.team2 || [];
+                            return (
+                                <div key={mp.mapnumber} className="custom-match-mt-8" style={{border:'1px solid #333', borderRadius:6, background:'#111'}}>
+                                    <div className="list-row" style={{cursor:'pointer', padding:8}} onClick={() => setExpandedMap(open?null:mp.mapnumber)}>
+                                        <div className="list-row-left">
+                                            <strong>Map {mp.mapnumber + 1}: {mp.mapname}</strong>
+                                            <span className="custom-match-ml-8">{titleLeft} {mp.team1_score} : {mp.team2_score} {titleRight}</span>
+                                            {mp.picked_by && (<span className="custom-match-ml-8">picked by {mp.picked_by}</span>)}
+                                            {mp.is_decider && (<span className="custom-match-ml-8">decider</span>)}
+                                        </div>
+                                        <div className="list-row-right">{open ? '▲' : '▼'}</div>
+                                    </div>
+                                    {open && (
+                                        <div style={{padding:'8px 12px'}}>
+                                            <ScoreTable title={`${titleLeft} — ${mp.mapname}`} rows={t1} />
+                                            <ScoreTable title={`${titleRight} — ${mp.mapname}`} rows={t2} />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+
+            return (
+                <>
+                    {pickbanView}
+                    <LeadersPanel leaders={lobbyStats.leaders} />
+                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} />
+                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} />
+                    {mapsAccordion}
+                </>
+            );
+        }
+
+        // 1) Сыгранные карты из результата матча (для отображения счётов) — старый режим
         const mapsDataRaw = match.maps_data;
         const hasMapsDataRaw = Array.isArray(mapsDataRaw) && mapsDataRaw.length > 0;
 
