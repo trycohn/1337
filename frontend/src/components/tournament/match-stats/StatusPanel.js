@@ -22,8 +22,8 @@ export function StatusPanel({ completedAt, onRefresh }) {
   }, [nextPollIn, onRefresh]);
 
   return (
-    <div style={{border:'1px solid #333', borderRadius:6, padding:'10px 12px', background:'#111', color:'#ddd'}}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+    <div className="match-status-panel">
+      <div className="row">
         <div>
           <strong>Ожидается завершение матча</strong>
           <div style={{opacity:.8, fontSize:13}}>с момента ожидания: {since}s • автообновление через {nextPollIn}s</div>

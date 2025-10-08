@@ -1,21 +1,14 @@
 import React from 'react';
 
 export function SkeletonLine({ width = '100%', height = 14 }) {
-  return (
-    <div style={{
-      width,
-      height,
-      borderRadius: 4,
-      background: 'linear-gradient(90deg, #0a0a0a 25%, #111 37%, #0a0a0a 63%)',
-      backgroundSize: '400% 100%',
-      animation: 'shimmer 1.2s ease-in-out infinite'
-    }} />
-  );
+  const style = { width, height };
+  const className = `skeleton-line ${width==='100%'?'s-w-100':width==='80%'?'s-w-80':'s-w-60'} ${height===14?'s-h-14':'s-h-120'}`;
+  return <div className={className} style={style} />;
 }
 
 export function SkeletonTable({ rows = 6 }) {
   return (
-    <div style={{overflowX:'auto'}}>
+    <div className="skeleton-table">
       <table className="table">
         <tbody>
           {Array.from({ length: rows }).map((_, i) => (
@@ -31,11 +24,11 @@ export function SkeletonTable({ rows = 6 }) {
 
 export function SkeletonCards({ count = 6 }) {
   return (
-    <div style={{display:'flex', flexWrap:'wrap', gap:12}}>
+    <div className="skeleton-cards">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} style={{border:'1px solid #333', borderRadius:6, padding:'12px', background:'#111', minWidth:180}}>
+        <div key={i} className="skeleton-card">
           <SkeletonLine width="60%" />
-          <div style={{height:8}} />
+          <div className="s-h-14" style={{height:8}} />
           <SkeletonLine width="80%" />
         </div>
       ))}
@@ -45,11 +38,11 @@ export function SkeletonCards({ count = 6 }) {
 
 export function SkeletonMapTiles({ count = 3 }) {
   return (
-    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:12}}>
+    <div className="skeleton-map-tiles">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} style={{border:'1px solid #333', background:'#111', borderRadius:6, padding:12}}>
+        <div key={i} className="skeleton-tile">
           <SkeletonLine width="100%" height={120} />
-          <div style={{height:8}} />
+          <div className="s-h-14" style={{height:8}} />
           <SkeletonLine width="50%" />
         </div>
       ))}
@@ -57,9 +50,6 @@ export function SkeletonMapTiles({ count = 3 }) {
   );
 }
 
-// keyframes встраиваем один раз (можно переместить в css)
-const style = document.createElement('style');
-style.innerHTML = `@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }`;
-if (typeof document !== 'undefined') { document.head.appendChild(style); }
+// keyframes вынесены в CSS (match-stats.css)
 
 

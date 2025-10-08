@@ -3,9 +3,9 @@ import React from 'react';
 export function PickBanTimeline({ steps }) {
   if (!Array.isArray(steps) || steps.length === 0) return null;
   return (
-    <div className="custom-match-mt-16">
+    <div className="custom-match-pickban">
       <h3>Порядок Pick/Ban</h3>
-      <div className="list-row" style={{flexWrap:'wrap', gap:8}}>
+      <div className="list-row pickban-row">
         {steps.map((s) => {
           const action = (s.action || s.action_type || '').toLowerCase();
           const cls = action === 'ban' ? 'ban' : action === 'pick' ? 'pick' : 'decider';

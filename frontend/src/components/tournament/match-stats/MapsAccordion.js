@@ -22,7 +22,7 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compa
   const [open, setOpen] = useState(null);
   if (!Array.isArray(maps) || maps.length === 0) return null;
   return (
-    <div className="custom-match-mt-16">
+    <div className="maps-accordion-container">
       <h3>Карты серии</h3>
       <div>
         {maps.map((m) => {
@@ -30,10 +30,10 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compa
           const t1 = playersByMap?.[m.mapnumber]?.team1 || [];
           const t2 = playersByMap?.[m.mapnumber]?.team2 || [];
           return (
-            <div key={m.mapnumber} className="custom-match-mt-8 match-accordion">
-              <div className="list-row" style={{cursor:'pointer', padding:8}} onClick={() => setOpen(isOpen?null:m.mapnumber)}>
+            <div key={m.mapnumber} className="match-accordion">
+              <div className="list-row accordion-row" onClick={() => setOpen(isOpen?null:m.mapnumber)}>
                 <div className="list-row-left">
-                  <img src={mapImage(m.mapname)} alt={m.mapname} style={{width:64, height:36, objectFit:'cover', borderRadius:4, border:'1px solid #333', marginRight:8}} />
+                  <img src={mapImage(m.mapname)} alt={m.mapname} className="map-thumb" />
                   <strong>Map {m.mapnumber + 1}: {m.mapname}</strong>
                   <span className="custom-match-ml-8">{titleLeft} {m.team1_score} : {m.team2_score} {titleRight}</span>
                   {m.picked_by && (<span className="custom-match-ml-8">picked by {m.picked_by}</span>)}
@@ -42,7 +42,7 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compa
                 <div className="list-row-right">{isOpen ? '▲' : '▼'}</div>
               </div>
               {isOpen && (
-                <div style={{padding:'8px 12px'}}>
+                <div className="accordion-content">
                   <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={t1} compact={compact} />
                   <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={t2} compact={compact} />
                 </div>

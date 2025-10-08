@@ -44,6 +44,9 @@ const MatchDetailsPage = () => {
     const [lobbyStats, setLobbyStats] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
     const [pollVersion, setPollVersion] = useState(0);
+    const [compact, setCompact] = useState(() => {
+        try { return localStorage.getItem('match_compact_mode') !== 'false'; } catch(_) { return true; }
+    });
     
     // ✏️ Редактирование завершенного матча
     const [isEditMatchModalOpen, setIsEditMatchModalOpen] = useState(false);
@@ -606,7 +609,7 @@ const MatchDetailsPage = () => {
             const ScoreTable = ({ title, rows }) => {
                 if (!Array.isArray(rows) || rows.length===0) return null;
                 return (
-                    <div className="custom-match-mt-16">
+                    <div className="match-section-container">
                         <h3>{title}</h3>
                         <div style={{overflowX:'auto'}}>
                             <table className="table">
@@ -657,7 +660,7 @@ const MatchDetailsPage = () => {
                     </div>
                 );
                 return (
-                    <div className="custom-match-mt-16">
+                    <div className="match-section-container">
                         <h3>Лидеры матча</h3>
                         <div style={{display:'flex', flexWrap:'wrap', gap:12}}>
                             <Card title="MVP*" value={(leaders.mvpApprox?.damage ?? 0) + ' dmg'} name={leaders.mvpApprox?.name} />
@@ -686,12 +689,12 @@ const MatchDetailsPage = () => {
                 <>
                     {pickbanView}
                     <LeadersPanel leaders={lobbyStats.leaders} />
-                    <div className="custom-match-mt-12 compact-toggle">
-                        <label><input type="checkbox" onChange={()=>{}} /> Компактный режим таблиц</label>
+                    <div className="match-compact-toggle compact-toggle">
+                        <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
                     </div>
-                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={true} />
-                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={true} />
-                    <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} compact={true} />
+                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
+                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
+                    <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} compact={compact} />
                 </>
             );
         }
@@ -1137,11 +1140,11 @@ const MatchDetailsPage = () => {
             {!lobbyStats && (
                 <>
                     <SkeletonCards count={6} />
-                    <div className="custom-match-mt-12 compact-toggle">
-                        <label><input type="checkbox" onChange={()=>{}} /> Компактный режим таблиц</label>
+                    <div className="match-compact-toggle compact-toggle">
+                        <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
                     </div>
                     <SkeletonTable rows={8} />
-                    <div className="custom-match-mt-16">
+                    <div className="match-status-container">
                         <StatusPanel completedAt={null} onRefresh={() => setPollVersion(v => v + 1)} />
                     </div>
                 </>

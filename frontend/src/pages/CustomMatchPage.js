@@ -17,6 +17,9 @@ function CustomMatchPage() {
     const [stats, setStats] = useState(null);
     const [basic, setBasic] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
+    const [compact, setCompact] = useState(() => {
+        try { return localStorage.getItem('match_compact_mode') !== 'false'; } catch(_) { return true; }
+    });
     const [pollVersion, setPollVersion] = useState(0);
 
     useEffect(() => {
@@ -118,7 +121,7 @@ function CustomMatchPage() {
     function ScoreTable({ title, rows }) {
         if (!Array.isArray(rows) || rows.length === 0) return null;
         return (
-            <div className="custom-match-mt-16">
+            <div className="match-section-container">
                 <h3>{title}</h3>
                 <div style={{overflowX:'auto'}}>
                     <table className="table">
@@ -184,7 +187,7 @@ function CustomMatchPage() {
             </div>
         );
         return (
-            <div className="custom-match-mt-16">
+            <div className="match-section-container">
                 <h3>Лидеры матча</h3>
                 <div style={{display:'flex', flexWrap:'wrap', gap:12}}>
                     <Card title="MVP*" value={(leaders.mvpApprox?.damage ?? 0) + ' dmg'} name={leaders.mvpApprox?.name} />
@@ -207,7 +210,7 @@ function CustomMatchPage() {
 
     return (
         <div className="container">
-            <div className="custom-match-mt-16">
+            <div className="match-header-container">
                 <h2>Custom match — CS2</h2>
                 <div className="list-row">
                     <div className="list-row-left">
@@ -220,7 +223,7 @@ function CustomMatchPage() {
             </div>
 
             {(match?.connect || match?.server_ip) && (
-                <div className="custom-match-mt-16">
+                <div className="match-connect-container">
                     <h3>Подключение</h3>
                     {match.connect && (
                         <div className="list-row">
@@ -234,7 +237,7 @@ function CustomMatchPage() {
                         </div>
                     )}
                     {match.gotv && (
-                        <div className="list-row custom-match-mt-8">
+                        <div className="list-row match-connect-row">
                             <div className="list-row-left">
                                 <span>GOTV:</span>
                                 <code className="code-inline">{match.gotv}</code>
@@ -248,26 +251,26 @@ function CustomMatchPage() {
             )}
 
             {(!stats && !leaders) ? (<SkeletonCards count={6} />) : (<LeadersPanel leaders={leaders} />)}
-            <div className="custom-match-mt-12 compact-toggle">
-                <label><input type="checkbox" onChange={(e)=>setExpandedMap(prev=>prev)} /> Компактный режим таблиц</label>
+            <div className="match-compact-toggle compact-toggle">
+                <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
             </div>
             {(!stats && (!playersByTeam?.team1?.length && !playersByTeam?.team2?.length)) ? (
                 <SkeletonTable rows={8} />
             ) : (
                 <>
-                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={true} />
-                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={true} />
+                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
+                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
                 </>
             )}
 
             {!stats && (!maps || maps.length === 0) ? (
                 <SkeletonMapTiles count={3} />
             ) : (
-                <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} />
+                <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} compact={compact} />
             )}
 
             {!stats && (
-                <div className="custom-match-mt-16">
+                <div className="match-status-container">
                     <StatusPanel completedAt={null} onRefresh={() => setPollVersion(v => v + 1)} />
                 </div>
             )}

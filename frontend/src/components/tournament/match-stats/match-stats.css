@@ -1,9 +1,18 @@
 /* Единые стили для блоков статистики матчей (монохромная тема) */
 
-.custom-match-mt-8 { margin-top: 8px; }
-.custom-match-mt-12 { margin-top: 12px; }
-.custom-match-mt-16 { margin-top: 16px; }
+/* Legacy spacing helpers (не использовать в новых компонентах) */
 .custom-match-ml-8 { margin-left: 8px; }
+
+/* Новые семантические контейнеры */
+.custom-match-leaders-panel { margin-top: 16px; }
+.custom-match-pickban { margin-top: 16px; }
+.maps-accordion-container { margin-top: 16px; }
+.match-compact-toggle { margin-top: 12px; }
+.match-header-container { margin-top: 16px; }
+.match-connect-container { margin-top: 16px; }
+.match-connect-row { margin-top: 8px; }
+.match-status-container { margin-top: 16px; }
+.match-section-container { margin-top: 16px; }
 
 /* Заголовки секций */
 .match-stats-section h3,
@@ -26,6 +35,7 @@
   font-size: 13px;
 }
 .badge:hover { background: #111111; }
+.pickban-row { display:flex; flex-wrap:wrap; gap:8px; }
 
 /* Pick/Ban виды действий */
 .badge.ban { border-color: #ff3b30; }
@@ -73,6 +83,9 @@
   border-radius: 6px;
   background: #111;
 }
+.accordion-row { cursor:pointer; padding:8px; }
+.accordion-content { padding: 8px 12px; }
+.map-thumb { width:64px; height:36px; object-fit:cover; border-radius:4px; border:1px solid #333; margin-right:8px; }
 
 /* ===== Leaders panel ===== */
 .leaders-title { color: #c1c1c1; font-weight: 700; margin-bottom: 8px; }
@@ -93,6 +106,7 @@
 .leader-card .leader-name { color: #fff; font-weight: 600; margin-top: 4px; }
 .leader-card .leader-label { color: #c1c1c1; }
 .leader-card .leader-value { color: #a7a7a7; }
+.leader-strong { font-size:18px; font-weight:700; }
 
 .leader-mvp {
   grid-column: span 2;
@@ -121,6 +135,29 @@
   .leaders-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
   .leader-mvp { grid-column: span 2; grid-row: span 2; }
 }
+
+/* ===== Skeletons ===== */
+@keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.skeleton-line {
+  border-radius:4px;
+  background: linear-gradient(90deg, #0a0a0a 25%, #111 37%, #0a0a0a 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+.s-w-100 { width:100%; }
+.s-w-80 { width:80%; }
+.s-w-60 { width:60%; }
+.s-h-14 { height:14px; }
+.s-h-120 { height:120px; }
+.skeleton-cards { display:flex; flex-wrap:wrap; gap:12px; }
+.skeleton-card { border:1px solid #333; border-radius:6px; padding:12px; background:#111; min-width:180px; }
+.skeleton-table table { width:100%; }
+.skeleton-map-tiles { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; }
+.skeleton-tile { border:1px solid #333; background:#111; border-radius:6px; padding:12px; }
+
+/* ===== Status Panel ===== */
+.match-status-panel { border:1px solid #333; border-radius:6px; padding:10px 12px; background:#111; color:#ddd; }
+.match-status-panel .row { display:flex; justify-content:space-between; align-items:center; }
 
 @media (max-width: 768px) {
   .table thead { display: none; }

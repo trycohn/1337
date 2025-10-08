@@ -14,7 +14,7 @@ export function LeadersPanel({ leaders }) {
   ];
 
   return (
-    <div className="custom-match-mt-16">
+    <div className="custom-match-leaders-panel">
       <h3 className="leaders-title">Лидеры матча</h3>
       <div className="leaders-grid">
         {/* MVP (2x2) */}
@@ -32,7 +32,7 @@ export function LeadersPanel({ leaders }) {
         {smallCards.map((c) => (
           <div key={c.key} className="leader-card">
             <div className="leader-title">{c.title}</div>
-            <div className="leader-value" style={{fontSize:18, fontWeight:700}}>{c.value}</div>
+            <div className="leader-value leader-strong">{c.value}</div>
             <div className="leader-name">{c.name || '-'}</div>
           </div>
         ))}
