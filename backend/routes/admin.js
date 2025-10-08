@@ -1798,6 +1798,12 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                 team2: { 
                     name: (lobbyFresh?.team2_name && lobbyFresh.team2_name !== 'Команда 2') ? lobbyFresh.team2_name : 'TEAM_B', 
                     players: team2PlayersObj // объект {steam_id: nickname}
+                },
+                // Webhook настройки для автоматической отправки статистики
+                cvars: {
+                    matchzy_remote_log_url: 'https://1337community.com/api/matchzy/match-end',
+                    matchzy_remote_log_header_key: 'Authorization',
+                    matchzy_remote_log_header_value: 'Bearer 2a262f61e1138fb19445e5aa64c75f9f25bc85581666f00605e3da99245f2f59'
                 }
             };
 
