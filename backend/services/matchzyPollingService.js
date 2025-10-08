@@ -110,6 +110,52 @@ async function importMatchFromMySql(matchRow, conn) {
   }
 }
 
+async function linkOurRefs(matchid) {
+  const client = await pool.connect();
+  try {
+    // 1) Пробуем связать с ADMIN лобби по нашему формату matchid → admin_lobby_id → match_id
+    const adminLobbyId = deriveLobbyIdFromMatchId(matchid);
+    if (adminLobbyId) {
+      const admin = await client.query('SELECT match_id FROM admin_match_lobbies WHERE id = $1', [adminLobbyId]);
+      const ourMatchId = admin.rows[0]?.match_id;
+      if (ourMatchId) {
+        await client.query('UPDATE matchzy_matches SET our_match_id = $1, lobby_id = $2 WHERE matchid = $3 AND (our_match_id IS NULL OR lobby_id IS NULL)', [ourMatchId, adminLobbyId, matchid]);
+        await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE lobby_id = $2 AND (our_match_id IS NULL)', [ourMatchId, adminLobbyId]);
+        console.log(`🔗 [matchzy-poll] Связал admin лобби ${adminLobbyId} с матчем ${matchid} → our_match_id=${ourMatchId}`);
+        return;
+      }
+    }
+
+    // 2) Пробуем связать с ТУРНИРНЫМ лобби по именам команд и времени
+    const mz = await client.query('SELECT team1_name, team2_name, start_time FROM matchzy_matches WHERE matchid = $1', [matchid]);
+    if (mz.rows[0]) {
+      const t1 = (mz.rows[0].team1_name || '').toLowerCase();
+      const t2 = (mz.rows[0].team2_name || '').toLowerCase();
+      const st = mz.rows[0].start_time;
+      const candidate = await client.query(
+        `SELECT ml.id AS lobby_id, m.id AS match_id
+         FROM match_lobbies ml
+         JOIN matches m ON m.id = ml.match_id
+         WHERE LOWER(m.team1_name) = $1 AND LOWER(m.team2_name) = $2
+           AND ABS(EXTRACT(EPOCH FROM (COALESCE(ml.created_at, NOW()) - $3))) < 43200
+         ORDER BY ABS(EXTRACT(EPOCH FROM (COALESCE(ml.created_at, NOW()) - $3))) ASC
+         LIMIT 1`,
+        [t1, t2, st]
+      );
+      if (candidate.rows[0]) {
+        const tlobby = candidate.rows[0].lobby_id;
+        const ourMatchId = candidate.rows[0].match_id;
+        await client.query('UPDATE matchzy_matches SET our_match_id = $1, tournament_lobby_id = $2 WHERE matchid = $3 AND (our_match_id IS NULL OR tournament_lobby_id IS NULL)', [ourMatchId, tlobby, matchid]);
+        await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE tournament_lobby_id = $2 AND (our_match_id IS NULL)', [ourMatchId, tlobby]);
+        console.log(`🔗 [matchzy-poll] Связал tournament лобби ${tlobby} с матчем ${matchid} → our_match_id=${ourMatchId}`);
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ [matchzy-poll] Не удалось связать our_match_id/lobby для', matchid, e.message);
+  } finally { client.release(); }
+}
+
 async function pollOnce() {
   const cfg = getConfig();
   if (!cfg.enabled) return;
@@ -122,9 +168,8 @@ async function pollOnce() {
       for (const row of rows) {
         // импортируем, если в PG ещё нет
         const exists = await pool.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [row.matchid]);
-        if (!exists.rows[0]) {
-          await importMatchFromMySql(row, conn);
-        }
+        if (!exists.rows[0]) { await importMatchFromMySql(row, conn); }
+        await linkOurRefs(Number(row.matchid));
       }
     });
   } catch (e) {
