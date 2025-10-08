@@ -9,13 +9,17 @@ router.get('/custom/:id/stats', async (req, res) => {
     if (!Number.isInteger(matchId) || matchId <= 0) return res.status(400).json({ success: false, error: 'Bad match id' });
     const client = await pool.connect();
     try {
-        // 1) Проверяем, что матч создан через админ‑лобби
+        // 1) Ищем admin‑лобби ИЛИ fallback матч
         const lob = await client.query('SELECT id, team1_name, team2_name FROM admin_match_lobbies WHERE match_id = $1', [matchId]);
-        if (!lob.rows[0]) return res.status(404).json({ success: false, error: 'Матч не относится к лобби' });
-        const lobbyId = lob.rows[0].id;
+        const lobbyId = lob.rows[0]?.id || null;
 
-        // 2) Находим соответствующий matchzy матч по lobby_id (пуллинг его проставляет)
-        const m = await client.query('SELECT * FROM matchzy_matches WHERE lobby_id = $1 ORDER BY end_time DESC NULLS LAST LIMIT 1', [lobbyId]);
+        // 2) Находим соответствующий matchzy матч
+        const m = await client.query(
+            lobbyId
+            ? 'SELECT * FROM matchzy_matches WHERE lobby_id = $1 OR our_match_id = $2 ORDER BY end_time DESC NULLS LAST LIMIT 1'
+            : 'SELECT * FROM matchzy_matches WHERE our_match_id = $1 ORDER BY end_time DESC NULLS LAST LIMIT 1',
+            lobbyId ? [lobbyId, matchId] : [matchId]
+        );
         if (!m.rows[0]) return res.status(404).json({ success: false, error: 'Статистика матча ещё не импортирована' });
         const mz = m.rows[0];
 
@@ -309,12 +313,12 @@ router.get('/tournament/:id/stats', async (req, res) => {
                 entryWinRate: topBy('entry'), clutch1: topBy('clutch1'), clutch2: topBy('clutch2'), accuracy: topBy('acc'),
                 fiveKs: topBy('enemy5ks'), fourKs: topBy('enemy4ks'), threeKs: topBy('enemy3ks'), flashed: topBy('enemies_flashed'), utilityDamage: topBy('utility_damage')
             };
-            const stepsRes = await client.query(
-                `SELECT step_index, action, team_name, team_id, mapname, created_at
-                 FROM matchzy_pickban_steps
-                 WHERE our_match_id = $1 OR lobby_id = $2
-                 ORDER BY step_index ASC, id ASC`, [matchId, lobbyId]
-            );
+        const stepsRes = await client.query(
+            `SELECT step_index, action, team_name, team_id, mapname, created_at
+             FROM matchzy_pickban_steps
+             WHERE our_match_id = $1 OR lobby_id = $2
+             ORDER BY step_index ASC, id ASC`, [matchId, lobbyId || null]
+        );
             return {
                 success: true,
                 match: {

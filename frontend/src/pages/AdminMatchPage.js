@@ -644,15 +644,22 @@ function AdminMatchPage() {
                         const ready1 = lobby?.team1_ready === true;
                         const ready2 = lobby?.team2_ready === true;
                         const hasFormat = !!lobby?.match_format;
-                        const canStart = !!lobbyId && hasFormat && (lobby?.status === 'ready' || (ready1 && ready2));
-                        
+                        const isPicking = lobby?.status === 'picking';
+                        const isCompleted = lobby?.status === 'completed' || lobby?.status === 'match_created';
+                        // Разрешаем старт ТОЛЬКО из статуса 'ready'
+                        const canStart = !!lobbyId && hasFormat && lobby?.status === 'ready';
+
                         let tip = '';
                         if (!hasFormat) {
                             tip = 'Сначала выберите формат матча (BO1, BO3 или BO5)';
+                        } else if (isPicking) {
+                            tip = 'Процедура BAN/PICK уже начата';
+                        } else if (isCompleted) {
+                            tip = 'Матч уже создан или завершён';
                         } else if (!ready1 || !ready2) {
                             tip = `Готовность команд: ${ready1 ? 'Team_A — ready' : 'Team_A — not ready'}, ${ready2 ? 'Team_B — ready' : 'Team_B — not ready'}`;
                         }
-                        
+
                         return (
                             <div className="custom-match-tooltip">
                                 <button
