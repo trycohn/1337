@@ -27,6 +27,12 @@
 }
 .badge:hover { background: #111111; }
 
+/* Pick/Ban виды действий */
+.badge.ban { border-color: #ff3b30; }
+.badge.pick { border-color: #00c853; }
+.badge.decider { border-color: #ffd700; }
+.badge .icon { width: 14px; height: 14px; display:inline-block; }
+
 /* Таблица статистики */
 .table {
   width: 100%;
@@ -66,6 +72,18 @@
   border: 1px solid #333;
   border-radius: 6px;
   background: #111;
+}
+
+@media (max-width: 768px) {
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table tr { border-top: 1px solid #222; padding: 8px 0; }
+  .table td { display: flex; justify-content: space-between; padding: 6px 10px; }
+  .table td::before {
+    content: attr(data-label);
+    color: #aaa;
+    margin-right: 12px;
+  }
 }
 
 

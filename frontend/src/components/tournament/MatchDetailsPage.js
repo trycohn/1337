@@ -1057,7 +1057,7 @@ const MatchDetailsPage = () => {
                     </span>
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
                     <div className="match-status-bar-buttons">
-                        {isAdminOrCreator && (
+                        {isAdminOrCreator && tournament?.status !== 'completed' && (
                             <>
                                 {match.status === 'completed' ? (
                                     <button 
