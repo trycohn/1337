@@ -228,15 +228,96 @@
     font-weight: 300;
 }
 
-/* Main Content Layout */
+/* Horizontal Tabs Navigation */
+.profile-tabs-navigation {
+    margin: var(--spacing-xl) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tabs-navigation-profile {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+}
+
+.tabs-navigation-profile .tab-button-profile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    padding: 0 24px;
+    gap: 8px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #cccccc;
+    font-family: Play, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 100%;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tabs-navigation-profile .tab-button-profile:hover {
+    color: #ffffff;
+    background: var(--bg-secondary);
+}
+
+.tabs-navigation-profile .tab-button-profile.active {
+    color: #ffffff;
+    background: none;
+    border-bottom-color: var(--btn-order-color);
+}
+
+.tabs-navigation-profile .tab-button-profile .tab-label-profile {
+    position: relative;
+}
+
+/* Notification badge for achievements */
+.tabs-navigation-profile .tab-button-profile .achievement-notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--btn-order-color);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+}
+
+/* Main Content Layout - No Sidebar */
 .profile-main-content {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: var(--spacing-xl);
-    align-items: start;
+    width: 100%;
+}
+
+/* Content Area */
+.profile-content-area {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.content-section {
+    padding: 0;
 }
 
 @media (max-width: 768px) {
+  .profile-tabs-navigation {
+    position: relative;
+  }
+  
+  .tabs-navigation-profile {
+    display: none;
+  }
+  
   .profile-main-content { display: block; }
   .profile-sidebar { display: none; }
   .profile-content-area { width: 100%; box-sizing: border-box; }

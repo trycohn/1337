@@ -4,6 +4,7 @@ import { ensureHttps } from '../utils/userHelpers';
 import './MyTeams.css';
 import TeamModal from './modals/TeamModal';
 import CreateTeamModal from './modals/CreateTeamModal';
+import TournamentHistory from './TournamentHistory';
 
 const MyTeams = ({ user }) => {
     const [teams, setTeams] = useState([]);
@@ -13,6 +14,7 @@ const MyTeams = ({ user }) => {
     const [showTeamModal, setShowTeamModal] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [invitations, setInvitations] = useState([]);
+    const [activeSubTab, setActiveSubTab] = useState('teams'); // teams, history
 
     // Загрузка команд пользователя
     const fetchTeams = async () => {
@@ -125,8 +127,30 @@ const MyTeams = ({ user }) => {
                 </div>
             )}
 
-            {/* Приглашения в команды */}
-            {invitations.length > 0 && (
+            {/* Sub-tabs Navigation */}
+            <div className="my-teams-tabs">
+                <button 
+                    className={`my-teams-tab ${activeSubTab === 'teams' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('teams')}
+                >
+                    <span className="tab-icon">⚔️</span>
+                    <span className="tab-text">Мои команды</span>
+                    {teams.length > 0 && <span className="tab-count">{teams.length}</span>}
+                </button>
+                <button 
+                    className={`my-teams-tab ${activeSubTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setActiveSubTab('history')}
+                >
+                    <span className="tab-icon">🏆</span>
+                    <span className="tab-text">История турниров</span>
+                </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeSubTab === 'teams' && (
+                <>
+                    {/* Приглашения в команды */}
+                    {invitations.length > 0 && (
                 <div className="team-invitations">
                     <h3>Приглашения в команды</h3>
                     {invitations.map(invitation => (
@@ -248,6 +272,13 @@ const MyTeams = ({ user }) => {
                     ))
                 )}
             </div>
+                </>
+            )}
+
+            {/* History Tab */}
+            {activeSubTab === 'history' && (
+                <TournamentHistory userId={user?.id} />
+            )}
 
             {/* Модальные окна */}
             {showTeamModal && selectedTeam && (

@@ -1,0 +1,257 @@
+/* Tournament History Styles */
+
+.tournament-history {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0;
+}
+
+.tournament-history-loading,
+.tournament-history-error {
+    text-align: center;
+    padding: 48px 24px;
+    color: #999999;
+    font-size: 14px;
+}
+
+.tournament-history-error {
+    color: #ff0000;
+}
+
+.tournament-history-empty {
+    text-align: center;
+    padding: 64px 24px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.tournament-history-empty .empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.tournament-history-empty p {
+    color: #cccccc;
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.tournament-history-empty .empty-hint {
+    color: #666666;
+    font-size: 14px;
+}
+
+/* Team History Block */
+.team-history-block {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.team-history-block:hover {
+    border-color: #555555;
+}
+
+.team-history-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-bottom: 1px solid #222222;
+    background: #0a0a0a;
+}
+
+.team-history-avatar,
+.team-history-avatar-placeholder {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.team-history-avatar {
+    object-fit: cover;
+    border: 2px solid #333333;
+}
+
+.team-history-avatar-placeholder {
+    background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+    border: 2px solid #ff0000;
+}
+
+.team-history-info {
+    flex: 1;
+}
+
+.team-history-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 4px 0;
+}
+
+.team-history-count {
+    font-size: 13px;
+    color: #999999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Tournaments List */
+.tournaments-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.tournament-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1a1a1a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tournament-history-item:last-child {
+    border-bottom: none;
+}
+
+.tournament-history-item:hover {
+    background: #1a1a1a;
+    padding-left: 24px;
+}
+
+.tournament-history-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.tournament-history-icon {
+    font-size: 20px;
+    opacity: 0.7;
+}
+
+.tournament-history-details {
+    flex: 1;
+}
+
+.tournament-history-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.tournament-history-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #666666;
+}
+
+.tournament-history-game {
+    font-weight: 500;
+}
+
+.tournament-history-separator {
+    opacity: 0.5;
+}
+
+.tournament-history-date {
+    font-family: monospace;
+}
+
+/* Result Badges */
+.tournament-history-result {
+    flex-shrink: 0;
+}
+
+.result-badge {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.result-badge.winner {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #000000;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.result-badge.second {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+    color: #000000;
+}
+
+.result-badge.third {
+    background: linear-gradient(135deg, #cd7f32 0%, #d4a56a 100%);
+    color: #000000;
+}
+
+.result-badge.participant {
+    background: #222222;
+    color: #999999;
+    border: 1px solid #333333;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tournament-history {
+        gap: 16px;
+    }
+
+    .team-history-header {
+        padding: 16px;
+    }
+
+    .team-history-avatar,
+    .team-history-avatar-placeholder {
+        width: 48px;
+        height: 48px;
+    }
+
+    .team-history-name {
+        font-size: 16px;
+    }
+
+    .tournament-history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+    }
+
+    .tournament-history-item:hover {
+        padding-left: 16px;
+    }
+
+    .tournament-history-result {
+        align-self: stretch;
+    }
+
+    .result-badge {
+        display: block;
+        text-align: center;
+        padding: 8px;
+    }
+}
+

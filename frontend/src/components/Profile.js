@@ -4,6 +4,7 @@ import Skeleton from 'react-loading-skeleton';
 import api from '../axios';
 import ProfileReputation from './ProfileReputation'; // Компонент репутации
 import DetailedStats from './stats/DetailedStats'; // 📊 Детальная статистика
+import ProfileShowcase from './ProfileShowcase'; // 🏆 Витрина достижений
 import './Profile.css';
 import { isCurrentUser, ensureHttps } from '../utils/userHelpers';
 import { useAuth } from '../context/AuthContext';
@@ -2392,6 +2393,9 @@ function Profile() {
                                 <span>ID: {user.id}</span>
                             </div>
                         </div>
+                        
+                        {/* 🏆 Витрина достижений */}
+                        {stats && <ProfileShowcase stats={stats} />}
                     </div>
                     
                     {/* Убраны быстрые статблоки из хедера по запросу */}
@@ -2417,10 +2421,9 @@ function Profile() {
                 </div>
             )}
             
-            {/* Main Content */}
-            <div className="profile-main-content">
-                {/* Mobile sheet */}
-                {isMobile && (
+            {/* Horizontal Navigation Tabs */}
+            <div className="profile-tabs-navigation">
+                {isMobile ? (
                     <>
                         <button className="profile-toggle-button" onClick={() => setSheetOpen(true)} aria-label="Открыть меню профиля">
                             <span className="triangle" />
@@ -2435,102 +2438,83 @@ function Profile() {
                                 { key: 'stats', label: 'Статистика' },
                                 { key: 'friends', label: 'Друзья' },
                                 { key: 'teams', label: 'Мои команды' },
+                                { key: 'matchhistory', label: 'История матчей' },
                                 ...(user && user.role === 'admin' ? [{ key: 'achievements', label: 'Достижения' }] : []),
                                 ...((userOrganizations && userOrganizations.length > 0) ? [{ key: 'organization', label: 'Организация' }] : []),
                                 { key: 'tournaments', label: 'Турниры' },
+                                { key: 'reputation', label: 'Репутация' },
                             ]}
                         />
                     </>
-                )}
-                {/* Sidebar Navigation */}
-                {!isMobile && (
-                <div className="profile-sidebar">
-                    <nav className="sidebar-nav-profile">
+                ) : (
+                    <div className="tabs-navigation-profile">
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'main' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'main' ? 'active' : ''}`} 
                             onClick={() => switchTab('main')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Основная</span>
-                            </div>
+                            <span className="tab-label-profile">Основная</span>
                         </button>
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'stats' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'stats' ? 'active' : ''}`} 
                             onClick={() => switchTab('stats')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Статистика</span>
-                            </div>
+                            <span className="tab-label-profile">Статистика</span>
                         </button>
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'friends' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'friends' ? 'active' : ''}`} 
                             onClick={() => switchTab('friends')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Друзья</span>
-                            </div>
+                            <span className="tab-label-profile">Друзья</span>
                         </button>
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'teams' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'teams' ? 'active' : ''}`} 
                             onClick={() => switchTab('teams')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Мои команды</span>
-                            </div>
+                            <span className="tab-label-profile">Мои команды</span>
                         </button>
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'matchhistory' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'matchhistory' ? 'active' : ''}`} 
                             onClick={() => switchTab('matchhistory')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>История матчей</span>
-                            </div>
+                            <span className="tab-label-profile">История матчей</span>
                         </button>
                         {user && user.role === 'admin' && (
-                        <button 
-                            className={`nav-tab-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
-                            onClick={() => switchTab('achievements')}
-                        >
-                            <div className="nav-tab-content-profile">
-                                <span>Достижения</span>
+                            <button 
+                                className={`tab-button-profile ${activeTab === 'achievements' ? 'active' : ''}`} 
+                                onClick={() => switchTab('achievements')}
+                            >
+                                <span className="tab-label-profile">Достижения</span>
                                 {newAchievementsCount > 0 && (
                                     <span className="achievement-notification-badge">{newAchievementsCount}</span>
                                 )}
-                            </div>
-                        </button>
+                            </button>
                         )}
                         {userOrganizations && userOrganizations.length > 0 && (
-                        <button 
-                            className={`nav-tab-profile ${activeTab === 'organization' ? 'active' : ''}`} 
-                            onClick={() => switchTab('organization')}
-                        >
-                            <div className="nav-tab-content-profile">
-                                <span>Организация</span>
-                            </div>
-                        </button>
+                            <button 
+                                className={`tab-button-profile ${activeTab === 'organization' ? 'active' : ''}`} 
+                                onClick={() => switchTab('organization')}
+                            >
+                                <span className="tab-label-profile">Организация</span>
+                            </button>
                         )}
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'tournaments' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'tournaments' ? 'active' : ''}`} 
                             onClick={() => switchTab('tournaments')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Турниры</span>
-                            </div>
+                            <span className="tab-label-profile">Турниры</span>
                         </button>
                         <button 
-                            className={`nav-tab-profile ${activeTab === 'reputation' ? 'active' : ''}`} 
+                            className={`tab-button-profile ${activeTab === 'reputation' ? 'active' : ''}`} 
                             onClick={() => switchTab('reputation')}
                         >
-                            <div className="nav-tab-content-profile">
-                                <span>Репутация</span>
-                            </div>
+                            <span className="tab-label-profile">Репутация</span>
                         </button>
-                    </nav>
-                </div>
+                    </div>
                 )}
-                
-                {/* Content Area */}
-                <div className="profile-content-area">
+            </div>
+            
+            {/* Content Area */}
+            <div className="profile-content-area">
                     <div className="content-section">
                         {/* Main Tab */}
                         {activeTab === 'main' && (
@@ -2658,6 +2642,16 @@ function Profile() {
                             <>
                                 <div className="content-header">
                                     <h2 className="content-title">Статистика</h2>
+                                </div>
+                                
+                                {/* 📊 DETAILED STATS - FIRST BLOCK */}
+                                <div className="content-card">
+                                    <div className="card-header">
+                                        <h3 className="card-title">Детальная статистика</h3>
+                                    </div>
+                                    <div className="card-content">
+                                        <DetailedStats userId={user.id} />
+                                    </div>
                                 </div>
                                 
                                 {/* Site Stats */}
@@ -3892,11 +3886,6 @@ function Profile() {
                         {/* 📊 REPUTATION TAB */}
                         {activeTab === 'reputation' && (
                             <ProfileReputation userId={user.id} />
-                        )}
-                        
-                        {/* 📊 DETAILED STATS TAB */}
-                        {activeTab === 'stats' && (
-                            <DetailedStats userId={user.id} />
                         )}
                         
                         {activeTab === 'matchhistory' && (

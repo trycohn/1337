@@ -5,6 +5,55 @@
     color: #ffffff;
 }
 
+/* Game Filter */
+.stats-game-filter {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #222222;
+}
+
+.stats-game-filter .filter-label {
+    color: #999999;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.game-filter-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.game-filter-btn {
+    padding: 8px 16px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    color: #cccccc;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.game-filter-btn:hover {
+    background: #1a1a1a;
+    border-color: #ff0000;
+    color: #ffffff;
+}
+
+.game-filter-btn.active {
+    background: #ff0000;
+    border-color: #ff0000;
+    color: #ffffff;
+}
+
 .detailed-stats-loading {
     text-align: center;
     padding: 64px 32px;

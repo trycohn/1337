@@ -1,7 +1,62 @@
 ﻿.my-teams {
-    padding: 20px;
+    padding: 0;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+/* Sub-tabs Navigation */
+.my-teams-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #333333;
+    margin-bottom: 24px;
+}
+
+.my-teams-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.my-teams-tab:hover {
+    color: #ffffff;
+    background: #111111;
+}
+
+.my-teams-tab.active {
+    color: #ffffff;
+    border-bottom-color: #ff0000;
+    background: none;
+}
+
+.my-teams-tab .tab-icon {
+    font-size: 16px;
+}
+
+.my-teams-tab .tab-text {
+    font-family: Play, Arial, sans-serif;
+}
+
+.my-teams-tab .tab-count {
+    background: #ff0000;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
 }
 
 .teams-loading {
@@ -316,9 +371,37 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
-    border: solid 1px white;
+    border: 1px solid #333333;
     border-radius: 8px;
-    padding: 10px;
+    padding: 16px;
+    background: #111111;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.my-team-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 0, 0, 0.05) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.my-team-card:hover {
+    transform: translateY(-4px);
+    border-color: #ff0000;
+    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.15), 0 0 0 1px #ff0000;
+}
+
+.my-team-card:hover::before {
+    opacity: 1;
 }
 
 .my-team-header {
@@ -339,8 +422,29 @@
     height: 60px;
 }
 
+.my-team-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+}
+
 .my-team-badges .captain-badge {
-    background-color: #000000;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #000000;
+    border: 1px solid #ffd700;
+    font-weight: 700;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.my-team-badges .captain-badge::before {
+    content: '👑';
+    font-size: 12px;
 }
 
 .my-team-members {

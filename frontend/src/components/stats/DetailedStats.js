@@ -16,14 +16,16 @@ function DetailedStats({ userId }) {
     const [mapStats, setMapStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeView, setActiveView] = useState('overview'); // overview, maps, weapons, recent
+    const [gameFilter, setGameFilter] = useState('all'); // all, cs2, dota2
     
     useEffect(() => {
         loadAllStats();
-    }, [userId]);
+    }, [userId, gameFilter]);
     
     const loadAllStats = async () => {
         setLoading(true);
         try {
+            // В будущем здесь будет параметр ?game=${gameFilter}
             const [statsRes, recentRes, mapsRes] = await Promise.all([
                 api.get(`/api/player-stats/player/${userId}`),
                 api.get(`/api/player-stats/player/${userId}/recent?limit=10`),
@@ -56,6 +58,31 @@ function DetailedStats({ userId }) {
     
     return (
         <div className="detailed-stats-container">
+            {/* Фильтр по играм */}
+            <div className="stats-game-filter">
+                <span className="filter-label">Игра:</span>
+                <div className="game-filter-buttons">
+                    <button 
+                        className={`game-filter-btn ${gameFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setGameFilter('all')}
+                    >
+                        Все игры
+                    </button>
+                    <button 
+                        className={`game-filter-btn ${gameFilter === 'cs2' ? 'active' : ''}`}
+                        onClick={() => setGameFilter('cs2')}
+                    >
+                        CS2
+                    </button>
+                    <button 
+                        className={`game-filter-btn ${gameFilter === 'dota2' ? 'active' : ''}`}
+                        onClick={() => setGameFilter('dota2')}
+                    >
+                        Dota 2
+                    </button>
+                </div>
+            </div>
+            
             {/* Навигация */}
             <div className="stats-nav">
                 <button 
