@@ -820,49 +820,72 @@ function AdminMatchPage() {
             )}
 
             {/* Подключение к серверу */}
-            {lobby && lobby.status === 'match_created' && (
-                <div className="custom-match-mt-16">
-                    <h3>Подключение к серверу</h3>
-                    {connectInfo && connectInfo.connect ? (
-                        <>
-                            <div className="list-row">
-                                <div className="list-row-left">
-                                    <span>Игроки:</span>
-                                    <code className="code-inline custom-match-code-inline">{connectInfo.connect}</code>
-                                </div>
-                                <div className="list-row-right">
-                                    <button className="btn btn-secondary" onClick={() => copy(connectInfo.connect)}>Копировать</button>
-                                </div>
-                            </div>
-                            {connectInfo.gotv && (
-                                <div className="list-row custom-match-mt-8">
-                                    <div className="list-row-left">
-                                        <span>GOTV:</span>
-                                        <code className="code-inline custom-match-code-inline">{connectInfo.gotv}</code>
-                                    </div>
-                                    <div className="list-row-right">
-                                        <button className="btn btn-secondary" onClick={() => copy(connectInfo.gotv)}>Копировать</button>
-                                    </div>
-                                </div>
-                            )}
-                            {lobby?.match_id && (
-                                <div className="custom-match-mt-12">
-                                    <a className="btn btn-secondary" href={`/matches/custom/${lobby.match_id}`} target="_blank" rel="noreferrer">
-                                        Открыть страницу матча
-                                    </a>
-                                </div>
-                            )}
-                            <div className="custom-match-mt-12">
-                                <a className="btn btn-primary custom-match-ml-8" href={connectInfo.connect} target="_blank" rel="noreferrer">
-                                    Подключиться к матчу
+            {lobby && lobby.status === 'match_created' && connectInfo && connectInfo.connect && (
+                <div className="custom-match-mt-16" style={{ textAlign: 'center' }}>
+                    {(() => {
+                        const ipPort = connectInfo.connect.replace('steam://connect/', '').split('/')[0];
+                        const steamUrl = `steam://run/730//+connect ${ipPort}`;
+                        const consoleCmd = `connect ${ipPort}`;
+                        
+                        return (
+                            <>
+                                <a 
+                                    href={steamUrl}
+                                    style={{
+                                        display: 'inline-block',
+                                        padding: '20px 60px',
+                                        background: '#000',
+                                        border: '2px solid #ff0000',
+                                        borderRadius: '4px',
+                                        color: '#fff',
+                                        fontSize: '24px',
+                                        fontWeight: 'bold',
+                                        textDecoration: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.3s ease'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.background = '#111'}
+                                    onMouseLeave={(e) => e.target.style.background = '#000'}
+                                >
+                                    ПОДКЛЮЧИТЬСЯ
                                 </a>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="admin-error">
-                            ⚠️ Не удалось найти свободный сервер. Добавьте сервера в админ панели или проверьте что они активны и доступны.
-                        </div>
-                    )}
+                                
+                                <div 
+                                    style={{ 
+                                        marginTop: '12px', 
+                                        color: '#aaa', 
+                                        fontSize: '14px',
+                                        cursor: 'pointer',
+                                        userSelect: 'none'
+                                    }}
+                                    onClick={() => {
+                                        copy(consoleCmd);
+                                        alert(`✅ Скопировано: ${consoleCmd}\n\nОткрой консоль CS2 (~) и вставь`);
+                                    }}
+                                    title="Нажми чтобы скопировать для консоли"
+                                >
+                                    {consoleCmd}
+                                </div>
+                                
+                                {lobby?.match_id && (
+                                    <div className="custom-match-mt-12">
+                                        <a className="btn btn-secondary" href={`/matches/custom/${lobby.match_id}`} target="_blank" rel="noreferrer">
+                                            Открыть страницу матча
+                                        </a>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
+                </div>
+            )}
+
+            {/* Сообщение если сервер не найден */}
+            {lobby && lobby.status === 'match_created' && (!connectInfo || !connectInfo.connect) && (
+                <div className="custom-match-mt-16">
+                    <div className="admin-error" style={{ textAlign: 'center' }}>
+                        ⚠️ Не удалось найти свободный сервер. Добавьте сервера в админ панели или проверьте что они активны и доступны.
+                    </div>
                 </div>
             )}
 
