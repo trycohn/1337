@@ -1,4 +1,7 @@
 /* 📊 DETAILED STATS STYLES */
+root {
+    font-family: play, Arial, sans-serif;
+}
 
 .detailed-stats-container {
     color: #ffffff;
@@ -122,7 +125,7 @@
 }
 
 .stats-subtitle {
-    color: #666666;
+    color: #e3e3e3;
     font-size: 14px;
     margin: 0 0 24px 0;
 }
@@ -145,7 +148,7 @@
 .stat-card-detailed .stat-label {
     display: block;
     color: #999999;
-    font-size: 12px;
+    font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 8px;
@@ -191,8 +194,8 @@
 }
 
 .metric-label {
-    color: #999999;
-    font-size: 13px;
+    color: #c1c1c1;
+    font-size: 15px;
 }
 
 .metric-value {
@@ -202,8 +205,8 @@
 }
 
 .metric-detail {
-    color: #666666;
-    font-size: 12px;
+    color: #c1c1c1;
+    font-size: 14px;
 }
 
 /* Maps */
