@@ -3941,14 +3941,37 @@ function Profile() {
                                 )}
                                 {!loadingMatchHistory && matchHistory.length > 0 && (
                                     <div className="match-history-list">
-                                        {matchHistory.map((m) => {
+                                        {([...matchHistory]
+                                            .sort((a, b) => {
+                                                const da = a.created_at || a.date;
+                                                const db = b.created_at || b.date;
+                                                const ta = da ? new Date(da).getTime() : 0;
+                                                const tb = db ? new Date(db).getTime() : 0;
+                                                return ta - tb; // от старых к новым
+                                            })
+                                        ).map((m) => {
                                             const isCustom = m.source_type === 'custom';
                                             const title = isCustom ? 'Custom match' : (m.tournament_id ? 'Tournament' : 'Матч');
                                             const game = m.game || 'Counter-Strike 2';
                                             const score1 = m.score1 ?? 0;
                                             const score2 = m.score2 ?? 0;
                                             const result = score1 === score2 ? '—' : (score1 > score2 ? 'Победа' : 'Поражение');
-                                            const dateStr = m.created_at ? new Date(m.created_at).toLocaleString() : '';
+                                                const dateRaw = m.created_at || m.date;
+                                                const dateStr = dateRaw ? new Date(dateRaw).toLocaleString('ru-RU') : '';
+                                                const userIdLocal = user?.id;
+                                                let opponentName = 'Неизвестный соперник';
+                                                if (isCustom) {
+                                                    const t1 = Array.isArray(m.team1_players) ? m.team1_players : [];
+                                                    const t2 = Array.isArray(m.team2_players) ? m.team2_players : [];
+                                                    const inT1 = userIdLocal ? t1.some(p => Number(p.user_id) === Number(userIdLocal)) : false;
+                                                    const inT2 = userIdLocal ? t2.some(p => Number(p.user_id) === Number(userIdLocal)) : false;
+                                                    if (inT1) opponentName = m.team2_name || 'Соперник';
+                                                    else if (inT2) opponentName = m.team1_name || 'Соперник';
+                                                    else opponentName = (m.team1_name && m.team2_name) ? `${m.team1_name}` : 'Соперник';
+                                                } else if (m.team1_name || m.team2_name) {
+                                                    // Турнирный матч: показываем вторую команду как соперника, если не знаем сторону
+                                                    opponentName = m.team2_name || m.team1_name;
+                                                }
                                             const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
                                             return (
                                                 <a key={`${m.source_type}-${m.id}`} className="match-history-row" href={href}>
@@ -3957,8 +3980,9 @@ function Profile() {
                                                         <span className="match-history-game" title={game}>{renderGameIcon(game)}</span>
                                                     </div>
                                                     <div className="match-history-right" style={{gap: 12}}>
-                                                        <span>{result} {score1}:{score2}</span>
-                                                        <span style={{color:'#999'}}>{dateStr}</span>
+                                                            <span>{result} {score1}:{score2}</span>
+                                                            <span style={{color:'#aaa'}}>Соперник: {opponentName}</span>
+                                                            <span style={{color:'#999'}}>{dateStr}</span>
                                                     </div>
                                                 </a>
                                             );
