@@ -353,12 +353,48 @@ async function materializePlayerStatsFromMatchzy(matchid) {
 
     // 1) Получаем our_match_id
     let ourMatchId = null;
-    const mm = await client.query('SELECT our_match_id FROM matchzy_matches WHERE matchid = $1', [matchid]);
+    let lobbyId = null;
+    const mm = await client.query('SELECT our_match_id, lobby_id FROM matchzy_matches WHERE matchid = $1', [matchid]);
     ourMatchId = mm.rows[0]?.our_match_id || null;
+    lobbyId = mm.rows[0]?.lobby_id || null;
     if (!ourMatchId) {
       await client.query('ROLLBACK');
       console.log(`ℹ️ [materialize] our_match_id отсутствует для matchid=${matchid} — пропускаем`);
       return false;
+    }
+
+    // 1.1) Собираем маппинг steam_id → user_id из matches.team1_players/team2_players
+    const steamToUserId = new Map();
+    try {
+      const mPlayers = await client.query('SELECT team1_players, team2_players FROM matches WHERE id = $1', [ourMatchId]);
+      if (mPlayers.rows[0]) {
+        const pushMap = (arr) => {
+          if (!Array.isArray(arr)) return;
+          for (const p of arr) {
+            const sid = (p && (p.steam_id || p.steamid || p.steam || '')) ? String(p.steam_id || p.steamid || p.steam).trim() : '';
+            const uid = p && (p.user_id || p.id);
+            if (sid && uid) steamToUserId.set(sid, Number(uid));
+          }
+        };
+        try { pushMap(mPlayers.rows[0].team1_players); } catch (_) {}
+        try { pushMap(mPlayers.rows[0].team2_players); } catch (_) {}
+      }
+    } catch (_) {}
+
+    // 1.2) Доп. маппинг steam_id → user_id из admin_lobby_invitations (если есть lobbyId)
+    if (lobbyId) {
+      try {
+        const inv = await client.query(
+          `SELECT u.id AS user_id, TRIM(u.steam_id) AS steam_id
+           FROM admin_lobby_invitations i
+           JOIN users u ON u.id = i.user_id
+           WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
+          [lobbyId]
+        );
+        for (const row of inv.rows) {
+          if (row.steam_id) steamToUserId.set(String(row.steam_id).trim(), Number(row.user_id));
+        }
+      } catch (_) {}
     }
 
     // 2) Если уже есть записи по этому матчу — выходим (идемпотентность)
@@ -421,12 +457,20 @@ async function materializePlayerStatsFromMatchzy(matchid) {
     // 7) Вставляем player_match_stats
     const updatedUserIds = new Set();
     for (const player of bySteam.values()) {
-      const ures = await client.query('SELECT id FROM users WHERE steam_id = $1', [player.steamid64]);
-      if (!ures.rows[0]) { 
-        console.warn('⚠️ [materialize] Пользователь не найден по steam_id', player.steamid64, '(matchid=', matchid, ')');
-        continue; 
+      let userId = null;
+      // Прямая привязка по users.steam_id
+      const ures = await client.query('SELECT id FROM users WHERE TRIM(steam_id) = $1', [String(player.steamid64)]);
+      if (ures.rows[0]) {
+        userId = ures.rows[0].id;
+      } else {
+        // Фоллбек через JSON участников матча/лобби
+        const mapped = steamToUserId.get(String(player.steamid64));
+        if (mapped) userId = mapped;
       }
-      const userId = ures.rows[0].id;
+      if (!userId) {
+        console.warn('⚠️ [materialize] Не удалось сопоставить игрока по steamid64=', player.steamid64, ' matchid=', matchid, ' our_match_id=', ourMatchId);
+        continue;
+      }
 
       // Derived metrics
       const roundsPlayed = roundsTotal || 0;
