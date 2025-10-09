@@ -207,6 +207,11 @@ async function pollOnce() {
           const exists = await pool.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [row.matchid]);
           if (!exists.rows[0]) { await importMatchFromMySql(row, conn); }
           await linkOurRefs(Number(row.matchid));
+          try {
+            await materializePlayerStatsFromMatchzy(Number(row.matchid));
+          } catch (matErr) {
+            console.warn('⚠️ [matchzy-poll] Не удалось материализовать player stats для', row.matchid, matErr.message);
+          }
         }
       });
       return;
@@ -259,7 +264,11 @@ async function start() {
     console.warn('⚠️ [matchzy-poll] Нет зависимости mysql2, пуллинг не будет запущен');
     return;
   }
-  const tick = async () => { await pollOnce(); timer = setTimeout(tick, cfg.intervalMs); };
+  const tick = async () => {
+    await pollOnce();
+    try { await reconcileUnmaterialized(50); } catch (_) {}
+    timer = setTimeout(tick, cfg.intervalMs);
+  };
   console.log(`▶️  [matchzy-poll] Старт пуллинга (driver=${cfg.driver}, every=${cfg.intervalMs}ms)`);
   timer = setTimeout(tick, 2000);
 }
@@ -346,7 +355,10 @@ async function materializePlayerStatsFromMatchzy(matchid) {
     const updatedUserIds = new Set();
     for (const player of bySteam.values()) {
       const ures = await client.query('SELECT id FROM users WHERE steam_id = $1', [player.steamid64]);
-      if (!ures.rows[0]) { continue; }
+      if (!ures.rows[0]) { 
+        console.warn('⚠️ [materialize] Пользователь не найден по steam_id', player.steamid64, '(matchid=', matchid, ')');
+        continue; 
+      }
       const userId = ures.rows[0].id;
 
       // Derived metrics
@@ -446,6 +458,31 @@ async function materializePlayerStatsFromMatchzy(matchid) {
   }
 }
 
-module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql, materializePlayerStatsFromMatchzy };
+// Реконсиляция незаполненных матчей (послешаговая материализация)
+async function reconcileUnmaterialized(limit = 20) {
+  try {
+    const res = await pool.query(`
+      SELECT m.matchid, m.our_match_id
+      FROM matchzy_matches m
+      WHERE m.our_match_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM player_match_stats p WHERE p.match_id = m.our_match_id
+        )
+      ORDER BY COALESCE(m.end_time, m.start_time) DESC
+      LIMIT $1
+    `, [limit]);
+    for (const row of res.rows) {
+      try {
+        await materializePlayerStatsFromMatchzy(Number(row.matchid));
+      } catch (e) {
+        console.warn('⚠️ [reconcile] Ошибка материализации для matchid', row.matchid, e.message);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ [reconcile] Ошибка запроса незаполненных матчей:', e.message);
+  }
+}
+
+module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql, materializePlayerStatsFromMatchzy, reconcileUnmaterialized };
 
 
