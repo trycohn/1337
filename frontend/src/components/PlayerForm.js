@@ -45,6 +45,8 @@ function PlayerForm({ recentMatches = [], stats }) {
 
     const streak = getCurrentStreak(recentMatches);
     const trend = getWinrateTrend(stats);
+    const totalWinsAll = (stats?.solo?.wins || 0) + (stats?.team?.wins || 0);
+    const totalMatchesAll = totalWinsAll + (stats?.solo?.losses || 0) + (stats?.team?.losses || 0);
     
     // Отображаем последние 10 матчей
     const displayMatches = recentMatches.slice(0, 10);
@@ -57,7 +59,7 @@ function PlayerForm({ recentMatches = [], stats }) {
         <div className="player-form">
             <div className="player-form-header">
                 <h4 className="form-title">Текущая форма</h4>
-                {trend.direction !== 'neutral' && (
+                {trend.direction !== 'neutral' && totalMatchesAll >= 20 && (
                     <div className={`trend-indicator trend-${trend.direction}`}>
                         <span className="trend-icon">
                             {trend.direction === 'up' ? '↗️' : '↘️'}
