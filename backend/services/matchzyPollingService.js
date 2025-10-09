@@ -101,7 +101,52 @@ async function importMatchFromMySql(matchRow, conn) {
 
     // Игроки
     const [players] = await conn.execute('SELECT * FROM matchzy_stats_players WHERE matchid = ?', [matchid]);
+    console.log(`📊 [MatchZy Import] Найдено ${players.length} игроков для matchid=${matchid}`);
+    
     for (const p of players) {
+      // Определяем Steam ID из разных возможных полей
+      let steamId64 = null;
+      
+      // Пробуем разные поля, которые могут содержать Steam ID
+      if (p.steamid64) {
+        steamId64 = String(p.steamid64);
+      } else if (p.steam_id) {
+        steamId64 = String(p.steam_id);
+      } else if (p.steam) {
+        steamId64 = String(p.steam);
+      }
+      
+      // Конвертируем Steam3 формат [U:1:XXXXXXXXX] в Steam64
+      if (steamId64 && steamId64.startsWith('[U:1:')) {
+        const match = steamId64.match(/\[U:1:(\d+)\]/);
+        if (match) {
+          const accountId = match[1];
+          steamId64 = String(BigInt('76561197960265728') + BigInt(accountId));
+          console.log(`🔄 [Steam ID Convert] Steam3 ${p.steamid64 || p.steam_id || p.steam} → Steam64 ${steamId64}`);
+        }
+      }
+      
+      // Конвертируем Steam2 формат STEAM_X:Y:Z в Steam64
+      if (steamId64 && steamId64.startsWith('STEAM_')) {
+        const match = steamId64.match(/STEAM_[0-5]:([0-1]):(\d+)/);
+        if (match) {
+          const Y = parseInt(match[1]);
+          const Z = parseInt(match[2]);
+          const accountId = Z * 2 + Y;
+          steamId64 = String(BigInt('76561197960265728') + BigInt(accountId));
+          console.log(`🔄 [Steam ID Convert] Steam2 ${p.steamid64 || p.steam_id || p.steam} → Steam64 ${steamId64}`);
+        }
+      }
+      
+      // Проверяем, что Steam ID валидный (начинается с 765611...)
+      if (!steamId64 || !steamId64.match(/^7656119[0-9]{10}$/)) {
+        console.warn(`⚠️ [MatchZy Import] Невалидный Steam ID для игрока ${p.name}: ${steamId64} (исходное: ${JSON.stringify({steamid64: p.steamid64, steam_id: p.steam_id, steam: p.steam})})`);
+        // Пропускаем игрока с невалидным Steam ID
+        continue;
+      }
+      
+      console.log(`✅ [MatchZy Import] Игрок: ${p.name} | Steam64: ${steamId64}`);
+      
       await client.query(
         `INSERT INTO matchzy_players (
            matchid,mapnumber,steamid64,team,name,kills,deaths,damage,assists,enemy5ks,enemy4ks,enemy3ks,enemy2ks,
@@ -117,7 +162,7 @@ async function importMatchFromMySql(matchRow, conn) {
            $34,$35,$36
          ) ON CONFLICT (matchid, mapnumber, steamid64) DO NOTHING`,
         [
-          matchid, p.mapnumber, String(p.steamid64), p.team || '', p.name || '', p.kills||0, p.deaths||0, p.damage||0, p.assists||0,
+          matchid, p.mapnumber, steamId64, p.team || '', p.name || '', p.kills||0, p.deaths||0, p.damage||0, p.assists||0,
           p.enemy5ks||0, p.enemy4ks||0, p.enemy3ks||0, p.enemy2ks||0,
           p.utility_count||0, p.utility_damage||0, p.utility_successes||0, p.utility_enemies||0, p.flash_count||0, p.flash_successes||0,
           p.health_points_removed_total||0, p.health_points_dealt_total||0, p.shots_fired_total||0, p.shots_on_target_total||0,
