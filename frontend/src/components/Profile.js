@@ -2761,7 +2761,7 @@ function Profile() {
                                             </div>
                                         )}
                                         
-                                        {(user && user.role === 'admin') && renderLastFiveMatches()}
+                                        {/* История матчей удалена из вкладки Статистика по требованию */}
                                     </div>
                                 </div>
                                 
@@ -3975,16 +3975,16 @@ function Profile() {
                                                 const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
                                             return (
                                                 <a key={`${m.source_type}-${m.id}`} className="match-history-row" href={href}>
-                                                    <div className="match-history-left">
-                                                            {isCustom ? (
-                                                                <span className="match-history-title" style={{minWidth: 120}}>{title}</span>
-                                                            ) : (
-                                                                <a className="match-history-title" style={{minWidth: 120}} href={`/tournaments/${m.tournament_id}`}>
-                                                                    {title}
-                                                                </a>
-                                                            )}
-                                                        <span className="match-history-game" title={game}>{renderGameIcon(game)}</span>
-                                                    </div>
+                                                         <div className="match-history-left">
+                                                             <span className="match-history-game" title={game}>{renderGameIcon(game)}</span>
+                                                             {isCustom ? (
+                                                                 <span className="match-history-title" style={{minWidth: 120}}>{title}</span>
+                                                             ) : (
+                                                                 <a className="match-history-title" style={{minWidth: 120}} href={`/tournaments/${m.tournament_id}`}>
+                                                                     {title}
+                                                                 </a>
+                                                             )}
+                                                         </div>
                                                     <div className="match-history-right" style={{gap: 12}}>
                                                             <span>{result} {score1}:{score2}</span>
                                                             <span style={{color:'#aaa'}}>Соперник: {opponentName}</span>
