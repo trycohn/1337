@@ -28,6 +28,11 @@ router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res
     // Только сам пользователь может менять свой ready
     if (actorId !== targetId) return res.status(403).json({ success: false, error: 'Можно менять только свой статус' });
     try {
+        // Требуем привязку Steam для участия в лобби
+        const u = await pool.query('SELECT steam_id FROM users WHERE id = $1', [actorId]);
+        if (!u.rows[0]?.steam_id) {
+            return res.status(400).json({ success: false, error: 'Необходимо привязать Steam для участия в лобби' });
+        }
         await pool.query(
             `INSERT INTO admin_lobby_presence(lobby_id, user_id, last_seen, is_ready)
              VALUES ($1, $2, CURRENT_TIMESTAMP, $3)

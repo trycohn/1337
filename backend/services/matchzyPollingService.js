@@ -632,6 +632,17 @@ async function reconcileUnmaterialized(limit = 20) {
         console.warn('⚠️ [reconcile] Ошибка материализации для matchid', row.matchid, e.message);
       }
     }
+    // Self-heal: backfill missing user_id where steam_id matches users.steam_id
+    try {
+      await pool.query(`
+        UPDATE player_match_stats p
+        SET user_id = u.id
+        FROM users u
+        WHERE p.user_id IS NULL AND p.steam_id IS NOT NULL AND TRIM(u.steam_id) = TRIM(p.steam_id)
+      `);
+    } catch (healErr) {
+      console.warn('⚠️ [reconcile] Ошибка self-heal user_id по steam_id:', healErr.message);
+    }
   } catch (e) {
     console.warn('⚠️ [reconcile] Ошибка запроса незаполненных матчей:', e.message);
   }
