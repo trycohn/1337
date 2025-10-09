@@ -1,37 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 
 export function StatusPanel({ completedAt, onRefresh }) {
-  const [since, setSince] = useState(0);
-  const [nextPollIn, setNextPollIn] = useState(5);
-  const pollRef = useRef(null);
+  // Тихое автообновление каждые 15 секунд (без отображения таймера)
   useEffect(() => {
-    const t0 = completedAt ? new Date(completedAt).getTime() : Date.now();
-    const tick = () => {
-      setSince(Math.floor((Date.now() - t0) / 1000));
-      setNextPollIn((prev) => (prev > 0 ? prev - 1 : 5));
-    };
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [completedAt]);
-
-  useEffect(() => {
-    if (nextPollIn === 0 && onRefresh) {
+    if (!onRefresh) return;
+    
+    const interval = setInterval(() => {
       onRefresh();
-      setNextPollIn(15); // увеличиваем интервал после первого запроса
-    }
-  }, [nextPollIn, onRefresh]);
+    }, 15000); // 15 секунд
+    
+    return () => clearInterval(interval);
+  }, [onRefresh]);
 
-  return (
-    <div className="match-status-panel">
-      <div className="row">
-        <div>
-          <strong>Ожидается завершение матча</strong>
-          <div style={{opacity:.8, fontSize:13}}>с момента ожидания: {since}s • автообновление через {nextPollIn}s</div>
-        </div>
-        <button className="btn btn-secondary" onClick={onRefresh}>Обновить</button>
-      </div>
-    </div>
-  );
+  return null; // Ничего не отображаем
 }
 
 
