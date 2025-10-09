@@ -46,14 +46,22 @@ async function withMySql(fn, serverId = null) {
       port: s.db_port || 3306,
       user: s.db_user,
       password: s.db_password,
-      database: s.db_name
+      database: s.db_name,
+      // ✅ Фикс для больших чисел (Steam ID 64)
+      supportBigNumbers: true,
+      bigNumberStrings: true
     };
     
     console.log(`🔌 Подключение к БД сервера ${serverId}: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
   } else {
     // Fallback на .env (для обратной совместимости)
     const cfg = getConfig();
-    dbConfig = cfg.mysql;
+    dbConfig = {
+      ...cfg.mysql,
+      // ✅ Фикс для больших чисел (Steam ID 64)
+      supportBigNumbers: true,
+      bigNumberStrings: true
+    };
     console.log(`🔌 Подключение к БД из .env: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
   }
   
