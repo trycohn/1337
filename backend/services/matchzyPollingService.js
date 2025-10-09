@@ -229,6 +229,12 @@ async function pollOnce() {
               console.log(`✅ [matchzy-poll] Импортирован матч ${row.matchid} с сервера ${server.name}`);
             }
             await linkOurRefs(Number(row.matchid));
+          // После связывания — материализуем player_match_stats/aggregated
+          try {
+            await materializePlayerStatsFromMatchzy(Number(row.matchid));
+          } catch (matErr) {
+            console.warn('⚠️ [matchzy-poll] Не удалось материализовать player stats для', row.matchid, matErr.message);
+          }
           }
         }, server.id); // ← передаем serverId
         
@@ -260,6 +266,186 @@ async function start() {
 
 function stop() { if (timer) { clearTimeout(timer); timer = null; } }
 
-module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql };
+/**
+ * Преобразование данных из matchzy_* → player_match_stats + пересчет агрегатов
+ * Запускается после импорта матча или при периодическом опросе
+ */
+async function materializePlayerStatsFromMatchzy(matchid) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1) Получаем our_match_id
+    let ourMatchId = null;
+    const mm = await client.query('SELECT our_match_id FROM matchzy_matches WHERE matchid = $1', [matchid]);
+    ourMatchId = mm.rows[0]?.our_match_id || null;
+    if (!ourMatchId) {
+      await client.query('ROLLBACK');
+      console.log(`ℹ️ [materialize] our_match_id отсутствует для matchid=${matchid} — пропускаем`);
+      return false;
+    }
+
+    // 2) Если уже есть записи по этому матчу — выходим (идемпотентность)
+    const already = await client.query('SELECT 1 FROM player_match_stats WHERE match_id = $1 LIMIT 1', [ourMatchId]);
+    if (already.rows[0]) { await client.query('ROLLBACK'); return false; }
+
+    // 3) Rounds total по картам
+    const rt = await client.query('SELECT COALESCE(SUM(team1_score + team2_score),0)::int AS rounds FROM matchzy_maps WHERE matchid = $1', [matchid]);
+    const roundsTotal = rt.rows[0]?.rounds || 0;
+
+    // 4) Достаем игроков по matchid
+    const rows = await client.query(`
+      SELECT * FROM matchzy_players WHERE matchid = $1
+    `, [matchid]);
+
+    if (rows.rows.length === 0) { await client.query('ROLLBACK'); return false; }
+
+    // 5) Группируем по steamid64
+    const bySteam = new Map();
+    for (const r of rows.rows) {
+      const key = String(r.steamid64);
+      const cur = bySteam.get(key) || {
+        steamid64: key,
+        team: r.team || '',
+        name: r.name || '',
+        kills: 0, deaths: 0, assists: 0, headshots: 0,
+        damage: 0,
+        flash_successes: 0,
+        utility_damage: 0,
+        enemies_flashed: 0,
+        entry_count: 0,
+        entry_wins: 0,
+        opening_kills: 0,
+        opening_deaths: 0,
+        trade_kills: 0,
+        mvp: 0,
+        score: 0
+      };
+      cur.kills += Number(r.kills || 0);
+      cur.deaths += Number(r.deaths || 0);
+      cur.assists += Number(r.assists || 0);
+      cur.headshots += Number(r.head_shot_kills || 0);
+      cur.damage += Number(r.damage || 0);
+      cur.flash_successes += Number(r.flash_successes || 0);
+      cur.utility_damage += Number(r.utility_damage || 0);
+      cur.enemies_flashed += Number(r.enemies_flashed || 0);
+      cur.entry_count += Number(r.entry_count || 0);
+      cur.entry_wins += Number(r.entry_wins || 0);
+      // Approximations
+      cur.opening_kills += Number(r.entry_wins || 0);
+      cur.opening_deaths += Math.max(0, Number(r.entry_count || 0) - Number(r.entry_wins || 0));
+      bySteam.set(key, cur);
+    }
+
+    // 6) Получаем команды матча (для team_id, best-effort)
+    const mres = await client.query('SELECT team1_id, team2_id FROM matches WHERE id = $1', [ourMatchId]);
+    const team1Id = mres.rows[0]?.team1_id || null;
+    const team2Id = mres.rows[0]?.team2_id || null;
+
+    // 7) Вставляем player_match_stats
+    const updatedUserIds = new Set();
+    for (const player of bySteam.values()) {
+      const ures = await client.query('SELECT id FROM users WHERE steam_id = $1', [player.steamid64]);
+      if (!ures.rows[0]) { continue; }
+      const userId = ures.rows[0].id;
+
+      // Derived metrics
+      const roundsPlayed = roundsTotal || 0;
+      const adr = roundsPlayed > 0 ? (player.damage / roundsPlayed) : 0;
+      const kast = 0; // Нет round-логов
+      const rating = 0; // Приближение, заполним позже
+      const impact = 0;
+      const hsPct = player.kills > 0 ? (player.headshots / player.kills) * 100 : 0;
+      const flashAssists = player.flash_successes;
+      const entryKills = player.entry_wins;
+      const entryDeaths = Math.max(0, player.entry_count - player.entry_wins);
+      const openingKills = player.opening_kills;
+      const openingDeaths = player.opening_deaths;
+      const tradeKills = player.trade_kills;
+
+      // best-effort team_id: оставим null, если неизвестно
+      let teamId = null;
+      if (player.team && (player.team === 'team1' || player.team === 'TEAM1')) teamId = team1Id;
+      if (player.team && (player.team === 'team2' || player.team === 'TEAM2')) teamId = team2Id;
+
+      await client.query(`
+        INSERT INTO player_match_stats (
+          match_id, user_id, steam_id, team_id,
+          kills, deaths, assists, headshots, damage_dealt, rounds_played,
+          adr, kast, rating, impact, hs_percentage,
+          clutch_1v1_won, clutch_1v1_total,
+          clutch_1v2_won, clutch_1v2_total,
+          clutch_1v3_won, clutch_1v3_total,
+          flash_assists, utility_damage, enemies_flashed,
+          entry_kills, entry_deaths,
+          opening_kills, opening_deaths,
+          trade_kills, mvp, score,
+          weapon_stats
+        ) VALUES (
+          $1,$2,$3,$4,
+          $5,$6,$7,$8,$9,$10,
+          $11,$12,$13,$14,$15,
+          0,0,
+          0,0,
+          0,0,
+          $16,$17,$18,
+          $19,$20,
+          $21,$22,
+          $23,0,0,
+          '{}'::jsonb
+        )
+        ON CONFLICT (match_id, user_id) DO UPDATE SET
+          kills = EXCLUDED.kills,
+          deaths = EXCLUDED.deaths,
+          assists = EXCLUDED.assists,
+          headshots = EXCLUDED.headshots,
+          damage_dealt = EXCLUDED.damage_dealt,
+          rounds_played = EXCLUDED.rounds_played,
+          adr = EXCLUDED.adr,
+          hs_percentage = EXCLUDED.hs_percentage,
+          flash_assists = EXCLUDED.flash_assists,
+          utility_damage = EXCLUDED.utility_damage,
+          enemies_flashed = EXCLUDED.enemies_flashed,
+          entry_kills = EXCLUDED.entry_kills,
+          entry_deaths = EXCLUDED.entry_deaths,
+          opening_kills = EXCLUDED.opening_kills,
+          opening_deaths = EXCLUDED.opening_deaths,
+          trade_kills = EXCLUDED.trade_kills
+      `, [
+        ourMatchId, userId, player.steamid64, teamId,
+        player.kills, player.deaths, player.assists, player.headshots, player.damage, roundsPlayed,
+        adr, kast, rating, impact, hsPct,
+        flashAssists, player.utility_damage, player.enemies_flashed,
+        entryKills, entryDeaths,
+        openingKills, openingDeaths,
+        tradeKills
+      ]);
+
+      updatedUserIds.add(userId);
+    }
+
+    await client.query('COMMIT');
+
+    // 8) Пересчет агрегатов вне транзакции
+    for (const uid of updatedUserIds) {
+      try {
+        await pool.query('SELECT update_player_aggregated_stats_v2($1)', [uid]);
+      } catch (aggErr) {
+        console.warn('⚠️ [materialize] Не удалось вызвать update_player_aggregated_stats_v2 для user', uid, aggErr.message);
+      }
+    }
+
+    console.log(`✅ [materialize] player_match_stats заполнена для matchid=${matchid} (our_match_id=${ourMatchId})`);
+    return true;
+  } catch (e) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    console.error('❌ [materialize] Ошибка материализации:', e.message);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql, materializePlayerStatsFromMatchzy };
 
 

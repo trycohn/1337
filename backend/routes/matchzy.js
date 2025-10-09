@@ -69,7 +69,11 @@ router.post('/match-end', async (req, res) => {
         setTimeout(async () => {
             try {
                 console.log(`⏳ [MatchZy] Начинаем импорт статистики для matchid=${matchid}...`);
-                await importStatsForMatch(parseInt(matchid));
+                const mid = parseInt(matchid);
+                await importStatsForMatch(mid);
+                // Материализуем player_match_stats из matchzy_* → для профилей
+                const { materializePlayerStatsFromMatchzy } = require('../services/matchzyPollingService');
+                await materializePlayerStatsFromMatchzy(mid);
             } catch (error) {
                 console.error(`❌ [MatchZy] Ошибка импорта статистики для matchid=${matchid}:`, error.message);
             }
