@@ -180,6 +180,73 @@ async function linkOurRefs(matchid) {
         return;
       }
     }
+
+    // 3) Пробуем связать с КАСТОМНЫМ матчем по именам команд и времени
+    if (mz.rows[0]) {
+      const t1c = (mz.rows[0].team1_name || '').toLowerCase();
+      const t2c = (mz.rows[0].team2_name || '').toLowerCase();
+      const stc = mz.rows[0].start_time;
+      const candidateCustom = await client.query(
+        `SELECT aml.id AS lobby_id, m.id AS match_id
+         FROM matches m
+         LEFT JOIN admin_match_lobbies aml ON aml.match_id = m.id
+         WHERE m.source_type = 'custom'
+           AND LOWER(m.team1_name) = $1 AND LOWER(m.team2_name) = $2
+           AND ABS(EXTRACT(EPOCH FROM (COALESCE(m.created_at, NOW()) - $3))) < 43200
+         ORDER BY ABS(EXTRACT(EPOCH FROM (COALESCE(m.created_at, NOW()) - $3))) ASC
+         LIMIT 1`,
+        [t1c, t2c, stc]
+      );
+      if (candidateCustom.rows[0]) {
+        const alobby = candidateCustom.rows[0].lobby_id || null;
+        const ourMatchId = candidateCustom.rows[0].match_id;
+        await client.query('UPDATE matchzy_matches SET our_match_id = $1, lobby_id = COALESCE(lobby_id, $2) WHERE matchid = $3 AND (our_match_id IS NULL OR lobby_id IS NULL)', [ourMatchId, alobby, matchid]);
+        if (alobby) {
+          await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE lobby_id = $2 AND (our_match_id IS NULL)', [ourMatchId, alobby]);
+        }
+        console.log(`🔗 [matchzy-poll] Связал custom матч (lobby ${alobby || 'n/a'}) с матчем ${matchid} → our_match_id=${ourMatchId}`);
+        return;
+      }
+    }
+
+    // 4) Последняя попытка для custom: матч по пересечению игроков (steam_id)
+    if (mz.rows[0]) {
+      // Список steamid64 из matchzy по этому matchid
+      const pz = await client.query('SELECT DISTINCT steamid64 FROM matchzy_players WHERE matchid = $1 AND steamid64 IS NOT NULL', [matchid]);
+      const mzSteams = new Set(pz.rows.map(r => String(r.steamid64)));
+      if (mzSteams.size > 0) {
+        const stc2 = mz.rows[0].start_time;
+        const candidates = await client.query(
+          `SELECT m.id AS match_id, aml.id AS lobby_id
+           FROM matches m
+           LEFT JOIN admin_match_lobbies aml ON aml.match_id = m.id
+           WHERE m.source_type = 'custom'
+             AND ABS(EXTRACT(EPOCH FROM (COALESCE(m.created_at, NOW()) - $1))) < 43200
+           ORDER BY ABS(EXTRACT(EPOCH FROM (COALESCE(m.created_at, NOW()) - $1))) ASC
+           LIMIT 20`,
+          [stc2]
+        );
+        for (const cand of candidates.rows) {
+          if (!cand.lobby_id) continue;
+          const inv = await client.query(
+            `SELECT u.steam_id
+             FROM admin_lobby_invitations i
+             JOIN users u ON u.id = i.user_id
+             WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
+            [cand.lobby_id]
+          );
+          const inviteSteams = new Set(inv.rows.filter(x => x.steam_id).map(x => String(x.steam_id)));
+          let overlap = 0;
+          for (const sid of inviteSteams) if (mzSteams.has(sid)) overlap++;
+          if (overlap >= 2) {
+            await client.query('UPDATE matchzy_matches SET our_match_id = $1, lobby_id = COALESCE(lobby_id, $2) WHERE matchid = $3 AND (our_match_id IS NULL OR lobby_id IS NULL)', [cand.match_id, cand.lobby_id, matchid]);
+            await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE lobby_id = $2 AND (our_match_id IS NULL)', [cand.match_id, cand.lobby_id]);
+            console.log(`🔗 [matchzy-poll] Связал custom по игрокам (overlap=${overlap}) с матчем ${matchid} → our_match_id=${cand.match_id}`);
+            return;
+          }
+        }
+      }
+    }
   } catch (e) {
     console.warn('⚠️ [matchzy-poll] Не удалось связать our_match_id/lobby для', matchid, e.message);
   } finally { client.release(); }

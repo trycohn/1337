@@ -2678,11 +2678,28 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                             SELECT team_id FROM tournament_team_members WHERE user_id = $1
                        )
                   )
+            ), pms AS (
+                SELECT m.id, m.source_type, m.custom_lobby_id, m.game,
+                       COALESCE(m.team1_name, t.name) AS team1_name,
+                       COALESCE(m.team2_name, t2.name) AS team2_name,
+                       NULL::jsonb AS team1_players, NULL::jsonb AS team2_players,
+                       COALESCE(m.score1, 0) AS score1, COALESCE(m.score2, 0) AS score2,
+                       m.connect_url, m.gotv_url,
+                       m.created_at,
+                       m.tournament_id,
+                       CASE WHEN m.source_type = 'custom' THEN 'Custom match' ELSE 'Tournament' END AS format_label
+                FROM player_match_stats p
+                JOIN matches m ON m.id = p.match_id
+                LEFT JOIN tournament_teams t ON t.id = m.team1_id
+                LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+                WHERE p.user_id = $1
             )
             SELECT * FROM (
                 SELECT * FROM custom
-                UNION ALL
+                UNION
                 SELECT * FROM tour
+                UNION
+                SELECT * FROM pms
             ) u
             ORDER BY created_at DESC NULLS LAST
             LIMIT $2 OFFSET $3`;
