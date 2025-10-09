@@ -11,6 +11,11 @@ function FriendsComparison({ userId, stats }) {
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(false);
 
+    const fmt = (value, digits = 1) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n.toFixed(digits) : (0).toFixed(digits);
+    };
+
     useEffect(() => {
         if (userId && stats) {
             loadFriendsComparison();
@@ -56,7 +61,7 @@ function FriendsComparison({ userId, stats }) {
 
     // Вычисляем метрики для сравнения
     const userWinrate = stats ? calculateWinrate(stats) : 0;
-    const avgFriendWinrate = friendsStats.avgWinrate || 50;
+    const avgFriendWinrate = Number(friendsStats.avgWinrate) || 50;
     const winratePercentile = calculatePercentile(userWinrate, friendsStats.friendsWinrates || []);
 
     const userMatches = stats ? getTotalMatches(stats) : 0;
@@ -107,7 +112,7 @@ function FriendsComparison({ userId, stats }) {
             </div>
 
             {expanded && (
-                <div className="comparison-details">
+                    <div className="comparison-details">
                     <div className="comparison-metric">
                         <div className="metric-header">
                             <span className="metric-icon">💯</span>
@@ -116,7 +121,7 @@ function FriendsComparison({ userId, stats }) {
                         <div className="metric-values">
                             <span className="user-value">{userWinrate}%</span>
                             <span className="vs">vs</span>
-                            <span className="avg-value">{avgFriendWinrate.toFixed(1)}%</span>
+                            <span className="avg-value">{fmt(avgFriendWinrate, 1)}%</span>
                         </div>
                         <div className="metric-bar">
                             <div 

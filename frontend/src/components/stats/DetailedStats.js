@@ -11,6 +11,11 @@ import api from '../../axios';
 import './DetailedStats.css';
 
 function DetailedStats({ userId }) {
+    const fmt = (value, digits = 1) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n.toFixed(digits) : (0).toFixed(digits);
+    };
+
     const [stats, setStats] = useState(null);
     const [recentMatches, setRecentMatches] = useState([]);
     const [mapStats, setMapStats] = useState([]);
@@ -121,7 +126,7 @@ function DetailedStats({ userId }) {
                     <div className="stats-grid">
                         <div className="stat-card-detailed">
                             <div className="stat-label">K/D Ratio</div>
-                            <div className="stat-value">{stats.kd_ratio?.toFixed(2) || 0}</div>
+                            <div className="stat-value">{fmt(stats.kd_ratio, 2)}</div>
                             <div className="stat-breakdown">
                                 {stats.total_kills} / {stats.total_deaths}
                             </div>
@@ -129,13 +134,13 @@ function DetailedStats({ userId }) {
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">ADR</div>
-                            <div className="stat-value">{stats.avg_adr?.toFixed(1) || 0}</div>
+                            <div className="stat-value">{fmt(stats.avg_adr, 1)}</div>
                             <div className="stat-breakdown">Average Damage</div>
                         </div>
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">HS%</div>
-                            <div className="stat-value">{stats.avg_hs_percentage?.toFixed(1) || 0}%</div>
+                            <div className="stat-value">{fmt(stats.avg_hs_percentage, 1)}%</div>
                             <div className="stat-breakdown">
                                 {stats.total_headshots} / {stats.total_kills}
                             </div>
@@ -143,13 +148,13 @@ function DetailedStats({ userId }) {
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">Rating</div>
-                            <div className="stat-value">{stats.avg_rating?.toFixed(2) || 0}</div>
+                            <div className="stat-value">{fmt(stats.avg_rating, 2)}</div>
                             <div className="stat-breakdown">HLTV 2.0</div>
                         </div>
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">Win Rate</div>
-                            <div className="stat-value">{stats.win_rate?.toFixed(0) || 0}%</div>
+                            <div className="stat-value">{fmt(stats.win_rate, 0)}%</div>
                             <div className="stat-breakdown">
                                 {stats.total_wins}W - {stats.total_losses}L
                             </div>
@@ -157,13 +162,13 @@ function DetailedStats({ userId }) {
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">KAST</div>
-                            <div className="stat-value">{stats.avg_kast?.toFixed(1) || 0}%</div>
+                            <div className="stat-value">{fmt(stats.avg_kast, 1)}%</div>
                             <div className="stat-breakdown">Kill/Assist/Survive/Trade</div>
                         </div>
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">Clutch</div>
-                            <div className="stat-value">{stats.clutch_success_rate?.toFixed(0) || 0}%</div>
+                            <div className="stat-value">{fmt(stats.clutch_success_rate, 0)}%</div>
                             <div className="stat-breakdown">
                                 {stats.total_clutch_won} / {stats.total_clutch_total}
                             </div>
@@ -171,7 +176,7 @@ function DetailedStats({ userId }) {
                         
                         <div className="stat-card-detailed">
                             <div className="stat-label">MVP</div>
-                            <div className="stat-value">{stats.mvp_rate?.toFixed(0) || 0}%</div>
+                            <div className="stat-value">{fmt(stats.mvp_rate, 0)}%</div>
                             <div className="stat-breakdown">
                                 {stats.total_mvp} MVP's
                             </div>
@@ -184,7 +189,7 @@ function DetailedStats({ userId }) {
                         <div className="stats-row">
                             <div className="stats-col">
                                 <span className="metric-label">Entry Success:</span>
-                                <span className="metric-value">{stats.entry_success_rate?.toFixed(0) || 0}%</span>
+                                <span className="metric-value">{fmt(stats.entry_success_rate, 0)}%</span>
                                 <span className="metric-detail">
                                     ({stats.total_entry_kills} kills / {stats.total_entry_deaths} deaths)
                                 </span>
@@ -192,7 +197,7 @@ function DetailedStats({ userId }) {
                             
                             <div className="stats-col">
                                 <span className="metric-label">Opening Duels:</span>
-                                <span className="metric-value">{stats.opening_duel_success_rate?.toFixed(0) || 0}%</span>
+                                <span className="metric-value">{fmt(stats.opening_duel_success_rate, 0)}%</span>
                                 <span className="metric-detail">
                                     ({stats.total_opening_kills}W / {stats.total_opening_deaths}L)
                                 </span>
@@ -202,13 +207,13 @@ function DetailedStats({ userId }) {
                                 <span className="metric-label">Flash Assists:</span>
                                 <span className="metric-value">{stats.total_flash_assists || 0}</span>
                                 <span className="metric-detail">
-                                    ({(stats.total_flash_assists / stats.total_matches || 0).toFixed(1)} per match)
+                                    ({fmt(stats.total_flash_assists / stats.total_matches, 1)} per match)
                                 </span>
                             </div>
                             
                             <div className="stats-col">
                                 <span className="metric-label">Utility Damage:</span>
-                                <span className="metric-value">{stats.avg_utility_damage_per_round?.toFixed(0) || 0}</span>
+                                <span className="metric-value">{fmt(stats.avg_utility_damage_per_round, 0)}</span>
                                 <span className="metric-detail">per round</span>
                             </div>
                         </div>
@@ -240,32 +245,32 @@ function DetailedStats({ userId }) {
                                             />
                                         </div>
                                         <span className="winrate-text">
-                                            {map.wins}W - {map.losses}L ({map.win_rate?.toFixed(0)}%)
+                                            {map.wins}W - {map.losses}L ({fmt(map.win_rate, 0)}%)
                                         </span>
                                     </div>
                                     
                                     <div className="map-stats-row">
                                         <div>
                                             <span className="map-stat-label">K/D</span>
-                                            <span className="map-stat-value">{map.kd_ratio?.toFixed(2)}</span>
+                                            <span className="map-stat-value">{fmt(map.kd_ratio, 2)}</span>
                                         </div>
                                         <div>
                                             <span className="map-stat-label">ADR</span>
-                                            <span className="map-stat-value">{map.avg_adr?.toFixed(0)}</span>
+                                            <span className="map-stat-value">{fmt(map.avg_adr, 0)}</span>
                                         </div>
                                         <div>
                                             <span className="map-stat-label">Rating</span>
-                                            <span className="map-stat-value">{map.avg_rating?.toFixed(2)}</span>
+                                            <span className="map-stat-value">{fmt(map.avg_rating, 2)}</span>
                                         </div>
                                     </div>
                                     
                                     {map.t_side_rounds > 0 && (
                                         <div className="map-sides">
                                             <div className="side-stat">
-                                                <span>T: {((map.t_side_wins / map.t_side_rounds) * 100).toFixed(0)}% WR</span>
+                                                <span>T: {fmt((map.t_side_wins / map.t_side_rounds) * 100, 0)}% WR</span>
                                             </div>
                                             <div className="side-stat">
-                                                <span>CT: {((map.ct_side_wins / map.ct_side_rounds) * 100).toFixed(0)}% WR</span>
+                                                <span>CT: {fmt((map.ct_side_wins / map.ct_side_rounds) * 100, 0)}% WR</span>
                                             </div>
                                         </div>
                                     )}
@@ -352,10 +357,10 @@ function DetailedStats({ userId }) {
                                                 </span>
                                             </td>
                                             <td>{match.kills}/{match.deaths}/{match.assists}</td>
-                                            <td>{match.adr?.toFixed(0) || 0}</td>
-                                            <td>{match.hs_percentage?.toFixed(0) || 0}%</td>
+                                            <td>{fmt(match.adr, 0)}</td>
+                                            <td>{fmt(match.hs_percentage, 0)}%</td>
                                             <td className={match.rating > 1.0 ? 'good' : 'bad'}>
-                                                {match.rating?.toFixed(2) || 0}
+                                                {fmt(match.rating, 2)}
                                             </td>
                                         </tr>
                                     ))}
