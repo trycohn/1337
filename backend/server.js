@@ -84,6 +84,12 @@ try {
 try {
   const matchzyPolling = require('./services/matchzyPollingService');
   matchzyPolling.start();
+  // Однократная реконсиляция незаполненных матчей на старте (в т.ч. когда пуллинг выключен)
+  setTimeout(() => {
+    if (typeof matchzyPolling.reconcileUnmaterialized === 'function') {
+      matchzyPolling.reconcileUnmaterialized(200).catch(() => {});
+    }
+  }, 5000);
 } catch (e) {
   console.warn('⚠️ [matchzy-poll] Сервис пуллинга не запущен:', e.message);
 }
