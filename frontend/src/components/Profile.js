@@ -3947,11 +3947,11 @@ function Profile() {
                                                 const db = b.created_at || b.date;
                                                 const ta = da ? new Date(da).getTime() : 0;
                                                 const tb = db ? new Date(db).getTime() : 0;
-                                                return ta - tb; // от старых к новым
+                                                return tb - ta; // от новых к старым
                                             })
                                         ).map((m) => {
-                                            const isCustom = m.source_type === 'custom';
-                                            const title = isCustom ? 'Custom match' : (m.tournament_id ? 'Tournament' : 'Матч');
+                                                const isCustom = m.source_type === 'custom';
+                                                const title = isCustom ? 'Custom match' : (m.tournament_name || (m.tournament_id ? 'Tournament' : 'Матч'));
                                             const game = m.game || 'Counter-Strike 2';
                                             const score1 = m.score1 ?? 0;
                                             const score2 = m.score2 ?? 0;
@@ -3972,11 +3972,17 @@ function Profile() {
                                                     // Турнирный матч: показываем вторую команду как соперника, если не знаем сторону
                                                     opponentName = m.team2_name || m.team1_name;
                                                 }
-                                            const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
+                                                const href = isCustom ? `/matches/custom/${m.id}` : (m.tournament_id ? `/tournaments/${m.tournament_id}/match/${m.id}` : '#');
                                             return (
                                                 <a key={`${m.source_type}-${m.id}`} className="match-history-row" href={href}>
                                                     <div className="match-history-left">
-                                                        <span className="match-history-title" style={{minWidth: 120}}>{title}</span>
+                                                            {isCustom ? (
+                                                                <span className="match-history-title" style={{minWidth: 120}}>{title}</span>
+                                                            ) : (
+                                                                <a className="match-history-title" style={{minWidth: 120}} href={`/tournaments/${m.tournament_id}`}>
+                                                                    {title}
+                                                                </a>
+                                                            )}
                                                         <span className="match-history-game" title={game}>{renderGameIcon(game)}</span>
                                                     </div>
                                                     <div className="match-history-right" style={{gap: 12}}>

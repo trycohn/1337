@@ -2651,6 +2651,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        m.connect_url, m.gotv_url,
                        m.created_at,
                        NULL::INTEGER AS tournament_id,
+                       NULL::TEXT AS tournament_name,
                        'Custom match' AS format_label
                 FROM matches m
                 WHERE m.source_type = 'custom'
@@ -2671,10 +2672,12 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        m.connect_url, m.gotv_url,
                        m.created_at,
                        m.tournament_id,
+                       tn.name AS tournament_name,
                        'Tournament' AS format_label
                 FROM matches m
                 LEFT JOIN tournament_teams t ON t.id = m.team1_id
                 LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+                LEFT JOIN tournaments tn ON tn.id = m.tournament_id
                 WHERE m.source_type = 'tournament'
                   AND (
                        m.team1_id IN (
@@ -2692,11 +2695,13 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        m.connect_url, m.gotv_url,
                        m.created_at,
                        m.tournament_id,
+                       tn.name AS tournament_name,
                        CASE WHEN m.source_type = 'custom' THEN 'Custom match' ELSE 'Tournament' END AS format_label
                 FROM player_match_stats p
                 JOIN matches m ON m.id = p.match_id
                 LEFT JOIN tournament_teams t ON t.id = m.team1_id
                 LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+                LEFT JOIN tournaments tn ON tn.id = m.tournament_id
                 WHERE p.user_id = $1
             )
             SELECT * FROM (
