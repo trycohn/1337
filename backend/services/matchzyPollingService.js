@@ -388,7 +388,7 @@ async function materializePlayerStatsFromMatchzy(matchid) {
           `SELECT u.id AS user_id, TRIM(u.steam_id) AS steam_id
            FROM admin_lobby_invitations i
            JOIN users u ON u.id = i.user_id
-           WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)`,
+           WHERE i.lobby_id = $1`,
           [lobbyId]
         );
         for (const row of inv.rows) {
@@ -463,6 +463,14 @@ async function materializePlayerStatsFromMatchzy(matchid) {
       if (ures.rows[0]) {
         userId = ures.rows[0].id;
       } else {
+        // Попытка по steam_url (профиль содержит /profiles/<steamid64>)
+        const urlLike = `%/profiles/${String(player.steamid64)}%`;
+        const uresUrl = await client.query('SELECT id FROM users WHERE steam_url ILIKE $1', [urlLike]);
+        if (uresUrl.rows[0]) {
+          userId = uresUrl.rows[0].id;
+        }
+      }
+      if (!userId) {
         // Фоллбек через JSON участников матча/лобби
         const mapped = steamToUserId.get(String(player.steamid64));
         if (mapped) userId = mapped;
@@ -548,6 +556,11 @@ async function materializePlayerStatsFromMatchzy(matchid) {
     }
 
     await client.query('COMMIT');
+
+    if (updatedUserIds.size === 0) {
+      console.warn(`⚠️ [materialize] Нет сопоставленных игроков для matchid=${matchid} (our_match_id=${ourMatchId})`);
+      return false;
+    }
 
     // 8) Пересчет агрегатов вне транзакции
     for (const uid of updatedUserIds) {
