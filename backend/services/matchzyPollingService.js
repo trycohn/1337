@@ -365,19 +365,27 @@ async function materializePlayerStatsFromMatchzy(matchid) {
 
     // 1.1) Собираем маппинг steam_id → user_id из matches.team1_players/team2_players
     const steamToUserId = new Map();
+    const nameToUserId = new Map(); // sanitized username/steam_nickname → user_id
+    const participants = []; // { user_id, steam_id, username, steam_nickname, team }
+    function sanitizeName(s) {
+      if (!s || typeof s !== 'string') return '';
+      return s.toLowerCase().replace(/\s+/g, ' ').trim();
+    }
     try {
       const mPlayers = await client.query('SELECT team1_players, team2_players FROM matches WHERE id = $1', [ourMatchId]);
       if (mPlayers.rows[0]) {
-        const pushMap = (arr) => {
+        const pushMap = (arr, teamLabel) => {
           if (!Array.isArray(arr)) return;
           for (const p of arr) {
             const sid = (p && (p.steam_id || p.steamid || p.steam || '')) ? String(p.steam_id || p.steamid || p.steam).trim() : '';
             const uid = p && (p.user_id || p.id);
             if (sid && uid) steamToUserId.set(sid, Number(uid));
+            if (uid && (p.username || p.name)) nameToUserId.set(sanitizeName(p.username || p.name), Number(uid));
+            if (uid) participants.push({ user_id: Number(uid), steam_id: sid || null, username: p.username || p.name || null, steam_nickname: null, team: teamLabel || null });
           }
         };
-        try { pushMap(mPlayers.rows[0].team1_players); } catch (_) {}
-        try { pushMap(mPlayers.rows[0].team2_players); } catch (_) {}
+        try { pushMap(mPlayers.rows[0].team1_players, 'team1'); } catch (_) {}
+        try { pushMap(mPlayers.rows[0].team2_players, 'team2'); } catch (_) {}
       }
     } catch (_) {}
 
@@ -385,7 +393,7 @@ async function materializePlayerStatsFromMatchzy(matchid) {
     if (lobbyId) {
       try {
         const inv = await client.query(
-          `SELECT u.id AS user_id, TRIM(u.steam_id) AS steam_id
+          `SELECT u.id AS user_id, TRIM(u.steam_id) AS steam_id, u.username, u.steam_nickname, i.team
            FROM admin_lobby_invitations i
            JOIN users u ON u.id = i.user_id
            WHERE i.lobby_id = $1`,
@@ -393,6 +401,9 @@ async function materializePlayerStatsFromMatchzy(matchid) {
         );
         for (const row of inv.rows) {
           if (row.steam_id) steamToUserId.set(String(row.steam_id).trim(), Number(row.user_id));
+          if (row.username) nameToUserId.set(sanitizeName(row.username), Number(row.user_id));
+          if (row.steam_nickname) nameToUserId.set(sanitizeName(row.steam_nickname), Number(row.user_id));
+          participants.push({ user_id: Number(row.user_id), steam_id: row.steam_id || null, username: row.username || null, steam_nickname: row.steam_nickname || null, team: row.team || null });
         }
       } catch (_) {}
     }
@@ -471,9 +482,28 @@ async function materializePlayerStatsFromMatchzy(matchid) {
         }
       }
       if (!userId) {
-        // Фоллбек через JSON участников матча/лобби
+        // Фоллбек через JSON/инвайты по steam_id → user_id
         const mapped = steamToUserId.get(String(player.steamid64));
         if (mapped) userId = mapped;
+      }
+      if (!userId) {
+        // Фоллбек по имени в рамках той же команды
+        const teamLabel = (player.team || '').toString().toLowerCase(); // 'team1' | 'team2'
+        const sanitizedPlayerName = sanitizeName(player.name || '');
+        const candidates = participants.filter(p => {
+          if (!sanitizedPlayerName) return false;
+          const pu = sanitizeName(p.username || '');
+          const pn = sanitizeName(p.steam_nickname || '');
+          const nameMatch = (pu && pu === sanitizedPlayerName) || (pn && pn === sanitizedPlayerName) || nameToUserId.get(sanitizedPlayerName) === p.user_id;
+          if (!nameMatch) return false;
+          if (!teamLabel) return true;
+          if (!p.team) return true; // если нет team, не фильтруем
+          const pt = String(p.team).toLowerCase();
+          return (teamLabel.includes('1') && (pt === '1' || pt === 'team1')) || (teamLabel.includes('2') && (pt === '2' || pt === 'team2'));
+        });
+        if (candidates.length === 1) {
+          userId = candidates[0].user_id;
+        }
       }
       if (!userId) {
         console.warn('⚠️ [materialize] Не удалось сопоставить игрока по steamid64=', player.steamid64, ' matchid=', matchid, ' our_match_id=', ourMatchId);
