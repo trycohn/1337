@@ -21,10 +21,17 @@ function MatchLobbyPage() {
     const [ready, setReady] = useState(false);
     const [selectedFormat, setSelectedFormat] = useState(null);
     const redirectedRef = useRef(false);
+    const [steamModalOpen, setSteamModalOpen] = useState(false);
 
     // 🔄 Polling вместо WS
     useEffect(() => {
         if (!user || !lobbyId) return;
+        // Если у пользователя нет привязанного Steam — показываем модалку и не грузим лобби
+        if (!user.steam_id && !user.steamId) {
+            setSteamModalOpen(true);
+            setLoading(false);
+            return;
+        }
         const token = localStorage.getItem('token');
         let timer = null;
         const pull = async () => {
@@ -58,6 +65,7 @@ function MatchLobbyPage() {
     // 🎯 Загрузка информации о лобби
     const fetchLobbyInfo = useCallback(async () => {
         if (!user || !lobbyId) return;
+        if (!user.steam_id && !user.steamId) { setSteamModalOpen(true); setLoading(false); return; }
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}`, {
@@ -90,6 +98,7 @@ function MatchLobbyPage() {
     // ✅ Установка готовности
     const handleReadyToggle = useCallback(async () => {
         try {
+            if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/ready`, {
                 method: 'POST',
@@ -121,12 +130,14 @@ function MatchLobbyPage() {
             // Формат уже установлен в настройках турнира
             return;
         }
+        if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
         setSelectedFormat(format);
-    }, [lobby]);
+    }, [lobby, user]);
 
     // 🗺️ Обработка выбора карты
     const handleMapAction = useCallback(async (mapName, action) => {
         try {
+            if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/select-map`, {
                 method: 'POST',
@@ -149,13 +160,25 @@ function MatchLobbyPage() {
             console.error('❌ Ошибка выбора карты:', error);
             alert(error.message);
         }
-    }, [lobbyId]);
+    }, [lobbyId, user]);
 
     // 🔄 Определение моей команды
     const getMyTeamId = useCallback(() => {
         if (lobby && lobby.user_team_id) return lobby.user_team_id;
         return null;
     }, [lobby]);
+
+    const onSteamModalClose = useCallback(() => {
+        setSteamModalOpen(false);
+        // Возврат назад, чтобы не попадать в лобби
+        try { navigate(-1); } catch (_) {}
+    }, [navigate]);
+
+    const onSteamLink = useCallback(() => {
+        // Редиректим на backend steam login (OpenID) или страницу привязки
+        const base = process.env.REACT_APP_API_URL || '';
+        window.location.href = `${base}/api/users/steam-login`;
+    }, []);
 
     if (loading) {
         return (
@@ -174,6 +197,22 @@ function MatchLobbyPage() {
                     <h2>❌ Ошибка</h2>
                     <p>{error}</p>
                     <button onClick={() => navigate(-1)}>Назад</button>
+                </div>
+            </div>
+        );
+    }
+
+    if (steamModalOpen) {
+        return (
+            <div className="lobby-match-lobby-page">
+                <div className="steam-modal-backdrop" onClick={onSteamModalClose} />
+                <div className="steam-modal" role="dialog" aria-modal="true">
+                    <h3>Привяжите Steam</h3>
+                    <p>Вы не можете участвовать в лобби без привязки Steam аккаунта.</p>
+                    <div className="steam-modal-actions">
+                        <button className="btn btn-primary" onClick={onSteamLink}>Привязать Steam</button>
+                        <button className="btn btn-secondary" onClick={onSteamModalClose}>Закрыть</button>
+                    </div>
                 </div>
             </div>
         );

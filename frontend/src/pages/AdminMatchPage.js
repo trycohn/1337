@@ -33,6 +33,7 @@ function AdminMatchPage() {
     const searchInputRef = useRef(null);
     // Invite panel state
     const [invitePanelOpen, setInvitePanelOpen] = useState(false);
+    const [steamModalOpen, setSteamModalOpen] = useState(false);
     const [invitePanelTeam, setInvitePanelTeam] = useState(null);
     const [friends, setFriends] = useState([]);
     const [friendsExpanded, setFriendsExpanded] = useState(false);
@@ -146,6 +147,7 @@ function AdminMatchPage() {
     }
 
     async function confirmTeamReady(teamId) {
+        if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
         try {
             if (teamConfirmInFlightRef.current[teamId]) return;
             teamConfirmInFlightRef.current[teamId] = true;
@@ -158,6 +160,7 @@ function AdminMatchPage() {
     }
 
     async function onTogglePlayerReady(userId, teamId) {
+        if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
         // локальный тумблер
         setPlayerReady(prev => {
             const next = { ...prev, [userId]: !prev[userId] };
@@ -180,6 +183,7 @@ function AdminMatchPage() {
     // Heartbeat присутствия: обновляем last_seen и текущую готовность пользователя раз в 10с
     useEffect(() => {
         if (!user || !lobbyId) return;
+        if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
         const token = localStorage.getItem('token');
         let timer = null;
         const push = async () => {
@@ -600,6 +604,19 @@ function AdminMatchPage() {
 
     return (
         <div className="custom-match-page">
+            {steamModalOpen && (
+                <>
+                    <div className="steam-modal-backdrop" onClick={() => { setSteamModalOpen(false); try { window.history.back(); } catch (_) {} }} />
+                    <div className="steam-modal" role="dialog" aria-modal="true">
+                        <h3>Привяжите Steam</h3>
+                        <p>Вы не можете участвовать в лобби без привязки Steam аккаунта.</p>
+                        <div className="steam-modal-actions">
+                            <button className="btn btn-primary" onClick={() => { const base = process.env.REACT_APP_API_URL || ''; window.location.href = `${base}/api/users/steam-login`; }}>Привязать Steam</button>
+                            <button className="btn btn-secondary" onClick={() => { setSteamModalOpen(false); try { window.history.back(); } catch (_) {} }}>Закрыть</button>
+                        </div>
+                    </div>
+                </>
+            )}
             <h2>МАТЧ — тестовое лобби</h2>
             
             {/* Подсказка: выбор формата */}
