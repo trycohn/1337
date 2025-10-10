@@ -1565,11 +1565,30 @@ router.post('/match-lobby/:lobbyId/self-assign', authenticateToken, async (req, 
             [lobbyId, req.user.id]
         );
         if (r.rows.length === 0) return res.status(403).json({ success: false, error: 'Вы не приглашены в это лобби' });
-        // Обновляем команду и принимаем
-        await pool.query(
-            `UPDATE admin_lobby_invitations SET team = $1, accepted = TRUE WHERE lobby_id = $2 AND user_id = $3`,
-            [team === null ? null : Number(team), lobbyId, req.user.id]
-        );
+        // Обновляем команду и принимаем. Назначаем team_position, чтобы порядок во фронте был стабильным
+        const teamNum = (team === null ? null : Number(team));
+        if (teamNum === null) {
+            await pool.query(
+                `UPDATE admin_lobby_invitations SET team = NULL, accepted = TRUE, team_position = 0 WHERE lobby_id = $1 AND user_id = $2`,
+                [lobbyId, req.user.id]
+            );
+        } else {
+            // next position = max(team_position) + 1 среди принятых в этой команде
+            const posRes = await pool.query(
+                `SELECT COALESCE(MAX(team_position), 0) + 1 AS pos
+                 FROM admin_lobby_invitations
+                 WHERE lobby_id = $1 AND team = $2 AND accepted = TRUE`,
+                [lobbyId, teamNum]
+            );
+            const nextPos = parseInt(posRes.rows[0]?.pos) || 1;
+            await pool.query(
+                `UPDATE admin_lobby_invitations
+                 SET team = $1, accepted = TRUE,
+                     team_position = CASE WHEN COALESCE(team_position, 0) = 0 OR team <> $1 THEN $4 ELSE team_position END
+                 WHERE lobby_id = $2 AND user_id = $3`,
+                [teamNum, lobbyId, req.user.id, nextPos]
+            );
+        }
         return res.json({ success: true });
     } catch (e) {
         console.error('Ошибка self-assign', e);
@@ -2033,10 +2052,27 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, requireAdmin,
         if (Number(lobby.created_by) !== Number(req.user.id)) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Только создатель может начать пик/бан' }); }
         if (!lobby.match_format) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Не выбран формат матча' }); }
         if (!(lobby.team1_ready && lobby.team2_ready)) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Обе команды должны быть готовы' }); }
+        // Переименовываем команды на «<ник_капитана>__team» при старте пик/бан
+        const capRes = await client.query(
+            `SELECT i.team, u.username
+             FROM admin_lobby_invitations i
+             JOIN users u ON u.id = i.user_id
+             WHERE i.lobby_id = $1 AND i.accepted = TRUE AND i.team IN (1,2)
+             ORDER BY i.team, COALESCE(i.team_position, 0) ASC, i.id ASC`,
+            [lobbyId]
+        );
+        let team1Captain = null;
+        let team2Captain = null;
+        for (const row of capRes.rows) {
+            if (row.team === 1 && !team1Captain) team1Captain = row.username;
+            if (row.team === 2 && !team2Captain) team2Captain = row.username;
+        }
+        const team1Name = team1Captain ? `${team1Captain}__team` : (lobby.team1_name || 'Команда 1');
+        const team2Name = team2Captain ? `${team2Captain}__team` : (lobby.team2_name || 'Команда 2');
         const fp = firstPicker === 1 || firstPicker === 2 ? firstPicker : (Math.random() < 0.5 ? 1 : 2);
         const upd = await client.query(
-            `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
-            [fp, lobbyId]
+            `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, team1_name = $3, team2_name = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+            [fp, lobbyId, team1Name, team2Name]
         );
         await client.query('COMMIT');
         return res.json({ success: true, lobby: upd.rows[0] });
