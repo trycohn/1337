@@ -2433,7 +2433,7 @@ function Profile() {
                         <div className="profile-user-meta meta-row">
                             <div className="meta-item" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                 <span>ID: {user.id}</span>
-                                {Array.isArray(authUser?.roles) && authUser.roles.includes('verified_user') ? (
+                                {Array.isArray(user?.roles) && user.roles.includes('verified_user') ? (
                                     <span className="badge-verified" title="Пользователь верифицирован" style={{
                                         border: '1px solid #ff0000', color: '#fff', background: '#111', padding: '2px 8px', borderRadius: '12px', fontSize: '12px'
                                     }}>Пользователь верифицирован</span>
