@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 // Удаляем прямой импорт socket.io-client; используем API + фоновые polling‑обновления
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
@@ -6,6 +7,7 @@ import '../styles/components.css';
 import './AdminMatchPage.css';
 
 function AdminMatchPage() {
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [query, setQuery] = useState('');
@@ -319,6 +321,12 @@ function AdminMatchPage() {
         try {
             const token = localStorage.getItem('token');
             await api.delete(`/api/admin/match-lobby/${lobbyId}/invite/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
+            // Если удаляем сами себя — редиректим на список турниров
+            if (Number(userId) === Number(user?.id)) {
+                navigate('/tournaments', { replace: true });
+                return;
+            }
+            // Иначе просто обновляем состояние лобби
             const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
             if (r?.data?.success) {
                 setLobby(r.data.lobby);
