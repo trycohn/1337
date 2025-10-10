@@ -160,11 +160,12 @@
     "mvp mvp kills hs"
     "mvp mvp acc clutch1";
   gap: 16px;
+  margin: 16px 0px 32px;
 }
 .leader-card {
   border: 1px solid #333;
   border-radius: 8px;
-  background: linear-gradient(270deg, rgb(108, 143, 143), rgb(41, 136, 139));
+  background: linear-gradient(90deg, #413110, #a77d2a);
   padding: 12px;
   color: #a7a7a7;
   min-height: 100px;
