@@ -1073,7 +1073,7 @@ function AdminMatchPage() {
                                 <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}
-                                        title={playerReady[u.id] ? 'Готов' : 'Не готов'}
+                                        title={playerReady[u.id] ? 'нажмите тут чтобы сменить статус готовности' : 'нажмите тут чтобы сменить статус готовности'}
                                         onClick={() => { if (u.id === Number(user?.id)) onTogglePlayerReady(u.id, 1); }}
                                         role="img"
                                         aria-label={playerReady[u.id] ? 'Готов' : 'Не готов'}
@@ -1135,7 +1135,7 @@ function AdminMatchPage() {
                                 <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}
-                                        title={playerReady[u.id] ? 'Готов' : 'Не готов'}
+                                        title={playerReady[u.id] ? 'нажмите тут чтобы сменить статус готовности' : 'нажмите тут чтобы сменить статус готовности'}
                                         onClick={() => { if (u.id === Number(user?.id)) onTogglePlayerReady(u.id, 2); }}
                                         role="img"
                                         aria-label={playerReady[u.id] ? 'Готов' : 'Не готов'}

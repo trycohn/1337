@@ -42,6 +42,7 @@ function ParticipantStatus({
                         <button 
                             className={`lobby-ready-toggle-btn ${ready ? 'ready' : 'not-ready'}`}
                             onClick={onReadyToggle}
+                            title="нажмите тут чтобы сменить статус готовности"
                         >
                             {ready ? 'Отменить готовность' : 'Готов к игре'}
                         </button>
@@ -78,6 +79,7 @@ function ParticipantStatus({
                         <button 
                             className={`lobby-ready-toggle-btn ${ready ? 'ready' : 'not-ready'}`}
                             onClick={onReadyToggle}
+                            title="нажмите тут чтобы сменить статус готовности"
                         >
                             {ready ? 'Отменить готовность' : 'Готов к игре'}
                         </button>
