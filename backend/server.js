@@ -360,6 +360,7 @@ const achievementsRouter = require('./routes/achievements'); // Роуты дл�
 const referralsRouter = require('./routes/referrals');
 const statsRouter = require('./routes/stats'); // API для статистики платформы
 const serversRouter = require('./routes/servers'); // 🖥️ Управление CS2 серверами и RCON
+const demosRouter = require('./routes/demos'); // 🎬 Загрузка и раздача .dem файлов
 
 // Маршруты API
 app.use('/api/auth', authRouter);
@@ -373,6 +374,7 @@ app.use('/api/tournamentPlayers', tournamentPlayersRouter);
 app.use('/api/matches', matchesRouter);
 app.use('/api/matches', matchFeedbackRouter); // 🎮 Match Feedback endpoints
 app.use('/api/matchzy', matchzyRouter); // 📊 MatchZy webhook
+app.use('/api/demos', demosRouter); // 🎬 Demo files upload/download
 app.use('/api/player-stats', detailedStatsRouter); // 📊 Детальная статистика игроков (новое)
 app.use('/api/statistics', statisticsRouter);
 app.use('/api/stats', statsRouter); // Маршрут для общей статистики платформы

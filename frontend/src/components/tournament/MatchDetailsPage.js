@@ -47,6 +47,8 @@ const MatchDetailsPage = () => {
     const [compact, setCompact] = useState(() => {
         try { return localStorage.getItem('match_compact_mode') !== 'false'; } catch(_) { return true; }
     });
+    // 🎬 Доступные демо-файлы
+    const [demosAvailable, setDemosAvailable] = useState({});
     
     // ✏️ Редактирование завершенного матча
     const [isEditMatchModalOpen, setIsEditMatchModalOpen] = useState(false);
@@ -124,6 +126,7 @@ const MatchDetailsPage = () => {
             
             setMatch(matchInfo);
             // 🆕 Лобби-статистика (если матч создан через лобби)
+            let matchzyMatchId = null;
             try {
                 const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
                 if (ls?.data?.success) {
@@ -142,6 +145,7 @@ const MatchDetailsPage = () => {
                     // Присвоим, чтобы отрисовали блоки карт и историю
                     setMatch({ ...matchInfo });
                     setLobbyStats(s);
+                    matchzyMatchId = s.matchid;
                 }
             } catch (_) { /* нет лобби-статистики — не критично */ }
             setTournament(tournamentInfo);
@@ -149,6 +153,11 @@ const MatchDetailsPage = () => {
             // Загружаем историю матчей команд
             if (matchInfo.team1_id && matchInfo.team2_id) {
                 await fetchTeamHistory(matchInfo.team1_id, matchInfo.team2_id);
+            }
+            
+            // 🎬 Загружаем доступные демки (если есть matchzy matchid)
+            if (matchzyMatchId) {
+                await fetchAvailableDemos(matchzyMatchId);
             }
         } catch (err) {
             console.error('Ошибка загрузки деталей матча:', err);
@@ -172,6 +181,20 @@ const MatchDetailsPage = () => {
         } catch (err) {
             console.error('Ошибка загрузки истории команд:', err);
             // Не критично, продолжаем без истории
+        }
+    };
+
+    // 🎬 Загрузка доступных демо-файлов
+    const fetchAvailableDemos = async (matchzyMatchId) => {
+        try {
+            const response = await fetch(`/api/demos/available/${matchzyMatchId}`);
+            if (response.ok) {
+                const demos = await response.json();
+                setDemosAvailable(demos);
+            }
+        } catch (err) {
+            console.error('Ошибка загрузки списка демок:', err);
+            // Не критично, просто не будет кнопок скачивания
         }
     };
 
@@ -391,6 +414,23 @@ const MatchDetailsPage = () => {
                     style={{ cursor: isAdminOrCreator ? 'pointer' : 'default' }}
                 >
                     <img src={getMapImage(m.map_name)} alt={m.map_name} />
+                    
+                    {/* 🎬 Кнопка скачивания демки */}
+                    {demosAvailable[idx + 1]?.available && lobbyStats?.matchid && (
+                        <button
+                            className="demo-download-btn"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/api/demos/download/${lobbyStats.matchid}/${idx + 1}`;
+                            }}
+                            title="Скачать демку"
+                        >
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 15.575q-.2 0-.375-.062T11.3 15.3l-3.6-3.6q-.275-.275-.275-.7t.275-.7q.275-.275.7-.275t.7.275l2.2 2.2V5q0-.425.288-.712T12 4q.425 0 .713.288T13 5v7.5l2.2-2.2q.275-.275.7-.275t.7.275q.275.275.275.7t-.275.7l-3.6 3.6q-.15.15-.325.213t-.375.062M6 20q-.825 0-1.412-.587T4 18v-2q0-.425.288-.712T5 15q.425 0 .713.288T6 16v2h12v-2q0-.425.288-.712T19 15q.425 0 .713.288T20 16v2q0 .825-.587 1.413T18 20z"/>
+                            </svg>
+                        </button>
+                    )}
+                    
                     <div className="map-title">Карта {idx + 1}: {m.map_name}</div>
                     <div className="map-meta">Сторону выбирает: {sideChooserName}</div>
                     {isAdminOrCreator && (

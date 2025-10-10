@@ -13,6 +13,44 @@
 .match-map-card img {
     display: block;
 }
+
+/* 🎬 Кнопка скачивания демки */
+.demo-download-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: #111;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    padding: 0;
+}
+
+.demo-download-btn:hover {
+    background: #222;
+    border-color: #ff3333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 0, 0, 0.3);
+}
+
+.demo-download-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #fff;
+    transition: fill 0.2s ease;
+}
+
+.demo-download-btn:hover svg {
+    fill: #ff0000;
+}
+
 /* ==========================================
    MATCH DETAILS PAGE - HLTV STYLE
    Монохромный дизайн с красными акцентами
