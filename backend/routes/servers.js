@@ -8,13 +8,9 @@ const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 const rconService = require('../services/rconService');
 
-// Middleware для проверки прав администратора
-const requireAdmin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Требуются права администратора' });
-    }
-    next();
-};
+// Middleware для проверки прав администратора (многоролёвость)
+const { restrictTo } = require('../middleware/auth');
+const requireAdmin = restrictTo(['platform_admin']);
 
 /**
  * Получить список всех серверов

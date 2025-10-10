@@ -10,13 +10,9 @@ const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
-// Проверка роли администратора (локальная)
-function requireAdmin(req, res, next) {
-    if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Доступ запрещен. Требуются права администратора' });
-    }
-    next();
-}
+// Проверка роли администратора (обновлено под многоролёвость)
+const { restrictTo } = require('../middleware/auth');
+const requireAdmin = restrictTo(['platform_admin']);
 
 // Обновление готовности/присутствия игрока (heartbeat + локальный ready)
 router.post('/match-lobby/:lobbyId/presence', authenticateToken, async (req, res) => {

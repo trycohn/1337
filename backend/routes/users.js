@@ -147,8 +147,14 @@ router.post('/register', async (req, res) => {
             console.log(`✅ Статистика реферальной ссылки обновлена. Использований: +1`);
         }
 
+        // JWT: включаем многоролёвость (roles[]), оставляем fallback role для совместимости
+        const rolesResReg = await pool.query(
+            `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+            [newUser.id]
+        );
+        const rolesReg = rolesResReg.rows.map(r => r.code);
         const token = jwt.sign(
-            { id: newUser.id, role: newUser.role, username: newUser.username },
+            { id: newUser.id, username: newUser.username, roles: rolesReg, role: (rolesReg.includes('platform_admin') ? 'admin' : 'user') },
             process.env.JWT_SECRET,
             { expiresIn: '168h' }
         );
@@ -391,8 +397,13 @@ router.post('/login', async (req, res) => {
             }
         }
 
+        const rolesResLogin = await pool.query(
+            `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+            [user.id]
+        );
+        const rolesLogin = rolesResLogin.rows.map(r => r.code);
         const token = jwt.sign(
-            { id: user.id, role: user.role, username: user.username },
+            { id: user.id, username: user.username, roles: rolesLogin, role: (rolesLogin.includes('platform_admin') ? 'admin' : 'user') },
             process.env.JWT_SECRET,
             { expiresIn: '168h' }
         );
@@ -503,8 +514,13 @@ router.get('/steam-callback', async (req, res) => {
             }
             
             // Создаем JWT и перенаправляем
+            const rolesResSteam = await pool.query(
+                `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+                [user.id]
+            );
+            const rolesSteam = rolesResSteam.rows.map(r => r.code);
             const token = jwt.sign(
-                { id: user.id, role: user.role, username: user.username },
+                { id: user.id, username: user.username, roles: rolesSteam, role: (rolesSteam.includes('platform_admin') ? 'admin' : 'user') },
                 process.env.JWT_SECRET,
                 { expiresIn: '168h' }
             );
@@ -549,8 +565,13 @@ router.get('/steam-callback', async (req, res) => {
             console.log('✅ Trust Score saved for new user:', newUser.id);
             
             // Создаем JWT для нового пользователя
+            const rolesResSteamNew = await pool.query(
+                `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+                [newUser.id]
+            );
+            const rolesSteamNew = rolesResSteamNew.rows.map(r => r.code);
             const token = jwt.sign(
-                { id: newUser.id, role: newUser.role, username: newUser.username },
+                { id: newUser.id, username: newUser.username, roles: rolesSteamNew, role: (rolesSteamNew.includes('platform_admin') ? 'admin' : 'user') },
                 process.env.JWT_SECRET,
                 { expiresIn: '168h' }
             );
@@ -1722,8 +1743,13 @@ router.get('/faceit-callback', async (req, res) => {
             if (existingUser.rows.length > 0) {
                 // Если пользователь существует, создаем JWT и перенаправляем
                 const user = existingUser.rows[0];
+                const rolesResFaceitLogin = await pool.query(
+                    `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+                    [user.id]
+                );
+                const rolesFaceitLogin = rolesResFaceitLogin.rows.map(r => r.code);
                 const token = jwt.sign(
-                    { id: user.id, role: user.role, username: user.username },
+                    { id: user.id, username: user.username, roles: rolesFaceitLogin, role: (rolesFaceitLogin.includes('platform_admin') ? 'admin' : 'user') },
                     process.env.JWT_SECRET,
                     { expiresIn: '168h' }
                 );
@@ -1753,9 +1779,14 @@ router.get('/faceit-callback', async (req, res) => {
                 
                 const newUser = newUserResult.rows[0];
                 
-                // Создаем JWT для нового пользователя
+                // Создаем JWT для нового пользователя (многоролёвость)
+                const rolesResFaceitNew = await pool.query(
+                    `SELECT r.code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1`,
+                    [newUser.id]
+                );
+                const rolesFaceitNew = rolesResFaceitNew.rows.map(r => r.code);
                 const token = jwt.sign(
-                    { id: newUser.id, role: newUser.role, username: newUser.username },
+                    { id: newUser.id, username: newUser.username, roles: rolesFaceitNew, role: (rolesFaceitNew.includes('platform_admin') ? 'admin' : 'user') },
                     process.env.JWT_SECRET,
                     { expiresIn: '168h' }
                 );

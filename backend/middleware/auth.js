@@ -35,10 +35,24 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Middleware для ограничения доступа по ролям
+// Утилиты ролей (многоролёвость + обратная совместимость)
+function getUserRoles(user) {
+    if (!user) return [];
+    if (Array.isArray(user.roles)) return user.roles;
+    // совместимость со старым payload: role: 'admin' | 'user'
+    if (user.role === 'admin') return ['user', 'platform_admin'];
+    return ['user'];
+}
+
+function hasAnyRole(user, roleCodes) {
+    const roles = getUserRoles(user);
+    return roleCodes.some((code) => roles.includes(code));
+}
+
+// Middleware для ограничения доступа по ролям (новый)
 function restrictTo(roles) {
     return (req, res, next) => {
-        if (!req.user || !roles.includes(req.user.role)) {
+        if (!req.user || !hasAnyRole(req.user, roles)) {
             return res.status(403).json({ message: 'Доступ запрещен: недостаточно прав' });
         }
         next();
