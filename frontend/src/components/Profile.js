@@ -1924,7 +1924,7 @@ function Profile() {
     // Переключение между вкладками
     const switchTab = (tabName) => {
         setActiveTab(tabName);
-        if (tabName === 'matchhistory' && user && !loadingMatchHistory && matchHistory.length === 0) {
+        if (tabName === 'matchhistory' && user && !loadingMatchHistory) {
             loadMatchHistory(user.id).catch(() => {});
         }
     };
@@ -2385,8 +2385,17 @@ function Profile() {
     async function loadMatchHistory(userId) {
         try {
             setLoadingMatchHistory(true);
-            const { data } = await api.get(`/api/admin/users/${userId}/matches`);
-            if (data?.success && Array.isArray(data.items)) setMatchHistory(data.items);
+            const { data } = await api.get(`/api/admin/users/${userId}/matches`, {
+                params: { page: 1, limit: 50 }
+            });
+            if (data?.success && Array.isArray(data.items)) {
+                setMatchHistory(data.items);
+            } else if (Array.isArray(data)) {
+                // fallback: если вернулся массив без оболочки
+                setMatchHistory(data);
+            } else {
+                setMatchHistory([]);
+            }
         } catch (_) {
             setMatchHistory([]);
         } finally {

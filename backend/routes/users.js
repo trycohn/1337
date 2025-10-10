@@ -1372,7 +1372,7 @@ router.get('/match-history', authenticateToken, async (req, res) => {
             WHERE 
                 (tp1.user_id = $1 OR tp2.user_id = $1 OR ttm1.user_id = $1 OR ttm2.user_id = $1)
                 AND m.winner_team_id IS NOT NULL
-            ORDER BY m.id DESC
+            ORDER BY m.created_at DESC
             LIMIT 100
         `, [req.user.id]);
 
