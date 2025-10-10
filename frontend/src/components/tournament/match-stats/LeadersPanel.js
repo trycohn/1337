@@ -7,10 +7,10 @@ export function LeadersPanel({ leaders }) {
   const mvp = leaders.mvpApprox || null;
 
   const smallCards = [
-    { key: 'kills', title: 'Most Kills', value: leaders.kills?.kills ?? 0, name: leaders.kills?.name },
-    { key: 'hs', title: 'Highest HS%', value: pct(leaders.hsPercent?.hs || 0), name: leaders.hsPercent?.name },
-    { key: 'acc', title: 'Accuracy', value: pct(leaders.accuracy?.acc || 0), name: leaders.accuracy?.name },
-    { key: 'clutch1', title: 'Clutch 1v1', value: pct(leaders.clutch1?.clutch1 || 0), name: leaders.clutch1?.name }
+    { key: 'kills', slug: 'most-kills', title: 'Most Kills', value: leaders.kills?.kills ?? 0, name: leaders.kills?.name },
+    { key: 'hs', slug: 'highest-hs', title: 'Highest HS%', value: pct(leaders.hsPercent?.hs || 0), name: leaders.hsPercent?.name },
+    { key: 'acc', slug: 'accuracy', title: 'Accuracy', value: pct(leaders.accuracy?.acc || 0), name: leaders.accuracy?.name },
+    { key: 'clutch1', slug: 'clutch-1v1', title: 'Clutch 1v1', value: pct(leaders.clutch1?.clutch1 || 0), name: leaders.clutch1?.name }
   ];
 
   return (
@@ -18,7 +18,7 @@ export function LeadersPanel({ leaders }) {
       <h3 className="leaders-title">Лидеры матча</h3>
       <div className="leaders-grid">
         {/* MVP (2x2) */}
-        <div className="leader-card leader-mvp">
+        <div className="leader-card leader-mvp card-mvp">
           <div className="leader-title">MVP*</div>
           <div className="leader-name">{mvp?.name || '-'}</div>
           <div className="leader-metrics">
@@ -30,7 +30,7 @@ export function LeadersPanel({ leaders }) {
 
         {/* Остальные карточки (фиксированный размер) */}
         {smallCards.map((c) => (
-          <div key={c.key} className="leader-card">
+          <div key={c.key} className={`leader-card card-${c.slug}`}>
             <div className="leader-title">{c.title}</div>
             <div className="leader-value leader-strong">{c.value}</div>
             <div className="leader-name">{c.name || '-'}</div>
