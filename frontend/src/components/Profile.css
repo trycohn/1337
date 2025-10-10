@@ -205,10 +205,10 @@
 .badge-verified {
   border: 1px solid #178800;
   color: #fff;
-  background: #111;
+  background: #111; 
   padding: 2px 8px;
-  borderradius: 12px;
-  fontsize: 12px;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 .badge-unverified {
@@ -216,8 +216,8 @@
   color: #fff;
   background: #111;
   padding: 2px 8px;
-  borderradius: 12px;
-  fontsize: 12px;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 .meta-row .meta-item:first-child {
