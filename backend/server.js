@@ -31,6 +31,8 @@ const { broadcastTournamentUpdate } = require('./notifications');
 const multer = require('multer');
 const fs = require('fs');
 const pool = require('./db');
+const cron = require('node-cron');
+const { cleanupOldDemos, getDemosStats } = require('./services/demoCleanupService');
 
 // Создаем Express приложение
 const app = express();
@@ -477,6 +479,35 @@ const serverInstance = server.listen(PORT, async () => {
         } catch (defaultAvatarErr) {
             console.error('⚠️ Не удалось назначить дефолтные аватары:', defaultAvatarErr.message);
         }
+        
+        // 🗑️ Запуск cron задачи для автоматической очистки демок
+        console.log('⏰ [DemoCleanup] Настройка автоматической очистки демок (каждый день в 03:00)...');
+        
+        // Проверка статистики при запуске
+        try {
+            const stats = await getDemosStats();
+            if (stats) {
+                console.log('📊 [DemoCleanup] Текущая статистика демок:');
+                console.log(`   Всего демок: ${stats.total_demos} (${stats.total_size_formatted})`);
+                console.log(`   Старше 7 дней: ${stats.old_demos} (${stats.old_size_formatted})`);
+            }
+        } catch (statsError) {
+            console.error('⚠️ [DemoCleanup] Ошибка получения статистики:', statsError.message);
+        }
+        
+        // Запуск cron задачи: каждый день в 03:00
+        cron.schedule('0 3 * * *', async () => {
+            console.log('⏰ [DemoCleanup] Запуск по расписанию (03:00)');
+            try {
+                await cleanupOldDemos();
+            } catch (cleanupError) {
+                console.error('❌ [DemoCleanup] Ошибка при автоматической очистке:', cleanupError.message);
+            }
+        }, {
+            timezone: "Europe/Moscow" // Московское время (UTC+3)
+        });
+        
+        console.log('✅ [DemoCleanup] Автоматическая очистка настроена');
         
     } catch (err) {
         console.error('❌ Ошибка подключения к базе данных:', err.message);

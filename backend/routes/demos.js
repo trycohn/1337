@@ -256,5 +256,100 @@ router.get('/available/:matchid', async (req, res) => {
     }
 });
 
+/**
+ * GET /api/demos/stats
+ * Получение статистики по демкам (публичный эндпоинт)
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        const { getDemosStats } = require('../services/demoCleanupService');
+        const stats = await getDemosStats();
+        
+        if (!stats) {
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to get stats'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: stats
+        });
+        
+    } catch (error) {
+        console.error('❌ [Demos] Ошибка получения статистики:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get stats'
+        });
+    }
+});
+
+/**
+ * POST /api/demos/cleanup
+ * Ручной запуск очистки старых демок (только для админов)
+ */
+router.post('/cleanup', async (req, res) => {
+    try {
+        // Проверка авторизации (токен из заголовка)
+        const authHeader = req.headers['authorization'];
+        const token = authHeader?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Unauthorized'
+            });
+        }
+        
+        // Проверка прав администратора
+        const jwt = require('jsonwebtoken');
+        let userId;
+        
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            userId = decoded.id;
+        } catch (err) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid token'
+            });
+        }
+        
+        // Проверка роли пользователя
+        const userQuery = await pool.query(
+            'SELECT role FROM users WHERE id = $1',
+            [userId]
+        );
+        
+        if (userQuery.rows.length === 0 || userQuery.rows[0].role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                error: 'Admin access required'
+            });
+        }
+        
+        // Запуск очистки
+        console.log(`🗑️ [Demos] Ручной запуск очистки от пользователя ${userId}`);
+        
+        const { cleanupOldDemos } = require('../services/demoCleanupService');
+        const stats = await cleanupOldDemos();
+        
+        res.json({
+            success: true,
+            message: 'Cleanup completed',
+            stats: stats
+        });
+        
+    } catch (error) {
+        console.error('❌ [Demos] Ошибка ручной очистки:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to cleanup demos'
+        });
+    }
+});
+
 module.exports = router;
 
