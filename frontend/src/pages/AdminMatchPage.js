@@ -314,6 +314,26 @@ function AdminMatchPage() {
         } catch (_) {}
     }
 
+    async function removeUserFromLobby(userId) {
+        if (!userId || !lobbyId) return;
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/admin/match-lobby/${lobbyId}/invite/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
+            const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (r?.data?.success) {
+                setLobby(r.data.lobby);
+                setSelections(r.data.selections || []);
+                setAvailableMaps(r.data.available_maps || []);
+                setTeam1Users(r.data.team1_users || []);
+                setTeam2Users(r.data.team2_users || []);
+                setUnassignedUsers(r.data.unassigned_users || []);
+                setInvitedPendingUsers(r.data.invited_pending_users || []);
+                setInvitedDeclinedUsers(r.data.invited_declined_users || []);
+                setOnlineUserIds(r.data.online_user_ids || []);
+            }
+        } catch (_) {}
+    }
+
     const openInvitePanel = useCallback(async (team) => {
         setInvitePanelTeam(team);
         setInvitePanelOpen(true);
@@ -1070,7 +1090,7 @@ function AdminMatchPage() {
                         {team1Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
                         {team1Users.map((u, idx) => (
                             <div key={`t1-${u.id}`} className={`list-row custom-match-list-row ${idx === 0 ? 'custom-match-captain-row' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, u.id)} onDragOver={e=>e.preventDefault()} onDrop={handleDrop(1, u.id)}>
-                                <div className="list-row-left">
+                            <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}
                                         title={playerReady[u.id] ? 'нажмите тут чтобы сменить статус готовности' : 'нажмите тут чтобы сменить статус готовности'}
@@ -1091,6 +1111,15 @@ function AdminMatchPage() {
                                         <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${p.cls}`} title={p.text}>{p.text}</span>
                                     ); })()}
                                 </div>
+                                {(Number(lobby?.created_by) === Number(user?.id) || isAdmin) && (
+                                    <div className="list-row-right custom-match-row-actions">
+                                        <button
+                                            className="btn btn-secondary custom-match-ml-8"
+                                            title="Удалить из лобби"
+                                            onClick={() => removeUserFromLobby(u.id)}
+                                        >×</button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {(() => {
@@ -1132,7 +1161,7 @@ function AdminMatchPage() {
                         {team2Users.length === 0 && <div className="custom-match-muted">Нет игроков</div>}
                         {team2Users.map((u, idx) => (
                             <div key={`t2-${u.id}`} className={`list-row custom-match-list-row ${idx === 0 ? 'custom-match-captain-row' : ''}`} draggable onDragStart={(e)=>handleDragStart(e, u.id)} onDragOver={e=>e.preventDefault()} onDrop={handleDrop(2, u.id)}>
-                                <div className="list-row-left">
+                            <div className="list-row-left">
                                     <span
                                         className={`custom-match-ready-toggle ${playerReady[u.id] ? 'on' : 'off'} ${u.id !== Number(user?.id) ? 'disabled' : ''}`}
                                         title={playerReady[u.id] ? 'нажмите тут чтобы сменить статус готовности' : 'нажмите тут чтобы сменить статус готовности'}
@@ -1153,6 +1182,15 @@ function AdminMatchPage() {
                                         <span className={`ml-8 custom-match-ml-8 custom-match-status-dot ${p.cls}`} title={p.text}>{p.text}</span>
                                     ); })()}
                                 </div>
+                                {(Number(lobby?.created_by) === Number(user?.id) || isAdmin) && (
+                                    <div className="list-row-right custom-match-row-actions">
+                                        <button
+                                            className="btn btn-secondary custom-match-ml-8"
+                                            title="Удалить из лобби"
+                                            onClick={() => removeUserFromLobby(u.id)}
+                                        >×</button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {(() => {
