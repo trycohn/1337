@@ -440,9 +440,13 @@
   border-radius: 50%;
   transition: transform 0.2s ease;
 }
-.toggle-switch.on .toggle-thumb { transform: translateX(22px); }
-.toggle-switch .toggle-text { font-size: 13px; color: #c1c1c1; }
+.toggle-switch.on .toggle-thumb {
+   transform: translateX(22px); 
+}
+.toggle-switch .toggle-text {
+   font-size: 13px; color: #c1c1c1; 
+}
 
-.toggle-switch .btn:hover, .toggle-switch button:hover {
+.match-compact-toggle .btn:hover, .match-compact-toggle button:hover {
   border: none !important;
 }
