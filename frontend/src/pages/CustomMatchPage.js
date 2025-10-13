@@ -114,6 +114,7 @@ function CustomMatchPage() {
     const titleRight = match?.team2_name || 'Команда 2';
     const score1 = match?.team1_score ?? '-';
     const score2 = match?.team2_score ?? '-';
+    const isCompleted = Number.isFinite(match?.team1_score) && Number.isFinite(match?.team2_score);
 
     function fmt(v, d = 2) { return Number.isFinite(v) ? Number(v).toFixed(d) : '0.00'; }
     function pct(v) { return Number.isFinite(v) ? `${Math.round(v * 100)}%` : '0%'; }
@@ -134,7 +135,7 @@ function CustomMatchPage() {
                 </div>
             </div>
 
-            {(match?.connect || match?.server_ip) && (
+            {(!isCompleted && (match?.connect || match?.server_ip)) && (
                 <div className="match-connect-container">
                     <h3>Подключение</h3>
                     {match.connect && (
@@ -162,10 +163,6 @@ function CustomMatchPage() {
                 </div>
             )}
 
-            {Array.isArray(pickban) && pickban.length > 0 && (
-                <PickBanTimeline steps={pickban} />
-            )}
-
             {(!stats && !leaders) ? (<SkeletonCards count={6} />) : (<LeadersPanel leaders={leaders} />)}
             <div className="match-compact-toggle compact-toggle">
                 <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
@@ -177,6 +174,10 @@ function CustomMatchPage() {
                     <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
                     <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
                 </>
+            )}
+
+            {Array.isArray(pickban) && pickban.length > 0 && (
+                <PickBanTimeline steps={pickban} />
             )}
 
             {!stats && (!maps || maps.length === 0) ? (

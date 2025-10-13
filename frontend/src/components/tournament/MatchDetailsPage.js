@@ -1002,6 +1002,92 @@ const MatchDetailsPage = () => {
         );
     }
 
+  // 🧩 Идентичный рендер для турнирного матча, созданного через лобби (как на кастомной странице)
+  if (lobbyStats && lobbyStats.success) {
+    const { match: m, maps, playersByTeam, playersByMap, pickban } = lobbyStats;
+    const titleLeft = m.team1_name || 'Команда 1';
+    const titleRight = m.team2_name || 'Команда 2';
+    const score1 = Number.isFinite(m.team1_score) ? m.team1_score : '-';
+    const score2 = Number.isFinite(m.team2_score) ? m.team2_score : '-';
+    const isCompleted = Number.isFinite(m.team1_score) && Number.isFinite(m.team2_score);
+
+    return (
+      <div className="match-stats-container">
+        <div className="match-header-container">
+          <h2>Tournament match — CS2</h2>
+          <div className="match-header-row">
+            <div className="match-header-row list-row-left">
+              <strong>{titleLeft}</strong> vs <strong>{titleRight}</strong>
+            </div>
+            <div className="match-header-row list-row-right">
+              <span>Счёт: {score1}:{score2}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Блок подключения показываем до завершения матча */}
+        {!isCompleted && (m.connect || m.gotv) && (
+          <div className="match-connect-container">
+            <h3>Подключение</h3>
+            {m.connect && (
+              <div className="list-row">
+                <div className="list-row-left">
+                  <span>Игроки:</span>
+                  <code className="code-inline">{m.connect}</code>
+                </div>
+                <div className="list-row-right">
+                  <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(m.connect)}>Копировать</button>
+                </div>
+              </div>
+            )}
+            {m.gotv && (
+              <div className="list-row match-connect-row">
+                <div className="list-row-left">
+                  <span>GOTV:</span>
+                  <code className="code-inline">{m.gotv}</code>
+                </div>
+                <div className="list-row-right">
+                  <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(m.gotv)}>Копировать</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <LeadersPanel leaders={lobbyStats.leaders} />
+
+        <div className="match-compact-toggle compact-toggle">
+          <label>
+            <input
+              type="checkbox"
+              checked={!!compact}
+              onChange={(e) => {
+                setCompact(e.target.checked);
+                try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch (_) {}
+              }}
+            /> {' '}Компактный режим таблиц
+          </label>
+        </div>
+
+        <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
+        <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
+
+        {/* История бан/пик над картами */}
+        {Array.isArray(pickban) && pickban.length > 0 && (
+          <PickBanTimeline steps={pickban} />
+        )}
+
+        <MapsAccordion
+          titleLeft={titleLeft}
+          titleRight={titleRight}
+          maps={maps}
+          playersByMap={playersByMap}
+          compact={compact}
+        />
+      </div>
+    );
+  }
+
     const team1Info = getParticipantInfo(match.team1_id, tournament);
     const team2Info = getParticipantInfo(match.team2_id, tournament);
 
