@@ -44,9 +44,8 @@ const MatchDetailsPage = () => {
     const [lobbyStats, setLobbyStats] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
     const [pollVersion, setPollVersion] = useState(0);
-    const [compact, setCompact] = useState(() => {
-        try { return localStorage.getItem('match_compact_mode') !== 'false'; } catch(_) { return true; }
-    });
+    const [compact, setCompact] = useState(true);
+    useEffect(() => { try { localStorage.setItem('match_compact_mode','true'); } catch(_) {} }, []);
     // 🎬 Доступные демо-файлы
     const [demosAvailable, setDemosAvailable] = useState({});
     

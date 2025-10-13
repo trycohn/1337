@@ -134,7 +134,7 @@
 }
 
 .table tbody td.best-cell {
-  background: linear-gradient(90deg, #0000009c, #0061089c);
+  background: linear-gradient(90deg, #0000009c, #0041069c);
 }
 .table tbody tr:hover {
   background: #0b0b0b;
@@ -422,7 +422,7 @@
   color: #fff;
   cursor: pointer;
 }
-.toggle-switch:hover { background: #111111; }
+/* hover эффекты отключены по требованию — оставляем базовый фон */
 .toggle-switch .toggle-track {
   position: relative;
   width: 44px;

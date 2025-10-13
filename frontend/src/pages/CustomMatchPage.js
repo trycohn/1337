@@ -17,9 +17,8 @@ function CustomMatchPage() {
     const [stats, setStats] = useState(null);
     const [basic, setBasic] = useState(null);
     const [expandedMap, setExpandedMap] = useState(null);
-    const [compact, setCompact] = useState(() => {
-        try { return localStorage.getItem('match_compact_mode') !== 'false'; } catch(_) { return true; }
-    });
+    const [compact, setCompact] = useState(true);
+    useEffect(() => { try { localStorage.setItem('match_compact_mode','true'); } catch(_) {} }, []);
     const [pollVersion, setPollVersion] = useState(0);
 
     useEffect(() => {
