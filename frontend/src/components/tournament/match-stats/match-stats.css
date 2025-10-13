@@ -49,10 +49,10 @@
   display: flex;
   gap: 16px;
   justify-content: center;
-  flex-direction: row;
+  flex-direction: column;
 }
 
-.match-header-row list-row-left {
+.match-header-row .list-row-left {
   font-size: 38px;
   display: flex;
   flex-direction: row;
