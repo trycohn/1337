@@ -43,8 +43,8 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compa
               </div>
               {isOpen && (
                 <div className="accordion-content">
-                  <ScoreTable title={`${titleLeft} — ${m.mapname}`} rows={t1} compact={compact} />
-                  <ScoreTable title={`${titleRight} — ${m.mapname}`} rows={t2} compact={compact} />
+                  <ScoreTable title={`${titleLeft}`} rows={t1} compact={compact} />
+                  <ScoreTable title={`${titleRight}`} rows={t2} compact={compact} />
                 </div>
               )}
             </div>

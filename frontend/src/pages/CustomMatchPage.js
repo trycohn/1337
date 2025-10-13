@@ -171,8 +171,8 @@ function CustomMatchPage() {
                 <SkeletonTable rows={8} />
             ) : (
                 <>
-                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
-                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
+                    <ScoreTable title={`${titleLeft}`} rows={playersByTeam?.team1 || []} compact={compact} />
+                    <ScoreTable title={`${titleRight}`} rows={playersByTeam?.team2 || []} compact={compact} />
                 </>
             )}
 

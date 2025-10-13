@@ -652,8 +652,8 @@ const MatchDetailsPage = () => {
                     <div className="match-compact-toggle compact-toggle">
                         <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
                     </div>
-                    <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
-                    <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
+                    <ScoreTable title={`${titleLeft}`} rows={playersByTeam?.team1 || []} compact={compact} />
+                    <ScoreTable title={`${titleRight}`} rows={playersByTeam?.team2 || []} compact={compact} />
                     <MapsAccordion titleLeft={titleLeft} titleRight={titleRight} maps={maps} playersByMap={playersByMap} compact={compact} />
                 </>
             );
@@ -1069,8 +1069,8 @@ const MatchDetailsPage = () => {
           </label>
         </div>
 
-        <ScoreTable title={`${titleLeft} — суммарно`} rows={playersByTeam?.team1 || []} compact={compact} />
-        <ScoreTable title={`${titleRight} — суммарно`} rows={playersByTeam?.team2 || []} compact={compact} />
+        <ScoreTable title={`${titleLeft}`} rows={playersByTeam?.team1 || []} compact={compact} />
+        <ScoreTable title={`${titleRight}`} rows={playersByTeam?.team2 || []} compact={compact} />
 
         {/* История бан/пик над картами */}
         {Array.isArray(pickban) && pickban.length > 0 && (

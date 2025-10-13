@@ -61,8 +61,9 @@
 /* Заголовки секций */
 .match-stats-section h3,
 .custom-match-mt-16 > h3 {
-  color: #fff;
+  color: #c1c1c1;
   font-weight: 700;
+  text-transform: none;
   margin: 0 0 8px 0;
 }
 
@@ -139,17 +140,19 @@
   background: #0b0b0b;
 }
 
+
+
+.match-stats-container .table tbody td,
+.match-stats-container .table thead th {  
+  width: 5.8%;
+}
+
 .table th:nth-child(1),
 .table td:nth-child(1) {
   width: 132px; 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.match-stats-container .table tbody td,
-.match-stats-container .table thead th {  
-  width: 5.8%;
 }
 
 
@@ -278,7 +281,7 @@
   margin-top: 6px;
 }
 
-.custom-match-pickban, .maps-accordion-container h3 {
+.custom-match-pickban h3, .maps-accordion-container h3 {
   text-transform: none;
   color: #c1c1c1;
 }
