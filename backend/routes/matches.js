@@ -348,6 +348,89 @@ router.get('/tournament/:id/stats', async (req, res) => {
     } finally { client.release(); }
 });
 
+// 🏆 Получение MVP данных матча
+router.get('/:id/mvp', async (req, res) => {
+    const matchId = Number(req.params.id);
+    if (!Number.isInteger(matchId) || matchId <= 0) {
+        return res.status(400).json({ success: false, error: 'Неверный ID матча' });
+    }
+    
+    try {
+        const MVPCalculator = require('../services/mvpCalculator');
+        const players = await MVPCalculator.getTopPlayers(matchId, 10);
+        
+        if (players.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'MVP данные не найдены. Возможно, матч еще не сыгран или не является турнирным/кастомным.' 
+            });
+        }
+        
+        // Группируем игроков по картам
+        const byMap = {};
+        players.forEach(p => {
+            const mapKey = `map_${p.mapnumber}`;
+            if (!byMap[mapKey]) {
+                byMap[mapKey] = [];
+            }
+            byMap[mapKey].push({
+                steamid64: p.steamid64,
+                user_id: p.user_id,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                name: p.name,
+                team: p.team,
+                mvp_score: parseFloat(p.mvp_score),
+                s_base: parseFloat(p.s_base),
+                s_impact: parseFloat(p.s_impact),
+                s_obj: parseFloat(p.s_obj),
+                rounds_played: p.rounds_played
+            });
+        });
+        
+        // Определяем общего MVP (топ игрок)
+        const overallMVP = players[0];
+        
+        res.json({
+            success: true,
+            mvp: {
+                steamid64: overallMVP.steamid64,
+                user_id: overallMVP.user_id,
+                username: overallMVP.username,
+                avatar_url: overallMVP.avatar_url,
+                name: overallMVP.name,
+                team: overallMVP.team,
+                mvp_score: parseFloat(overallMVP.mvp_score),
+                s_base: parseFloat(overallMVP.s_base),
+                s_impact: parseFloat(overallMVP.s_impact),
+                s_obj: parseFloat(overallMVP.s_obj)
+            },
+            all_players: players.map(p => ({
+                steamid64: p.steamid64,
+                user_id: p.user_id,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                name: p.name,
+                team: p.team,
+                mapnumber: p.mapnumber,
+                mvp_score: parseFloat(p.mvp_score),
+                s_base: parseFloat(p.s_base),
+                s_impact: parseFloat(p.s_impact),
+                s_obj: parseFloat(p.s_obj),
+                rounds_played: p.rounds_played
+            })),
+            by_map: byMap
+        });
+        
+    } catch (error) {
+        console.error('❌ [MVP API] Ошибка получения MVP:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Внутренняя ошибка сервера' 
+        });
+    }
+});
+
 // Получение списка всех матчей
 router.get('/', async (req, res) => {
     try {

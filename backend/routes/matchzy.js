@@ -74,6 +74,17 @@ router.post('/match-end', async (req, res) => {
                 // Материализуем player_match_stats из matchzy_* → для профилей
                 const { materializePlayerStatsFromMatchzy } = require('../services/matchzyPollingService');
                 await materializePlayerStatsFromMatchzy(mid);
+                
+                // Рассчитываем MVP для турнирных и кастомных матчей
+                try {
+                    const MVPCalculator = require('../services/mvpCalculator');
+                    const mvpResult = await MVPCalculator.calculateMatchMVP(mid);
+                    if (mvpResult?.mvp) {
+                        console.log(`🏆 [MatchZy] MVP: ${mvpResult.mvp.name} (${mvpResult.mvp.mvp_score.toFixed(2)} очков)`);
+                    }
+                } catch (mvpError) {
+                    console.error(`⚠️ [MatchZy] Ошибка расчета MVP:`, mvpError.message);
+                }
             } catch (error) {
                 console.error(`❌ [MatchZy] Ошибка импорта статистики для matchid=${matchid}:`, error.message);
             }
