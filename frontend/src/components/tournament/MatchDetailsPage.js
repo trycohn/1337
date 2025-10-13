@@ -1057,16 +1057,16 @@ const MatchDetailsPage = () => {
         <LeadersPanel leaders={lobbyStats.leaders} />
 
         <div className="match-compact-toggle compact-toggle">
-          <label>
-            <input
-              type="checkbox"
-              checked={!!compact}
-              onChange={(e) => {
-                setCompact(e.target.checked);
-                try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch (_) {}
-              }}
-            /> {' '}Компактный режим таблиц
-          </label>
+          <button
+            type="button"
+            className={`toggle-switch ${compact ? 'on' : ''}`}
+            aria-pressed={!!compact}
+            onClick={() => { const next = !compact; setCompact(next); try { localStorage.setItem('match_compact_mode', String(next)); } catch(_) {} }}
+            title={compact ? 'Переключить на подробный вид' : 'Переключить на компактный вид'}
+          >
+            <span className="toggle-track"><span className="toggle-thumb"></span></span>
+            <span className="toggle-text">{compact ? 'Компактно' : 'Подробно'}</span>
+          </button>
         </div>
 
         <ScoreTable title={`${titleLeft}`} rows={playersByTeam?.team1 || []} compact={compact} />

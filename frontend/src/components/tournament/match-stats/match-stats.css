@@ -144,11 +144,11 @@
 
 .match-stats-container .table tbody td,
 .match-stats-container .table thead th {  
-  width: 5.8%;
+  width: 5%;
 }
 
-.table th:nth-child(1),
-.table td:nth-child(1) {
+.match-stats-container .table th:nth-child(1),
+.match-stats-container .table td:nth-child(1) {
   width: 132px; 
   overflow: hidden;
   text-overflow: ellipsis;
@@ -409,3 +409,37 @@
   gap: 8px;
   align-items: center;
 }
+
+/* Красивый переключатель компактного вида */
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #fff;
+  cursor: pointer;
+}
+.toggle-switch:hover { background: #111111; }
+.toggle-switch .toggle-track {
+  position: relative;
+  width: 44px;
+  height: 22px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 999px;
+}
+.toggle-switch .toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+.toggle-switch.on .toggle-thumb { transform: translateX(22px); }
+.toggle-switch .toggle-text { font-size: 13px; color: #c1c1c1; }
