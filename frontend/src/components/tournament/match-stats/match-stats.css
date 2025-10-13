@@ -416,7 +416,6 @@
   align-items: center;
   gap: 10px;
   background: #000;
-  border: 1px solid #333;
   border-radius: 999px;
   padding: 6px 10px;
   color: #fff;
@@ -443,3 +442,7 @@
 }
 .toggle-switch.on .toggle-thumb { transform: translateX(22px); }
 .toggle-switch .toggle-text { font-size: 13px; color: #c1c1c1; }
+
+.toggle-switch .btn:hover, .toggle-switch button:hover {
+  border: none !important;
+}
