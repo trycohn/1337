@@ -121,7 +121,7 @@ function CustomMatchPage() {
 
 
     return (
-        <div className="container">
+        <div className="match-stats-container">
             <div className="match-header-container">
                 <h2>Custom match — CS2</h2>
                 <div className="match-header-row">

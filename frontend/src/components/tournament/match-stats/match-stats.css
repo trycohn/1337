@@ -1,37 +1,45 @@
 /* Единые стили для блоков статистики матчей (монохромная тема) */
 
 /* Legacy spacing helpers (не использовать в новых компонентах) */
+
+.match-stats-container {
+  margin: 0 auto;
+  width: 100%;
+  padding: 0;
+  position: relative;
+}
+
 .custom-match-ml-8 {
   margin-left: 8px;
 }
 
 /* Новые семантические контейнеры */
 .custom-match-leaders-panel {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .custom-match-pickban {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .maps-accordion-container {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .match-compact-toggle {
-  margin-top: 12px;
+  margin-top: 32px;
 }
 .match-header-container {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .match-connect-container {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .match-connect-row {
   margin-top: 8px;
 }
 .match-status-container {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 .match-section-container {
-  margin-top: 16px;
+  margin-top: 32px;
 }
 
 .match-header-row {
@@ -41,6 +49,12 @@
   display: flex;
   gap: 16px;
   justify-content: center;
+  flex-direction: row;
+}
+
+.match-header-row list-row-left {
+  font-size: 38px;
+  display: flex;
   flex-direction: row;
 }
 
@@ -100,6 +114,7 @@
   background: #000;
   color: #fff;
   font-size: 14px;
+  table-layout: fixed;
 }
 .table thead th {
   position: sticky;
@@ -116,9 +131,9 @@
   vertical-align: middle;
   white-space: nowrap;
 }
+
 .table tbody td.best-cell {
-  background: #0061089c;
-  box-shadow: inset 0 0 0 1px #ff0000;
+  background: linear-gradient(90deg, #0000009c, #0061089c);
 }
 .table tbody tr:hover {
   background: #0b0b0b;
@@ -126,8 +141,17 @@
 
 .table th:nth-child(1),
 .table td:nth-child(1) {
-  width: 150px; 
+  width: 132px; 
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.match-stats-container .table tbody td,
+.match-stats-container .table thead th {  
+  width: 5.8%;
+}
+
 
 /* Контейнеры-строки */
 .list-row {
@@ -254,10 +278,10 @@
   margin-top: 6px;
 }
 
-
-
-
-
+.custom-match-pickban, .maps-accordion-container h3 {
+  text-transform: none;
+  color: #c1c1c1;
+}
 
 @media (max-width: 1024px) {
   .leaders-grid {
