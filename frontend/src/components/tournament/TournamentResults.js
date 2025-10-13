@@ -4,6 +4,7 @@ import { ensureHttps } from '../../utils/userHelpers';
 import MatchDetailsModal from './modals/MatchDetailsModal';
 import './TournamentResults.css';
 import PodiumSection from './PodiumSection';
+import TournamentStatsPanel from './TournamentStatsPanel';
 
 const TournamentResults = ({ tournament }) => {
     // Состояние для модального окна деталей матча
@@ -142,7 +143,12 @@ const TournamentResults = ({ tournament }) => {
                 </div>
             )}
 
-            {/* Блок 2: История матчей */}
+            {/* Блок 2: Статистика турнира (только для завершенных турниров с лобби) */}
+            {tournament.status === 'completed' && tournament.lobby_enabled && tournament.game === 'Counter-Strike 2' && (
+                <TournamentStatsPanel tournamentId={tournament.id} />
+            )}
+
+            {/* Блок 3: История матчей */}
             {tournamentResults.completedMatches.length > 0 && (
                 <div className="results-match-history-section">
                     <div className="results-section-header">

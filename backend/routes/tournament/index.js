@@ -38,6 +38,7 @@ const FullMixController = require('../../controllers/tournament/FullMixControlle
 const { BracketController } = require('../../controllers/tournament/BracketController');
 const MatchLobbyController = require('../../controllers/matchLobby/MatchLobbyController');
 const ShareController = require('../../controllers/tournament/ShareController');
+const TournamentStatsController = require('../../controllers/tournament/TournamentStatsController');
 
 const router = express.Router();
 
@@ -541,6 +542,27 @@ router.get('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, ve
 router.post('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.addEliminated);
 router.delete('/:id/fullmix/eliminated', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.deleteEliminated);
 router.post('/:id/fullmix/eliminated/recover', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.recoverEliminated);
+
+// 📊 **СТАТИСТИКА ТУРНИРОВ (НОВОЕ v4.28.0)**
+
+// 📊 Получение полной статистики турнира (публичный)
+router.get('/:id/stats', TournamentStatsController.getTournamentStats);
+
+// 🏆 Получение MVP турнира (публичный)
+router.get('/:id/stats/mvp', TournamentStatsController.getMVP);
+
+// 📈 Получение лидерборда по категории (публичный)
+// Категории: most_kills, highest_adr, best_hs, clutch_king, eco_master, most_assists, best_accuracy
+router.get('/:id/stats/leaderboard', TournamentStatsController.getLeaderboard);
+
+// 👤 Получение статистики конкретного игрока в турнире (публичный)
+router.get('/:id/stats/player/:userId', TournamentStatsController.getPlayerStats);
+
+// 🔄 Полный пересчет статистики турнира (только админ/создатель)
+router.post('/:id/stats/recalculate', authenticateToken, TournamentStatsController.recalculateStats);
+
+// 🏆 Финализация турнира: определение MVP и достижений (только админ/создатель)
+router.post('/:id/stats/finalize', authenticateToken, TournamentStatsController.finalizeTournament);
 
 // 📊 **МОНИТОРИНГ И ДИАГНОСТИКА**
 

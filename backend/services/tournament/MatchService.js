@@ -187,6 +187,17 @@ class MatchService {
         } catch (_) {}
         broadcastTournamentUpdate(tournamentId, updatedTournament, 'updateSpecificMatchResult');
 
+        // 📊 НОВОЕ v4.28.0: Обновление статистики турнира после завершения матча
+        try {
+            console.log(`📊 [MatchService] Запуск обновления статистики турнира ${tournamentId}`);
+            const TournamentStatsService = require('./TournamentStatsService');
+            await TournamentStatsService.updateStatsAfterMatch(matchId, tournamentId);
+            console.log(`✅ [MatchService] Статистика турнира ${tournamentId} обновлена`);
+        } catch (statsError) {
+            // Не прерываем выполнение, если ошибка в статистике
+            console.error(`⚠️ [MatchService] Ошибка обновления статистики турнира:`, statsError);
+        }
+
         console.log('✅ MatchService: Результат матча обновлен');
         return { 
             tournament: updatedTournament,
