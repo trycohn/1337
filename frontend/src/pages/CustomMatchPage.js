@@ -162,6 +162,10 @@ function CustomMatchPage() {
                 </div>
             )}
 
+            {Array.isArray(pickban) && pickban.length > 0 && (
+                <PickBanTimeline steps={pickban} />
+            )}
+
             {(!stats && !leaders) ? (<SkeletonCards count={6} />) : (<LeadersPanel leaders={leaders} />)}
             <div className="match-compact-toggle compact-toggle">
                 <label><input type="checkbox" checked={!!compact} onChange={(e)=>{ setCompact(e.target.checked); try { localStorage.setItem('match_compact_mode', String(e.target.checked)); } catch(_) {} }} /> Компактный режим таблиц</label>
