@@ -124,11 +124,11 @@ function CustomMatchPage() {
         <div className="container">
             <div className="match-header-container">
                 <h2>Custom match — CS2</h2>
-                <div className="list-row">
-                    <div className="list-row-left">
+                <div className="match-header-row">
+                    <div className="match-header-row list-row-left">
                         <strong>{titleLeft}</strong> vs <strong>{titleRight}</strong>
                     </div>
-                    <div className="list-row-right">
+                    <div className="match-header-row list-row-right">
                         <span>Счёт: {score1}:{score2}</span>
                     </div>
                 </div>
