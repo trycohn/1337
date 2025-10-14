@@ -20,6 +20,36 @@
 .custom-match-pickban {
   margin-top: 32px;
 }
+
+/* ===== Pick/Ban Variant A (Grid Timeline) ===== */
+.pickban-grid {
+  display: grid;
+  grid-auto-rows: auto;
+  gap: 8px 10px;
+  align-items: center;
+}
+.pb-team {
+  color: #fff;
+  font-weight: 700;
+}
+.pb-team1 { grid-row: 1; }
+.pb-steps1 { grid-row: 1; display: grid; grid-auto-flow: column; gap: 10px; align-items: end; }
+.pb-axis { grid-row: 2; position: relative; height: 2px; background: #333; border-top: 1px solid #222; border-bottom: 1px solid #222; }
+.pb-axis::after { content: ''; position: absolute; right: -8px; top: -4px; width: 0; height: 0; border-left: 8px solid #333; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+.pb-team2 { grid-row: 3; }
+.pb-steps2 { grid-row: 3; display: grid; grid-auto-flow: column; gap: 10px; align-items: start; }
+.pb-cell { min-height: 28px; display: flex; justify-content: center; }
+.pb-marker { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; user-select: none; background: #000; }
+.pb-marker.pick { border: 1px solid #fff; }
+.pb-marker.ban { border: 1px solid #ff0000; }
+.pb-marker.decider { border: 1px dashed #666; }
+
+@media (max-width: 720px) {
+  .pickban-grid { grid-template-columns: 1fr; gap: 6px; }
+  .pb-team1, .pb-team2 { grid-column: 1; }
+  .pb-steps1, .pb-steps2 { grid-column: 1; grid-auto-flow: column; overflow-x: auto; }
+  .pb-axis { grid-column: 1; }
+}
 .maps-accordion-container {
   margin-top: 32px;
 }

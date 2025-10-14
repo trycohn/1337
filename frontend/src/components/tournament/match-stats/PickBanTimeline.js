@@ -1,22 +1,70 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
+// Variant A: Grid Timeline (2 rows = teams, N columns = steps)
 export function PickBanTimeline({ steps }) {
-  if (!Array.isArray(steps) || steps.length === 0) return null;
+  const cleanSteps = Array.isArray(steps) ? steps.filter(Boolean) : [];
+  if (cleanSteps.length === 0) return null;
+
+  const normalized = useMemo(() => cleanSteps.map((s, i) => ({
+    index: s.step_index || i + 1,
+    action: String(s.action || s.action_type || '').toLowerCase(),
+    teamId: Number(s.team_id || s.team || 0) || null,
+    teamName: s.team_name || null,
+    map: s.mapname || s.map_name || s.map || ''
+  })), [cleanSteps]);
+
+  // Определяем названия команд из шагов
+  const team1Name = useMemo(() => {
+    const byId = normalized.find(s => s.teamId === 1);
+    if (byId?.teamName) return byId.teamName;
+    const uniq = [...new Set(normalized.map(s => s.teamName).filter(Boolean))];
+    return uniq[0] || 'Команда 1';
+  }, [normalized]);
+  const team2Name = useMemo(() => {
+    const byId = normalized.find(s => s.teamId === 2);
+    if (byId?.teamName) return byId.teamName;
+    const uniq = [...new Set(normalized.map(s => s.teamName).filter(Boolean))];
+    return uniq[1] || 'Команда 2';
+  }, [normalized]);
+
+  const stepsCount = normalized.length;
+  const gridTemplateColumns = `180px repeat(${stepsCount}, minmax(60px, 1fr))`;
+
+  function Marker({ step }) {
+    const cls = step.action === 'ban' ? 'ban' : step.action === 'pick' ? 'pick' : 'decider';
+    const title = `${step.index}. ${step.action.toUpperCase()} ${step.map || ''}${step.teamName ? ` — ${step.teamName}` : ''}`.trim();
+    return (
+      <div className={`pb-marker ${cls}`} title={title} aria-label={title}>
+        {step.index}
+      </div>
+    );
+  }
+
   return (
-    <div className="custom-match-pickban">
-      <h3>Порядок Pick/Ban</h3>
-      <div className="list-row pickban-row">
-        {steps.map((s) => {
-          const action = (s.action || s.action_type || '').toLowerCase();
-          const cls = action === 'ban' ? 'ban' : action === 'pick' ? 'pick' : 'decider';
-          const icon = action === 'ban' ? '✖' : action === 'pick' ? '✓' : '●';
-          return (
-            <div key={`${s.step_index}-${s.mapname}-${s.map_name || ''}`} className={`badge ${cls}`} title={s.team_name || ''}>
-              <span className="icon" aria-hidden>{icon}</span>
-              {s.step_index}. {(action).toUpperCase()} {s.mapname || s.map_name}
-            </div>
-          );
-        })}
+    <div className="custom-match-pickban pickban-grid" style={{ gridTemplateColumns }}>
+      {/* Team names column */}
+      <div className="pb-team pb-team1">{team1Name}</div>
+      {/* Row: team1 steps */}
+      <div className="pb-steps pb-steps1" style={{ gridColumn: `2 / span ${stepsCount}` }}>
+        {normalized.map((s) => (
+          <div key={`t1-${s.index}`} className="pb-cell">
+            {s.teamId === 1 ? <Marker step={s} /> : null}
+          </div>
+        ))}
+      </div>
+
+      {/* Axis row */}
+      <div className="pb-axis" style={{ gridColumn: `2 / span ${stepsCount}` }} />
+
+      {/* Team 2 */}
+      <div className="pb-team pb-team2">{team2Name}</div>
+      {/* Row: team2 steps */}
+      <div className="pb-steps pb-steps2" style={{ gridColumn: `2 / span ${stepsCount}` }}>
+        {normalized.map((s) => (
+          <div key={`t2-${s.index}`} className="pb-cell">
+            {s.teamId === 2 ? <Marker step={s} /> : null}
+          </div>
+        ))}
       </div>
     </div>
   );
