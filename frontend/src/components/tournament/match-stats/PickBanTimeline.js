@@ -3,7 +3,6 @@ import React, { useMemo } from 'react';
 // Variant A: Grid Timeline (2 rows = teams, N columns = steps)
 export function PickBanTimeline({ steps }) {
   const cleanSteps = Array.isArray(steps) ? steps.filter(Boolean) : [];
-  if (cleanSteps.length === 0) return null;
 
   const normalized = useMemo(() => cleanSteps.map((s, i) => ({
     index: s.step_index || i + 1,
@@ -29,6 +28,8 @@ export function PickBanTimeline({ steps }) {
 
   const stepsCount = normalized.length;
   const gridTemplateColumns = `180px repeat(${stepsCount}, minmax(60px, 1fr))`;
+
+  if (stepsCount === 0) return null;
 
   function Marker({ step }) {
     const cls = step.action === 'ban' ? 'ban' : step.action === 'pick' ? 'pick' : 'decider';
