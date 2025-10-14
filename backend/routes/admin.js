@@ -2063,8 +2063,8 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, requireAdmin,
             if (row.team === 1 && !team1Captain) team1Captain = row.username;
             if (row.team === 2 && !team2Captain) team2Captain = row.username;
         }
-        const team1Name = team1Captain ? `${team1Captain}__team` : (lobby.team1_name || 'Команда 1');
-        const team2Name = team2Captain ? `${team2Captain}__team` : (lobby.team2_name || 'Команда 2');
+        const team1Name = team1Captain ? `${team1Captain}_team` : (lobby.team1_name || 'Команда 1');
+        const team2Name = team2Captain ? `${team2Captain}_team` : (lobby.team2_name || 'Команда 2');
         const fp = firstPicker === 1 || firstPicker === 2 ? firstPicker : (Math.random() < 0.5 ? 1 : 2);
         const upd = await client.query(
             `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, team1_name = $3, team2_name = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,

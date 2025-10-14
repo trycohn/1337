@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Удаляем прямой импорт socket.io-client; используем API + фоновые polling‑обновления
+import io from 'socket.io-client';
 import api from '../axios';
 import MapSelectionBoard from '../components/tournament/MatchLobby/MapSelectionBoard';
 import '../styles/components.css';
@@ -30,7 +30,7 @@ function AdminMatchPage() {
     const [invitedPendingUsers, setInvitedPendingUsers] = useState([]);
     const [invitedDeclinedUsers, setInvitedDeclinedUsers] = useState([]);
     const [onlineUserIds, setOnlineUserIds] = useState([]);
-    const socketRef = useRef(null); // зарезервировано (не используем WS)
+    const socketRef = useRef(null);
     const searchDebounce = useRef(null);
     const searchInputRef = useRef(null);
     // Invite panel state
@@ -627,6 +627,24 @@ function AdminMatchPage() {
         }, 1500);
         return () => clearTimeout(t);
     }, [isAdmin, lobbyId, ensureAdminLobby]);
+
+    // Socket.IO подключение для онлайн-статуса
+    useEffect(() => {
+        if (!user || !lobbyId) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+        const socket = io(API_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+        socketRef.current = socket;
+        socket.on('connect', () => {
+            try { console.log('[ADMIN_LOBBY] socket connected'); } catch (_) {}
+            socket.emit('join_lobby', { lobbyId: Number(lobbyId) });
+        });
+        socket.on('admin_lobby_presence', (data) => {
+            try { console.log('[ADMIN_LOBBY] presence update', data); } catch (_) {}
+        });
+        return () => { socket.disconnect(); socketRef.current = null; };
+    }, [user, lobbyId]);
 
     // Не блокируем страницу для приглашенных не-админов
 
