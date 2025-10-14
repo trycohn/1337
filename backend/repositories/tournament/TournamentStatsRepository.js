@@ -174,28 +174,45 @@ class TournamentStatsRepository {
 
     /**
      * 🏆 Расчет MVP рейтинга для всех игроков турнира
+     * 
+     * Формула MVP (без Rating - Формула B):
+     * - K/D (40%) - главная метрика эффективности
+     * - ADR (25%) - постоянный вклад в урон
+     * - KAST (20%) - командная игра и участие
+     * - HS% (8%) - точность хедшотов
+     * - Accuracy (5%) - общая точность стрельбы
+     * - Clutch (2%) - способность под давлением
+     * 
+     * Match Weight: min(matches_played, 5) - защита от "одноматчевых героев"
+     * 
+     * TODO: В будущем добавить Формулу A с HLTV Rating 2.0 для профессиональных турниров
+     * 
      * @param {number} tournamentId 
      */
     async calculateMVPRatings(tournamentId) {
         const query = `
             UPDATE tournament_player_stats
             SET 
+                -- MVP Points с весом матчей (Формула B: без Rating)
                 mvp_points = (
-                    (COALESCE(avg_rating, 0) * 0.35) +
-                    (COALESCE(kd_ratio, 0) * 0.20) +
-                    ((COALESCE(avg_adr, 0) / 100) * 0.15) +
-                    ((COALESCE(avg_kast, 0) / 100) * 0.15) +
-                    ((COALESCE(hs_percentage, 0) / 100) * 0.10) +
-                    ((COALESCE(clutch_1v1_rate, 0) / 100) * 0.05)
-                ) * LEAST(matches_played, 5),  -- Match weight (max 5)
+                    (COALESCE(kd_ratio, 0) * 0.40) +
+                    ((COALESCE(avg_adr, 0) / 100) * 0.25) +
+                    ((COALESCE(avg_kast, 0) / 100) * 0.20) +
+                    ((COALESCE(hs_percentage, 0) / 100) * 0.08) +
+                    ((COALESCE(accuracy, 0) / 100) * 0.05) +
+                    ((COALESCE(clutch_1v1_rate, 0) / 100) * 0.02)
+                ) * LEAST(matches_played, 5),
+                
+                -- MVP Rating (базовый без веса)
                 mvp_rating = (
-                    (COALESCE(avg_rating, 0) * 0.35) +
-                    (COALESCE(kd_ratio, 0) * 0.20) +
-                    ((COALESCE(avg_adr, 0) / 100) * 0.15) +
-                    ((COALESCE(avg_kast, 0) / 100) * 0.15) +
-                    ((COALESCE(hs_percentage, 0) / 100) * 0.10) +
-                    ((COALESCE(clutch_1v1_rate, 0) / 100) * 0.05)
+                    (COALESCE(kd_ratio, 0) * 0.40) +
+                    ((COALESCE(avg_adr, 0) / 100) * 0.25) +
+                    ((COALESCE(avg_kast, 0) / 100) * 0.20) +
+                    ((COALESCE(hs_percentage, 0) / 100) * 0.08) +
+                    ((COALESCE(accuracy, 0) / 100) * 0.05) +
+                    ((COALESCE(clutch_1v1_rate, 0) / 100) * 0.02)
                 ),
+                
                 updated_at = NOW()
             WHERE tournament_id = $1
             RETURNING *;
