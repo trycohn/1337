@@ -1014,13 +1014,14 @@ const MatchDetailsPage = () => {
       <div className="match-stats-container">
         <div className="match-header-container">
           <h2>Tournament match — CS2</h2>
-          <div className="match-header-row">
-            <div className="match-header-row list-row-left">
-              <strong>{titleLeft}</strong> vs <strong>{titleRight}</strong>
-            </div>
-            <div className="match-header-row list-row-right">
-              <span>Счёт: {score1}:{score2}</span>
-            </div>
+          <div className="match-header-inline">
+            <span className="team-name left">{titleLeft}</span>
+            <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team1" />
+            <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
+            <span className="match-format-badge">{(m.series_type || 'BO1').toUpperCase()}</span>
+            <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
+            <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team2" />
+            <span className="team-name right">{titleRight}</span>
           </div>
         </div>
 

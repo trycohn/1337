@@ -137,6 +137,21 @@
 .match-header-container {
   margin-top: 32px;
 }
+.match-header-inline {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  grid-template-columns: auto 36px auto auto auto 36px auto;
+}
+.match-header-inline .team-name { font-size: 24px; font-weight: 700; color: #fff; }
+.match-header-inline .team-name.right { text-align: left; }
+.match-header-inline .team-name.left { text-align: right; }
+.match-header-inline .team-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #333; background: #111; }
+.match-header-inline .team-score { font-size: 34px; font-weight: 800; color: #c1c1c1; min-width: 36px; text-align: center; }
+.match-header-inline .team-score.winner { color: #00c853; }
+.match-header-inline .match-format-badge { padding: 4px 10px; border: 1px solid #ff0000; border-radius: 999px; font-size: 12px; color: #fff; background: #000; }
 .match-connect-container {
   margin-top: 32px;
 }

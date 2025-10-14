@@ -114,6 +114,10 @@ function CustomMatchPage() {
     const score1 = match?.team1_score ?? '-';
     const score2 = match?.team2_score ?? '-';
     const isCompleted = Number.isFinite(match?.team1_score) && Number.isFinite(match?.team2_score);
+    const formatLabel = (() => {
+        const s = (match?.series_type || (Array.isArray(maps) && maps.length > 1 ? `bo${maps.length}` : 'bo1')) || 'bo1';
+        try { return String(s).toUpperCase(); } catch(_) { return 'BO1'; }
+    })();
 
     function fmt(v, d = 2) { return Number.isFinite(v) ? Number(v).toFixed(d) : '0.00'; }
     function pct(v) { return Number.isFinite(v) ? `${Math.round(v * 100)}%` : '0%'; }
@@ -124,13 +128,14 @@ function CustomMatchPage() {
         <div className="match-stats-container">
             <div className="match-header-container">
                 <h2>Custom match — CS2</h2>
-                <div className="match-header-row">
-                    <div className="match-header-row list-row-left">
-                        <strong>{titleLeft}</strong> vs <strong>{titleRight}</strong>
-                    </div>
-                    <div className="match-header-row list-row-right">
-                        <span>Счёт: {score1}:{score2}</span>
-                    </div>
+                <div className="match-header-inline">
+                    <span className="team-name left">{titleLeft}</span>
+                    <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team1" />
+                    <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
+                    <span className="match-format-badge">{formatLabel}</span>
+                    <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
+                    <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team2" />
+                    <span className="team-name right">{titleRight}</span>
                 </div>
             </div>
 
