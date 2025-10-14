@@ -28,7 +28,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Radar, Doughnut } from 'react-chartjs-2';
 
-import AchievementsPanel from './achievements/AchievementsPanel';
+import { UserAchievementsPanel } from './achievements';
 import MobileProfileSheet from './MobileProfileSheet';
 import MyTeams from './MyTeams';
 
@@ -3936,7 +3936,10 @@ function Profile() {
                         
                         {/* Achievements Tab */}
                         {activeTab === 'achievements' && (
-                            <AchievementsPanel userId={user.id} />
+                            <div className="profile-achievements-wrapper">
+                                {/* 🆕 v4.30.0: Турнирные достижения и глобальный рейтинг */}
+                                <UserAchievementsPanel userId={user.id} />
+                            </div>
                         )}
                         
                         {/* 📊 REPUTATION TAB */}

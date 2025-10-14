@@ -4812,3 +4812,16 @@ img.avatar-cat-legendary {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================
+   ACHIEVEMENTS TAB v4.30.0
+======================================== */
+.profile-achievements-wrapper {
+  padding: 20px 0;
+}
+
+.achievements-section-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%);
+  margin: 40px 0;
+}

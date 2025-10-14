@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { useAchievements } from './useAchievements';
 import AchievementNotification from './AchievementNotification';
 import { ACHIEVEMENT_CATEGORIES, formatXP, getAchievementIcon } from './achievementHelpers';
-import UserAchievementsPanel from './UserAchievementsPanel';
 import './Achievements.css';
 
 /**
@@ -144,18 +143,10 @@ const AchievementsPanel = ({ userId }) => {
 
     return (
         <div className="achievements-panel">
-            {/* 🆕 v4.30.0: Турнирные достижения и глобальный рейтинг */}
-            <div className="tournament-achievements-section">
-                <UserAchievementsPanel userId={userId} />
-            </div>
-
-            {/* Разделитель */}
-            <div className="achievements-divider"></div>
-
             {/* Заголовок и статистика */}
             <div className="achievements-header">
                 <div className="achievements-title">
-                    <h2>🎯 Общие достижения</h2>
+                    <h2>🎯 Достижения платформы</h2>
                     <div className="achievements-summary">
                         <div className="achievement-stat">
                             <span className="achievement-count">{stats.unlocked}</span>
