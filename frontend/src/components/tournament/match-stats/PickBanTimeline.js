@@ -48,9 +48,11 @@ export function PickBanTimeline({ steps }) {
   }
 
   return (
-    <div className="custom-match-pickban pickban-grid" style={{ gridTemplateColumns }}>
-      {/* Team names column */}
-      <div className="pb-team pb-team1">{team1Name}</div>
+    <div className="custom-match-pickban">
+      <h3>BAN/PICK History</h3>
+      <div className="pickban-grid" style={{ gridTemplateColumns }}>
+        {/* Team names column */}
+        <div className="pb-team pb-team1">{team1Name}</div>
       {/* Row: team1 steps */}
       <div className="pb-steps pb-steps1" style={{ gridColumn: `2 / span ${stepsCount}`, gridTemplateColumns: colsTemplate }}>
         {normalized.map((s) => (
@@ -80,6 +82,7 @@ export function PickBanTimeline({ steps }) {
             {s.teamId === 2 ? <Marker step={s} /> : null}
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
