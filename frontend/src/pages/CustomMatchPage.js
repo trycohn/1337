@@ -146,7 +146,7 @@ function CustomMatchPage() {
             const withAvatar = list.find(p => p && p.avatar_url);
             if (withAvatar?.avatar_url) return withAvatar.avatar_url;
         } catch (_) {}
-        return '/images/avatars/default.svg';
+        return '/default-avatar.png';
     }
     const team1Avatar = getTeamAvatarUrl('team1');
     const team2Avatar = getTeamAvatarUrl('team2');
