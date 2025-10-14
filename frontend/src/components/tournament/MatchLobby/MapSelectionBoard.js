@@ -91,7 +91,7 @@ function MapSelectionBoard({
     return (
         <div className="lobby-map-selection-board">
             <div className="lobby-selection-header">
-                <h3>🗺️ Выбор карт - {format.toUpperCase()}</h3>
+                <h3>Выбор карт - {format.toUpperCase()}</h3>
                 {currentAction && !isSelectionComplete && (
                     <div className="lobby-current-action">
                         <p>Текущее действие: 
@@ -100,14 +100,14 @@ function MapSelectionBoard({
                             </span>
                         </p>
                         {canMakeAction ? (
-                            <p className="lobby-your-turn">🎯 Ваш ход!</p>
+                            <p className="lobby-your-turn">Ваш ход!</p>
                         ) : (
-                            <p className="lobby-waiting">⏳ Ожидание хода соперника...</p>
+                            <p className="lobby-waiting">Ожидание хода соперника...</p>
                         )}
                     </div>
                 )}
                 {isSelectionComplete && (
-                    <p className="lobby-selection-complete">✅ Выбор карт завершен!</p>
+                    <p className="lobby-selection-complete">Выбор карт завершен!</p>
                 )}
             </div>
 

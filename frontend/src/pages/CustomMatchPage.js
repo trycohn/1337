@@ -51,6 +51,20 @@ function CustomMatchPage() {
         return () => { mounted = false; };
     }, [id, pollVersion]);
 
+    // Дополнительно подтягиваем базовую инфу (для аватаров капитанов), даже если статистика есть
+    useEffect(() => {
+        if (!stats || basic?.match) return;
+        let mounted = true;
+        (async () => {
+            try {
+                const fb = await api.get(`/api/matches/${id}`);
+                if (!mounted) return;
+                if (fb?.data?.match) setBasic(fb.data);
+            } catch (_) {}
+        })();
+        return () => { mounted = false; };
+    }, [id, stats, basic?.match]);
+
     // Построение вью‑модели из fallback /api/matches/:id
     const fallbackView = useMemo(() => {
         if (!basic?.match) return null;

@@ -151,7 +151,12 @@
 .match-header-inline .team-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #333; background: #111; }
 .match-header-inline .team-score { font-size: 34px; font-weight: 800; color: #c1c1c1; min-width: 36px; text-align: center; }
 .match-header-inline .team-score.winner { color: #00c853; }
-.match-header-inline .match-format-badge { padding: 4px 10px; border: 1px solid #ff0000; border-radius: 999px; font-size: 12px; color: #fff; background: #000; }
+.match-header-inline .match-format-badge {
+   padding: 4px 10px; 
+   color: #fff; 
+   font-size: 44px;
+  font-weight: 700; 
+  }
 .match-connect-container {
   margin-top: 32px;
 }
