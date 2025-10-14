@@ -119,6 +119,24 @@ function CustomMatchPage() {
         try { return String(s).toUpperCase(); } catch(_) { return 'BO1'; }
     })();
 
+    function getTeamAvatarUrl(teamKey) {
+        try {
+            // 1) Если есть исходные данные матча (fallback), берём капитана (= первый в списке)
+            if (basic?.match) {
+                const arr = Array.isArray(basic.match[teamKey + '_players']) ? basic.match[teamKey + '_players'] : [];
+                const cap = arr[0];
+                if (cap?.avatar_url) return cap.avatar_url;
+            }
+            // 2) Если playersByTeam содержит avatar_url — используем
+            const list = playersByTeam?.[teamKey] || [];
+            const withAvatar = list.find(p => p && p.avatar_url);
+            if (withAvatar?.avatar_url) return withAvatar.avatar_url;
+        } catch (_) {}
+        return '/images/avatars/default.svg';
+    }
+    const team1Avatar = getTeamAvatarUrl('team1');
+    const team2Avatar = getTeamAvatarUrl('team2');
+
     function fmt(v, d = 2) { return Number.isFinite(v) ? Number(v).toFixed(d) : '0.00'; }
     function pct(v) { return Number.isFinite(v) ? `${Math.round(v * 100)}%` : '0%'; }
 
@@ -130,11 +148,11 @@ function CustomMatchPage() {
                 <h2>Custom match — CS2</h2>
                 <div className="match-header-inline">
                     <span className="team-name left">{titleLeft}</span>
-                    <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team1" />
+                    <img className="team-avatar" src={team1Avatar} alt="team1" />
                     <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
                     <span className="match-format-badge">{formatLabel}</span>
                     <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
-                    <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team2" />
+                    <img className="team-avatar" src={team2Avatar} alt="team2" />
                     <span className="team-name right">{titleRight}</span>
                 </div>
             </div>

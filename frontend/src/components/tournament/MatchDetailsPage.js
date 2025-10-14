@@ -1016,11 +1016,11 @@ const MatchDetailsPage = () => {
           <h2>Tournament match — CS2</h2>
           <div className="match-header-inline">
             <span className="team-name left">{titleLeft}</span>
-            <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team1" />
+            <img className="team-avatar" src={(playersByTeam?.team1?.[0]?.avatar_url) || '/images/avatars/default.svg'} alt="team1" />
             <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
             <span className="match-format-badge">{(m.series_type || 'BO1').toUpperCase()}</span>
             <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
-            <img className="team-avatar" src={'/images/avatars/default.svg'} alt="team2" />
+            <img className="team-avatar" src={(playersByTeam?.team2?.[0]?.avatar_url) || '/images/avatars/default.svg'} alt="team2" />
             <span className="team-name right">{titleRight}</span>
           </div>
         </div>
