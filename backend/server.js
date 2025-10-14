@@ -184,8 +184,8 @@ function isExcludedFromRateLimiting(path) {
   return excludedFromRateLimiting.some(pattern => pattern.test(path));
 }
 
-// Добавляем роут /lobby в публичные маршруты (для доступа серверов к JSON конфигам)
-publicRoutes.push(/^\/lobby\//);
+// 🔒 Роут /lobby ЗАЩИЩЕН middleware serverAuth (только для CS2 серверов)
+// Исключаем из rate limiting (серверы делают частые запросы)
 excludedFromRateLimiting.push(/^\/lobby\//);
 
 // Настройка лимита запросов - увеличенные значения под массовые подключения из одного IP (клуб/NAT)
@@ -229,8 +229,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Прямая раздача изображений карт из исходной папки public (для загруженных в рантайме файлов)
 app.use('/images/maps', express.static(path.join(__dirname, '../frontend/public/images/maps')));
-// Раздача сгенерированных JSON конфигов лобби
-app.use('/lobby', express.static(path.join(__dirname, 'lobbies')));
+
+// 🔒 Раздача сгенерированных JSON конфигов лобби (ТОЛЬКО для CS2 серверов)
+const { protectMatchConfigs } = require('./middleware/serverAuth');
+app.use('/lobby', protectMatchConfigs, express.static(path.join(__dirname, 'lobbies')));
 
 // Добавляем middleware для обновления активности пользователя после аутентификации
 app.use((req, res, next) => {
