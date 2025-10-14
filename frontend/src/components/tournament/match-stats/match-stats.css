@@ -32,23 +32,103 @@
   color: #fff;
   font-weight: 700;
 }
-.pb-team1 { grid-row: 1; }
-.pb-steps1 { grid-row: 1; display: grid; grid-auto-flow: column; gap: 10px; align-items: end; }
-.pb-axis { grid-row: 2; position: relative; height: 2px; background: #333; border-top: 1px solid #222; border-bottom: 1px solid #222; }
-.pb-axis::after { content: ''; position: absolute; right: -8px; top: -4px; width: 0; height: 0; border-left: 8px solid #333; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
-.pb-team2 { grid-row: 3; }
-.pb-steps2 { grid-row: 3; display: grid; grid-auto-flow: column; gap: 10px; align-items: start; }
-.pb-cell { min-height: 28px; display: flex; justify-content: center; }
-.pb-marker { min-width: 52px; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; user-select: none; background: transparent; }
-.pb-marker.pick { color: #00c853; }
-.pb-marker.ban { color: #ff0000; }
-.pb-marker.decider { color: #c1c1c1; }
+.pb-team1 {
+  grid-row: 1;
+}
+.pb-steps1 {
+  grid-row: 1;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 10px;
+  align-items: end;
+}
+.pb-axis {
+  grid-row: 2;
+  position: relative;
+  height: 2px;
+  background: #333;
+  border-top: 1px solid #222;
+  border-bottom: 1px solid #222;
+}
+.pb-axis::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid #333;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+/* равномерные ячейки для треугольников по количеству шагов */
+.pb-axis .pb-axis-cells { display: grid; grid-auto-flow: column; gap: 10px; height: 0; position: relative; top: -9px; }
+.pb-axis .pb-axis-cell { display: flex; justify-content: center; align-items: center; }
+.pb-tri { display: inline-block; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; }
+.pb-tri.up { border-bottom: 10px solid #666; }
+.pb-tri.down { border-top: 10px solid #666; }
+.pb-tri.pick.up { border-bottom-color: #00c853; }
+.pb-tri.pick.down { border-top-color: #00c853; }
+.pb-tri.ban.up { border-bottom-color: #ff0000; }
+.pb-tri.ban.down { border-top-color: #ff0000; }
+.pb-tri.decider.up { border-bottom-color: #c1c1c1; }
+.pb-tri.decider.down { border-top-color: #c1c1c1; }
+.pb-team2 {
+  grid-row: 3;
+}
+.pb-steps2 {
+  grid-row: 3;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 10px;
+  align-items: start;
+}
+.pb-cell {
+  min-height: 28px;
+  display: flex;
+  justify-content: center;
+}
+.pb-marker {
+  min-width: 52px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  user-select: none;
+  background: transparent;
+}
+.pb-marker.pick {
+  color: #00c853;
+}
+.pb-marker.ban {
+  color: #ff0000;
+}
+.pb-marker.decider {
+  color: #c1c1c1;
+}
 
 @media (max-width: 720px) {
-  .pickban-grid { grid-template-columns: 1fr; gap: 6px; }
-  .pb-team1, .pb-team2 { grid-column: 1; }
-  .pb-steps1, .pb-steps2 { grid-column: 1; grid-auto-flow: column; overflow-x: auto; }
-  .pb-axis { grid-column: 1; }
+  .pickban-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .pb-team1,
+  .pb-team2 {
+    grid-column: 1;
+  }
+  .pb-steps1,
+  .pb-steps2 {
+    grid-column: 1;
+    grid-auto-flow: column;
+    overflow-x: auto;
+  }
+  .pb-axis {
+    grid-column: 1;
+  }
 }
 .maps-accordion-container {
   margin-top: 32px;
@@ -170,21 +250,18 @@
   background: #0b0b0b;
 }
 
-
-
 .match-stats-container .table tbody td,
-.match-stats-container .table thead th {  
+.match-stats-container .table thead th {
   width: 5%;
 }
 
 .match-stats-container .table th:nth-child(1),
 .match-stats-container .table td:nth-child(1) {
-  width: 132px; 
+  width: 132px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 
 /* Контейнеры-строки */
 .list-row {
@@ -240,7 +317,7 @@
 .leader-card {
   border: 1px solid #333;
   border-radius: 8px;
-  background: linear-gradient(90deg, #243636, #5e8d8d); 
+  background: linear-gradient(90deg, #243636, #5e8d8d);
   padding: 12px;
   color: #a7a7a7;
   min-height: 100px;
@@ -311,7 +388,8 @@
   margin-top: 6px;
 }
 
-.custom-match-pickban h3, .maps-accordion-container h3 {
+.custom-match-pickban h3,
+.maps-accordion-container h3 {
   text-transform: none;
   color: #c1c1c1;
 }
@@ -471,12 +549,14 @@
   transition: transform 0.2s ease;
 }
 .toggle-switch.on .toggle-thumb {
-   transform: translateX(22px); 
+  transform: translateX(22px);
 }
 .toggle-switch .toggle-text {
-   font-size: 13px; color: #c1c1c1; 
+  font-size: 13px;
+  color: #c1c1c1;
 }
 
-.match-compact-toggle .btn:hover, .match-compact-toggle button:hover {
+.match-compact-toggle .btn:hover,
+.match-compact-toggle button:hover {
   border: none !important;
 }

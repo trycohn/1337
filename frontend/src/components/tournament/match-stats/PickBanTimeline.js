@@ -59,8 +59,16 @@ export function PickBanTimeline({ steps }) {
         ))}
       </div>
 
-      {/* Axis row */}
-      <div className="pb-axis" style={{ gridColumn: `2 / span ${stepsCount}` }} />
+      {/* Axis row with triangle markers */}
+      <div className="pb-axis" style={{ gridColumn: `2 / span ${stepsCount}` }}>
+        <div className="pb-axis-cells">
+          {normalized.map((s) => (
+            <div key={`ax-${s.index}`} className="pb-axis-cell">
+              <span className={`pb-tri ${s.teamId === 1 ? 'up' : 'down'} ${s.action}`} />
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Team 2 */}
       <div className="pb-team pb-team2">{team2Name}</div>
