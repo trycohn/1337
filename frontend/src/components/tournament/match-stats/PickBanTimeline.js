@@ -31,12 +31,17 @@ export function PickBanTimeline({ steps }) {
 
   if (stepsCount === 0) return null;
 
+  function getMapLabel(raw) {
+    const s = String(raw || '').toLowerCase().trim();
+    return s.replace(/^de[_\-\s]?/, '').toUpperCase();
+  }
+
   function Marker({ step }) {
     const cls = step.action === 'ban' ? 'ban' : step.action === 'pick' ? 'pick' : 'decider';
     const title = `${step.index}. ${step.action.toUpperCase()} ${step.map || ''}${step.teamName ? ` — ${step.teamName}` : ''}`.trim();
     return (
       <div className={`pb-marker ${cls}`} title={title} aria-label={title}>
-        {step.index}
+        {getMapLabel(step.map)}
       </div>
     );
   }

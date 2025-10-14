@@ -39,10 +39,10 @@
 .pb-team2 { grid-row: 3; }
 .pb-steps2 { grid-row: 3; display: grid; grid-auto-flow: column; gap: 10px; align-items: start; }
 .pb-cell { min-height: 28px; display: flex; justify-content: center; }
-.pb-marker { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; user-select: none; background: #000; }
-.pb-marker.pick { border: 1px solid #fff; }
-.pb-marker.ban { border: 1px solid #ff0000; }
-.pb-marker.decider { border: 1px dashed #666; }
+.pb-marker { min-width: 52px; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; user-select: none; background: transparent; }
+.pb-marker.pick { color: #00c853; }
+.pb-marker.ban { color: #ff0000; }
+.pb-marker.decider { color: #c1c1c1; }
 
 @media (max-width: 720px) {
   .pickban-grid { grid-template-columns: 1fr; gap: 6px; }
