@@ -28,6 +28,7 @@ export function PickBanTimeline({ steps }) {
 
   const stepsCount = normalized.length;
   const gridTemplateColumns = `180px repeat(${stepsCount}, minmax(60px, 1fr))`;
+  const colsTemplate = `repeat(${stepsCount}, 1fr)`;
 
   if (stepsCount === 0) return null;
 
@@ -51,7 +52,7 @@ export function PickBanTimeline({ steps }) {
       {/* Team names column */}
       <div className="pb-team pb-team1">{team1Name}</div>
       {/* Row: team1 steps */}
-      <div className="pb-steps pb-steps1" style={{ gridColumn: `2 / span ${stepsCount}` }}>
+      <div className="pb-steps pb-steps1" style={{ gridColumn: `2 / span ${stepsCount}`, gridTemplateColumns: colsTemplate }}>
         {normalized.map((s) => (
           <div key={`t1-${s.index}`} className="pb-cell">
             {s.teamId === 1 ? <Marker step={s} /> : null}
@@ -61,7 +62,7 @@ export function PickBanTimeline({ steps }) {
 
       {/* Axis row with triangle markers */}
       <div className="pb-axis" style={{ gridColumn: `2 / span ${stepsCount}` }}>
-        <div className="pb-axis-cells">
+        <div className="pb-axis-cells" style={{ gridTemplateColumns: colsTemplate }}>
           {normalized.map((s) => (
             <div key={`ax-${s.index}`} className="pb-axis-cell">
               <span className={`pb-tri ${s.teamId === 1 ? 'up' : 'down'} ${s.action}`} />
@@ -73,7 +74,7 @@ export function PickBanTimeline({ steps }) {
       {/* Team 2 */}
       <div className="pb-team pb-team2">{team2Name}</div>
       {/* Row: team2 steps */}
-      <div className="pb-steps pb-steps2" style={{ gridColumn: `2 / span ${stepsCount}` }}>
+      <div className="pb-steps pb-steps2" style={{ gridColumn: `2 / span ${stepsCount}`, gridTemplateColumns: colsTemplate }}>
         {normalized.map((s) => (
           <div key={`t2-${s.index}`} className="pb-cell">
             {s.teamId === 2 ? <Marker step={s} /> : null}
