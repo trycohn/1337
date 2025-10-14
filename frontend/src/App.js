@@ -18,6 +18,7 @@ import { LoaderProvider } from './context/LoaderContext';
 import { AuthProvider, useAuth } from './context/AuthContext'; // Импортируем AuthProvider и useAuth
 import { UserProvider } from './context/UserContext'; // Импортируем UserProvider
 import { PrivateRoute } from './utils/PrivateRoute';
+import { AdminRoute } from './utils/AdminRoute';
 import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
 import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
@@ -108,7 +109,7 @@ function App() {
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
                                 <Route path="/admin/match" element={<PrivateRoute component={AdminMatchPage} />} />
                                 <Route path="/matches/custom/:id" element={<PrivateRoute component={CustomMatchPage} />} />
-                                <Route path="/leaderboard" element={<GlobalLeaderboardPage />} />
+                                <Route path="/leaderboard" element={<AdminRoute component={GlobalLeaderboardPage} />} />
                             </Route>
                             {/* Страница шеринга сетки без Layout (без хедера) */}
                             <Route path="/tournaments/:id/bracket" element={<BracketSharePage />} />
