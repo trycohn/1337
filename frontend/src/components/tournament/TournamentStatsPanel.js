@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../axios';
 import { ensureHttps } from '../../utils/userHelpers';
+import AchievementBadge from '../achievements/AchievementBadge';
 import './TournamentStatsPanel.css';
 
 const TournamentStatsPanel = ({ tournamentId }) => {
@@ -80,6 +81,12 @@ const TournamentStatsPanel = ({ tournamentId }) => {
     const { mvp, leaders } = stats;
 
     // Карточки лидеров (аналогично LeadersPanel матча, но с дополнительными показателями)
+    // 🏅 Получаем награды для каждой категории
+    const getAchievementForLeader = (userId, achievementType) => {
+        if (!stats.achievements) return null;
+        return stats.achievements.find(a => a.user_id === userId && a.achievement_type === achievementType);
+    };
+
     const leaderCards = [
         { 
             key: 'kills', 
@@ -87,7 +94,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Most Kills', 
             value: leaders.most_kills?.total_kills ?? 0, 
             name: leaders.most_kills?.username || leaders.most_kills?.name,
-            subtitle: `${fmt(leaders.most_kills?.kd_ratio, 2)} K/D`
+            subtitle: `${fmt(leaders.most_kills?.kd_ratio, 2)} K/D`,
+            userId: leaders.most_kills?.user_id,
+            achievementType: 'most_kills'
         },
         { 
             key: 'adr', 
@@ -95,7 +104,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Highest ADR', 
             value: fmt(leaders.highest_adr?.avg_adr, 1), 
             name: leaders.highest_adr?.username || leaders.highest_adr?.name,
-            subtitle: `${leaders.highest_adr?.total_kills ?? 0} kills`
+            subtitle: `${leaders.highest_adr?.total_kills ?? 0} kills`,
+            userId: leaders.highest_adr?.user_id,
+            achievementType: 'highest_adr'
         },
         { 
             key: 'hs', 
@@ -103,7 +114,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Highest HS%', 
             value: pct(leaders.best_hs?.hs_percentage || 0), 
             name: leaders.best_hs?.username || leaders.best_hs?.name,
-            subtitle: `${leaders.best_hs?.total_headshot_kills ?? 0} HS kills`
+            subtitle: `${leaders.best_hs?.total_headshot_kills ?? 0} HS kills`,
+            userId: leaders.best_hs?.user_id,
+            achievementType: 'best_hs'
         },
         { 
             key: 'acc', 
@@ -111,7 +124,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Best Accuracy', 
             value: pct(leaders.best_accuracy?.accuracy || 0), 
             name: leaders.best_accuracy?.username || leaders.best_accuracy?.name,
-            subtitle: `${leaders.best_accuracy?.shots_on_target ?? 0}/${leaders.best_accuracy?.shots_fired ?? 0} shots`
+            subtitle: `${leaders.best_accuracy?.shots_on_target ?? 0}/${leaders.best_accuracy?.shots_fired ?? 0} shots`,
+            userId: leaders.best_accuracy?.user_id,
+            achievementType: 'best_accuracy'
         },
         { 
             key: 'clutch', 
@@ -119,7 +134,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Clutch King', 
             value: leaders.clutch_king?.clutch_1v1_won ?? 0, 
             name: leaders.clutch_king?.username || leaders.clutch_king?.name,
-            subtitle: pct(leaders.clutch_king?.clutch_1v1_rate || 0)
+            subtitle: pct(leaders.clutch_king?.clutch_1v1_rate || 0),
+            userId: leaders.clutch_king?.user_id,
+            achievementType: 'clutch_king'
         },
         { 
             key: 'money', 
@@ -127,7 +144,9 @@ const TournamentStatsPanel = ({ tournamentId }) => {
             title: 'Total Money', 
             value: formatMoney(leaders.eco_master?.total_money_earned || 0), 
             name: leaders.eco_master?.username || leaders.eco_master?.name,
-            subtitle: `${leaders.eco_master?.matches_played ?? 0} matches`
+            subtitle: `${leaders.eco_master?.matches_played ?? 0} matches`,
+            userId: leaders.eco_master?.user_id,
+            achievementType: 'eco_master'
         }
     ];
 
@@ -184,21 +203,47 @@ const TournamentStatsPanel = ({ tournamentId }) => {
                                 <div className="mvp-stat-value">{mvp?.matches_played ?? 0}</div>
                             </div>
                         </div>
+
+                        {/* 🏅 Achievement Badge для MVP */}
+                        {getAchievementForLeader(mvp?.user_id, 'mvp') && (
+                            <div className="mvp-achievement-badge">
+                                <AchievementBadge 
+                                    achievement={getAchievementForLeader(mvp?.user_id, 'mvp')} 
+                                    size="large"
+                                    showTooltip={false}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Панель лидеров (6 карточек в grid) */}
                 <div className="tournament-stats-leaders-grid">
-                    {leaderCards.map((card) => (
-                        <div key={card.key} className={`tournament-leader-card card-${card.slug}`}>
-                            <div className="leader-card-title">{card.title}</div>
-                            <div className="leader-card-value">{card.value}</div>
-                            <div className="leader-card-name">{card.name || '-'}</div>
-                            {card.subtitle && (
-                                <div className="leader-card-subtitle">{card.subtitle}</div>
-                            )}
-                        </div>
-                    ))}
+                    {leaderCards.map((card) => {
+                        const achievement = getAchievementForLeader(card.userId, card.achievementType);
+                        
+                        return (
+                            <div key={card.key} className={`tournament-leader-card card-${card.slug}`}>
+                                <div className="leader-card-title">{card.title}</div>
+                                <div className="leader-card-value">{card.value}</div>
+                                <div className="leader-card-name">{card.name || '-'}</div>
+                                {card.subtitle && (
+                                    <div className="leader-card-subtitle">{card.subtitle}</div>
+                                )}
+                                
+                                {/* 🏅 Achievement Badge если награда начислена */}
+                                {achievement && (
+                                    <div className="leader-card-badge">
+                                        <AchievementBadge 
+                                            achievement={achievement} 
+                                            size="small"
+                                            showTooltip={false}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

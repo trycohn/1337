@@ -125,6 +125,16 @@ class TournamentStatsService {
             // 4. Генерируем достижения (топ-3 по категориям)
             const achievements = await TournamentStatsRepository.generateAchievements(tournamentId);
 
+            // 5. 🆕 v4.30.0: Начисление наград за достижения
+            try {
+                const AchievementRewardsService = require('./AchievementRewardsService');
+                const rewardsResult = await AchievementRewardsService.awardTournamentAchievements(tournamentId);
+                
+                console.log(`💰 [TournamentStats] Награды начислены: ${rewardsResult.totalCoinsAwarded} Leet Coins`);
+            } catch (rewardsError) {
+                console.error(`⚠️ [TournamentStats] Ошибка начисления наград (не критично):`, rewardsError);
+            }
+
             console.log(`✅ [TournamentStats] Турнир ${tournamentId} финализирован. MVP: ${mvp?.username || mvp?.user_id}`);
 
             return {

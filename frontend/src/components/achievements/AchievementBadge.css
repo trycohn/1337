@@ -1,0 +1,177 @@
+/**
+ * 🏅 ACHIEVEMENT BADGE STYLES
+ * Монохромная тема с цветными медалями
+ */
+
+/* ========================================
+   BASE BADGE
+======================================== */
+.achievement-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 8px 12px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.achievement-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================
+   MEDAL (ранг)
+======================================== */
+.achievement-medal {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid;
+}
+
+.achievement-rank {
+    color: #000;
+}
+
+/* Цвета медалей */
+.achievement-gold .achievement-medal {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.achievement-silver .achievement-medal {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+    border-color: #c0c0c0;
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.achievement-bronze .achievement-medal {
+    background: linear-gradient(135deg, #cd7f32 0%, #e6a857 100%);
+    border-color: #cd7f32;
+    box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+/* ========================================
+   ICON
+======================================== */
+.achievement-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* ========================================
+   DETAILS (только для large)
+======================================== */
+.achievement-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.achievement-name {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.achievement-value {
+    color: #999;
+    font-size: 11px;
+}
+
+.achievement-coins {
+    color: #ffcc00;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ========================================
+   SIZES
+======================================== */
+.achievement-small {
+    padding: 4px 6px;
+    gap: 4px;
+}
+
+.achievement-small .achievement-medal {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+}
+
+.achievement-small .achievement-icon {
+    font-size: 14px;
+}
+
+.achievement-medium {
+    /* Default size */
+}
+
+.achievement-large {
+    padding: 12px 16px;
+    gap: 12px;
+}
+
+.achievement-large .achievement-medal {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+}
+
+.achievement-large .achievement-icon {
+    font-size: 28px;
+}
+
+/* ========================================
+   SPECIAL EFFECTS
+======================================== */
+.achievement-gold {
+    border-color: #ffd700;
+}
+
+.achievement-gold:hover {
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+}
+
+.achievement-silver {
+    border-color: #c0c0c0;
+}
+
+.achievement-silver:hover {
+    box-shadow: 0 4px 16px rgba(192, 192, 192, 0.3);
+}
+
+.achievement-bronze {
+    border-color: #cd7f32;
+}
+
+.achievement-bronze:hover {
+    box-shadow: 0 4px 16px rgba(205, 127, 50, 0.3);
+}
+
+/* Анимация появления */
+@keyframes badge-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.achievement-badge {
+    animation: badge-appear 0.3s ease-out;
+}
+

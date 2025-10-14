@@ -340,6 +340,7 @@ function Layout() {
                                         <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                                     )}
                                     <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
+                                    <Link to="/leaderboard" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>🏆 Рейтинг</Link>
                                     {user && (
                                         <>
                                             <Link to="/messages" className="nav-link btn-ghost messages-link" onClick={() => setIsMenuOpen(false)}>

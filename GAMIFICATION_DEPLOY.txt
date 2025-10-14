@@ -1,0 +1,128 @@
+================================================================================
+  ГЕЙМИФИКАЦИЯ ТУРНИРОВ v4.30.0 - ИНСТРУКЦИЯ ПО ДЕПЛОЮ
+================================================================================
+
+📦 ЧТО РЕАЛИЗОВАНО:
+  ✅ Achievement badges за топ-3 в 8 категориях
+  ✅ Leet Coins награды (500/250/100 за MVP, etc)
+  ✅ Глобальный лидерборд MVP по всем турнирам
+  ✅ Автоматическое начисление при финализации турнира
+
+🚀 ДЕПЛОЙ НА VDS (5 команд):
+
+1. Подключение и обновление:
+   ssh root@80.87.200.23
+   cd /var/www/1337community.com/
+   git pull origin main
+
+2. Миграции БД (2 файла):
+   sudo -u postgres psql -d tournament_db -f backend/migrations/20251013_add_tournament_stats.sql
+   sudo -u postgres psql -d tournament_db -f backend/migrations/20251014_add_tournament_gamification.sql
+
+3. Сборка Frontend:
+   cd frontend && npm run build
+   sudo cp -r build/* /var/www/html/1337community/
+
+4. Перезапуск:
+   sudo systemctl restart 1337-backend
+   sudo systemctl reload nginx
+
+5. Проверка:
+   pm2 logs 1337-backend --lines 50
+
+================================================================================
+  ТЕСТИРОВАНИЕ
+================================================================================
+
+🧪 Проверка API:
+
+# Глобальный лидерборд
+curl http://1337community.com/api/achievements/global-leaderboard
+
+# Достижения пользователя
+curl http://1337community.com/api/achievements/user/1
+
+# Конфигурация наград
+curl http://1337community.com/api/achievements/rewards-config
+
+
+🎮 Проверка Frontend:
+
+1. Откройте /leaderboard - должна быть страница с глобальным рейтингом
+2. Откройте профиль → вкладка "Достижения" - должны быть медали и турнирные достижения
+3. Завершите турнир → откройте "Результаты" - под лидерами должны быть badges
+
+
+💰 Начисление наград за существующий турнир:
+
+# Получите JWT токен админа
+curl -X POST http://1337community.com/api/tournaments/1/stats/finalize \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Проверка начисленных монет
+sudo -u postgres psql -d tournament_db -f backend/test_award_achievements.sql
+
+
+================================================================================
+  НАГРАДЫ LEET COINS
+================================================================================
+
+Достижение          | 🥇 Золото | 🥈 Серебро | 🥉 Бронза
+--------------------|-----------|------------|----------
+👑 MVP турнира      | 500 🪙    | 250 🪙     | 100 🪙
+🔫 Most Kills       | 200 🪙    | 100 🪙     | 50 🪙
+💥 Highest ADR      | 150 🪙    | 75 🪙      | 30 🪙
+🎯 Best HS%         | 150 🪙    | 75 🪙      | 30 🪙
+⚡ Clutch King      | 200 🪙    | 100 🪙     | 50 🪙
+💰 Eco Master       | 100 🪙    | 50 🪙      | 25 🪙
+🤝 Most Assists     | 100 🪙    | 50 🪙      | 25 🪙
+🎪 Best Accuracy    | 100 🪙    | 50 🪙      | 25 🪙
+
+Максимум за 1 турнир (топ-1 везде): 1600 Leet Coins
+
+
+================================================================================
+  ГЛОБАЛЬНЫЙ MVP SCORE
+================================================================================
+
+Формула: (total_mvp × 100) + (gold × 10) + (silver × 5) + (bronze × 2)
+
+Примеры:
+- 3 MVP + 5 золотых + 2 серебра + 1 бронза = 300 + 50 + 10 + 2 = 362 балла
+- 1 MVP + 8 золотых = 100 + 80 = 180 баллов
+
+
+================================================================================
+  СОЗДАННЫЕ ФАЙЛЫ
+================================================================================
+
+Backend (7 файлов):
+  backend/migrations/20251014_add_tournament_gamification.sql
+  backend/services/tournament/AchievementRewardsService.js
+  backend/controllers/AchievementsController.js
+  backend/routes/achievements.js
+  backend/services/tournament/TournamentStatsService.js (обновлен)
+  backend/controllers/tournament/TournamentStatsController.js (обновлен)
+  backend/test_award_achievements.sql
+
+Frontend (10 файлов):
+  frontend/src/components/achievements/AchievementBadge.js
+  frontend/src/components/achievements/AchievementBadge.css
+  frontend/src/components/achievements/GlobalMVPLeaderboard.js
+  frontend/src/components/achievements/GlobalMVPLeaderboard.css
+  frontend/src/components/achievements/UserAchievementsPanel.js
+  frontend/src/components/achievements/UserAchievementsPanel.css
+  frontend/src/components/achievements/index.js
+  frontend/src/pages/GlobalLeaderboardPage.js
+  frontend/src/pages/GlobalLeaderboardPage.css
+  frontend/src/App.js (обновлен)
+  frontend/src/components/Layout.js (обновлен)
+  frontend/src/components/achievements/AchievementsPanel.js (обновлен)
+  frontend/src/components/achievements/Achievements.css (обновлен)
+  frontend/src/components/tournament/TournamentStatsPanel.js (обновлен)
+
+
+================================================================================
+  ГОТОВО К ДЕПЛОЮ!
+================================================================================
+

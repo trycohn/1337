@@ -2,6 +2,22 @@
    РњРћР”РЈР›Р¬ Р”РћРЎРўРР–Р•РќРР™ - РЎРўРР›Р
    ========================= */
 /* РћСЃРЅРѕРІРЅР°СЏ РїР°РЅРµР»СЊ РґРѕСЃС‚РёР¶РµРЅРёР№ */
+/* ========================================
+   TOURNAMENT ACHIEVEMENTS SECTION
+======================================== */
+.tournament-achievements-section {
+    margin-bottom: 32px;
+}
+
+.achievements-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%);
+    margin: 40px 0;
+}
+
+/* ========================================
+   MAIN PANEL
+======================================== */
 .achievements-panel {
     width: 100%;
     min-height: 600px;

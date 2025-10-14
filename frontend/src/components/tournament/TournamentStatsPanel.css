@@ -167,6 +167,14 @@
     font-weight: 700;
 }
 
+.mvp-achievement-badge {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: center;
+}
+
 /* ========================================
    ПАНЕЛЬ ЛИДЕРОВ (grid справа)
 ======================================== */
@@ -236,6 +244,12 @@
 .leader-card-subtitle {
     color: #666;
     font-size: 11px;
+}
+
+.leader-card-badge {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
 }
 
 /* Специальные стили для конкретных карточек */

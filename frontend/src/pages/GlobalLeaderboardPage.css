@@ -1,0 +1,202 @@
+/**
+ * 🌍 GLOBAL LEADERBOARD PAGE STYLES
+ */
+
+.global-leaderboard-page {
+    min-height: 100vh;
+    background: #000;
+    padding: 40px 20px;
+}
+
+.global-leaderboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ========================================
+   HERO SECTION
+======================================== */
+.page-hero {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #1a0000 0%, #111 100%);
+    border: 2px solid #ff0000;
+    border-radius: 12px;
+}
+
+.page-hero h1 {
+    color: #fff;
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+}
+
+.page-hero p {
+    color: #999;
+    font-size: 18px;
+    margin: 0;
+}
+
+/* ========================================
+   INFO SECTION
+======================================== */
+.leaderboard-info {
+    margin-top: 40px;
+    padding: 24px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 12px;
+}
+
+.leaderboard-info h3 {
+    color: #fff;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.info-card {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    border-color: #ff0000;
+    transform: translateY(-4px);
+}
+
+.info-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.info-title {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.info-text {
+    color: #999;
+    font-size: 13px;
+    margin-bottom: 12px;
+    min-height: 40px;
+}
+
+.info-reward {
+    color: #ffcc00;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* ========================================
+   REWARDS TABLE
+======================================== */
+.rewards-info {
+    margin-top: 40px;
+    padding: 24px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 12px;
+}
+
+.rewards-info h3 {
+    color: #fff;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.rewards-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reward-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.reward-row.reward-header {
+    background: #1a1a1a;
+    border-color: #ff0000;
+    font-weight: 700;
+    color: #fff;
+}
+
+.reward-row div {
+    color: #999;
+}
+
+.reward-row div:first-child {
+    color: #fff;
+    font-weight: 600;
+}
+
+.reward-value {
+    text-align: center;
+    color: #ffcc00 !important;
+    font-weight: 700;
+}
+
+/* ========================================
+   АДАПТИВ
+======================================== */
+@media (max-width: 1024px) {
+    .info-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .global-leaderboard-page {
+        padding: 20px 12px;
+    }
+
+    .page-hero {
+        padding: 24px 16px;
+    }
+
+    .page-hero h1 {
+        font-size: 32px;
+    }
+
+    .page-hero p {
+        font-size: 14px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .rewards-table {
+        overflow-x: auto;
+    }
+
+    .reward-row {
+        grid-template-columns: 1.5fr 1fr 1fr 1fr;
+        gap: 8px;
+        padding: 8px;
+        font-size: 12px;
+    }
+}
+

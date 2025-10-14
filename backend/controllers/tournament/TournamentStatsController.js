@@ -29,10 +29,25 @@ class TournamentStatsController {
                 });
             }
 
+            // 🆕 v4.30.0: Добавляем достижения игроков
+            const pool = require('../../db');
+            const achievementsResult = await pool.query(`
+                SELECT 
+                    uta.*,
+                    u.username
+                FROM user_tournament_achievements uta
+                LEFT JOIN users u ON uta.user_id = u.id
+                WHERE uta.tournament_id = $1
+                ORDER BY uta.rank ASC, uta.achievement_type
+            `, [id]);
+
+            const achievements = achievementsResult.rows;
+
             return res.json({
                 success: true,
                 hasStats: true,
-                ...stats
+                ...stats,
+                achievements // Добавляем достижения в ответ
             });
 
         } catch (error) {
