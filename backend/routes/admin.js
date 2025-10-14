@@ -1350,7 +1350,7 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         try {
             const hb = await client.query(
                 `SELECT DISTINCT user_id, is_ready FROM admin_lobby_presence
-                 WHERE lobby_id = $1 AND last_seen > (CURRENT_TIMESTAMP - INTERVAL '10 seconds')`,
+                 WHERE lobby_id = $1 AND last_seen > (CURRENT_TIMESTAMP - INTERVAL '8 seconds')`,
                 [lobbyId]
             );
             const ids = new Set();

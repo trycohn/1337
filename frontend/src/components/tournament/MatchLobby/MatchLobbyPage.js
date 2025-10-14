@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../../../context/UserContext';
-// Убираем прямое WS‑подключение; используем polling API для live
+import io from 'socket.io-client';
 import MapSelectionBoard from './MapSelectionBoard';
 import ParticipantStatus from './ParticipantStatus';
 import './MatchLobby.css';
@@ -15,7 +15,7 @@ function MatchLobbyPage() {
     const { user } = useUser();
     
     const [lobby, setLobby] = useState(null);
-    const [socket, setSocket] = useState(null);
+    const socketRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [ready, setReady] = useState(false);
@@ -23,15 +23,57 @@ function MatchLobbyPage() {
     const redirectedRef = useRef(false);
     const [steamModalOpen, setSteamModalOpen] = useState(false);
 
-    // 🔄 Polling вместо WS
+    // Socket.IO подключение для мгновенных обновлений
     useEffect(() => {
         if (!user || !lobbyId) return;
-        // Если у пользователя нет привязанного Steam — показываем модалку и не грузим лобби
         if (!user.steam_id && !user.steamId) {
             setSteamModalOpen(true);
             setLoading(false);
             return;
         }
+        const token = localStorage.getItem('token');
+        const socket = io(API_URL, { auth: { token }, transports: ['websocket', 'polling'] });
+        socketRef.current = socket;
+        
+        socket.on('connect', () => {
+            console.log('[TOURNAMENT_LOBBY] Socket connected');
+            socket.emit('join_lobby', { lobbyId: Number(lobbyId) });
+        });
+        
+        socket.on('lobby_state', (data) => {
+            console.log('[TOURNAMENT_LOBBY] lobby_state received', data);
+            if (data) {
+                setLobby(data);
+                if (data.match_format) setSelectedFormat(data.match_format);
+                setLoading(false);
+            }
+        });
+        
+        socket.on('lobby_update', (data) => {
+            console.log('[TOURNAMENT_LOBBY] lobby_update', data);
+            if (data) {
+                setLobby(data);
+                if (data.match_format) setSelectedFormat(data.match_format);
+            }
+        });
+        
+        socket.on('lobby_completed', (data) => {
+            console.log('[TOURNAMENT_LOBBY] lobby_completed', data);
+            if (data?.matchId && !redirectedRef.current) {
+                redirectedRef.current = true;
+                const tId = data.tournamentId;
+                const target = tId ? `/tournaments/${tId}/match/${data.matchId}` : `/matches/custom/${data.matchId}`;
+                try { navigate(target); } catch(_) {}
+            }
+        });
+        
+        return () => { socket.disconnect(); socketRef.current = null; };
+    }, [user, lobbyId]);
+
+    // Фолбек polling (на случай если Socket.IO недоступен)
+    useEffect(() => {
+        if (!user || !lobbyId) return;
+        if (!user.steam_id && !user.steamId) return;
         const token = localStorage.getItem('token');
         let timer = null;
         const pull = async () => {
@@ -50,15 +92,15 @@ function MatchLobbyPage() {
                             const tId = data.lobby.tournament_id;
                             const target = tId ? `/tournaments/${tId}/match/${data.lobby.match_id}` : `/matches/custom/${data.lobby.match_id}`;
                             try { navigate(target); } catch(_) {}
-                            return; // прекращаем дальнейший pull
+                            return;
                         }
                         setError(null);
                     }
                 }
             } catch (e) {}
-            timer = setTimeout(pull, 1500);
+            timer = setTimeout(pull, 5000);
         };
-        pull();
+        timer = setTimeout(pull, 5000);
         return () => { if (timer) clearTimeout(timer); };
     }, [user, lobbyId, navigate]);
 
