@@ -196,7 +196,7 @@
     left: 0;
     bottom: 0;
     width: 100vw; /* на всю ширину экрана */
-    background: rgba(0, 0, 0, 0.9) !important; /* черный фон с 10% прозрачностью (90% непрозрачности) */
+    background: #000 !important; /* черный непрозрачный фон */
     border-left: none;
     transform: translateX(100%);
     opacity: 0;
@@ -215,13 +215,13 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.9);
+    background: #000;
     z-index: -1;
   }
 
   /* Дополнительная страховка от внешних правил */
-  .header .navigation { background-color: rgba(0, 0, 0, 0.9) !important; }
-  .header nav.navigation.open { background-color: rgba(0, 0, 0, 0.9) !important; }
+  .header .navigation { background-color: #000 !important; }
+  .header nav.navigation.open { background-color: #000 !important; }
 
   .navigation.open { 
     transform: translateX(0);

@@ -1602,6 +1602,11 @@
     font-size: 1rem;
   }
 
+  /* Блок статистики - скрываем на мобильных */
+  .stats-section {
+    display: none;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1646,6 +1651,42 @@
   
   .winner-prize {
     font-size: 1.3rem;
+  }
+
+  /* Блок about-grid - вертикальное расположение */
+  .about-grid { 
+    grid-template-columns: 1fr; 
+    gap: 20px;
+  }
+
+  /* Кнопки CTA - вертикальное расположение с шириной 90% */
+  .create-tournaments-cta .cta-actions {
+    flex-direction: column;
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  .create-tournaments-cta .cta-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Карточки турниров - только одна видимая карточка */
+  .steam-slide-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Убираем лишние отступы в карусели на мобильных */
+  .steam-slide {
+    padding: 0 10px;
+  }
+
+  .steam-nav.left { 
+    left: -10px; 
+  }
+  
+  .steam-nav.right { 
+    right: -10px; 
   }
 }
 
