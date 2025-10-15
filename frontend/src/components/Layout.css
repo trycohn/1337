@@ -50,10 +50,17 @@
 /* hover отключён для SVG-логотипа */
 
 .header-nav {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
   background: #00000080;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 16px 32px;
+  z-index: 1001; /* Выше других элементов */
+  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .header-nav-container {
@@ -191,15 +198,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    z-index: 1003; /* Выше навигации */
+    position: relative;
+    cursor: pointer;
   }
 
   .header-nav .navigation {
     position: fixed;
-    top: 56px;
+    top: 0;
     right: 0;
     left: 0;
     bottom: 0;
     width: 100vw; /* на всю ширину экрана */
+    height: 100vh;
     background: #000 !important; /* черный непрозрачный фон */
     border-left: none;
     transform: translateX(100%);
@@ -209,9 +220,10 @@
     transition: transform .25s ease-in-out, opacity .2s ease-in-out, visibility .2s ease-in-out;
     display: flex;
     flex-direction: column;
-    padding: 16px;
-    gap: 8px;
-    z-index: 1000;
+    padding: 80px 0 16px 0; /* Отступ сверху под header, убраны боковые отступы */
+    gap: 0; /* Убраны отступы между пунктами */
+    z-index: 1002; /* Выше контента, ниже гамбургера */
+    overflow-y: auto; /* Прокрутка если много пунктов */
   }
 
   /* Подложка через псевдоэлемент для гарантированного фона поверх любых коллизий */
