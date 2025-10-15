@@ -336,9 +336,7 @@ function Layout() {
                         >
                             {
                                 <>
-                                    {user && String(user.role || '').toLowerCase() === 'admin' && (
-                                        <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
-                                    )}
+                                    <Link to="/" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Главная</Link>
                                     <Link to="/tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Турниры</Link>
                                     {user && (user.role === 'admin' || user.roles?.includes('platform_admin')) && (
                                         <Link to="/leaderboard" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>🏆 Рейтинг</Link>

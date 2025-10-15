@@ -58,21 +58,8 @@ function AuthCallback() {
     return <div>Авторизация...</div>;
 }
 
-// Ворота для главной страницы: скрываем для авторизованных не-админов
-function HomeGate() {
-    const { user, loading } = useAuth();
-
-    if (loading) {
-        return null;
-    }
-
-    // Гости и авторизованные не-админы идут на список турниров
-    if (!user || (user && String(user.role || '').toLowerCase() !== 'admin')) {
-        return <Navigate to="/tournaments" replace />;
-    }
-
-    return <HomePage />;
-}
+// Главная страница теперь доступна всем пользователям
+// HomeGate удален - HomePage открыта для всех
 
 function App() {
     return (
@@ -83,7 +70,7 @@ function App() {
                     <Router>
                         <Routes>
                             <Route path="/" element={<Layout />}>
-                                <Route index element={<HomeGate />} /> {/* Главная доступна только админам, остальные -> /tournaments */}
+                                <Route index element={<HomePage />} /> {/* Главная страница доступна всем */}
                                 <Route path="/tournaments" element={<TournamentsPage />} />
                                 <Route path="/tournaments/:id" element={<TournamentDetails />} />
                                 <Route path="/tournaments/:id/fullmix/draft" element={<PrivateRoute component={FullMixDraftPage} />} />
