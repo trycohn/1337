@@ -314,7 +314,7 @@ function Layout() {
             {/* Убираем оверлей загрузки, чтобы исключить белые вспышки при смене вкладок */}
             {false && loading && <Loader />}
             <header className="header header-nav">
-                    <div className="nav-container">
+                    <div className="header-nav-container">
                         {
                             <Link to="/" className="site-logo" aria-label="1337 Home">
                                 <img src="/images/1337%20white%20logo.svg" alt="1337" className="header-logo" />
