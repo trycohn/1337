@@ -406,6 +406,7 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
     const win = [];
     // На мобильных показываем 1 карточку, на десктопе 4
     const cardsCount = isMobile ? 1 : 4;
+    console.log(`🎮 [Tournaments Carousel] isMobile: ${isMobile}, window width: ${window.innerWidth}, showing ${cardsCount} cards`);
     for (let k = 0; k < cardsCount; k++) win.push(items[(index + k) % items.length]);
     return win;
   }, [items, index, isMobile]);
@@ -550,6 +551,7 @@ function WinnersSteamCarousel({ winners }) {
     const win = [];
     // На мобильных показываем 1 карточку, на десктопе 4
     const cardsCount = isMobile ? 1 : 4;
+    console.log(`🏆 [Winners Carousel] isMobile: ${isMobile}, window width: ${window.innerWidth}, showing ${cardsCount} cards`);
     for (let k = 0; k < cardsCount; k++) win.push(shuffled[(index + k) % shuffled.length]);
     return win;
   }, [shuffled, index, isMobile]);

@@ -604,11 +604,24 @@
 }
 
 @media (max-width: 1024px) {
-  .steam-slide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .steam-slide-grid { 
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
+  }
 }
 
 @media (max-width: 768px) {
-  .steam-slide-grid { grid-template-columns: 1fr; }
+  .steam-slide-grid { 
+    grid-template-columns: 1fr !important;
+    max-width: 100%;
+  }
+  
+  /* Гарантируем, что карточки не будут выходить за пределы контейнера */
+  .steam-card-carousel,
+  .tournament-card-carousel,
+  .winner-card-carousel {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .steam-card {
@@ -1669,11 +1682,6 @@
   .create-tournaments-cta .cta-actions .btn {
     width: 100%;
     justify-content: center;
-  }
-
-  /* Карточки турниров - только одна видимая карточка */
-  .steam-slide-grid {
-    grid-template-columns: 1fr !important;
   }
 
   /* Убираем лишние отступы в карусели на мобильных */
