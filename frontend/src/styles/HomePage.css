@@ -599,20 +599,31 @@
 
 .steam-slide-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
+/* Десктоп версия - 4 колонки */
+.steam-slide-grid.desktop-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Мобильная версия - 1 колонка */
+.steam-slide-grid.mobile-grid {
+  grid-template-columns: 1fr;
+}
+
+/* Дополнительные media queries для совместимости */
 @media (max-width: 1024px) {
-  .steam-slide-grid { 
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
+  .steam-slide-grid.desktop-grid { 
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .steam-slide-grid { 
+  .steam-slide-grid,
+  .steam-slide-grid.desktop-grid,
+  .steam-slide-grid.mobile-grid { 
     grid-template-columns: 1fr !important;
-    max-width: 100%;
   }
   
   /* Гарантируем, что карточки не будут выходить за пределы контейнера */

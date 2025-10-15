@@ -424,7 +424,7 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
           onTouchEnd={handleTouchEnd}
         >
           <div className="steam-slide">
-            <div className="steam-slide-grid">
+            <div className={`steam-slide-grid ${isMobile ? 'mobile-grid' : 'desktop-grid'}`}>
               {visible.map((t) => (
                 <div key={t.id} className="steam-card-carousel tournament-card-carousel" onClick={() => t.id && onOpen && onOpen(t.id)}>
                   <div className="steam-card-inner-carousel tournament-card-inner-carousel">
@@ -569,7 +569,7 @@ function WinnersSteamCarousel({ winners }) {
           onTouchEnd={handleTouchEnd}
         >
           <div className="steam-slide">
-            <div className="steam-slide-grid">
+            <div className={`steam-slide-grid ${isMobile ? 'mobile-grid' : 'desktop-grid'}`}>
               {visible.map((w, idx) => (
                 <div key={`${w.tournament_name}-${idx}`} className="steam-card-carousel winner-card-carousel">
                   <div className="steam-card-front" style={{height:'100%'}}>
