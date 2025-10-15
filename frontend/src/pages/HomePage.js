@@ -323,14 +323,52 @@ export default HomePage;
 function TournamentSteamCarousel({ recentTournaments, onOpen }) {
   const items = useMemo(() => (Array.isArray(recentTournaments) ? recentTournaments : []), [recentTournaments]);
   const [index, setIndex] = React.useState(0);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  const [touchStart, setTouchStart] = React.useState(0);
+  const [touchEnd, setTouchEnd] = React.useState(0);
+  
   const next = () => setIndex((i) => (i + 1) % Math.max(items.length, 1));
   const prev = () => setIndex((i) => (i - 1 + Math.max(items.length, 1)) % Math.max(items.length, 1));
 
+  // Отслеживаем изменение размера окна
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Автоматическая смена каждые 5 секунд
   React.useEffect(() => {
     if (!items.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
   }, [items.length]);
+
+  // Обработка свайпов
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe) {
+      next();
+    }
+    if (isRightSwipe) {
+      prev();
+    }
+    
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   const gameIcon = (game) => {
     const g = String(game || '').toLowerCase();
@@ -366,9 +404,11 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
       ];
     }
     const win = [];
-    for (let k = 0; k < 4; k++) win.push(items[(index + k) % items.length]);
+    // На мобильных показываем 1 карточку, на десктопе 4
+    const cardsCount = isMobile ? 1 : 4;
+    for (let k = 0; k < cardsCount; k++) win.push(items[(index + k) % items.length]);
     return win;
-  }, [items, index]);
+  }, [items, index, isMobile]);
 
   return (
     <section className="steam-carousel steam-carousel--tournaments">
@@ -376,7 +416,12 @@ function TournamentSteamCarousel({ recentTournaments, onOpen }) {
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">
           <img src={'/images/icons/Play white left.png'} alt="prev" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red left.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white left.png'; }} />
         </button>
-        <div className="steam-track">
+        <div 
+          className="steam-track"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="steam-slide">
             <div className="steam-slide-grid">
               {visible.map((t) => (
@@ -441,14 +486,52 @@ function WinnersSteamCarousel({ winners }) {
     return copy;
   }, [items]);
   const [index, setIndex] = React.useState(0);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+  const [touchStart, setTouchStart] = React.useState(0);
+  const [touchEnd, setTouchEnd] = React.useState(0);
+  
   const next = () => setIndex((i) => (i + 1) % Math.max(shuffled.length, 1));
   const prev = () => setIndex((i) => (i - 1 + Math.max(shuffled.length, 1)) % Math.max(shuffled.length, 1));
 
+  // Отслеживаем изменение размера окна
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Автоматическая смена каждые 5 секунд
   React.useEffect(() => {
     if (!shuffled.length) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
   }, [shuffled.length]);
+
+  // Обработка свайпов
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    
+    if (isLeftSwipe) {
+      next();
+    }
+    if (isRightSwipe) {
+      prev();
+    }
+    
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   const getWinnerImage = (w) => {
     const src = w.winner_avatar_url || null;
@@ -465,9 +548,11 @@ function WinnersSteamCarousel({ winners }) {
       ];
     }
     const win = [];
-    for (let k = 0; k < 4; k++) win.push(shuffled[(index + k) % shuffled.length]);
+    // На мобильных показываем 1 карточку, на десктопе 4
+    const cardsCount = isMobile ? 1 : 4;
+    for (let k = 0; k < cardsCount; k++) win.push(shuffled[(index + k) % shuffled.length]);
     return win;
-  }, [shuffled, index]);
+  }, [shuffled, index, isMobile]);
 
   return (
     <section className="steam-carousel steam-carousel--winners">
@@ -475,7 +560,12 @@ function WinnersSteamCarousel({ winners }) {
         <button className="steam-nav left" onClick={prev} aria-label="Предыдущий">
           <img src={'/images/icons/Play white left.png'} alt="prev" onMouseOver={(e)=>{ e.currentTarget.src='/images/icons/Play red left.png'; }} onMouseOut={(e)=>{ e.currentTarget.src='/images/icons/Play white left.png'; }} />
         </button>
-        <div className="steam-track">
+        <div 
+          className="steam-track"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="steam-slide">
             <div className="steam-slide-grid">
               {visible.map((w, idx) => (
