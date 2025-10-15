@@ -244,15 +244,19 @@
     text-align: center;
     min-height: 56px; /* удобная зона тапа */
     box-sizing: border-box;
+    background: #000 !important; /* черный фон для всех ссылок */
   }
 
   /* Перебиваем глобальные прозрачные стили ссылок в навигации */
   .header-nav .navigation a.nav-link,
-  .header-nav .navigation a.btn-ghost,
-  .header-nav .navigation a.nav-link,
   .header-nav .navigation a.btn-ghost {
-    background: transparent !important;
+    background: #000 !important; /* черный фон для nav-link и btn-ghost */
     color: #ffffff !important;
+  }
+  
+  /* Фон при наведении */
+  .header-nav .navigation a:hover {
+    background: #111111 !important;
   }
 
   /* Скрыть кнопку создания в шапке на мобильных — переносим в меню */
