@@ -1,5 +1,5 @@
-﻿
-.header-avatar-link .profile-avatar {
+﻿/* Header Navigation - изолированные стили для навигации в header */
+.header-nav .header-avatar-link .profile-avatar {
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -7,27 +7,27 @@
     border: 2px solid #4a76a8;
 }
 
-.admin-link {
+.header-nav .admin-link {
     color: #ff6b6b !important;
     font-weight: 600 !important;
     position: relative;
 }
-.admin-link::before {
+.header-nav .admin-link::before {
     content: '';
     margin-right: 5px;
 }
-.admin-link:hover {
+.header-nav .admin-link:hover {
     color: #ff8e8e !important;
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
 } 
 
 /* Логотип сайта */
-.site-logo {
+.header-nav .site-logo {
   text-decoration: none;
   margin-right: 30px;
 }
 
-.site-logo h1 {
+.header-nav .site-logo h1 {
   font-size: 2rem;
   font-weight: 900;
   color: #FF3838;
@@ -37,43 +37,42 @@
 }
 
 /* SVG логотип в хедере: по высоте хедера */
-.header .site-logo .header-logo {
+.header-nav .site-logo .header-logo {
   display: block;
   height: 60px; /* подгон под текущую высоту хедера */
   width: auto;
 }
 
 @media (max-width: 768px) {
-  .header .site-logo .header-logo { height: 40px; }
+  .header-nav .site-logo .header-logo { height: 40px; }
 }
 
 /* hover отключён для SVG-логотипа */
 
-.header {
+.header-nav {
   background: #00000080;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   padding: 16px 32px;
 }
 
-.nav-container {
+.header-nav .nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
 }
 
-.navigation a {
+.header-nav .navigation a {
   color: #ffffff;
   text-decoration: none;
   padding: 8px 10px;
 }
 
 /* Бейдж непрочитанных сообщений для кнопки "Чаты" */
-.messages-link {
+.header-nav .messages-link {
   position: relative;
 }
-.messages-link .unread-badge {
+.header-nav .messages-link .unread-badge {
   position: absolute;
   top: -6px;
   right: -10px;
@@ -93,20 +92,20 @@
 }
 
 @media (max-width: 768px) {
-  .messages-link .unread-badge {
+  .header-nav .messages-link .unread-badge {
     top: -4px;
     right: 8px;
   }
 }
 
 /* Figma: Ghost buttons for nav links */
-.nav-link.btn-ghost {
+.header-nav .nav-link.btn-ghost {
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 8px 16px;
 }
-.nav-link.btn-ghost:hover { text-decoration: none; }
+.header-nav .nav-link.btn-ghost:hover { text-decoration: none; }
 
 /* Figma: Primary/Secondary buttons */
 .btn {
@@ -139,21 +138,26 @@
 }
 
 
-.create-btn { 
+.header-nav .create-btn { 
   margin-right: 8px; 
 }
 
-.user-actions { 
+.header-nav .user-actions { 
   display: flex; align-items: center; gap: 8px; 
 }
 
+.header-nav .auth-block {
+  display: flex;
+  align-items: center;
+}
+
 /* Figma font preference */
-.header .nav-link,
-.header .btn {
+.header-nav .nav-link,
+.header-nav .btn {
   font-family: Play, Arial, sans-serif;
 }
 
-.hamburger {
+.header-nav .hamburger {
   display: none;
   background: transparent;
   border: 1px solid #FF3838;
@@ -163,33 +167,33 @@
 
 /* Desktop */
 @media (min-width: 769px) {
-  .navigation {
+  .header-nav .navigation {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  .hamburger {
+  .header-nav .hamburger {
     display: none;
   }
 }
 
 /* Мобильная адаптация */
 @media (max-width: 768px) {
-  .site-logo {
+  .header-nav .site-logo {
     margin-right: auto;
   }
   
-  .site-logo h1 {
+  .header-nav .site-logo h1 {
     font-size: 1.5rem;
   }
 
-  .hamburger {
+  .header-nav .hamburger {
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 
-  .navigation {
+  .header-nav .navigation {
     position: fixed;
     top: 56px;
     right: 0;
@@ -211,7 +215,7 @@
   }
 
   /* Подложка через псевдоэлемент для гарантированного фона поверх любых коллизий */
-  .navigation::before {
+  .header-nav .navigation::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -220,17 +224,17 @@
   }
 
   /* Дополнительная страховка от внешних правил */
-  .header .navigation { background-color: #000 !important; }
-  .header nav.navigation.open { background-color: #000 !important; }
+  .header-nav .navigation { background-color: #000 !important; }
+  .header-nav nav.navigation.open { background-color: #000 !important; }
 
-  .navigation.open { 
+  .header-nav .navigation.open { 
     transform: translateX(0);
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
   }
 
-  .navigation a {
+  .header-nav .navigation a {
     padding: 16px 12px;
     border-bottom: 1px solid #111111;
     width: 100%;
@@ -243,16 +247,16 @@
   }
 
   /* Перебиваем глобальные прозрачные стили ссылок в навигации */
-  .navigation a.nav-link,
-  .navigation a.btn-ghost,
-  .header .navigation a.nav-link,
-  .header .navigation a.btn-ghost {
+  .header-nav .navigation a.nav-link,
+  .header-nav .navigation a.btn-ghost,
+  .header-nav .navigation a.nav-link,
+  .header-nav .navigation a.btn-ghost {
     background: transparent !important;
     color: #ffffff !important;
   }
 
   /* Скрыть кнопку создания в шапке на мобильных — переносим в меню */
-  .auth-block .create-btn { display: none; }
+  .header-nav .auth-block .create-btn { display: none; }
 }
 
  

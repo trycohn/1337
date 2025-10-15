@@ -1631,6 +1631,12 @@
     display: none;
   }
 
+  /* Скрываем карусели турниров и победителей на мобильных */
+  .tournaments-carousel-section,
+  .winners-carousel-section {
+    display: none !important;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
