@@ -725,7 +725,7 @@ const TournamentParticipants = ({
                     onInvite={inviteParticipant}
                     existingParticipants={getParticipantsList()}
                     getUserStatus={getUserParticipationStatus}
-                    mode="participants"
+                    mode="participant"
                 />
             )}
 
