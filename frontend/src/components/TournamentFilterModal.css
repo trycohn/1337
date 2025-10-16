@@ -1,0 +1,364 @@
+/* ========================================
+   TOURNAMENT FILTER MODAL STYLES
+   Изолированные стили фильтра турниров
+   ======================================== */
+
+/* Overlay */
+.tournament-filter-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Container */
+.tournament-filter-container {
+    background: #000;
+    border: 2px solid #ffffff;
+    color: #fff;
+    width: 90%;
+    max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.tournament-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+    background: #000;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tournament-filter-title {
+    margin: 0;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: Play, Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.tournament-filter-subtitle {
+    margin: 8px 0 0 0;
+    color: #ccc;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.tournament-filter-close {
+    background: transparent;
+    border: 2px solid #FF3838;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 8px 16px;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.tournament-filter-close:hover {
+    background: #FF3838;
+    color: #000;
+}
+
+/* Body */
+.tournament-filter-body {
+    padding: 20px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Footer */
+.tournament-filter-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    border-top: 1px solid #333;
+    background: #000;
+    position: sticky;
+    bottom: 0;
+}
+
+.tournament-filter-footer .btn {
+    min-width: 120px;
+}
+
+/* Section */
+.tournament-filter-section {
+    margin-bottom: 24px;
+}
+
+.tournament-filter-section:last-child {
+    margin-bottom: 0;
+}
+
+.tournament-filter-section-title {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: Play, Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 16px 0;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+}
+
+/* Checkbox Grid */
+.tournament-filter-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.tournament-filter-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tournament-filter-checkbox-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #FF3838;
+    transform: translateY(-1px);
+}
+
+.tournament-filter-checkbox {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #FF3838;
+}
+
+.tournament-filter-checkbox-label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Badge */
+.tournament-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
+.tournament-filter-badge-success {
+    background: #4caf50;
+    color: #fff;
+}
+
+.tournament-filter-badge-primary {
+    background: #FF3838;
+    color: #fff;
+}
+
+/* Range Slider Styles */
+.tournament-filter-range-slider {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tournament-filter-range-inputs {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.tournament-filter-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #333;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.tournament-filter-input:focus {
+    outline: none;
+    border-color: #FF3838;
+    background: #1a1a1a;
+}
+
+.tournament-filter-input-small {
+    max-width: 80px;
+}
+
+.tournament-filter-dual-range {
+    position: relative;
+    width: 100%;
+    height: 30px;
+}
+
+.tournament-filter-range-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 5px;
+}
+
+/* ========================================
+   MOBILE STYLES (768px)
+   ======================================== */
+@media (max-width: 768px) {
+    /* Bottom Sheet */
+    .tournament-filter-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .tournament-filter-container {
+        width: 90%;
+        max-width: 90%;
+        max-height: 70vh;
+        margin: 0 auto;
+        margin-bottom: 0;
+        border: 2px solid #FF3838;
+        border-bottom: none;
+        border-radius: 16px 16px 0 0;
+        animation: slideUpMobile 0.3s ease-out;
+        box-shadow: 0 -4px 20px rgba(255, 56, 56, 0.3);
+    }
+
+    @keyframes slideUpMobile {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Header */
+    .tournament-filter-header {
+        padding: 20px 16px 16px 16px;
+        position: relative;
+    }
+
+    .tournament-filter-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: #666;
+        border-radius: 2px;
+    }
+
+    .tournament-filter-title {
+        font-size: 18px;
+    }
+
+    .tournament-filter-subtitle {
+        font-size: 12px;
+    }
+
+    /* Body */
+    .tournament-filter-body {
+        padding: 16px;
+        max-height: calc(70vh - 160px);
+        overflow-y: auto;
+    }
+
+    /* Footer */
+    .tournament-filter-footer {
+        padding: 16px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .tournament-filter-footer .btn {
+        flex: 1;
+        min-width: calc(50% - 5px);
+        height: 44px;
+    }
+
+    /* Кнопка "Применить" на всю ширину */
+    .tournament-filter-footer .btn-primary {
+        flex-basis: 100%;
+        order: 3;
+    }
+
+    .tournament-filter-footer .btn-secondary:first-child {
+        order: 1;
+    }
+
+    .tournament-filter-footer .btn-secondary:nth-child(2) {
+        order: 2;
+    }
+
+    /* Section */
+    .tournament-filter-section {
+        margin-bottom: 20px;
+    }
+
+    .tournament-filter-section-title {
+        font-size: 14px;
+        color: #FF3838;
+        border-bottom-color: #FF3838;
+    }
+
+    /* Checkboxes */
+    .tournament-filter-checkbox-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .tournament-filter-checkbox-item {
+        padding: 12px;
+        background: #111;
+        border: 1px solid #333;
+    }
+
+    .tournament-filter-checkbox-item:hover {
+        background: #1a1a1a;
+        border-color: #FF3838;
+    }
+}
+

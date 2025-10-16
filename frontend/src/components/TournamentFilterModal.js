@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/modal-system.css'; // 🔧 ИСПРАВЛЕН ПУТЬ К CSS
+import './TournamentFilterModal.css'; // Изолированные стили фильтра турниров
 
 /**
  * 🎯 TournamentFilterModal v1.0 - Расширенная система фильтрации турниров
@@ -152,29 +152,28 @@ const TournamentFilterModal = ({
     if (!isOpen) return null;
 
     return (
-        <div className="modal-system-overlay" onClick={onClose}>
+        <div className="tournament-filter-overlay" onClick={onClose}>
             <div 
-                className="modal-system-container modal-system-modal-large" 
+                className="tournament-filter-container" 
                 onClick={(e) => e.stopPropagation()}
-                style={!isMobile ? { maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' } : {}}
             >
                 {/* === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА === */}
-                <div className="modal-system-header">
+                <div className="tournament-filter-header">
                     <div>
-                        <h2 className="modal-system-title">
+                        <h2 className="tournament-filter-title">
                             Фильтр турниров
                             {getActiveFiltersCount() > 0 && (
-                                <span className="modal-system-badge modal-system-badge-primary modal-system-ml-10">
-                                    {getActiveFiltersCount()} активных
+                                <span className="tournament-filter-badge tournament-filter-badge-primary">
+                                    {getActiveFiltersCount()}
                                 </span>
                             )}
                         </h2>
-                        <p className="modal-system-subtitle">
+                        <p className="tournament-filter-subtitle">
                             Настройте параметры для поиска подходящих турниров
                         </p>
                     </div>
                     <button 
-                        className="modal-system-close" 
+                        className="tournament-filter-close" 
                         onClick={onClose}
                         aria-label="Закрыть фильтр"
                     >
@@ -183,103 +182,103 @@ const TournamentFilterModal = ({
                 </div>
 
                 {/* === ТЕЛО МОДАЛЬНОГО ОКНА === */}
-                <div className="modal-system-body">
+                <div className="tournament-filter-body">
                     
                     {/* 🎮 ДИСЦИПЛИНА */}
-                    <div className="modal-system-section">
-                        <h3 className="modal-system-section-title">
+                    <div className="tournament-filter-section">
+                        <h3 className="tournament-filter-section-title">
                             Дисциплина
                             {localFilters.games.length > 0 && (
-                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
+                                <span className="tournament-filter-badge tournament-filter-badge-success">
                                     {localFilters.games.length} выбрано
                                 </span>
                             )}
                         </h3>
-                        <div className="modal-system-checkbox-grid">
+                        <div className="tournament-filter-checkbox-grid">
                             {availableGames.map(game => (
-                                <label key={game} className="modal-system-checkbox-item">
+                                <label key={game} className="tournament-filter-checkbox-item">
                                     <input
                                         type="checkbox"
                                         checked={localFilters.games.includes(game)}
                                         onChange={() => handleCheckboxChange('games', game)}
-                                        className="modal-system-checkbox"
+                                        className="tournament-filter-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">{game}</span>
+                                    <span className="tournament-filter-checkbox-label">{game}</span>
                                 </label>
                             ))}
                         </div>
                     </div>
 
                     {/* 🏆 ФОРМАТ ТУРНИРА */}
-                    <div className="modal-system-section">
-                        <h3 className="modal-system-section-title">
+                    <div className="tournament-filter-section">
+                        <h3 className="tournament-filter-section-title">
                             Формат турнира
                             {localFilters.formats.length > 0 && (
-                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
+                                <span className="tournament-filter-badge tournament-filter-badge-success">
                                     {localFilters.formats.length} выбрано
                                 </span>
                             )}
                         </h3>
-                        <div className="modal-system-checkbox-grid">
+                        <div className="tournament-filter-checkbox-grid">
                             {availableFormats.map(format => (
-                                <label key={format} className="modal-system-checkbox-item">
+                                <label key={format} className="tournament-filter-checkbox-item">
                                     <input
                                         type="checkbox"
                                         checked={localFilters.formats.includes(format)}
                                         onChange={() => handleCheckboxChange('formats', format)}
-                                        className="modal-system-checkbox"
+                                        className="tournament-filter-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">{format}</span>
+                                    <span className="tournament-filter-checkbox-label">{format}</span>
                                 </label>
                             ))}
                         </div>
                     </div>
 
                     {/* 👥 ТИП УЧАСТНИКОВ */}
-                    <div className="modal-system-section">
-                        <h3 className="modal-system-section-title">
+                    <div className="tournament-filter-section">
+                        <h3 className="tournament-filter-section-title">
                             Тип участников
                             {localFilters.participantTypes.length > 0 && (
-                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
+                                <span className="tournament-filter-badge tournament-filter-badge-success">
                                     {localFilters.participantTypes.length} выбрано
                                 </span>
                             )}
                         </h3>
-                        <div className="modal-system-checkbox-grid">
+                        <div className="tournament-filter-checkbox-grid">
                             {availableParticipantTypes.map(type => (
-                                <label key={type.value} className="modal-system-checkbox-item">
+                                <label key={type.value} className="tournament-filter-checkbox-item">
                                     <input
                                         type="checkbox"
                                         checked={localFilters.participantTypes.includes(type.value)}
                                         onChange={() => handleCheckboxChange('participantTypes', type.value)}
-                                        className="modal-system-checkbox"
+                                        className="tournament-filter-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">{type.label}</span>
+                                    <span className="tournament-filter-checkbox-label">{type.label}</span>
                                 </label>
                             ))}
                         </div>
                     </div>
 
                     {/* 📊 СТАТУС */}
-                    <div className="modal-system-section">
-                        <h3 className="modal-system-section-title">
+                    <div className="tournament-filter-section">
+                        <h3 className="tournament-filter-section-title">
                             Статус турнира
                             {localFilters.statuses.length > 0 && (
-                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
+                                <span className="tournament-filter-badge tournament-filter-badge-success">
                                     {localFilters.statuses.length} выбрано
                                 </span>
                             )}
                         </h3>
-                        <div className="modal-system-checkbox-grid">
+                        <div className="tournament-filter-checkbox-grid">
                             {availableStatuses.map(status => (
-                                <label key={status.value} className="modal-system-checkbox-item">
+                                <label key={status.value} className="tournament-filter-checkbox-item">
                                     <input
                                         type="checkbox"
                                         checked={localFilters.statuses.includes(status.value)}
                                         onChange={() => handleCheckboxChange('statuses', status.value)}
-                                        className="modal-system-checkbox"
+                                        className="tournament-filter-checkbox"
                                     />
-                                    <span className="modal-system-checkbox-label">{status.label}</span>
+                                    <span className="tournament-filter-checkbox-label">{status.label}</span>
                                 </label>
                             ))}
                         </div>
@@ -287,64 +286,64 @@ const TournamentFilterModal = ({
 
                     {/* Скрываем дополнительные фильтры на мобильных */}
                     {!isMobile && (
-                        <div className="modal-system-grid-2">
+                        <>
                             {/* 💰 ПРИЗОВОЙ ФОНД */}
-                            <div className="modal-system-section">
-                            <h3 className="modal-system-section-title">
-                                Призовой фонд
-                                {localFilters.hasPrizePool !== null && (
-                                    <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
-                                        {localFilters.hasPrizePool ? 'Есть' : 'Нет'}
-                                    </span>
-                                )}
-                            </h3>
-                            <div className="modal-system-flex-column modal-system-gap-10">
-                                <label className="modal-system-checkbox-item">
-                                    <input
-                                        type="radio"
-                                        name="prizePool"
-                                        checked={localFilters.hasPrizePool === true}
-                                        onChange={() => handlePrizepoolChange(true)}
-                                        className="modal-system-checkbox"
-                                    />
-                                    <span className="modal-system-checkbox-label">Есть</span>
-                                </label>
-                                <label className="modal-system-checkbox-item">
-                                    <input
-                                        type="radio"
-                                        name="prizePool"
-                                        checked={localFilters.hasPrizePool === false}
-                                        onChange={() => handlePrizepoolChange(false)}
-                                        className="modal-system-checkbox"
-                                    />
-                                    <span className="modal-system-checkbox-label">Нет</span>
-                                </label>
+                            <div className="tournament-filter-section">
+                                <h3 className="tournament-filter-section-title">
+                                    Призовой фонд
+                                    {localFilters.hasPrizePool !== null && (
+                                        <span className="tournament-filter-badge tournament-filter-badge-success">
+                                            {localFilters.hasPrizePool ? 'Есть' : 'Нет'}
+                                        </span>
+                                    )}
+                                </h3>
+                                <div className="tournament-filter-checkbox-grid">
+                                    <label className="tournament-filter-checkbox-item">
+                                        <input
+                                            type="radio"
+                                            name="prizePool"
+                                            checked={localFilters.hasPrizePool === true}
+                                            onChange={() => handlePrizepoolChange(true)}
+                                            className="tournament-filter-checkbox"
+                                        />
+                                        <span className="tournament-filter-checkbox-label">Есть</span>
+                                    </label>
+                                    <label className="tournament-filter-checkbox-item">
+                                        <input
+                                            type="radio"
+                                            name="prizePool"
+                                            checked={localFilters.hasPrizePool === false}
+                                            onChange={() => handlePrizepoolChange(false)}
+                                            className="tournament-filter-checkbox"
+                                        />
+                                        <span className="tournament-filter-checkbox-label">Нет</span>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        </div>
+                        </>
                     )}
 
                     {/* КОЛИЧЕСТВО УЧАСТНИКОВ - отдельная секция (только десктоп) */}
                     {!isMobile && (
-                        <div className="modal-system-section">
-                        <h3 className="modal-system-section-title">
-                            Количество участников
-                            {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
-                                <span className="modal-system-badge modal-system-badge-success modal-system-ml-10">
-                                    {localFilters.participantCount.min} - {localFilters.participantCount.max}
-                                </span>
-                            )}
-                        </h3>
-                        <div className="modal-system-flex-column modal-system-gap-15">
+                        <div className="tournament-filter-section">
+                            <h3 className="tournament-filter-section-title">
+                                Количество участников
+                                {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
+                                    <span className="tournament-filter-badge tournament-filter-badge-success">
+                                        {localFilters.participantCount.min} - {localFilters.participantCount.max}
+                                    </span>
+                                )}
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             {/* Центрированный слайдер 70% ширины */}
-                            <div className="modal-system-single-range-slider" style={{ 
+                            <div className="tournament-filter-range-slider" style={{ 
                                 width: '70%', 
                                 margin: '0 auto',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center'
                             }}>
-                                <div className="modal-system-range-inputs" style={{ 
+                                <div className="tournament-filter-range-inputs" style={{ 
                                     display: 'flex', 
                                     justifyContent: 'space-between', 
                                     marginBottom: '15px',
@@ -359,7 +358,7 @@ const TournamentFilterModal = ({
                                             max="128"
                                             value={localFilters.participantCount.min}
                                             onChange={(e) => handleParticipantCountChange('min', e.target.value)}
-                                            className="modal-system-input modal-system-input-small"
+                                            className="tournament-filter-input tournament-filter-input-small"
                                             style={{ 
                                                 width: '100%',
                                                 marginTop: '5px'
@@ -374,7 +373,7 @@ const TournamentFilterModal = ({
                                             max="128"
                                             value={localFilters.participantCount.max}
                                             onChange={(e) => handleParticipantCountChange('max', e.target.value)}
-                                            className="modal-system-input modal-system-input-small"
+                                            className="tournament-filter-input tournament-filter-input-small"
                                             style={{ 
                                                 width: '100%',
                                                 marginTop: '5px'
@@ -384,7 +383,7 @@ const TournamentFilterModal = ({
                                 </div>
                                 
                                 {/* 🔧 ИСПРАВЛЕННЫЙ двойной слайдер */}
-                                <div className="modal-system-dual-range" style={{ 
+                                <div className="tournament-filter-dual-range" style={{ 
                                     position: 'relative', 
                                     width: '100%',
                                     height: '30px',
@@ -447,7 +446,7 @@ const TournamentFilterModal = ({
                                     />
                                 </div>
                                 
-                                <div className="modal-system-range-labels" style={{ 
+                                <div className="tournament-filter-range-labels" style={{ 
                                     display: 'flex', 
                                     justifyContent: 'space-between',
                                     width: '100%',
@@ -464,40 +463,40 @@ const TournamentFilterModal = ({
                     )}
 
                     {/* Предварительный просмотр результатов */}
-                    {getActiveFiltersCount() > 0 && (
-                        <div className="modal-system-section">
-                            <div className="modal-system-info modal-system-info-primary">
-                                <h4 className="modal-system-bold modal-system-mb-10">
+                    {getActiveFiltersCount() > 0 && !isMobile && (
+                        <div className="tournament-filter-section">
+                            <div style={{ padding: '16px', background: '#111', border: '1px solid #333' }}>
+                                <h4 style={{ margin: '0 0 12px 0', fontWeight: 700, color: '#fff' }}>
                                     Предварительный просмотр фильтров
                                 </h4>
-                                <div className="modal-system-flex-wrap modal-system-gap-5">
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {localFilters.games.map(game => (
-                                        <span key={game} className="modal-system-badge modal-system-badge-primary">
+                                        <span key={game} className="tournament-filter-badge tournament-filter-badge-primary">
                                             {game}
                                         </span>
                                     ))}
                                     {localFilters.formats.map(format => (
-                                        <span key={format} className="modal-system-badge modal-system-badge-primary">
+                                        <span key={format} className="tournament-filter-badge tournament-filter-badge-primary">
                                             {format}
                                         </span>
                                     ))}
                                     {localFilters.participantTypes.map(type => (
-                                        <span key={type} className="modal-system-badge modal-system-badge-primary">
+                                        <span key={type} className="tournament-filter-badge tournament-filter-badge-primary">
                                             {availableParticipantTypes.find(t => t.value === type)?.label}
                                         </span>
                                     ))}
                                     {localFilters.statuses.map(status => (
-                                        <span key={status} className="modal-system-badge modal-system-badge-primary">
+                                        <span key={status} className="tournament-filter-badge tournament-filter-badge-primary">
                                             {availableStatuses.find(s => s.value === status)?.label}
                                         </span>
                                     ))}
                                     {localFilters.hasPrizePool !== null && (
-                                        <span className="modal-system-badge modal-system-badge-primary">
+                                        <span className="tournament-filter-badge tournament-filter-badge-primary">
                                             Призовой фонд: {localFilters.hasPrizePool ? 'Есть' : 'Нет'}
                                         </span>
                                     )}
                                     {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
-                                        <span className="modal-system-badge modal-system-badge-primary">
+                                        <span className="tournament-filter-badge tournament-filter-badge-primary">
                                             {localFilters.participantCount.min}-{localFilters.participantCount.max} участников
                                         </span>
                                     )}
@@ -508,30 +507,29 @@ const TournamentFilterModal = ({
                 </div>
 
                 {/* === ПОДВАЛ МОДАЛЬНОГО ОКНА === */}
-                <div className="modal-system-footer modal-system-space-between">
+                <div className="tournament-filter-footer">
                     <button 
-                        className="modal-system-btn"
+                        className="btn btn-secondary"
                         onClick={resetFilters}
                         disabled={getActiveFiltersCount() === 0}
                     >
                         Сбросить все
                     </button>
                     
-                    <div className="modal-system-flex modal-system-gap-10">
-                        <button 
-                            className="modal-system-btn"
-                            onClick={onClose}
-                        >
-                            Отмена
-                        </button>
-                        <button 
-                            className="modal-system-btn modal-system-btn-primary"
-                            onClick={applyFilters}
-                        >
-                            Применить фильтры
-                            {getActiveFiltersCount() > 0 && ` (${getActiveFiltersCount()})`}
-                        </button>
-                    </div>
+                    <button 
+                        className="btn btn-secondary"
+                        onClick={onClose}
+                    >
+                        Отмена
+                    </button>
+                    
+                    <button 
+                        className="btn btn-primary"
+                        onClick={applyFilters}
+                    >
+                        Применить
+                        {getActiveFiltersCount() > 0 && ` (${getActiveFiltersCount()})`}
+                    </button>
                 </div>
             </div>
         </div>
