@@ -4890,8 +4890,11 @@ img.avatar-cat-legendary {
     flex-direction: column;
     gap: 2px;
   }
-  .match-history-result {
+  .match-history-result-score {
     width: 80px;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }
