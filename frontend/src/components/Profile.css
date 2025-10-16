@@ -2236,11 +2236,6 @@ img.avatar-cat-legendary {
   white-space: nowrap;
   letter-spacing: 0;
 }
-@media (max-width: 520px) {
-  .friends-wrap .toolbar {
-    grid-template-columns: 1fr;
-  }
-}
 .friends-wrap .btn {
   height: 32px;
   padding: 0 12px;
@@ -4878,5 +4873,9 @@ img.avatar-cat-legendary {
     gap: var(--spacing-sm);
     margin-top: var(--spacing-sm);
     flex-direction: column;
+  }
+
+  .friends-wrap .card {
+    padding: 6px;
   }
 }
