@@ -300,13 +300,6 @@
 .team-generator .mix-settings-section {
     margin-top: 24px;
 }
-
-@media (max-width: 768px) {
-    .team-generator .mix-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 .team-generator-section-participants h4 {
     margin: 0 0 16px 0;
     font-size: 20px;
@@ -569,6 +562,23 @@
 
     .referral-description {
         font-size: 0.85em;
+    }
+    .team-generator .mix-grid {
+        grid-template-columns: 1fr;
+    }
+    .teams-list-participants {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .team-header-participants {
+        padding: 6px 6px;
+        height: auto;
+    }
+    .team-name-participants {
+        font-size: 14px;
+    }
+    .team-members-count-participants {
+        font-size: 12px;
     }
 }
 
