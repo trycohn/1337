@@ -4413,6 +4413,10 @@ img.avatar-cat-legendary {
   .stats-grid.stats-grid-compact {
     grid-template-columns: 1fr;
   }
+  .profile-content-section {
+    padding: 0;
+  }
+
 }
 
 /* ========================================
@@ -4877,5 +4881,9 @@ img.avatar-cat-legendary {
 
   .friends-wrap .card {
     padding: 6px;
+  }
+  .badge-unverified {
+    border: none;
+    color: #e53935;
   }
 }
