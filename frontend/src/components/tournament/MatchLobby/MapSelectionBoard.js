@@ -2,8 +2,9 @@
 import React, { useMemo } from 'react';
 import './MapSelectionBoard.css';
 
-// Карты CS2
+// Карты CS2 - поддержка обоих форматов (с de_ и без)
 const MAP_INFO = {
+    // С префиксом de_
     'de_mirage':   { displayName: 'Mirage',   thumbnail: '/images/maps/mirage.jpg' },
     'de_inferno':  { displayName: 'Inferno',  thumbnail: '/images/maps/inferno.jpg' },
     'de_dust2':    { displayName: 'Dust II',  thumbnail: '/images/maps/dust2.jpg' },
@@ -12,7 +13,17 @@ const MAP_INFO = {
     'de_vertigo':  { displayName: 'Vertigo',  thumbnail: '/images/maps/vertigo.jpg' },
     'de_anubis':   { displayName: 'Anubis',   thumbnail: '/images/maps/anubis.jpg' },
     'de_overpass': { displayName: 'Overpass', thumbnail: '/images/maps/overpass.jpg' },
-    'de_train':    { displayName: 'Train',    thumbnail: '/images/maps/train.jpg' }
+    'de_train':    { displayName: 'Train',    thumbnail: '/images/maps/train.jpg' },
+    // Без префикса de_ (для совместимости с БД)
+    'mirage':      { displayName: 'Mirage',   thumbnail: '/images/maps/mirage.jpg' },
+    'inferno':     { displayName: 'Inferno',  thumbnail: '/images/maps/inferno.jpg' },
+    'dust2':       { displayName: 'Dust II',  thumbnail: '/images/maps/dust2.jpg' },
+    'nuke':        { displayName: 'Nuke',     thumbnail: '/images/maps/nuke.jpg' },
+    'ancient':     { displayName: 'Ancient',  thumbnail: '/images/maps/ancient.jpg' },
+    'vertigo':     { displayName: 'Vertigo',  thumbnail: '/images/maps/vertigo.jpg' },
+    'anubis':      { displayName: 'Anubis',   thumbnail: '/images/maps/anubis.jpg' },
+    'overpass':    { displayName: 'Overpass', thumbnail: '/images/maps/overpass.jpg' },
+    'train':       { displayName: 'Train',    thumbnail: '/images/maps/train.jpg' }
 };
 
 console.log('🗺️ [MapSelectionBoard] MAP_INFO загружен:', Object.keys(MAP_INFO));

@@ -53,13 +53,20 @@ function MatchLobbyPage() {
         socketRef.current = socket;
         
         socket.on('connect', () => {
-            console.log('[TOURNAMENT_LOBBY] Socket connected');
-            socket.emit('join_lobby', { lobbyId: Number(lobbyId) });
+            console.log('[TOURNAMENT_LOBBY] Socket connected', { lobbyId, userId: user?.id });
+            socket.emit('join_lobby', { 
+                lobbyId: Number(lobbyId),
+                userId: user?.id 
+            });
         });
         
         socket.on('lobby_state', (data) => {
             console.log('[TOURNAMENT_LOBBY] lobby_state received', data);
             if (data) {
+                console.log('📊 [WebSocket] Статус лобби из lobby_state:', data.status);
+                if (data.status === 'picking') {
+                    console.log('🎮 [WebSocket] PICKING режим активирован через lobby_state!');
+                }
                 setLobby(data);
                 if (data.match_format) setSelectedFormat(data.match_format);
                 setLoading(false);
@@ -69,6 +76,10 @@ function MatchLobbyPage() {
         socket.on('lobby_update', (data) => {
             console.log('[TOURNAMENT_LOBBY] lobby_update', data);
             if (data) {
+                console.log('📊 [WebSocket] Статус лобби из lobby_update:', data.status);
+                if (data.status === 'picking') {
+                    console.log('🎮 [WebSocket] PICKING режим активирован через lobby_update!');
+                }
                 setLobby(data);
                 if (data.match_format) setSelectedFormat(data.match_format);
             }
@@ -200,6 +211,12 @@ function MatchLobbyPage() {
                     current_turn_team_id: data.lobby.current_turn_team_id,
                     match_format: data.lobby.match_format
                 });
+                
+                if (data.lobby.status === 'picking') {
+                    console.log('🎮 [fetchLobbyInfo] СТАТУС = PICKING! Процедура бан/пик должна начаться');
+                    console.log('🎯 [fetchLobbyInfo] Первым выбирает команда:', data.lobby.first_picker_team_id);
+                    console.log('🎯 [fetchLobbyInfo] Текущий ход команды:', data.lobby.current_turn_team_id);
+                }
                 
                 setLobby(data.lobby);
                 if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);

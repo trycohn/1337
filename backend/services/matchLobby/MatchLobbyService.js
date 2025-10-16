@@ -162,29 +162,25 @@ class MatchLobbyService {
         try {
             await client.query('BEGIN');
             
-            // 🛡️ Если лобби для этого матча уже существует и активно, возвращаем его
+            // 🔧 ИСПРАВЛЕНИЕ: Если лобби для этого матча уже существует, УДАЛЯЕМ его и создаем новое
             const existingLobbyRes = await client.query(
-                `SELECT * FROM match_lobbies 
+                `SELECT id FROM match_lobbies 
                  WHERE match_id = $1 AND tournament_id = $2 
                  ORDER BY created_at DESC NULLS LAST
                  LIMIT 1`,
                 [matchId, tournamentId]
             );
+            
             if (existingLobbyRes.rows[0]) {
-                const existingLobby = existingLobbyRes.rows[0];
-                // Подготовим минимально необходимые данные для совместимости ответа
-                const matchResult = await client.query(
-                    `SELECT m.*, 
-                            t1.name as team1_name, t2.name as team2_name,
-                            t1.id as team1_id, t2.id as team2_id
-                     FROM matches m
-                     LEFT JOIN tournament_teams t1 ON m.team1_id = t1.id
-                     LEFT JOIN tournament_teams t2 ON m.team2_id = t2.id
-                     WHERE m.id = $1`,
-                    [matchId]
-                );
-                await client.query('COMMIT');
-                return { lobby: existingLobby, match: matchResult.rows[0] || null, invitations: [] };
+                const oldLobbyId = existingLobbyRes.rows[0].id;
+                console.log(`🗑️ [MatchLobbyService] Удаляем старое лобби ${oldLobbyId} для матча ${matchId}`);
+                
+                // Удаляем связанные данные
+                await client.query('DELETE FROM map_selections WHERE lobby_id = $1', [oldLobbyId]);
+                await client.query('DELETE FROM lobby_invitations WHERE lobby_id = $1', [oldLobbyId]);
+                await client.query('DELETE FROM match_lobbies WHERE id = $1', [oldLobbyId]);
+                
+                console.log(`✅ [MatchLobbyService] Старое лобби ${oldLobbyId} удалено`);
             }
             
             // Проверяем настройки лобби турнира
