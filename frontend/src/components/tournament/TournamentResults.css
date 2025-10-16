@@ -404,6 +404,9 @@
         min-width: 200px;
         order: unset !important;
     }
+    .results-match-history-item {
+        padding: 6px;
+    }
     
     /* 1. Скрываем тип брекета */
     .results-bracket-type {
@@ -448,15 +451,26 @@
         flex-direction: column;
         text-align: center;
         gap: 6px;
+        width: 100%;
     }
     
     .results-participant-avatar {
-        width: 48px;
-        height: 48px;
+        width: 32px;
+        height: 32px;
     }
     
     .results-score {
-        padding: 12px 20px;
-        font-size: 1.3em;
+        font-size: 1em;
+        padding: 6px 10px;
+    }
+    .results-participant-name {
+        width: 80px;
+        font-size: 14px;
+    }
+    .results-match-header {
+        width: 36px;
+    }
+    .results-match-number {
+        width: 36px;
     }
 }
