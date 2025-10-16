@@ -1223,6 +1223,18 @@ function TournamentDetails() {
                                         setTimeout(() => {
                                             fetchTournamentData();
                                         }, 1000);
+                                    } else if (updateInfo?.lightweight) {
+                                        // 🚀 ОПТИМИЗАЦИЯ: Легкое обновление - просто сбрасываем кеш
+                                        console.log('🚀 Легкое обновление: сбрасываем кеш');
+                                        const cacheKey = `tournament_cache_${id}`;
+                                        const cacheTimestampKey = `tournament_cache_timestamp_${id}`;
+                                        localStorage.removeItem(cacheKey);
+                                        localStorage.removeItem(cacheTimestampKey);
+                                        
+                                        // Обновляем данные без блокировки UI
+                                        fetchTournamentData().catch(err => {
+                                            console.error('Ошибка фонового обновления:', err);
+                                        });
                                     } else {
                                         // Обычное обновление данных
                                         await fetchTournamentData();
@@ -1551,7 +1563,15 @@ function TournamentDetails() {
                 if (action === 'added') {
                     console.log('➕ [WebSocket] Добавляем участника в состояние');
                     
-                    // Добавляем участника в состояние
+                    // 🔧 ОПТИМИЗАЦИЯ: Для командных турниров обновляем данные с сервера
+                    if (tournament?.participant_type === 'team') {
+                        console.log('🏆 [WebSocket] Командный турнир - перезагружаем данные для обновления команд');
+                        clearAdaptiveCache('participant_added');
+                        fetchTournamentData(true, 'participant_added');
+                        return;
+                    }
+                    
+                    // Добавляем участника в состояние (для соло/mix турниров)
                     setTournament(prev => {
                         if (!prev) return prev;
                         
@@ -1732,6 +1752,18 @@ function TournamentDetails() {
                     case HYBRID_CONFIG.UPDATE_TYPES.GENERAL:
                     default:
                         console.log('🔄 [Hybrid] Общее обновление турнира');
+                        
+                        // 🔧 Для командных турниров обновляем команды
+                        if (tournamentData.teams && tournament?.participant_type === 'team') {
+                            console.log('🏆 [Hybrid] Обновляем команды из общего обновления:', tournamentData.teams.length);
+                            setTournament(prev => ({
+                                ...prev,
+                                teams: tournamentData.teams,
+                                participant_count: tournamentData.participant_count
+                            }));
+                            clearAdaptiveCache('teams_general_update');
+                            return; // Не делаем полную перезагрузку
+                        }
                         break;
                 }
                 

@@ -181,9 +181,14 @@ const TournamentParticipants = ({
                 setParticipantSearchQuery('');
                 setParticipantSearchResults([]);
                 
-                // Обновляем данные турнира
+                // 🚀 ОПТИМИЗАЦИЯ: Обновляем только кеш, без полной перезагрузки
                 if (onTournamentUpdate) {
-                    await onTournamentUpdate();
+                    await onTournamentUpdate({
+                        action: 'invite_participant',
+                        userId: userId,
+                        userName: userName,
+                        lightweight: true // Флаг для легкого обновления
+                    });
                 }
             } else {
                 setMessage(`❌ ${result.message || 'Ошибка при приглашении участника'}`);
@@ -257,7 +262,11 @@ const TournamentParticipants = ({
                     setTeamPlayers([{ nickname: '' }]);
                     
                     if (onTournamentUpdate) {
-                        await onTournamentUpdate();
+                        await onTournamentUpdate({
+                            action: 'add_team',
+                            teamName: newParticipantData.display_name,
+                            lightweight: true
+                        });
                     }
                 } else {
                     setMessage(`❌ ${data.error || 'Ошибка при добавлении команды'}`);
@@ -278,9 +287,13 @@ const TournamentParticipants = ({
                         cs2_premier_rank: ''
                     });
                     
-                    // Обновляем данные турнира
+                    // 🚀 ОПТИМИЗАЦИЯ: Легкое обновление данных турнира
                     if (onTournamentUpdate) {
-                        await onTournamentUpdate();
+                        await onTournamentUpdate({
+                            action: 'add_participant',
+                            participantName: newParticipantData.display_name,
+                            lightweight: true
+                        });
                     }
                 } else {
                     setMessage(`❌ ${result.message || 'Ошибка при добавлении участника'}`);

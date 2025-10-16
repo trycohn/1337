@@ -35,13 +35,12 @@ class ParticipantService {
                     userId: userId
                 };
                 
-                console.log(`📡 Отправляем событие participant_update:`, updateData);
+                console.log(`📡 Отправляем событие participant_update в комнату tournament_${tournamentId}:`, updateData);
                 
-                // Отправляем специальное событие для оптимизированного обновления участников
-                io.emit('participant_update', updateData);
+                // 🔧 ИСПРАВЛЕНИЕ: Отправляем только в комнату турнира, а не всем
+                io.to(`tournament_${tournamentId}`).emit('participant_update', updateData);
                 
-                console.log(`✅ Событие participant_update отправлено успешно`);
-                console.log(`🎯 Специальное событие participant_update отправлено: ${action} участника ${participantData.name || participantData.id}`);
+                console.log(`✅ Событие participant_update отправлено в комнату tournament_${tournamentId}`);
             } else {
                 console.error(`❌ Socket.IO instance не найден!`);
                 console.warn('⚠️ Socket.IO instance не найден для отправки participant_update');
@@ -529,6 +528,11 @@ class ParticipantService {
             tournament.id,
             `🏆 Команда "${userTeam.name}" присоединилась к турниру! (${userTeamMembersResult.rows.length} участников)`
         );
+        
+        // 🔧 ДОБАВЛЕНО: WebSocket обновление для командных турниров
+        console.log(`📡 [_joinOrCreateFromUserTeam] Отправляем WebSocket обновление турнира ${tournament.id}`);
+        const updatedTournament = await TournamentRepository.getByIdWithCreator(tournament.id);
+        broadcastTournamentUpdate(tournament.id, updatedTournament, '_joinOrCreateFromUserTeam');
     }
 
     /**
@@ -589,6 +593,11 @@ class ParticipantService {
             tournament.id,
             `👥 ${username} присоединился к команде "${team.name}"!`
         );
+        
+        // 🔧 ДОБАВЛЕНО: WebSocket обновление для командных турниров
+        console.log(`📡 [_joinExistingTournamentTeam] Отправляем WebSocket обновление турнира ${tournament.id}`);
+        const updatedTournament = await TournamentRepository.getByIdWithCreator(tournament.id);
+        broadcastTournamentUpdate(tournament.id, updatedTournament, '_joinExistingTournamentTeam');
     }
 
     /**
@@ -662,6 +671,11 @@ class ParticipantService {
             tournament.id,
             `🏆 ${username} создал команду "${teamName}" для ${typeName}! Минимум участников: ${minTeamSize}`
         );
+        
+        // 🔧 ДОБАВЛЕНО: WebSocket обновление для командных турниров
+        console.log(`📡 [_createNewTeam] Отправляем WebSocket обновление турнира ${tournament.id}`);
+        const updatedTournament = await TournamentRepository.getByIdWithCreator(tournament.id);
+        broadcastTournamentUpdate(tournament.id, updatedTournament, '_createNewTeam');
     }
 
     /**
