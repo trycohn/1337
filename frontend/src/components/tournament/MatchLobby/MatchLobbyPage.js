@@ -14,6 +14,13 @@ function MatchLobbyPage() {
     const navigate = useNavigate();
     const { user } = useUser();
     
+    // 🔍 ДИАГНОСТИКА
+    console.log('🎮 [MatchLobbyPage] Компонент инициализирован:', {
+        lobbyId,
+        userId: user?.id,
+        hasSteamId: !!(user?.steam_id || user?.steamId)
+    });
+    
     const [lobby, setLobby] = useState(null);
     const socketRef = useRef(null);
     const [loading, setLoading] = useState(true);
@@ -106,29 +113,55 @@ function MatchLobbyPage() {
 
     // 🎯 Загрузка информации о лобби
     const fetchLobbyInfo = useCallback(async () => {
-        if (!user || !lobbyId) return;
-        if (!user.steam_id && !user.steamId) { setSteamModalOpen(true); setLoading(false); return; }
+        console.log('🔍 [fetchLobbyInfo] Начало загрузки:', { user: !!user, lobbyId });
+        
+        if (!user || !lobbyId) {
+            console.warn('⚠️ [fetchLobbyInfo] Нет пользователя или lobbyId');
+            return;
+        }
+        
+        if (!user.steam_id && !user.steamId) { 
+            console.warn('⚠️ [fetchLobbyInfo] У пользователя нет Steam ID');
+            setSteamModalOpen(true); 
+            setLoading(false); 
+            return; 
+        }
+        
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}`, {
+            const url = `${API_URL}/api/tournaments/lobby/${lobbyId}`;
+            console.log('📡 [fetchLobbyInfo] Запрос к:', url);
+            
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
+            console.log('📡 [fetchLobbyInfo] Ответ получен:', { 
+                ok: response.ok, 
+                status: response.status,
+                statusText: response.statusText
+            });
+
             if (!response.ok) {
-                throw new Error('Ошибка загрузки лобби');
+                const errorText = await response.text();
+                console.error('❌ [fetchLobbyInfo] Ошибка ответа:', errorText);
+                throw new Error(`Ошибка загрузки лобби (${response.status}): ${errorText}`);
             }
 
             const data = await response.json();
+            console.log('📊 [fetchLobbyInfo] Данные получены:', data);
+            
             if (data.success) {
                 setLobby(data.lobby);
                 if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
+                console.log('✅ [fetchLobbyInfo] Лобби загружено успешно');
             } else {
                 throw new Error(data.error || 'Ошибка загрузки');
             }
         } catch (error) {
-            console.error('❌ Ошибка загрузки лобби:', error);
+            console.error('❌ [fetchLobbyInfo] Ошибка загрузки лобби:', error);
             setError(error.message);
         } finally {
             setLoading(false);
