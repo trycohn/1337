@@ -867,7 +867,45 @@ function TournamentsList() {
             <h2>Список турниров</h2>
             {error && <p className="error">{error}</p>}
             
-            {/* === 🆕 УЛУЧШЕННЫЕ КОНТРОЛЫ === */}
+            {/* === 🆕 МОБИЛЬНАЯ КНОПКА ФИЛЬТРА === */}
+            {isMobile && (
+                <div className="tournaments-mobile-filter">
+                    <button 
+                        className={`mobile-filter-btn ${hasActiveFilters() ? 'filter-active' : ''}`}
+                        onClick={() => setShowFilterModal(true)}
+                        title="Открыть фильтр"
+                    >
+                        <svg 
+                            width="24" 
+                            height="24" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path 
+                                d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" 
+                                fill="#ffffff"
+                            />
+                        </svg>
+                        <span>Фильтр</span>
+                        {getActiveFiltersCount() > 0 && (
+                            <span className="filter-badge">
+                                {getActiveFiltersCount()}
+                            </span>
+                        )}
+                    </button>
+                    {hasActiveFilters() && (
+                        <button 
+                            onClick={clearAllFilters}
+                            className="clear-filters-mobile-btn"
+                        >
+                            Очистить
+                        </button>
+                    )}
+                </div>
+            )}
+            
+            {/* === 🆕 УЛУЧШЕННЫЕ КОНТРОЛЫ (только десктоп) === */}
             <div className="tournaments-view-controls">
                 <div className="view-mode-buttons">
                     {!isMobile && (

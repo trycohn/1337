@@ -1607,8 +1607,90 @@ th.filtered {
     gap: 4px;
 }
 
+/* Мобильная кнопка фильтра */
+.tournaments-mobile-filter {
+    display: none;
+}
+
 /* Мобильные медиа-запросы */
 @media (max-width: 768px) {
+    /* Показываем мобильную кнопку фильтра */
+    .tournaments-mobile-filter {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 16px;
+        background: #111;
+        border: 1px solid #333;
+    }
+
+    .mobile-filter-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #000;
+        border: 2px solid #FF3838;
+        color: #fff;
+        font-family: Play, Arial, sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .mobile-filter-btn:hover {
+        background: #111;
+        box-shadow: 0 0 12px rgba(255, 56, 56, 0.4);
+    }
+
+    .mobile-filter-btn.filter-active {
+        background: #FF3838;
+        border-color: #FF3838;
+    }
+
+    .filter-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 10px;
+        background: #FF3838;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #000;
+    }
+
+    .clear-filters-mobile-btn {
+        padding: 12px 20px;
+        background: transparent;
+        border: 2px solid #666;
+        color: #fff;
+        font-family: Play, Arial, sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .clear-filters-mobile-btn:hover {
+        border-color: #FF3838;
+        color: #FF3838;
+    }
+
     /* Скрываем десктопные контролы */
     .tournaments-view-controls {
         display: none !important;
