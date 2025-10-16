@@ -1912,7 +1912,15 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            setMatchHistory(response.data || []);
+            const matches = response.data || [];
+            
+            // 🔧 ФИЛЬТРАЦИЯ: Показываем только завершенные матчи (с определенным победителем)
+            const completedMatches = matches.filter(match => {
+                return match.winner_team_id || match.result === 'win' || match.result === 'loss';
+            });
+            
+            console.log(`📊 [Profile] Загружено матчей: ${matches.length}, завершенных: ${completedMatches.length}`);
+            setMatchHistory(completedMatches);
         } catch (err) {
             // Просто устанавливаем пустой массив, не логируем ошибку
             setMatchHistory([]);
@@ -2388,14 +2396,22 @@ function Profile() {
             const { data } = await api.get(`/api/admin/users/${userId}/matches`, {
                 params: { page: 1, limit: 50 }
             });
+            
+            let matches = [];
             if (data?.success && Array.isArray(data.items)) {
-                setMatchHistory(data.items);
+                matches = data.items;
             } else if (Array.isArray(data)) {
-                // fallback: если вернулся массив без оболочки
-                setMatchHistory(data);
-            } else {
-                setMatchHistory([]);
+                matches = data;
             }
+            
+            // 🔧 ФИЛЬТРАЦИЯ: Показываем только завершенные матчи (с определенным победителем)
+            const completedMatches = matches.filter(match => {
+                // Проверяем наличие winner_team_id или явного результата
+                return match.winner_team_id || match.result === 'win' || match.result === 'loss';
+            });
+            
+            console.log(`📊 [Profile] Загружено матчей: ${matches.length}, завершенных: ${completedMatches.length}`);
+            setMatchHistory(completedMatches);
         } catch (_) {
             setMatchHistory([]);
         } finally {

@@ -2687,6 +2687,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                        'Custom match' AS format_label
                 FROM matches m
                 WHERE m.source_type = 'custom'
+                  AND m.winner_team_id IS NOT NULL
                   AND (
                         EXISTS (
                             SELECT 1 FROM jsonb_array_elements(m.team1_players) AS p
@@ -2711,6 +2712,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                 LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
                 LEFT JOIN tournaments tn ON tn.id = m.tournament_id
                 WHERE m.source_type = 'tournament'
+                  AND m.winner_team_id IS NOT NULL
                   AND (
                        m.team1_id IN (
                             SELECT team_id FROM tournament_team_members WHERE user_id = $1
@@ -2735,6 +2737,7 @@ router.get('/users/:userId/matches', authenticateToken, async (req, res) => {
                 LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
                 LEFT JOIN tournaments tn ON tn.id = m.tournament_id
                 WHERE p.user_id = $1
+                  AND m.winner_team_id IS NOT NULL
             )
             SELECT * FROM (
                 SELECT * FROM custom
