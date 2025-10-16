@@ -806,12 +806,12 @@
   overflow: hidden;
 }
 
-.content-section {
+.profile-content-section {
   padding: var(--spacing-xl);
   height: 100%;
 }
 
-.content-header {
+.profile-content-header {
   display: flex;
   align-items: center;
   justify-content: space-between;

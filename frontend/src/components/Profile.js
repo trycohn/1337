@@ -2560,11 +2560,11 @@ function Profile() {
             
             {/* Content Area */}
             <div className="profile-content-area">
-                    <div className="content-section">
+                    <div className="profile-content-section">
                         {/* Main Tab */}
                         {activeTab === 'main' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h2 className="content-title">Основная информация</h2>
                                 </div>
                                 {/* Макетная зона: контейнер и карточки как в шаблоне */}
@@ -2685,7 +2685,7 @@ function Profile() {
                         {/* Stats Tab */}
                         {activeTab === 'stats' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h2 className="content-title">Статистика</h2>
                                     {wsConnected && (
                                         <div className="realtime-indicator">
@@ -3084,7 +3084,7 @@ function Profile() {
                         {/* Friends Tab */}
                         {activeTab === 'friends' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h2 className="content-title">Друзья</h2>
                                 </div>
                                 
@@ -3257,7 +3257,7 @@ function Profile() {
                         {/* Organization Tab */}
                         {activeTab === 'organization' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h2 className="content-title">Организации</h2>
                                 </div>
                                 
@@ -3534,7 +3534,7 @@ function Profile() {
                         {/* Tournaments Tab */}
                         {activeTab === 'tournaments' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h2 className="content-title">Турниры</h2>
                                 </div>
                                 
@@ -3949,7 +3949,7 @@ function Profile() {
                         
                         {activeTab === 'matchhistory' && (
                             <>
-                                <div className="content-header">
+                                <div className="profile-content-header">
                                     <h3>История матчей</h3>
                                 </div>
                                 {loadingMatchHistory && <div>Загрузка…</div>}
