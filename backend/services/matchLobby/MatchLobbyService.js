@@ -391,6 +391,8 @@ class MatchLobbyService {
 
             // Если обе команды готовы, сразу запускаем стадию пиков/банов с случайным первым ходом — без ожидания администратора
             if (lobby.team1_ready && lobby.team2_ready && lobby.status === 'waiting') {
+                console.log('✅ [MatchLobbyService] Обе команды готовы, запускаем выбор карт');
+                
                 const teamsRes = await client.query(
                     `SELECT m.team1_id, m.team2_id
                      FROM match_lobbies l
@@ -400,15 +402,25 @@ class MatchLobbyService {
                 );
                 const { team1_id, team2_id } = teamsRes.rows[0];
                 const firstPicker = Math.random() < 0.5 ? team1_id : team2_id;
-                await client.query(
+                
+                console.log('🎲 [MatchLobbyService] Первым выбирает команда:', firstPicker);
+                
+                const updatedLobby = await client.query(
                     `UPDATE match_lobbies 
                      SET status = 'picking', first_picker_team_id = $1, current_turn_team_id = $1
-                     WHERE id = $2`,
+                     WHERE id = $2
+                     RETURNING *`,
                     [firstPicker, lobbyId]
                 );
+                
+                console.log('🎮 [MatchLobbyService] Статус изменен на picking');
             }
             
             await client.query('COMMIT');
+
+            // 🔧 ИСПРАВЛЕНИЕ: Получаем свежие данные лобби после всех обновлений
+            const freshLobbyResult = await pool.query('SELECT * FROM match_lobbies WHERE id = $1', [lobbyId]);
+            const freshLobby = freshLobbyResult.rows[0];
 
             // Live-обновление состояния лобби после изменения готовности/старта пиков
             try {
@@ -419,7 +431,7 @@ class MatchLobbyService {
                 }
             } catch (_) {}
 
-            return lobby;
+            return freshLobby;
         } catch (error) {
             await client.query('ROLLBACK');
             throw error;
