@@ -92,9 +92,26 @@ class ParticipantService {
         }
 
         // Проверяем, не участвует ли уже пользователь
-        const existingParticipant = await ParticipantRepository.getUserParticipation(tournamentId, userId);
-        if (existingParticipant) {
-            throw new Error('Вы уже участвуете в этом турнире');
+        // 🔧 Для командных турниров проверяем членство в командах
+        if (tournament.participant_type === 'team') {
+            const pool = require('../../db');
+            const teamMemberCheck = await pool.query(`
+                SELECT ttm.id 
+                FROM tournament_team_members ttm
+                JOIN tournament_teams tt ON ttm.team_id = tt.id
+                WHERE tt.tournament_id = $1 AND ttm.user_id = $2
+                LIMIT 1
+            `, [tournamentId, userId]);
+            
+            if (teamMemberCheck.rows.length > 0) {
+                throw new Error('Вы уже участвуете в этом турнире');
+            }
+        } else {
+            // Для соло/mix турниров проверяем таблицу участников
+            const existingParticipant = await ParticipantRepository.getUserParticipation(tournamentId, userId);
+            if (existingParticipant) {
+                throw new Error('Вы уже участвуете в этом турнире');
+            }
         }
 
         // 🆕 Проверяем требования привязок для MIX турниров
@@ -126,7 +143,15 @@ class ParticipantService {
 
         // Проверяем лимит участников
         if (tournament.max_participants) {
-            const currentCount = await ParticipantRepository.getCountByTournamentId(tournamentId);
+            let currentCount;
+            
+            // 🔧 Для командных турниров считаем команды, а не участников
+            if (tournament.participant_type === 'team') {
+                currentCount = await TournamentRepository.getTeamsCount(tournamentId);
+            } else {
+                currentCount = await ParticipantRepository.getCountByTournamentId(tournamentId);
+            }
+            
             if (currentCount >= tournament.max_participants) {
                 throw new Error('Турнир заполнен');
             }
