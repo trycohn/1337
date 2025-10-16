@@ -1492,3 +1492,153 @@ th.filtered {
 .dropdown-icon:hover {
     opacity: 1;
 }
+
+/* ========================================
+   MOBILE TOURNAMENTS LIST STYLES
+   ======================================== */
+
+/* Мобильный список турниров */
+.tournaments-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px 0;
+}
+
+/* Секция по статусу */
+.tournaments-mobile-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tournaments-mobile-section-title {
+    font-family: Play, Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #FF3838;
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #FF3838;
+}
+
+.tournaments-mobile-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Строка турнира */
+.tournament-mobile-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #333;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.2s ease;
+}
+
+.tournament-mobile-row:hover {
+    background: #1a1a1a;
+    border-color: #FF3838;
+    transform: translateX(3px);
+}
+
+/* Лого турнира */
+.tournament-mobile-logo {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.tournament-mobile-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Информация турнира */
+.tournament-mobile-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tournament-mobile-name {
+    font-family: Play, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tournament-mobile-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.tournament-mobile-players {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tournament-mobile-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Мобильные медиа-запросы */
+@media (max-width: 768px) {
+    /* Скрываем десктопные контролы */
+    .tournaments-view-controls {
+        display: none !important;
+    }
+
+    .tournaments-list h2 {
+        font-size: 24px;
+        margin-bottom: 16px;
+    }
+
+    /* Адаптация строк турниров */
+    .tournament-mobile-row {
+        padding: 10px;
+    }
+
+    .tournament-mobile-logo {
+        width: 50px;
+        height: 50px;
+    }
+
+    .tournament-mobile-name {
+        font-size: 14px;
+    }
+
+    .tournament-mobile-meta {
+        font-size: 12px;
+        gap: 8px;
+    }
+
+    .tournaments-mobile-section-title {
+        font-size: 16px;
+    }
+}

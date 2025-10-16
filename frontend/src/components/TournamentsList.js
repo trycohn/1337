@@ -719,6 +719,93 @@ function TournamentsList() {
         </div>
     );
 
+    // Мобильная версия - список с группировкой по статусам
+    const renderMobileView = () => {
+        // Группируем турниры по статусам
+        const inProgress = filteredAndSortedTournaments.filter(t => t.status === 'in_progress');
+        const active = filteredAndSortedTournaments.filter(t => t.status === 'active' || t.status === 'registration');
+        const completed = filteredAndSortedTournaments.filter(t => t.status === 'completed');
+
+        const getTournamentLogo = (tournament) => {
+            if (tournament.logo_url) return tournament.logo_url;
+            if (tournament.banner_url) return tournament.banner_url;
+            // Лого игры по умолчанию
+            const game = String(tournament.game || '').toLowerCase();
+            if (game.includes('counter') || game.includes('cs')) return '/images/games/counter%20strike%202.jpg';
+            if (game.includes('dota')) return '/images/games/dota-2.jpg';
+            return '/images/1337%20black%20logo.svg';
+        };
+
+        const truncateName = (name) => {
+            if (!name) return '—';
+            return name.length > 20 ? name.substring(0, 20) + '...' : name;
+        };
+
+        const renderTournamentRow = (tournament) => (
+            <Link 
+                key={tournament.id} 
+                to={`/tournaments/${tournament.id}`} 
+                className="tournament-mobile-row"
+            >
+                <div className="tournament-mobile-logo">
+                    <img 
+                        src={getTournamentLogo(tournament)} 
+                        alt={tournament.game} 
+                        onError={(e) => { e.currentTarget.src = '/images/1337%20black%20logo.svg'; }}
+                    />
+                </div>
+                <div className="tournament-mobile-info">
+                    <div className="tournament-mobile-name" title={tournament.name}>
+                        {truncateName(tournament.name)}
+                    </div>
+                    <div className="tournament-mobile-meta">
+                        <span className="tournament-mobile-players">
+                            👥 {tournament.format === 'mix' 
+                                ? (tournament.players_count ?? tournament.participant_count ?? 0)
+                                : (tournament.participant_count ?? 0)}
+                        </span>
+                        {(tournament.status === 'active' || tournament.status === 'registration') && (
+                            <span className="tournament-mobile-date">
+                                📅 {new Date(tournament.start_date).toLocaleDateString('ru-RU')}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </Link>
+        );
+
+        return (
+            <div className="tournaments-mobile-list">
+                {inProgress.length > 0 && (
+                    <div className="tournaments-mobile-section">
+                        <h3 className="tournaments-mobile-section-title">Сейчас идут</h3>
+                        <div className="tournaments-mobile-section-content">
+                            {inProgress.map(renderTournamentRow)}
+                        </div>
+                    </div>
+                )}
+
+                {active.length > 0 && (
+                    <div className="tournaments-mobile-section">
+                        <h3 className="tournaments-mobile-section-title">Планируются</h3>
+                        <div className="tournaments-mobile-section-content">
+                            {active.map(renderTournamentRow)}
+                        </div>
+                    </div>
+                )}
+
+                {completed.length > 0 && (
+                    <div className="tournaments-mobile-section">
+                        <h3 className="tournaments-mobile-section-title">Завершенные турниры</h3>
+                        <div className="tournaments-mobile-section-content">
+                            {completed.map(renderTournamentRow)}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const renderCardView = () => (
         <div className="tournaments-cards">
             {filteredAndSortedTournaments.map((tournament) => (
@@ -887,7 +974,7 @@ function TournamentsList() {
                 </div>
             )}
             
-            {effectiveViewMode === 'table' ? renderTableView() : renderCardView()}
+            {isMobile ? renderMobileView() : (effectiveViewMode === 'table' ? renderTableView() : renderCardView())}
             
             {filteredAndSortedTournaments.length === 0 && <p>Турниров пока нет.</p>}
             

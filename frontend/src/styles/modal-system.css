@@ -415,16 +415,37 @@
 
 /* === АДАПТИВНОСТЬ === */
 @media (max-width: 768px) {
+    /* Bottom Sheet стиль для модалок на мобильных */
+    .modal-system-overlay {
+        align-items: flex-end; /* Выравнивание по низу */
+    }
+
     .modal-system-container {
-        width: 95%;
-        max-height: 95vh;
+        width: 100%;
+        max-width: 100%;
+        max-height: 75vh;
         min-width: auto;
+        border: none;
+        border-top: 2px solid #ffffff;
+        border-radius: 16px 16px 0 0; /* Закругление сверху */
+        animation: slideUpMobile 0.3s ease-out;
+    }
+
+    @keyframes slideUpMobile {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
     
     .modal-system-header,
     .modal-system-body,
     .modal-system-footer {
-        padding: 5px;
+        padding: 16px;
     }
     
     .modal-system-title {
@@ -451,6 +472,23 @@
     .modal-system-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Индикатор свайпа для Bottom Sheet */
+    .modal-system-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: #666;
+        border-radius: 2px;
+    }
+
+    .modal-system-header {
+        padding-top: 24px; /* Отступ для индикатора */
     }
 }
 
