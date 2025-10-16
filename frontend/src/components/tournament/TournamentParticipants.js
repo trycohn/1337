@@ -723,6 +723,7 @@ const TournamentParticipants = ({
                     searchResults={participantSearchResults}
                     isSearching={isSearchingParticipants}
                     onInvite={inviteParticipant}
+                    existingParticipants={getParticipantsList()}
                     getUserStatus={getUserParticipationStatus}
                     mode="participants"
                 />

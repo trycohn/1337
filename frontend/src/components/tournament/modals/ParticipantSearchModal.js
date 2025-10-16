@@ -26,6 +26,17 @@ const ParticipantSearchModal = ({
     existingParticipants = [], // Существующие участники для фильтрации
     existingAdmins = [] // 🆕 Существующие администраторы для фильтрации
 }) => {
+    // 🔍 ДИАГНОСТИКА: логируем пропсы при инициализации
+    console.log('🔍 [ParticipantSearchModal] Инициализация компонента:', {
+        isOpen,
+        mode,
+        hasOnInvite: !!onInvite,
+        hasOnInviteAdmin: !!onInviteAdmin,
+        existingParticipantsCount: existingParticipants.length,
+        existingAdminsCount: existingAdmins.length,
+        searchResultsCount: searchResults?.length || 0
+    });
+
     // Локальное состояние для предотвращения перезагрузки
     const [localQuery, setLocalQuery] = useState('');
     const [debounceTimeout, setDebounceTimeout] = useState(null);
@@ -133,14 +144,26 @@ const ParticipantSearchModal = ({
 
     // Обработка приглашения пользователя
     const handleInvite = useCallback(async (userId, userName) => {
+        console.log('🎯 [ParticipantSearchModal] handleInvite вызван:', { userId, userName, mode });
+        console.log('🎯 [ParticipantSearchModal] onInvite:', typeof onInvite);
+        console.log('🎯 [ParticipantSearchModal] onInviteAdmin:', typeof onInviteAdmin);
+        
         try {
             if (mode === 'admin' && onInviteAdmin) {
+                console.log('👑 [ParticipantSearchModal] Вызываем onInviteAdmin');
                 await onInviteAdmin(userId, userName);
             } else if (mode === 'participant' && onInvite) {
+                console.log('👥 [ParticipantSearchModal] Вызываем onInvite');
                 await onInvite(userId, userName);
+            } else {
+                console.error('❌ [ParticipantSearchModal] Не найден подходящий обработчик!', {
+                    mode,
+                    hasOnInvite: !!onInvite,
+                    hasOnInviteAdmin: !!onInviteAdmin
+                });
             }
         } catch (error) {
-            console.error('Ошибка при приглашении пользователя:', error);
+            console.error('❌ [ParticipantSearchModal] Ошибка при приглашении пользователя:', error);
         }
     }, [mode, onInvite, onInviteAdmin]);
 
@@ -305,7 +328,15 @@ const ParticipantSearchModal = ({
                                             ) : (
                                                 <button 
                                                     className={`action-button ${mode === 'admin' ? 'admin-invite-btn' : 'add-participant-btn'}`}
-                                                    onClick={() => handleInvite(user.id, user.username)}
+                                                    onClick={() => {
+                                                        console.log('🔘 [ParticipantSearchModal] Клик по кнопке приглашения!', {
+                                                            userId: user.id,
+                                                            userName: user.username,
+                                                            mode,
+                                                            isAlreadyAdded
+                                                        });
+                                                        handleInvite(user.id, user.username);
+                                                    }}
                                                 >
                                                     {mode === 'admin' ? '👑 Пригласить админом' : '➕ Добавить участником'}
                                                 </button>
