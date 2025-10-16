@@ -39,6 +39,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: var(--spacing-xl);
+  padding-top: calc(var(--spacing-xl) + 80px); /* Отступ под липкий header */
   background-color: var(--bg-primary);
   min-height: 100vh;
   color: var(--text-primary);
@@ -4481,6 +4482,7 @@ img.avatar-cat-legendary {
   /* Container */
   .profile-container {
     padding: 16px;
+    padding-top: 80px; /* Отступ под липкий header на мобильных */
     overflow-x: hidden;
   }
 
@@ -4515,10 +4517,11 @@ img.avatar-cat-legendary {
   /* Tabs */
   .profile-tabs-navigation {
     position: sticky;
-    top: 60px;
+    top: 72px; /* Под липким header */
     background: #000;
     z-index: 100;
     margin: 0;
+    margin-top: -16px; /* Компенсация отступа */
     padding: 0 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
@@ -4772,17 +4775,20 @@ img.avatar-cat-legendary {
   .profile-toggle-button {
     position: fixed;
     top: 50%;
-    left: 8px;
+    left: 16px;
     transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid #ff0000;
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background: #000;
+    border: 2px solid #ff0000;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+    cursor: pointer;
   }
 
   .profile-toggle-button .triangle {
