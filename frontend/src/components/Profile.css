@@ -360,22 +360,13 @@
   width: 100%;
 }
 
-/* Content Area */
+/* Content Area - удалены дубли, используются profile-content-section и profile-content-header */
 .profile-content-area {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.content-section {
-  padding: 0;
-}
-
-.content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  min-height: 600px;
+  overflow: hidden;
 }
 
 .content-title {
@@ -478,149 +469,7 @@
   animation-delay: 0.3s;
 }
 
-@media (max-width: 768px) {
-  .profile-tabs-navigation {
-    position: relative;
-    position: sticky;
-    top: 60px;
-    background: #000;
-    z-index: 100;
-    margin: 0;
-    padding: 0 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  .tabs-navigation-profile {
-    display: flex;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    scroll-behavior: smooth;
-  }
-
-  .tabs-navigation-profile::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tabs-navigation-profile .tab-button-profile {
-    padding: 0 16px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-size: 12px;
-    height: 45px;
-  }
-
-  .profile-main-content {
-    display: block;
-  }
-  .profile-sidebar {
-    display: none;
-  }
-  .profile-content-area {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px;
-  }
-
-  .profile-header {
-    padding: 16px;
-  }
-
-  .profile-header-content {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    text-align: center;
-  }
-
-  .profile-avatar-section {
-    justify-self: center;
-  }
-
-  .profile-user-info {
-    align-items: center;
-  }
-  .tournaments-view-controls .view-mode-btn {
-    font-size: 12px;
-    padding: 6px 10px;
-  }
-  .tournaments-table.tournaments-table-compact {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-  }
-  .tournaments-table.tournaments-table-compact th,
-  .tournaments-table.tournaments-table-compact td {
-    padding: 8px;
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .tournament-row-compact a {
-    color: #fff;
-    text-decoration: none;
-    display: inline-block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .game-icon-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border: 1px solid #ff0000;
-    color: #fff;
-    background: #111;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 10px;
-  }
-  .tournaments-filter-bar .mobile-filter-input {
-    font-size: 12px;
-    padding: 8px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .tournaments-filter-bar {
-    display: none;
-  }
-  .tournaments-view-controls {
-    display: none !important;
-  }
-  .tournaments-section > table {
-    display: none !important;
-  }
-
-  /* Прячем старые хедеры и лишний контент в мобильной таблице */
-  .tournaments-section > .tournaments-table thead,
-  .tournaments-section
-    > .tournaments-table
-    tbody
-    > tr
-    > td[data-label="Участники"],
-  .tournaments-section
-    > .tournaments-table
-    tbody
-    > tr
-    > td[data-label="Статус"],
-  .tournaments-section
-    > .tournaments-table
-    tbody
-    > tr
-    > td[data-label="Результат"],
-  .tournaments-cards {
-    display: none;
-  }
-
-  /* Мобильная таблица видна только на мобиле */
-  .tournaments-mobile-only {
-    display: block;
-    margin-top: 8px;
-  }
-}
+/* Удалено - объединено в единый блок мобильных стилей в конце файла */
 
 /* Sidebar Navigation */
 .profile-sidebar {
@@ -800,12 +649,7 @@
   }
 }
 
-/* Content Area */
-.profile-content-area {
-  min-height: 600px;
-  overflow: hidden;
-}
-
+/* Content Area - Основные определения */
 .profile-content-section {
   padding: var(--spacing-xl);
   height: 100%;
@@ -1094,53 +938,7 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 768px) {
-  /* 1. Скрываем блок статуса пользователя */
-  .profile-user-status {
-    display: none;
-  }
-
-  /* 2. Уменьшаем размер шрифта имени пользователя */
-  .profile-user-name {
-    font-size: 1.5rem;
-  }
-
-  /* 3. meta-item внутри meta-row - флекс с направлением column */
-  .meta-row .meta-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 8px 0;
-    border-left: none;
-  }
-
-  .profile-user-meta .meta-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  /* 4. mi-form-row внутри mi-card - флекс с направлением column */
-  .mi-card .mi-form-row {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .mi-label {
-    text-align: left;
-    width: 100%;
-  }
-
-  .mi-input {
-    width: 100%;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* Удалено - объединено в единый блок мобильных стилей в конце файла */
 
 /* ==== Recent matches compact list with colored left stripes ==== */
 .recent-matches {
@@ -1893,20 +1691,7 @@
   box-shadow: 0 0 14px rgba(245, 196, 81, 0.45);
 }
 
-@media (max-width: 768px) {
-  .avatar-modal .avatar-modal-grid {
-    display: block;
-  }
-  .avatar-modal-divider {
-    display: none;
-  }
-  /* На мобиле позволяем модалке скроллиться целиком, без локального скролла правой части */
-  .avatar-modal-right {
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-  }
-}
+/* Удалено - объединено в единый блок мобильных стилей в конце файла */
 
 .avatar-preview {
   text-align: center;
@@ -2785,114 +2570,7 @@ img.avatar-cat-legendary {
   grid-template-columns: repeat(4, 1fr);
 }
 
-/* Мобильные адаптации профиля */
-@media (max-width: 768px) {
-  .profile-container {
-    padding: 16px;
-  }
-  .profile-header {
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .user-avatar {
-    width: 72px;
-    height: 72px;
-  }
-  .profile-navigation {
-    display: none;
-  }
-  .profile-mobile-nav {
-    position: sticky;
-    top: 8px;
-    z-index: 5;
-    margin-bottom: 8px;
-  }
-  .profile-toggle-button {
-    position: fixed;
-    top: 50%;
-    left: 8px;
-    transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid #ff0000;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .profile-toggle-button .triangle {
-    width: 0;
-    height: 0;
-    border-top: 7px solid transparent;
-    border-bottom: 7px solid transparent;
-    border-right: 12px solid #fff;
-  }
-  .profile-toggle-badge {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 4px;
-    border-radius: 9px;
-    background: #ff0000;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #990000;
-  }
-  .rank-container-mobile {
-    gap: 8px;
-  }
-  .stats-grid-mobile {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  .stats-card {
-    padding: 10px;
-  }
-  .stats-value {
-    font-size: 1.4rem;
-  }
-  .stats-label {
-    font-size: 0.7rem;
-  }
-  /* Compact header stats: two columns on tablets/phones */
-  .stats-grid.stats-grid-compact {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  /* Сводный блок статистики под хедером */
-  .profile-stats-mobile {
-    margin: 8px 0 12px;
-  }
-  .profile-stats-mobile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-  }
-  .profile-stats-mobile-card {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    padding: 10px;
-    text-align: center;
-  }
-  .mobile-stat-label {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .mobile-stat-value {
-    color: var(--text-primary);
-    font-size: 1.1rem;
-    font-weight: 500;
-  }
-}
+/* Удалено - объединено в единый блок мобильных стилей в конце файла */
 
 .stats-card {
   background-color: var(--bg-tertiary);
@@ -4715,120 +4393,6 @@ img.avatar-cat-legendary {
   margin-top: 12px;
 }
 
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-  .profile-error-container {
-    min-height: 50vh;
-    padding: var(--spacing-lg);
-  }
-
-  .profile-error-content {
-    padding: var(--spacing-xl);
-  }
-
-  .profile-header-content {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .error-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .error-actions .btn-primary,
-  .error-actions .btn-secondary {
-    width: 100%;
-    max-width: 200px;
-  }
-  .nickname-section {
-    width: 100%;
-  }
-
-  .org-card-header {
-    flex-direction: column;
-  }
-
-  .org-description {
-    text-align: center;
-  }
-
-  .organizations-lis {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-}
-
-/* === Mobile profile stats fixes === */
-@media (max-width: 768px) {
-  /* Общий контейнер без горизонтального скролла */
-  .profile-container {
-    overflow-x: hidden;
-  }
-
-  /* Разделы статистики — полная ширина и компактные отступы */
-  .stats-tab section,
-  .cs2-stats-section,
-  .faceit-stats-section {
-    width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-  }
-
-  /* Гибкие сетки: больше колонок на узких экранах за счет меньшего min */
-  .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-  }
-  .faceit-detailed-stats {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
-  }
-  .stats-grid-mobile {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 8px;
-  }
-
-  /* Карточки и содержимое — без переполнения */
-  .stats-card,
-  .faceit-detailed-stats p {
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-  .stats-card *,
-  .faceit-detailed-stats * {
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  /* Ранги — перенос по строкам и равномерное распределение */
-  .rank-container,
-  .rank-container-mobile {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .rank-item {
-    min-width: 100px;
-    flex: 1 1 calc(50% - 8px);
-  }
-
-  /* Последние матчи — упрощенная сетка */
-  .matches-list .match-item {
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    padding: 8px;
-  }
-
-  .profile-nickname-buttons {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
-    flex-direction: column;
-  }
-}
 
 @media (max-width: 480px) {
   .stats-grid,
@@ -4866,4 +4430,439 @@ img.avatar-cat-legendary {
   height: 2px;
   background: linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%);
   margin: 40px 0;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE STYLES (768px)
+   ======================================== */
+@media (max-width: 768px) {
+  /* 1. Скрываем блок статуса пользователя */
+  .profile-user-status {
+    display: none;
+  }
+
+  /* 2. Уменьшаем размер шрифта имени пользователя */
+  .profile-user-name {
+    font-size: 1.5rem;
+  }
+
+  /* 3. meta-item внутри meta-row - флекс с направлением column */
+  .meta-row .meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-left: none;
+  }
+
+  .profile-user-meta .meta-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* 4. mi-form-row внутри mi-card - флекс с направлением column */
+  .mi-card .mi-form-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .mi-label {
+    text-align: left;
+    width: 100%;
+  }
+
+  .mi-input {
+    width: 100%;
+  }
+
+  /* Container */
+  .profile-container {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .profile-header {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .profile-header-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    text-align: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-avatar-section {
+    justify-self: center;
+  }
+
+  .user-avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .profile-user-info {
+    align-items: center;
+  }
+
+  /* Tabs */
+  .profile-tabs-navigation {
+    position: sticky;
+    top: 60px;
+    background: #000;
+    z-index: 100;
+    margin: 0;
+    padding: 0 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .tabs-navigation-profile {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+  }
+
+  .tabs-navigation-profile::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs-navigation-profile .tab-button-profile {
+    padding: 0 16px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 12px;
+    height: 45px;
+  }
+
+  /* Content */
+  .profile-main-content {
+    display: block;
+  }
+
+  .profile-sidebar {
+    display: none;
+  }
+
+  .profile-navigation {
+    display: none;
+  }
+
+  .profile-content-area {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+  }
+
+  /* Stats */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .stats-grid.stats-grid-compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .faceit-detailed-stats {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .stats-grid-mobile {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .stats-card {
+    padding: 10px;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .stats-card *,
+  .faceit-detailed-stats * {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .faceit-detailed-stats p {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .stats-value {
+    font-size: 1.4rem;
+  }
+
+  .stats-label {
+    font-size: 0.7rem;
+  }
+
+  /* Tournaments */
+  .tournaments-view-controls {
+    display: none !important;
+  }
+
+  .tournaments-view-controls .view-mode-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .tournaments-section > table {
+    display: none !important;
+  }
+
+  .tournaments-table.tournaments-table-compact {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  .tournaments-table.tournaments-table-compact th,
+  .tournaments-table.tournaments-table-compact td {
+    padding: 8px;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tournament-row-compact a {
+    color: #fff;
+    text-decoration: none;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tournaments-section > .tournaments-table thead,
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Участники"],
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Статус"],
+  .tournaments-section > .tournaments-table tbody > tr > td[data-label="Результат"],
+  .tournaments-cards {
+    display: none;
+  }
+
+  .tournaments-mobile-only {
+    display: block;
+    margin-top: 8px;
+  }
+
+  .tournaments-filter-bar {
+    display: none;
+  }
+
+  .tournaments-filter-bar .mobile-filter-input {
+    font-size: 12px;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .game-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ff0000;
+    color: #fff;
+    background: #111;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  /* Ranks */
+  .rank-container,
+  .rank-container-mobile {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .rank-item {
+    min-width: 100px;
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  /* Добавлено из старого блока */
+  .rank-container-mobile {
+    gap: 8px;
+  }
+
+  /* Matches */
+  .matches-list .match-item {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  /* Avatar Modal */
+  .avatar-modal .avatar-modal-grid {
+    display: block;
+  }
+
+  .avatar-modal-divider {
+    display: none;
+  }
+
+  .avatar-modal-right {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /* Profile Stats Mobile */
+  .profile-stats-mobile {
+    margin: 8px 0 12px;
+  }
+
+  .profile-stats-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .profile-stats-mobile-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .mobile-stat-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mobile-stat-value {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .profile-mobile-nav {
+    position: sticky;
+    top: 8px;
+    z-index: 5;
+    margin-bottom: 8px;
+  }
+
+  .profile-toggle-button {
+    position: fixed;
+    top: 50%;
+    left: 8px;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #ff0000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-toggle-button .triangle {
+    width: 0;
+    height: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 12px solid #fff;
+  }
+
+  .profile-toggle-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #ff0000;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #990000;
+  }
+
+  /* Error States */
+  .profile-error-container {
+    min-height: 50vh;
+    padding: var(--spacing-lg);
+  }
+
+  .profile-error-content {
+    padding: var(--spacing-xl);
+  }
+
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .error-actions .btn-primary,
+  .error-actions .btn-secondary {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  /* Organizations */
+  .nickname-section {
+    width: 100%;
+  }
+
+  .org-card-header {
+    flex-direction: column;
+  }
+
+  .org-description {
+    text-align: center;
+  }
+
+  .organizations-lis {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  /* Stats Tab Section */
+  .stats-tab section,
+  .cs2-stats-section,
+  .faceit-stats-section {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  /* Nickname Buttons */
+  .profile-nickname-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    flex-direction: column;
+  }
 }
