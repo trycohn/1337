@@ -572,13 +572,18 @@
     }
     .team-header-participants {
         padding: 6px 6px;
-        height: auto;
+        height: auto;   
     }
     .team-name-participants {
         font-size: 14px;
     }
     .team-members-count-participants {
         font-size: 12px;
+    }
+    .team-actions-participants .btn.btn-secondary {
+        height: 32px;
+        width: 32px;
+        padding: 0;
     }
 }
 

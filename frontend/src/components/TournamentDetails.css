@@ -87,6 +87,10 @@
         margin-left: calc(50% - 50vw);
         margin-right: calc(50% - 50vw);
     }
+    .tournament-content-tournamentdetails {
+        width: 96%;
+        margin: 0 auto;
+    }
 }
 
 .tournament-header .with-cs2-hero {
