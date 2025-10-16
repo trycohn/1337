@@ -11,9 +11,6 @@
     text-align: center;
     margin-bottom: 40px;
     padding: 20px;
-    background-color: #111;
-    border-radius: 10px;
-    border: 1px solid #333;
 }
 
 .lobby-tournament-info h1 {
@@ -83,9 +80,7 @@
     text-align: center;
     margin-top: 40px;
     padding: 20px;
-    background-color: #111;
-    border-radius: 10px;
-    border: 1px solid #333;
+
 }
 
 .lobby-status p {

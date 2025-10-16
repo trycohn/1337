@@ -10,9 +10,6 @@
     justify-content: space-between;
     gap: 40px;
     padding: 30px;
-    background-color: #111;
-    border-radius: 10px;
-    border: 1px solid #333;
 }
 
 /* Статус команды */
@@ -139,9 +136,6 @@
 .lobby-overall-status {
     margin-top: 20px;
     padding: 20px;
-    background-color: #111;
-    border-radius: 10px;
-    border: 1px solid #333;
     text-align: center;
 }
 
