@@ -585,6 +585,44 @@ class TeamRepository {
     }
 
     /**
+     * Удаление одной команды по ID
+     * @param {number} teamId - ID команды
+     * @returns {Object} Удаленная команда
+     */
+    static async deleteById(teamId) {
+        console.log(`🗑️ TeamRepository: Удаление команды ${teamId}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Сначала удаляем участников команды
+            await client.query(
+                'DELETE FROM tournament_team_members WHERE team_id = $1',
+                [teamId]
+            );
+            
+            // Затем удаляем саму команду
+            const result = await client.query(
+                'DELETE FROM tournament_teams WHERE id = $1 RETURNING *',
+                [teamId]
+            );
+            
+            await client.query('COMMIT');
+            
+            console.log(`✅ TeamRepository: Команда ${teamId} удалена успешно`);
+            return result.rows[0] || null;
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ TeamRepository: Ошибка удаления команды ${teamId}:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
      * 🆕 МАССОВОЕ НАЗНАЧЕНИЕ КАПИТАНОВ ДЛЯ СУЩЕСТВУЮЩИХ КОМАНД
      * @param {number} tournamentId - ID турнира
      * @param {string} ratingType - Тип рейтинга ('faceit' или 'premier')

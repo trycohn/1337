@@ -227,7 +227,7 @@ class ParticipantService {
      * Удаление участника (для администраторов)
      */
     static async removeParticipant(tournamentId, participantId, adminUserId) {
-        console.log(`🛡️ ParticipantService: Удаление/обработка участника ${participantId} из турнира ${tournamentId}`);
+        console.log(`🛡️ ParticipantService: Удаление/обработка участника/команды ${participantId} из турнира ${tournamentId}`);
 
         // Проверка прав администратора
         await this._checkAdminAccess(tournamentId, adminUserId);
@@ -235,7 +235,33 @@ class ParticipantService {
         const tournament = await TournamentRepository.getById(tournamentId);
         if (!tournament) throw new Error('Турнир не найден');
 
-        // Получаем участника (нужны user_id/имя)
+        // 🔧 ПРОВЕРКА ТИПА ТУРНИРА: для командных турниров удаляем команду, а не участника
+        if (tournament.participant_type === 'team') {
+            const TeamRepository = require('../../repositories/tournament/TeamRepository');
+            
+            // Получаем команду
+            const team = await TeamRepository.getById(participantId);
+            if (!team) throw new Error('Команда не найдена');
+            
+            // Удаляем команду (только до старта турнира)
+            const status = (tournament.status || '').toLowerCase();
+            if (status === 'active') {
+                const removedTeam = await TeamRepository.deleteById(participantId);
+                
+                // Лог
+                await logTournamentEvent(tournamentId, adminUserId, 'team_removed_by_admin', {
+                    removedTeamId: participantId,
+                    removedTeamName: removedTeam?.name || team?.name || null
+                });
+                
+                console.log('✅ ParticipantService: Команда удалена (до старта турнира)');
+                return { message: 'Команда удалена', action: 'removed' };
+            } else {
+                throw new Error('Удаление команд возможно только до старта турнира');
+            }
+        }
+
+        // Для соло/mix турниров - стандартная логика удаления участника
         const participant = await ParticipantRepository.getById(participantId);
         if (!participant) throw new Error('Участник не найден');
 
