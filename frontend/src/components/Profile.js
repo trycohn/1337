@@ -4002,8 +4002,8 @@ function Profile() {
                                                                  </a>
                                                              )}
                                                          </div>
-                                                    <div className="match-history-right" style={{gap: 12}}>
-                                                            <span>{result} {score1}:{score2}</span>
+                                                    <div className="match-history-right">
+                                                            <span className='match-history-result'>{result} {score1}:{score2}</span>
                                                             <span style={{color:'#aaa'}}>Соперник: {opponentName}</span>
                                                             <span style={{color:'#999'}}>{dateStr}</span>
                                                     </div>

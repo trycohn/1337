@@ -4886,4 +4886,12 @@ img.avatar-cat-legendary {
     border: none;
     color: #e53935;
   }
+  .match-history-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .match-history-result {
+    width: 80px;
+    text-align: center;
+  }
 }
