@@ -1,6 +1,14 @@
 /* Импорт переменных и стилей */
 @import './styles/index.css';
 @import url('https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap');
+
+/* Предотвращение горизонтального скролла */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
+}
+
 body {
   margin: 0;
   font-family: 'Play', Arial, sans-serif;
@@ -10,17 +18,39 @@ body {
   color: #ffffff;
   font-size: 20px;
 }
+
 /* Гарантируем тёмный фон корня для всех состояний */
 #root, #app {
   background-color: #000;
   color: #ffffff;
   min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100%;
 }
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
 /* Стили для языка страницы */
 html {
   lang: ru;
+}
+
+/* Мобильная адаптация - предотвращение горизонтального скролла */
+@media (max-width: 768px) {
+  * {
+    max-width: 100%;
+  }
+
+  body, html {
+    overflow-x: hidden !important;
+    width: 100vw;
+  }
+
+  #root, #app, .home-container {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+  }
 }

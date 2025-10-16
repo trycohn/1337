@@ -4483,7 +4483,15 @@ img.avatar-cat-legendary {
   .profile-container {
     padding: 16px;
     padding-top: 80px; /* Отступ под липкий header на мобильных */
-    overflow-x: hidden;
+    overflow-x: hidden !important;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+
+  /* Предотвращение горизонтального скролла */
+  .profile-container * {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   /* Header */

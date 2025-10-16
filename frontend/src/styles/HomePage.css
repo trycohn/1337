@@ -1601,6 +1601,17 @@
 }
 
 @media (max-width: 768px) {
+  /* Предотвращение горизонтального скролла */
+  .homepage {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+  }
+
+  .homepage * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
   .initial-loader .loader-logo { height: 48px; }
   
   .loader-bar { width: 240px; }
