@@ -95,10 +95,10 @@
 
 .tournament-header .with-cs2-hero {
     display: flex;
-    gap: 16px;
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
 }
 
 
@@ -1967,4 +1967,34 @@ div.score-container input {
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+  .infoblock-stats {
+    width: 96%;
+  }
+  .infoblock-stats .infoblock-progress {
+    margin: 0;
+    padding: 8px 12px;
+  }
+  .infoblock-stats .infoblock-item.infoblock-prize {
+    padding: 8px 12px;
+  }
+  .infoblock-stats .infoblock-item.infoblock-start { 
+
+    padding: 8px 12px;
+  }
+  .infoblock-stats .infoblock-item.infoblock-status { 
+    padding: 8px 12px;
+}
+.infoblock-stats .infoblock-item.infoblock-format { 
+    padding: 8px 12px;
+}
+.infoblock-stats .infoblock-item.infoblock-participants { 
+    padding: 8px 12px;
+}
+.infoblock-stats .infoblock-item.infoblock-team-size { 
+    padding: 8px 12px;
+
+}
+.tabs-navigation-tournamentdetails.offset-from-hero {
+    margin-top: 12px; /* начинать после фонового блока */
+}
 }
