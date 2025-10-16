@@ -168,7 +168,7 @@ const TournamentResults = ({ tournament }) => {
                     </div>
                     
                     <div className="results-match-history-list">
-                        {tournamentResults.completedMatches.map((match, idx) => renderMatchHistoryItem(match, tournament, openMatchDetails))}
+                        {tournamentResults.completedMatches.map((match, idx) => renderMatchHistoryItem(match, tournament, openMatchDetails, isMobile))}
                     </div>
                 </div>
             )}
@@ -363,7 +363,7 @@ function renderWinners(winners) {
 }
 
 // Рендер элемента истории матчей
-function renderMatchHistoryItem(match, tournament, openMatchDetails) {
+function renderMatchHistoryItem(match, tournament, openMatchDetails, isMobile = false) {
     const winner = getParticipantInfo(match.winner_team_id, tournament);
     const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
     const loser = getParticipantInfo(loserId, tournament);
