@@ -435,6 +435,12 @@ root {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .content-card {
+        padding: 0;
+    }
+    .profile-content-section {
+        padding: 0;
+    }
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -454,6 +460,20 @@ root {
     .recent-matches-table th,
     .recent-matches-table td {
         padding: 8px 6px;
+    }
+    .stats-game-filter {
+        flex-direction: column;
+    }
+    .stats-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .stats-nav button {
+        width: 100px;
+    }
+    .card-header {
+        flex-direction: column;
+        gap: 6px;
     }
 }
 
