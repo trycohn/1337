@@ -15,6 +15,15 @@ const TournamentFilterModal = ({
     onApplyFilters,
     tournaments = []
 }) => {
+    // Определяем мобильное устройство
+    const [isMobile, setIsMobile] = React.useState(window.innerWidth <= 768);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Локальное состояние фильтров (для предварительного просмотра)
     const [localFilters, setLocalFilters] = useState({
         games: [],
@@ -57,8 +66,9 @@ const TournamentFilterModal = ({
 
     // Доступные типы участников
     const availableParticipantTypes = [
-        { value: 'solo', label: 'Соло игроки' },
-        { value: 'team', label: 'Команды' }
+        { value: 'any', label: 'Любой' },
+        { value: 'solo', label: 'Соло' },
+        { value: 'team', label: 'Командный' }
     ];
 
     // Доступные статусы
@@ -146,7 +156,7 @@ const TournamentFilterModal = ({
             <div 
                 className="modal-system-container modal-system-modal-large" 
                 onClick={(e) => e.stopPropagation()}
-                style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}
+                style={!isMobile ? { maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' } : {}}
             >
                 {/* === ЗАГОЛОВОК МОДАЛЬНОГО ОКНА === */}
                 <div className="modal-system-header">
@@ -275,9 +285,11 @@ const TournamentFilterModal = ({
                         </div>
                     </div>
 
-                    <div className="modal-system-grid-2">
-                        {/* 💰 ПРИЗОВОЙ ФОНД */}
-                        <div className="modal-system-section">
+                    {/* Скрываем дополнительные фильтры на мобильных */}
+                    {!isMobile && (
+                        <div className="modal-system-grid-2">
+                            {/* 💰 ПРИЗОВОЙ ФОНД */}
+                            <div className="modal-system-section">
                             <h3 className="modal-system-section-title">
                                 Призовой фонд
                                 {localFilters.hasPrizePool !== null && (
@@ -309,10 +321,12 @@ const TournamentFilterModal = ({
                                 </label>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    )}
 
-                    {/* КОЛИЧЕСТВО УЧАСТНИКОВ - отдельная секция */}
-                    <div className="modal-system-section">
+                    {/* КОЛИЧЕСТВО УЧАСТНИКОВ - отдельная секция (только десктоп) */}
+                    {!isMobile && (
+                        <div className="modal-system-section">
                         <h3 className="modal-system-section-title">
                             Количество участников
                             {(localFilters.participantCount.min > 0 || localFilters.participantCount.max < 128) && (
@@ -446,7 +460,8 @@ const TournamentFilterModal = ({
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    )}
 
                     {/* Предварительный просмотр результатов */}
                     {getActiveFiltersCount() > 0 && (
