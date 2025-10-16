@@ -1968,7 +1968,7 @@ div.score-container input {
     overscroll-behavior: contain;
   }
   .infoblock-stats {
-    width: 96%;
+    width: 100%;
   }
   .infoblock-stats .infoblock-progress {
     margin: 0;
