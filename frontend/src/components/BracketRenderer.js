@@ -1252,7 +1252,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                         <button
                             type="button"
                             className="bracket-action-btn bracket-action-btn--accent"
-                            onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
+                            onClick={(e) => { e.stopPropagation(); window.location.href = `/match-lobby/${activeLobbyId}`; }}
                             title="Перейти в лобби"
                         >
                             Перейти в лобби
@@ -1294,7 +1294,7 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
                     <button
                         type="button"
                         className="bracket-action-btn bracket-action-btn--accent"
-                        onClick={(e) => { e.stopPropagation(); window.location.href = `/lobby/${activeLobbyId}`; }}
+                        onClick={(e) => { e.stopPropagation(); window.location.href = `/match-lobby/${activeLobbyId}`; }}
                         title="Перейти в лобби"
                     >
                         Перейти в лобби

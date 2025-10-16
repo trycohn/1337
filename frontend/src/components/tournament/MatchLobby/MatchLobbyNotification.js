@@ -75,7 +75,7 @@ function MatchLobbyNotification({ socket, user }) {
             // Открываем в новом окне (админ/турнирное лобби)
             const targetUrl = latestInvite.type === 'admin'
                 ? `/admin/match?lobby=${latestInvite.lobbyId}`
-                : `/lobby/${latestInvite.lobbyId}`;
+                : `/match-lobby/${latestInvite.lobbyId}`;
             window.open(targetUrl, '_blank');
             // Очищаем приглашения
             setLobbyInvites([]);

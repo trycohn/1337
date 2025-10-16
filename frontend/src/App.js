@@ -93,7 +93,7 @@ function App() {
                                 <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
-                                <Route path="/lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
+                                <Route path="/match-lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />

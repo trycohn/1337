@@ -176,7 +176,7 @@ class MatchLobbyController {
             // 📨 Дублируем приглашение в личный чат (без иконок, персонализировано)
             try {
                 const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
-                const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
+                const lobbyUrl = `${baseUrl}/match-lobby/${result.lobby.id}`;
                 const matchUrl = `${baseUrl}/tournaments/${tournamentId}/match/${matchId}`;
                 const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
 
@@ -221,7 +221,7 @@ class MatchLobbyController {
             try {
                 const systemUserId = await ensureSystemUser();
                 const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
-                const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
+                const lobbyUrl = `${baseUrl}/match-lobby/${result.lobby.id}`;
                 const announcement = `📢 Создано лобби для матча ID ${matchId}. Перейдите: ${lobbyUrl}`;
                 await sendTournamentChatAnnouncement(Number(tournamentId), announcement, 'system', systemUserId);
             } catch (e) {
@@ -273,7 +273,7 @@ class MatchLobbyController {
             // 📨 Дублируем приглашение в личный чат (пересоздание, без иконок, персонально)
             try {
                 const baseUrl = process.env.PUBLIC_WEB_URL || 'https://1337community.com';
-                const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
+                const lobbyUrl = `${baseUrl}/match-lobby/${result.lobby.id}`;
                 const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
 
                 const tRes = await pool.query('SELECT name FROM tournaments WHERE id = $1', [tournamentId]);
@@ -315,7 +315,7 @@ class MatchLobbyController {
                 const baseUrl = process.env.NODE_ENV === 'production'
                     ? 'https://1337community.com'
                     : 'http://localhost:3000';
-                const lobbyUrl = `${baseUrl}/lobby/${result.lobby.id}`;
+                const lobbyUrl = `${baseUrl}/match-lobby/${result.lobby.id}`;
                 const announcement = `📢 Лобби для матча ID ${matchId} пересоздано. Перейдите: ${lobbyUrl}`;
                 await sendTournamentChatAnnouncement(Number(tournamentId), announcement, 'system', systemUserId);
             } catch (e) {
