@@ -42,22 +42,40 @@ function MatchLobbyPage() {
 
     // Socket.IO подключение для мгновенных обновлений
     useEffect(() => {
-        if (!user || !lobbyId) return;
+        console.log('🔌 [MatchLobbyPage] Инициализация WebSocket:', { 
+            hasUser: !!user, 
+            lobbyId,
+            hasSteamId: !!(user?.steam_id || user?.steamId)
+        });
+        
+        if (!user || !lobbyId) {
+            console.warn('⚠️ [MatchLobbyPage] Нет user или lobbyId, WebSocket не подключается');
+            return;
+        }
+        
         if (!user.steam_id && !user.steamId) {
+            console.warn('⚠️ [MatchLobbyPage] Нет Steam ID');
             setSteamModalOpen(true);
             setLoading(false);
             return;
         }
+        
         const token = localStorage.getItem('token');
+        console.log('🔌 [MatchLobbyPage] Создаем Socket.IO клиент к:', API_URL);
         const socket = io(API_URL, { auth: { token }, transports: ['websocket', 'polling'] });
         socketRef.current = socket;
         
         socket.on('connect', () => {
-            console.log('[TOURNAMENT_LOBBY] Socket connected', { lobbyId, userId: user?.id });
+            console.log('✅ [TOURNAMENT_LOBBY] Socket connected', { 
+                socketId: socket.id,
+                lobbyId, 
+                userId: user?.id 
+            });
             socket.emit('join_lobby', { 
                 lobbyId: Number(lobbyId),
                 userId: user?.id 
             });
+            console.log('📡 [TOURNAMENT_LOBBY] Отправлен join_lobby');
         });
         
         socket.on('lobby_state', (data) => {
