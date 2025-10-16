@@ -9,10 +9,20 @@ import './MatchLobby.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
+// 🔍 КРИТИЧЕСКОЕ ЛОГИРОВАНИЕ - ДО РЕНДЕРА
+console.log('🚨 [MatchLobbyPage] МОДУЛЬ ЗАГРУЖЕН');
+
 function MatchLobbyPage() {
+    console.log('🚨 [MatchLobbyPage] ФУНКЦИЯ ВЫЗВАНА - НАЧАЛО РЕНДЕРА');
+    
     const { lobbyId } = useParams();
+    console.log('🚨 [MatchLobbyPage] lobbyId из useParams:', lobbyId);
+    
     const navigate = useNavigate();
+    console.log('🚨 [MatchLobbyPage] navigate получен');
+    
     const { user } = useUser();
+    console.log('🚨 [MatchLobbyPage] user из context:', user);
     
     // 🔍 ДИАГНОСТИКА
     console.log('🎮 [MatchLobbyPage] Компонент инициализирован:', {

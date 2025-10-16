@@ -22,6 +22,7 @@ import { AdminRoute } from './utils/AdminRoute';
 import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
 import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
+console.log('🚨 [App.js] MatchLobbyPage импортирован:', !!MatchLobbyPage);
 import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
 import TeamProfile from './components/tournament/TeamProfile';
 import ReferralLanding from './pages/ReferralLanding';
