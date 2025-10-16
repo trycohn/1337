@@ -157,6 +157,33 @@ function MatchLobbyPage() {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ [fetchLobbyInfo] Ошибка ответа:', errorText);
+                
+                // 🔧 ЕСЛИ ЛОББИ НЕ НАЙДЕНО (404/500) - ПРОБУЕМ НАЙТИ АКТУАЛЬНОЕ ЛОББИ ДЛЯ МАТЧА
+                if (response.status === 404 || response.status === 500) {
+                    console.log('🔍 [fetchLobbyInfo] Лобби не найдено, ищем активное лобби для этого матча...');
+                    try {
+                        // Получаем информацию о лобби через API активных лобби
+                        const activeLobbiesResponse = await fetch(`${API_URL}/api/tournaments/lobbies/active`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        if (activeLobbiesResponse.ok) {
+                            const activeData = await activeLobbiesResponse.json();
+                            console.log('📊 [fetchLobbyInfo] Активные лобби:', activeData);
+                            
+                            // Если есть активные лобби, редиректим на первое
+                            if (activeData.success && activeData.lobbies && activeData.lobbies.length > 0) {
+                                const activeLobby = activeData.lobbies[0];
+                                console.log('🔄 [fetchLobbyInfo] Редирект на актуальное лобби:', activeLobby.id);
+                                navigate(`/match-lobby/${activeLobby.id}`, { replace: true });
+                                return;
+                            }
+                        }
+                    } catch (redirectError) {
+                        console.error('❌ [fetchLobbyInfo] Ошибка при поиске активного лобби:', redirectError);
+                    }
+                }
+                
                 throw new Error(`Ошибка загрузки лобби (${response.status}): ${errorText}`);
             }
 
@@ -164,6 +191,16 @@ function MatchLobbyPage() {
             console.log('📊 [fetchLobbyInfo] Данные получены:', data);
             
             if (data.success) {
+                console.log('📊 [fetchLobbyInfo] Детали лобби:', {
+                    id: data.lobby.id,
+                    status: data.lobby.status,
+                    team1_ready: data.lobby.team1_ready,
+                    team2_ready: data.lobby.team2_ready,
+                    first_picker_team_id: data.lobby.first_picker_team_id,
+                    current_turn_team_id: data.lobby.current_turn_team_id,
+                    match_format: data.lobby.match_format
+                });
+                
                 setLobby(data.lobby);
                 if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
                 console.log('✅ [fetchLobbyInfo] Лобби загружено успешно');
@@ -182,10 +219,25 @@ function MatchLobbyPage() {
 
     // ✅ Установка готовности
     const handleReadyToggle = useCallback(async () => {
+        console.log('🔘 [handleReadyToggle] Нажата кнопка готовности:', { 
+            currentReady: ready, 
+            willBe: !ready,
+            lobbyId,
+            userId: user?.id
+        });
+        
         try {
-            if (!user?.steam_id && !user?.steamId) { setSteamModalOpen(true); return; }
+            if (!user?.steam_id && !user?.steamId) { 
+                console.warn('⚠️ [handleReadyToggle] У пользователя нет Steam ID');
+                setSteamModalOpen(true); 
+                return; 
+            }
+            
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/ready`, {
+            const url = `${API_URL}/api/tournaments/lobby/${lobbyId}/ready`;
+            console.log('📡 [handleReadyToggle] Отправка запроса к:', url);
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -194,20 +246,30 @@ function MatchLobbyPage() {
                 body: JSON.stringify({ ready: !ready })
             });
 
+            console.log('📡 [handleReadyToggle] Ответ получен:', { 
+                ok: response.ok, 
+                status: response.status 
+            });
+
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ [handleReadyToggle] Ошибка ответа:', errorText);
                 throw new Error('Ошибка установки готовности');
             }
 
             const data = await response.json();
+            console.log('📊 [handleReadyToggle] Данные ответа:', data);
+            
             if (data.success) {
                 setReady(!ready);
+                console.log('✅ [handleReadyToggle] Готовность установлена, обновляем данные лобби');
                 // Принудительно обновим состояние лобби, т.к. WS может быть недоступен
                 await fetchLobbyInfo();
             }
         } catch (error) {
-            console.error('❌ Ошибка установки готовности:', error);
+            console.error('❌ [handleReadyToggle] Ошибка установки готовности:', error);
         }
-    }, [lobbyId, ready, fetchLobbyInfo]);
+    }, [lobbyId, ready, fetchLobbyInfo, user]);
 
     // 🎲 Выбор формата матча
     const handleFormatSelect = useCallback((format) => {

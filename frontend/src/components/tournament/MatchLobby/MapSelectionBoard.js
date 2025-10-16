@@ -15,6 +15,8 @@ const MAP_INFO = {
     'de_train':    { displayName: 'Train',    thumbnail: '/images/maps/train.jpg' }
 };
 
+console.log('🗺️ [MapSelectionBoard] MAP_INFO загружен:', Object.keys(MAP_INFO));
+
 function MapSelectionBoard({ 
     maps, 
     selections, 
@@ -114,10 +116,19 @@ function MapSelectionBoard({
             <div className="lobby-maps-grid">
                 {maps.map((mapData) => {
                     const mapName = mapData.map_name;
+                    console.log('🗺️ [MapSelectionBoard] Обработка карты:', {
+                        mapName,
+                        hasInMapInfo: !!MAP_INFO[mapName],
+                        mapData
+                    });
+                    
                     const mapInfo = MAP_INFO[mapName] || { 
                         displayName: mapName, 
                         thumbnail: '/images/maps/mirage.jpg' 
                     };
+                    
+                    console.log('🗺️ [MapSelectionBoard] Используется thumbnail:', mapInfo.thumbnail);
+                    
                     const selection = getMapSelection(mapName);
                     const mapStyle = getMapStyle(mapName);
                     const isSelectable = canMakeAction && !selection;
@@ -132,6 +143,11 @@ function MapSelectionBoard({
                                     src={mapInfo.thumbnail} 
                                     alt={mapInfo.displayName}
                                     onError={(e) => {
+                                        console.error('❌ [MapSelectionBoard] Ошибка загрузки изображения:', {
+                                            originalSrc: mapInfo.thumbnail,
+                                            mapName,
+                                            fallbackSrc: '/images/maps/mirage.jpg'
+                                        });
                                         e.target.src = '/images/maps/mirage.jpg';
                                     }}
                                 />
