@@ -7,6 +7,15 @@ import PodiumSection from './PodiumSection';
 import TournamentStatsPanel from './TournamentStatsPanel';
 
 const TournamentResults = ({ tournament }) => {
+    // Определяем мобильное устройство
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Состояние для модального окна деталей матча
     const [selectedMatchForDetails, setSelectedMatchForDetails] = useState(null);
     const [isMatchDetailsOpen, setIsMatchDetailsOpen] = useState(false);
@@ -362,8 +371,18 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
     // Особые матчи
     const special = getBracketTypeDisplayName(match.bracket_type);
 
+    const handleMatchClick = () => {
+        if (isMobile) {
+            window.location.href = `/tournaments/${tournament.id}/match/${match.id}`;
+        }
+    };
+
     return (
-        <div key={match.id} className="results-match-history-item">
+        <div 
+            key={match.id} 
+            className={`results-match-history-item ${isMobile ? 'mobile-clickable' : ''}`}
+            onClick={isMobile ? handleMatchClick : undefined}
+        >
             <div className="results-match-info">
                 <div className="results-match-header">
                     <span className="results-match-number">#{match.tournament_match_number || match.match_number || match.id}</span>
@@ -400,7 +419,10 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails) {
                     </div>
                     
                     <button 
-                        onClick={() => window.open(`/tournaments/${tournament.id}/match/${match.id}`, '_blank')}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`/tournaments/${tournament.id}/match/${match.id}`, '_blank');
+                        }}
                         className="results-match-details-link"
                         title="Открыть страницу матча"
                     >

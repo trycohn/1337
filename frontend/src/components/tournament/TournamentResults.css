@@ -384,13 +384,14 @@
 
 @media (max-width: 768px) {
     .results-tournament-results {
-        padding: 15px;
+        padding: 6px;
     }
     
     .results-section-header {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
     }
     
     .results-winners-list {
@@ -404,17 +405,58 @@
         order: unset !important;
     }
     
+    /* 1. Скрываем тип брекета */
+    .results-bracket-type {
+        display: none;
+    }
+    
+    /* 2. Скрываем кнопку деталей матча */
+    .results-match-details-link {
+        display: none;
+    }
+    
+    /* 3. Делаем строку матча кликабельной */
+    .results-match-history-item.mobile-clickable {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .results-match-history-item.mobile-clickable:hover {
+        background: #1a1a1a;
+        border-color: #FF3838;
+        transform: translateX(3px);
+    }
+    
+    .results-match-history-item.mobile-clickable:active {
+        background: #222;
+        transform: translateX(5px);
+    }
+    
     .results-match-result {
         flex-direction: column;
-        gap: 15px;
+        gap: 12px;
         align-items: stretch;
+        width: 100%;
     }
     
     .results-participants {
         justify-content: space-between;
+        gap: 12px;
     }
     
-    .results-match-details-link {
+    .results-participant {
+        flex-direction: column;
         text-align: center;
+        gap: 6px;
+    }
+    
+    .results-participant-avatar {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .results-score {
+        padding: 12px 20px;
+        font-size: 1.3em;
     }
 }

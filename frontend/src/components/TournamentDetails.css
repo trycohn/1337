@@ -1997,4 +1997,7 @@ div.score-container input {
 .tabs-navigation-tournamentdetails.offset-from-hero {
     margin-top: 12px; /* начинать после фонового блока */
 }
+.header-actions {
+    width: 96%;
+}
 }
