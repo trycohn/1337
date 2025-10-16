@@ -417,15 +417,30 @@ class MatchLobbyService {
             // 🔧 ИСПРАВЛЕНИЕ: Получаем свежие данные лобби после всех обновлений
             const freshLobbyResult = await pool.query('SELECT * FROM match_lobbies WHERE id = $1', [lobbyId]);
             const freshLobby = freshLobbyResult.rows[0];
+            
+            console.log('📊 [MatchLobbyService] Финальный статус лобби перед broadcast:', {
+                id: freshLobby.id,
+                status: freshLobby.status,
+                team1_ready: freshLobby.team1_ready,
+                team2_ready: freshLobby.team2_ready,
+                first_picker_team_id: freshLobby.first_picker_team_id,
+                current_turn_team_id: freshLobby.current_turn_team_id
+            });
 
             // Live-обновление состояния лобби после изменения готовности/старта пиков
             try {
                 const app = global.app;
                 const io = app?.get('io');
                 if (io) {
+                    console.log('📡 [MatchLobbyService] Отправляем WebSocket обновление для лобби', lobbyId);
                     await this.broadcastLobbyUpdate(io, lobbyId);
+                    console.log('✅ [MatchLobbyService] WebSocket broadcast выполнен');
+                } else {
+                    console.error('❌ [MatchLobbyService] IO не найден!');
                 }
-            } catch (_) {}
+            } catch (broadcastError) {
+                console.error('❌ [MatchLobbyService] Ошибка broadcast:', broadcastError);
+            }
 
             return freshLobby;
         } catch (error) {
@@ -886,6 +901,8 @@ class MatchLobbyService {
     
     // 📤 Отправка обновлений всем участникам лобби
     static async broadcastLobbyUpdate(io, lobbyId) {
+        console.log(`📡 [broadcastLobbyUpdate] Начало для лобби ${lobbyId}`);
+        
         const lobby = await pool.query(
             `SELECT l.*, 
                     (
@@ -906,7 +923,19 @@ class MatchLobbyService {
         );
         
         if (lobby.rows[0]) {
-            io.to(`lobby_${lobbyId}`).emit('lobby_update', lobby.rows[0]);
+            const lobbyData = lobby.rows[0];
+            console.log(`📡 [broadcastLobbyUpdate] Отправка в комнату lobby_${lobbyId}:`, {
+                status: lobbyData.status,
+                team1_ready: lobbyData.team1_ready,
+                team2_ready: lobbyData.team2_ready,
+                first_picker_team_id: lobbyData.first_picker_team_id,
+                current_turn_team_id: lobbyData.current_turn_team_id
+            });
+            
+            io.to(`lobby_${lobbyId}`).emit('lobby_update', lobbyData);
+            console.log(`✅ [broadcastLobbyUpdate] Событие lobby_update отправлено`);
+        } else {
+            console.warn(`⚠️ [broadcastLobbyUpdate] Лобби ${lobbyId} не найдено`);
         }
     }
 }
