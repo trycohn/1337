@@ -172,7 +172,8 @@ const TournamentParticipants = ({
     const inviteParticipant = useCallback(async (userId, userName) => {
         try {
             setIsSearchingParticipants(true);
-            const result = await tournamentManagement.inviteParticipant(userId);
+            console.log('📧 [TournamentParticipants] Приглашаем участника:', { userId, userName });
+            const result = await tournamentManagement.inviteParticipant(userId, userName);
             
             if (result.success) {
                 setMessage(`✅ ${userName} приглашен в турнир`);

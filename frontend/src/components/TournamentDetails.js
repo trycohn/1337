@@ -2866,7 +2866,8 @@ function TournamentDetails() {
                         onClose={() => closeModal('participantSearch')}
                         onInvite={async (userId, userName) => {
                             try {
-                                const result = await tournamentManagement.inviteParticipant(userId);
+                                console.log('📧 [TournamentDetails] Приглашаем участника:', { userId, userName });
+                                const result = await tournamentManagement.inviteParticipant(userId, userName);
                                 if (result.success) {
                                     setMessage(`✅ ${userName} приглашен в турнир`);
                                     closeModal('participantSearch');
