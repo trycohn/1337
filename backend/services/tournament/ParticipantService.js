@@ -494,12 +494,20 @@ class ParticipantService {
         `, [teamId]);
         
         for (const member of userTeamMembersResult.rows) {
-            // Создаем участника турнира
-            const participant = await ParticipantRepository.create({
-                tournament_id: tournament.id,
-                user_id: member.user_id,
-                name: member.username
-            });
+            // 🔧 ИСПРАВЛЕНИЕ: Проверяем, есть ли уже запись участника
+            let participant = await ParticipantRepository.getUserParticipation(tournament.id, member.user_id);
+            
+            if (!participant) {
+                // Создаем нового участника турнира только если его еще нет
+                participant = await ParticipantRepository.create({
+                    tournament_id: tournament.id,
+                    user_id: member.user_id,
+                    name: member.username
+                });
+                console.log(`✅ Создан новый участник: ${member.username} (ID: ${participant.id})`);
+            } else {
+                console.log(`ℹ️ Используем существующего участника: ${member.username} (ID: ${participant.id})`);
+            }
             
             // Добавляем в турнирную команду
             await TeamRepository.addMember(
@@ -527,6 +535,8 @@ class ParticipantService {
      * Присоединение к существующей турнирной команде
      */
     static async _joinExistingTournamentTeam(tournament, userId, username, teamId, minTeamSize = 1) {
+        const pool = require('../../db');
+        
         const team = await TeamRepository.getById(teamId);
         
         if (!team || team.tournament_id !== tournament.id) {
@@ -551,12 +561,20 @@ class ParticipantService {
             throw new Error('Вы уже являетесь участником этой команды');
         }
 
-        // Создаем участника турнира
-        const participant = await ParticipantRepository.create({
-            tournament_id: tournament.id,
-            user_id: userId,
-            name: username
-        });
+        // 🔧 ИСПРАВЛЕНИЕ: Проверяем, есть ли уже запись участника в tournament_participants
+        let participant = await ParticipantRepository.getUserParticipation(tournament.id, userId);
+        
+        if (!participant) {
+            // Создаем нового участника турнира только если его еще нет
+            participant = await ParticipantRepository.create({
+                tournament_id: tournament.id,
+                user_id: userId,
+                name: username
+            });
+            console.log(`✅ Создан новый участник турнира: ${username} (ID: ${participant.id})`);
+        } else {
+            console.log(`ℹ️ Используем существующую запись участника: ${username} (ID: ${participant.id})`);
+        }
 
         // Добавляем в команду
         await TeamRepository.addMember(teamId, userId, participant.id);
@@ -612,12 +630,20 @@ class ParticipantService {
             creator_id: userId
         });
 
-        // Создаем участника турнира
-        const participant = await ParticipantRepository.create({
-            tournament_id: tournament.id,
-            user_id: userId,
-            name: username
-        });
+        // 🔧 ИСПРАВЛЕНИЕ: Проверяем, есть ли уже запись участника
+        let participant = await ParticipantRepository.getUserParticipation(tournament.id, userId);
+        
+        if (!participant) {
+            // Создаем нового участника турнира только если его еще нет
+            participant = await ParticipantRepository.create({
+                tournament_id: tournament.id,
+                user_id: userId,
+                name: username
+            });
+            console.log(`✅ Создан новый участник турнира: ${username} (ID: ${participant.id})`);
+        } else {
+            console.log(`ℹ️ Используем существующую запись участника: ${username} (ID: ${participant.id})`);
+        }
 
         // Добавляем создателя в команду
         await TeamRepository.addMember(team.id, userId, participant.id);
