@@ -21,7 +21,8 @@ import { PrivateRoute } from './utils/PrivateRoute';
 import { AdminRoute } from './utils/AdminRoute';
 import Messenger from './components/Messenger';
 import SocketTest from './components/SocketTest';
-import MatchLobbyPage from './components/tournament/MatchLobby/MatchLobbyPage'; // Импортируем компонент лобби
+import TournamentLobbyContainer from './components/lobby/tournament/TournamentLobbyContainer'; // 🆕 Новый турнирный лобби
+import CustomLobbyContainer from './components/lobby/custom/CustomLobbyContainer'; // 🆕 Новый кастомный лобби
 import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Импортируем страницу деталей матча
 import TeamProfile from './components/tournament/TeamProfile';
 import ReferralLanding from './pages/ReferralLanding';
@@ -29,12 +30,8 @@ import MyTournaments from './pages/MyTournaments';
 import TournamentRulesPage from './pages/TournamentRulesPage';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import AdminMatchPage from './pages/AdminMatchPage';
 import CustomMatchPage from './pages/CustomMatchPage';
 import GlobalLeaderboardPage from './pages/GlobalLeaderboardPage';
-
-// 🔍 ДИАГНОСТИЧЕСКОЕ ЛОГИРОВАНИЕ
-console.log('🚨 [App.js] MatchLobbyPage импортирован:', !!MatchLobbyPage);
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -93,11 +90,11 @@ function App() {
                                 <Route path="/socket-test" element={<PrivateRoute component={SocketTest} />} /> {/* Тестирование Socket.IO */}
                                 <Route path="/auth-callback" element={<AuthCallback />} />
                                 <Route path="/auth-error" element={<Navigate to="/login" />} />
-                                <Route path="/match-lobby/:lobbyId" element={<PrivateRoute component={MatchLobbyPage} />} /> {/* Маршрут для лобби матча */}
+                                <Route path="/match-lobby/:lobbyId" element={<PrivateRoute component={TournamentLobbyContainer} />} /> {/* 🆕 Турнирное лобби */}
+                                <Route path="/lobby/custom" element={<PrivateRoute component={CustomLobbyContainer} />} /> {/* 🆕 Кастомное лобби */}
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
-                                <Route path="/admin/match" element={<PrivateRoute component={AdminMatchPage} />} />
                                 <Route path="/matches/custom/:id" element={<PrivateRoute component={CustomMatchPage} />} />
                                 <Route path="/leaderboard" element={<AdminRoute component={GlobalLeaderboardPage} />} />
                             </Route>

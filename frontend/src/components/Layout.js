@@ -362,7 +362,7 @@ function Layout() {
                                                     <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
                                                         Админ панель
                                                     </Link>
-                                                    <Link to="/admin/match" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
+                                                    <Link to="/lobby/custom" onClick={() => setIsMenuOpen(false)} className="nav-link admin-link">
                                                         МАТЧ
                                                     </Link>
                                                 </>

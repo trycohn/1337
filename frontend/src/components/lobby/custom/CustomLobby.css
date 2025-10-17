@@ -1,0 +1,230 @@
+/* 🎮 CustomLobby Styles */
+.custom-lobby-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #000;
+    min-height: 100vh;
+}
+
+.lobby-access-denied,
+.lobby-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    text-align: center;
+}
+
+.lobby-access-denied {
+    border-color: #f00;
+}
+
+.error-icon,
+.loading-icon {
+    font-size: 48px;
+}
+
+.btn-back {
+    padding: 10px 20px;
+    border: 1px solid #ff0000;
+    background: #000;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #111;
+}
+
+.custom-lobby-teams {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.custom-team-section {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 300px;
+}
+
+.custom-team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.custom-team-header h3 {
+    color: #fff;
+    font-size: 18px;
+    margin: 0;
+}
+
+.btn-add-player {
+    padding: 6px 12px;
+    background: #ff0000;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-add-player:hover {
+    background: #cc0000;
+}
+
+.custom-team-players {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.custom-player-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.2s;
+}
+
+.custom-player-card:hover {
+    background: #1a1a1a;
+    border-color: #ff0000;
+}
+
+.custom-player-card:active {
+    cursor: grabbing;
+}
+
+.custom-player-card img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.custom-player-card span {
+    flex: 1;
+    color: #fff;
+    font-size: 14px;
+}
+
+.btn-ready-toggle {
+    padding: 4px 8px;
+    background: none;
+    border: 1px solid #333;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-ready-toggle:hover {
+    background: #1a1a1a;
+    border-color: #ff0000;
+}
+
+.btn-remove {
+    padding: 4px 8px;
+    background: none;
+    border: 1px solid #f00;
+    color: #f00;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-remove:hover {
+    background: rgba(255, 0, 0, 0.1);
+}
+
+.custom-match-actions {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.btn-create-match {
+    padding: 14px 30px;
+    background: #ff0000;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-create-match:hover {
+    background: #cc0000;
+}
+
+.custom-lobby-admin-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+.btn-clear-lobby {
+    padding: 10px 20px;
+    background: #000;
+    color: #fff;
+    border: 1px solid #666;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-clear-lobby:hover {
+    background: #111;
+    border-color: #ff0000;
+}
+
+@media (max-width: 1024px) {
+    .custom-lobby-teams {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .custom-lobby-container {
+        padding: 12px;
+    }
+    
+    .custom-player-card img {
+        width: 28px;
+        height: 28px;
+    }
+}
+

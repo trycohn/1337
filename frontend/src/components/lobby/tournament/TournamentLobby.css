@@ -1,0 +1,92 @@
+/* 🎮 TournamentLobby Styles */
+.tournament-lobby-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #000;
+    min-height: 100vh;
+}
+
+.lobby-loading,
+.lobby-error,
+.lobby-not-found,
+.steam-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    text-align: center;
+}
+
+.lobby-error {
+    border-color: #f00;
+}
+
+.loading-icon,
+.error-icon {
+    font-size: 48px;
+}
+
+.btn-back,
+.btn-profile,
+.btn-cancel {
+    padding: 10px 20px;
+    border: 1px solid #ff0000;
+    background: #000;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-back:hover,
+.btn-profile:hover,
+.btn-cancel:hover {
+    background: #111;
+}
+
+.btn-cancel {
+    border-color: #666;
+}
+
+.steam-modal {
+    border-color: #ff0000;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.steam-modal h2 {
+    color: #ff0000;
+    margin: 0 0 12px 0;
+}
+
+.steam-modal p {
+    color: #fff;
+    margin: 0 0 20px 0;
+}
+
+.steam-modal button {
+    min-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .tournament-lobby-container {
+        padding: 12px;
+    }
+    
+    .lobby-loading,
+    .lobby-error,
+    .lobby-not-found,
+    .steam-modal {
+        padding: 20px;
+    }
+}
+

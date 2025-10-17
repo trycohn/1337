@@ -1,0 +1,177 @@
+/* 👁️ ObserverZone Styles */
+.observer-zone {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 20px;
+}
+
+.observer-zone-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.observer-zone-header h3 {
+    color: #fff;
+    font-size: 16px;
+    margin: 0;
+}
+
+.observer-count {
+    background: #ff0000;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.observer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.observer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 6px;
+}
+
+.observer-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #222;
+}
+
+.observer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.observer-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.observer-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.observer-role {
+    font-size: 11px;
+    color: #ff0000;
+}
+
+.observer-empty {
+    text-align: center;
+    padding: 16px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Unassigned players section */
+.unassigned-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+}
+
+.unassigned-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.unassigned-header h4 {
+    color: #fff;
+    font-size: 14px;
+    margin: 0;
+}
+
+.unassigned-hint {
+    color: #ff0000;
+    font-size: 11px;
+    font-style: italic;
+}
+
+.unassigned-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.unassigned-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    background: #1a1a1a;
+    border: 1px dashed #666;
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.2s;
+}
+
+.unassigned-player:hover {
+    background: #222;
+    border-color: #ff0000;
+}
+
+.unassigned-player:active {
+    cursor: grabbing;
+    opacity: 0.7;
+}
+
+.unassigned-player .player-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #222;
+}
+
+.unassigned-player .player-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.unassigned-player .player-info {
+    flex: 1;
+}
+
+.unassigned-player .player-name {
+    color: #fff;
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .observer-item,
+    .unassigned-player {
+        padding: 6px;
+    }
+    
+    .observer-avatar {
+        width: 28px;
+        height: 28px;
+    }
+}
+

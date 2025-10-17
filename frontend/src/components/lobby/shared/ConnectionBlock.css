@@ -1,0 +1,139 @@
+/* 🔗 ConnectionBlock Styles */
+.connection-block {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.connection-block.waiting {
+    border-color: #666;
+}
+
+.connection-block.active {
+    border-color: #ff0000;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+}
+
+.status-icon {
+    font-size: 24px;
+}
+
+.status-text {
+    color: #fff;
+    font-size: 16px;
+}
+
+.connection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.connection-header h3 {
+    color: #fff;
+    font-size: 18px;
+    margin: 0;
+}
+
+.server-location {
+    color: #ff0000;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.connection-item {
+    margin-bottom: 16px;
+}
+
+.connection-item label {
+    display: block;
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.connection-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.btn-connect,
+.btn-copy {
+    padding: 10px 16px;
+    border: 1px solid #ff0000;
+    background: #000;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-connect:hover,
+.btn-copy:hover {
+    background: #111;
+}
+
+.btn-copy {
+    border-color: #0f0;
+}
+
+.connection-url {
+    width: 100%;
+    padding: 8px;
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.connection-match-link {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+    text-align: center;
+}
+
+.btn-match-page {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #ff0000;
+    color: #000;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-match-page:hover {
+    background: #cc0000;
+}
+
+@media (max-width: 768px) {
+    .connection-actions {
+        flex-direction: column;
+    }
+    
+    .btn-connect,
+    .btn-copy {
+        width: 100%;
+    }
+}
+

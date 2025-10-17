@@ -1,0 +1,175 @@
+/* 👥 TeamRosterBase Styles */
+.team-roster-base {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.team-roster-base.team-1 {
+    border-color: #ff0000;
+}
+
+.team-roster-base.team-2 {
+    border-color: #00aaff;
+}
+
+.team-roster-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.team-roster-name {
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.team-roster-ready-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.team-roster-ready-indicator.ready {
+    background: rgba(0, 255, 0, 0.1);
+    color: #0f0;
+}
+
+.team-roster-ready-indicator.not-ready {
+    background: rgba(255, 0, 0, 0.1);
+    color: #f00;
+}
+
+.ready-icon {
+    font-size: 16px;
+}
+
+.team-roster-players {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.team-roster-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.team-roster-player:hover:not(.empty-slot) {
+    background: #1a1a1a;
+    border-color: #ff0000;
+}
+
+.team-roster-player.empty-slot {
+    opacity: 0.5;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.player-avatar.empty {
+    background: #111;
+    border: 1px dashed #333;
+}
+
+.player-avatar.empty span {
+    color: #666;
+    font-size: 18px;
+}
+
+.player-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.player-name {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.player-name.empty {
+    color: #666;
+    font-style: italic;
+}
+
+.player-captain-badge {
+    font-size: 14px;
+}
+
+.team-roster-ready-btn {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ff0000;
+    background: #000;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.team-roster-ready-btn:hover {
+    background: #111;
+}
+
+.team-roster-ready-btn.ready {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: #0f0;
+    color: #0f0;
+}
+
+.team-roster-ready-btn.ready:hover {
+    background: rgba(0, 255, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+    .team-roster-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .player-avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .player-name {
+        font-size: 13px;
+    }
+}
+
