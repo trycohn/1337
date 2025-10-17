@@ -665,6 +665,29 @@ const TournamentAdminPanel = ({
                             <p>Лобби матчей включено для этого турнира</p>
                             <small>Участники будут получать приглашения для выбора карт перед началом матча</small>
                         </div>
+                        
+                        {/* Активные лобби с возможностью переслать приглашения */}
+                        {matches?.filter(m => m.lobby_id && m.lobby_status !== 'completed').length > 0 && (
+                            <div className="active-lobbies-list">
+                                <h5>🎮 Активные лобби</h5>
+                                {matches.filter(m => m.lobby_id && m.lobby_status !== 'completed').map(match => (
+                                    <div key={match.id} className="active-lobby-item">
+                                        <span className="lobby-match-name">
+                                            {match.team1_name} vs {match.team2_name}
+                                        </span>
+                                        <button
+                                            className="action-btn-v2 resend-invites-btn"
+                                            onClick={() => onResendLobbyInvites && onResendLobbyInvites(match.lobby_id)}
+                                            disabled={isLoading}
+                                            title="Переслать приглашения участникам"
+                                        >
+                                            📨 Переслать приглашения
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
                         <div className="lobby-actions">
                             {matches?.filter(m => m.status === 'ready' && !m.lobby_created).map(match => (
                                 <button

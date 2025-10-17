@@ -72,11 +72,18 @@ function MatchLobbyNotification({ socket, user }) {
     const handleNotificationClick = () => {
         if (lobbyInvites.length > 0) {
             const latestInvite = lobbyInvites[lobbyInvites.length - 1];
-            // Открываем в новом окне (админ/турнирное лобби)
+            // Открываем в новом окне (кастомное/турнирное лобби)
             const targetUrl = latestInvite.type === 'admin'
-                ? `/admin/match?lobby=${latestInvite.lobbyId}`
+                ? `/lobby/custom` // 🆕 Обновленный роут для кастомного лобби
                 : `/match-lobby/${latestInvite.lobbyId}`;
-            window.open(targetUrl, '_blank');
+            
+            // Для турнирного открываем в новом окне, для кастомного - переходим
+            if (latestInvite.type === 'admin') {
+                navigate(targetUrl);
+            } else {
+                window.open(targetUrl, '_blank');
+            }
+            
             // Очищаем приглашения
             setLobbyInvites([]);
             setShowNotification(false);

@@ -342,9 +342,22 @@ class MatchLobbyController {
             
             const lobby = await MatchLobbyService.getLobbyInfo(lobbyId, userId);
             
+            // ⏰ Проверяем устаревание лобби
+            const isExpired = MatchLobbyService.isLobbyExpired(lobby);
+            
+            if (isExpired) {
+                return res.status(410).json({
+                    success: false,
+                    expired: true,
+                    error: 'Лобби устарело (создано более 1 часа назад)',
+                    message: 'Это лобби больше недоступно. Попросите администратора создать новое.'
+                });
+            }
+            
             res.json({
                 success: true,
-                lobby
+                lobby,
+                expired: false
             });
             
         } catch (error) {
@@ -529,6 +542,71 @@ class MatchLobbyController {
                 console.log(`👋 Пользователь покинул лобби ${lobbyId}`);
             }
         });
+    }
+    // 📨 Повторная отправка приглашений в лобби
+    static async resendLobbyInvitations(req, res) {
+        try {
+            const { tournamentId, lobbyId } = req.params;
+            const userId = req.user.id;
+            
+            // Проверяем права доступа
+            const isAdmin = await req.checkTournamentAccess(tournamentId, userId);
+            if (!isAdmin) {
+                return res.status(403).json({ 
+                    error: 'У вас нет прав для управления лобби' 
+                });
+            }
+            
+            const io = req.app.get('io');
+            const result = await MatchLobbyService.resendLobbyInvitations(lobbyId, io);
+            
+            res.json({
+                success: true,
+                invitationsSent: result.invitationsSent,
+                message: `Приглашения отправлены повторно (${result.invitationsSent} участников)`
+            });
+            
+        } catch (error) {
+            console.error('❌ Ошибка повторной отправки приглашений:', error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при отправке приглашений' 
+            });
+        }
+    }
+
+    // 🔎 Получить активное лобби пользователя в турнире
+    static async getUserActiveLobby(req, res) {
+        try {
+            const { tournamentId } = req.params;
+            const userId = req.user.id;
+            
+            const lobby = await MatchLobbyService.getUserActiveLobbyInTournament(userId, tournamentId);
+            
+            if (!lobby) {
+                return res.json({
+                    success: true,
+                    hasLobby: false
+                });
+            }
+            
+            res.json({
+                success: true,
+                hasLobby: true,
+                lobby: {
+                    id: lobby.id,
+                    match_id: lobby.match_id,
+                    status: lobby.status,
+                    expired: lobby.expired,
+                    age_hours: lobby.age_hours
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Ошибка получения активного лобби:', error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при получении лобби' 
+            });
+        }
     }
 }
 

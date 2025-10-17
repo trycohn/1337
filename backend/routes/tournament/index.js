@@ -519,6 +519,12 @@ router.post('/lobby/:lobbyId/set-first-picker', authenticateToken, verifyAdminOr
 // 🗺️ Выбор или бан карты
 router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyController.selectMap);
 
+// 📨 Повторная отправка приглашений в лобби
+router.post('/:tournamentId/lobby/:lobbyId/resend-invites', authenticateToken, verifyAdminOrCreator, MatchLobbyController.resendLobbyInvitations);
+
+// 🔎 Получить активное лобби пользователя в турнире
+router.get('/:tournamentId/my-active-lobby', authenticateToken, MatchLobbyController.getUserActiveLobby);
+
 // ===========================================
 // 🆕 FULL MIX (без классической сетки)
 // ===========================================

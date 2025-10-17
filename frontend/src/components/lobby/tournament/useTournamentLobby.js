@@ -53,6 +53,14 @@ function useTournamentLobby(lobbyId, user) {
             });
 
             if (!response.ok) {
+                // ⏰ Лобби устарело (410 Gone)
+                if (response.status === 410) {
+                    const errorData = await response.json();
+                    setError(errorData.message || 'Это лобби больше недоступно');
+                    setLoading(false);
+                    return;
+                }
+                
                 // Если лобби не найдено, пробуем найти активное
                 if (response.status === 404 || response.status === 500) {
                     const activeLobbiesResponse = await fetch(`${API_URL}/api/tournaments/lobbies/active`, {

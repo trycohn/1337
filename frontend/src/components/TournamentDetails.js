@@ -42,6 +42,7 @@ import TournamentFloatingActionPanel from './tournament/TournamentFloatingAction
 import TournamentAdminPanel from './tournament/TournamentAdminPanel';
 import TournamentParticipants from './tournament/TournamentParticipants';
 import TournamentWinners from './tournament/TournamentWinners';
+import ActiveLobbyWidget from './tournament/ActiveLobbyWidget';
 import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';

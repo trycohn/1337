@@ -2,6 +2,9 @@
 const pool = require('../../db');
 const { sendNotification } = require('../../notifications');
 
+// ⏰ Время жизни лобби (1 час)
+const LOBBY_LIFETIME_HOURS = 1;
+
 class MatchLobbyService {
     // 🔧 Создание настроек лобби для турнира
     static async createLobbySettings(tournamentId, settings) {
@@ -81,6 +84,114 @@ class MatchLobbyService {
             [matchId, tournamentId]
         );
         return result.rows[0] || null;
+    }
+
+    // ⏰ Проверка, не устарело ли лобби (> 1 час)
+    static isLobbyExpired(lobby) {
+        if (!lobby || !lobby.created_at) return false;
+        
+        const createdAt = new Date(lobby.created_at);
+        const now = new Date();
+        const diffHours = (now - createdAt) / (1000 * 60 * 60);
+        
+        return diffHours > LOBBY_LIFETIME_HOURS;
+    }
+
+    // 🔎 Получить активное лобби пользователя в турнире
+    static async getUserActiveLobbyInTournament(userId, tournamentId) {
+        const result = await pool.query(
+            `SELECT l.*,
+                    EXTRACT(EPOCH FROM (NOW() - l.created_at)) / 3600 as age_hours
+             FROM match_lobbies l
+             JOIN lobby_invitations i ON i.lobby_id = l.id AND i.user_id = $1
+             WHERE l.tournament_id = $2
+               AND l.status IN ('waiting','ready','picking')
+             ORDER BY l.created_at DESC
+             LIMIT 1`,
+            [userId, tournamentId]
+        );
+        
+        const lobby = result.rows[0];
+        if (!lobby) return null;
+        
+        // Проверяем устаревание
+        if (this.isLobbyExpired(lobby)) {
+            return { ...lobby, expired: true };
+        }
+        
+        return { ...lobby, expired: false };
+    }
+
+    // 📨 Повторная отправка приглашений в лобби
+    static async resendLobbyInvitations(lobbyId, io) {
+        const client = await pool.connect();
+        
+        try {
+            // Получаем информацию о лобби
+            const lobbyResult = await client.query(
+                `SELECT l.*, m.id as match_id
+                 FROM match_lobbies l
+                 JOIN tournament_matches m ON m.id = l.match_id
+                 WHERE l.id = $1`,
+                [lobbyId]
+            );
+            
+            if (!lobbyResult.rows[0]) {
+                throw new Error('Лобби не найдено');
+            }
+            
+            const lobby = lobbyResult.rows[0];
+            
+            // Проверяем устаревание
+            if (this.isLobbyExpired(lobby)) {
+                throw new Error('Лобби устарело (создано более 1 часа назад)');
+            }
+            
+            // Получаем всех участников лобби
+            const invitationsResult = await client.query(
+                `SELECT i.user_id, i.team_id
+                 FROM lobby_invitations i
+                 WHERE i.lobby_id = $1`,
+                [lobbyId]
+            );
+            
+            const invitations = invitationsResult.rows;
+            
+            // Отправляем уведомления через WebSocket
+            if (io) {
+                for (const invitation of invitations) {
+                    io.to(`user_${invitation.user_id}`).emit('match_lobby_invite', {
+                        lobbyId: lobby.id,
+                        matchId: lobby.match_id,
+                        tournamentId: lobby.tournament_id,
+                        resent: true
+                    });
+                    
+                    // Также отправляем в БД уведомлений
+                    await sendNotification(invitation.user_id, {
+                        id: Date.now() + invitation.user_id,
+                        user_id: invitation.user_id,
+                        type: 'match_lobby_invite',
+                        message: `🔔 Напоминание: Вас ждут в лобби матча! Нажмите для входа.`,
+                        metadata: JSON.stringify({ 
+                            lobbyId: lobby.id, 
+                            matchId: lobby.match_id, 
+                            tournamentId: lobby.tournament_id,
+                            resent: true
+                        }),
+                        created_at: new Date()
+                    });
+                }
+            }
+            
+            return {
+                success: true,
+                invitationsSent: invitations.length,
+                lobby
+            };
+        } finally {
+            client.release();
+        }
     }
 
     // 🔄 Полное пересоздание лобби: удаляет старое лобби и связанные данные, затем создаёт новое
