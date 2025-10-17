@@ -452,6 +452,75 @@ class MatchLobbyController {
         }
     }
     
+    // 🚀 Ручной запуск процедуры пик/бан (админ турнира или капитаны)
+    static async startPickBan(req, res) {
+        try {
+            const { lobbyId } = req.params;
+            const userId = req.user.id;
+            
+            const lobbyInfo = await MatchLobbyService.getLobbyInfo(lobbyId, userId);
+            
+            if (!lobbyInfo) {
+                return res.status(404).json({ 
+                    error: 'Лобби не найдено' 
+                });
+            }
+            
+            // Проверяем права: админ турнира или капитан команды
+            const isAdmin = await req.checkTournamentAccess(lobbyInfo.tournament_id, userId);
+            
+            // Проверяем является ли капитаном
+            const isCaptain = lobbyInfo.team1_participants?.find(p => p.user_id === userId && p.is_captain) ||
+                             lobbyInfo.team2_participants?.find(p => p.user_id === userId && p.is_captain);
+            
+            if (!isAdmin && !isCaptain) {
+                return res.status(403).json({ 
+                    error: 'Только админ турнира или капитаны могут запустить процедуру' 
+                });
+            }
+            
+            // Проверяем условия для старта
+            if (!lobbyInfo.match_format) {
+                return res.status(400).json({ 
+                    error: 'Формат матча не выбран' 
+                });
+            }
+            
+            if (!lobbyInfo.team1_ready || !lobbyInfo.team2_ready) {
+                return res.status(400).json({ 
+                    error: 'Обе команды должны быть готовы' 
+                });
+            }
+            
+            if (lobbyInfo.status !== 'ready' && lobbyInfo.status !== 'waiting') {
+                return res.status(400).json({ 
+                    error: 'Процедура уже запущена или завершена' 
+                });
+            }
+            
+            // Запускаем процедуру
+            const lobby = await MatchLobbyService.startPickBanProcedure(lobbyId);
+            
+            // WebSocket уведомление
+            const io = req.app.get('io');
+            if (io) {
+                await MatchLobbyService.broadcastLobbyUpdate(io, lobbyId);
+            }
+            
+            res.json({
+                success: true,
+                lobby,
+                message: '🚀 Процедура выбора карт запущена!'
+            });
+            
+        } catch (error) {
+            console.error('❌ Ошибка запуска процедуры:', error);
+            res.status(500).json({ 
+                error: error.message || 'Ошибка при запуске процедуры' 
+            });
+        }
+    }
+    
     // 🗺️ Выбор или бан карты
     static async selectMap(req, res) {
         try {

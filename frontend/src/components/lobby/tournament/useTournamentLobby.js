@@ -10,10 +10,16 @@ function useTournamentLobby(lobbyId, user) {
     const [lobby, setLobby] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [ready, setReady] = useState(false);
+    const [ready, setReady] = useState(false); // По умолчанию НЕ готов
     const [selectedFormat, setSelectedFormat] = useState(null);
     const [steamModalOpen, setSteamModalOpen] = useState(false);
     const redirectedRef = useRef(false);
+
+    // Сброс готовности при смене лобби
+    useEffect(() => {
+        setReady(false);
+        console.log('[useTournamentLobby] Сброс готовности для лобби:', lobbyId);
+    }, [lobbyId]);
 
     // Автоматический редирект на матч после завершения
     useEffect(() => {
@@ -159,6 +165,37 @@ function useTournamentLobby(lobbyId, user) {
         }
     }, [user, lobbyId]);
 
+    // Ручной запуск процедуры пик/бан
+    const startPickBan = useCallback(async () => {
+        if (!user?.steam_id && !user?.steamId) {
+            setSteamModalOpen(true);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/start-pickban`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Ошибка запуска процедуры');
+            }
+
+            const data = await response.json();
+            if (!data.success) throw new Error(data.error);
+            
+        } catch (error) {
+            console.error('❌ [useTournamentLobby] Ошибка запуска процедуры:', error);
+            alert(error.message);
+        }
+    }, [user, lobbyId, setSteamModalOpen]);
+
     // WebSocket подключение
     const handleLobbyState = useCallback((data) => {
         if (data) {
@@ -199,6 +236,7 @@ function useTournamentLobby(lobbyId, user) {
         setSteamModalOpen,
         handleReadyToggle,
         handleMapAction,
+        startPickBan,
         socket
     };
 }

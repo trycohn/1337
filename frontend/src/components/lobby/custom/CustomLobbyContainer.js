@@ -39,6 +39,7 @@ function CustomLobbyContainer() {
         setMatchFormat,
         togglePlayerReady,
         handleMapAction,
+        startPickBan,
         createMatch,
         clearLobby,
         updateLobbyState,
@@ -140,6 +141,14 @@ function CustomLobbyContainer() {
         setInvitePanelTeam(null);
     }, []);
 
+    // Проверка: является ли пользователь капитаном
+    const isCaptain = React.useMemo(() => {
+        if (!user) return false;
+        const isTeam1Captain = team1Users.length > 0 && team1Users[0]?.id === user.id;
+        const isTeam2Captain = team2Users.length > 0 && team2Users[0]?.id === user.id;
+        return isTeam1Captain || isTeam2Captain;
+    }, [user, team1Users, team2Users]);
+
     const handleDragStart = (e, user) => {
         e.dataTransfer.setData('text/plain', String(user.id));
     };
@@ -235,6 +244,23 @@ function CustomLobbyContainer() {
                     onFormatChange={setMatchFormat}
                     disabled={!isAdmin}
                 />
+            )}
+
+            {/* Кнопка запуска процедуры (админ или капитаны) */}
+            {(lobby?.status === 'ready' || (lobby?.status === 'waiting' && lobby?.match_format && lobby?.team1_ready && lobby?.team2_ready)) && (isAdmin || isCaptain) && (
+                <div className="start-pickban-section">
+                    <button 
+                        className="btn-start-pickban"
+                        onClick={startPickBan}
+                    >
+                        🚀 Начать BAN/PICK
+                    </button>
+                    {!isAdmin && isCaptain && (
+                        <p className="start-hint">
+                            💡 Вы капитан команды и можете начать процедуру выбора карт
+                        </p>
+                    )}
+                </div>
             )}
 
             {/* Составы команд */}

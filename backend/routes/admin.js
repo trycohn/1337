@@ -2251,8 +2251,8 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
     }
 });
 
-// Старт стадии пик/бан (только создатель)
-router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, requireAdmin, async (req, res) => {
+// Старт стадии пик/бан (админ, создатель или капитаны)
+router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, async (req, res) => {
     const { lobbyId } = req.params;
     const { firstPicker } = req.body || {};
     const client = await pool.connect();
@@ -2260,10 +2260,38 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, requireAdmin,
         await client.query('BEGIN');
         const r = await client.query('SELECT * FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
         const lobby = r.rows[0];
-        if (!lobby) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, error: 'Лобби не найдено' }); }
-        if (Number(lobby.created_by) !== Number(req.user.id)) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, error: 'Только создатель может начать пик/бан' }); }
-        if (!lobby.match_format) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Не выбран формат матча' }); }
-        if (!(lobby.team1_ready && lobby.team2_ready)) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, error: 'Обе команды должны быть готовы' }); }
+        if (!lobby) { 
+            await client.query('ROLLBACK'); 
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' }); 
+        }
+        
+        // 🔐 Проверка прав: админ, создатель или капитан команды
+        const isAdmin = req.user.role === 'admin';
+        const isCreator = Number(lobby.created_by) === Number(req.user.id);
+        
+        // Проверяем является ли пользователь капитаном (первый в команде)
+        const captainCheck = await client.query(
+            `SELECT team FROM admin_lobby_invitations 
+             WHERE lobby_id = $1 AND user_id = $2 AND accepted = TRUE AND team IN (1,2)
+             ORDER BY team_position ASC LIMIT 1`,
+            [lobbyId, req.user.id]
+        );
+        const isCaptain = captainCheck.rows.length > 0;
+        
+        if (!(isAdmin || isCreator || isCaptain)) { 
+            await client.query('ROLLBACK'); 
+            return res.status(403).json({ success: false, error: 'Только админ, создатель или капитаны могут начать пик/бан' }); 
+        }
+        
+        if (!lobby.match_format) { 
+            await client.query('ROLLBACK'); 
+            return res.status(400).json({ success: false, error: 'Не выбран формат матча' }); 
+        }
+        
+        if (!(lobby.team1_ready && lobby.team2_ready)) { 
+            await client.query('ROLLBACK'); 
+            return res.status(400).json({ success: false, error: 'Обе команды должны быть готовы' }); 
+        }
         // Переименовываем команды на «<ник_капитана>__team» при старте пик/бан
         const capRes = await client.query(
             `SELECT i.team, u.username

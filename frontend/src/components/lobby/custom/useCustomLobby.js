@@ -199,6 +199,21 @@ function useCustomLobby(user, isAdmin) {
         }
     }, [lobbyId, refreshLobbyState]);
 
+    // Ручной запуск процедуры пик/бан
+    const startPickBan = useCallback(async () => {
+        if (!lobbyId) return;
+        const token = localStorage.getItem('token');
+        try {
+            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            if (data?.success) {
+                await refreshLobbyState();
+            }
+        } catch (err) {
+            console.error('Ошибка запуска процедуры:', err);
+            alert(err.response?.data?.error || 'Ошибка запуска процедуры');
+        }
+    }, [lobbyId, refreshLobbyState]);
+
     // Создание матча
     const createMatch = useCallback(async () => {
         if (!lobbyId) return;
@@ -252,26 +267,24 @@ function useCustomLobby(user, isAdmin) {
         }
     }, [lobbyId, team1Users, team2Users, refreshLobbyState]);
 
-    // Загрузка и сохранение готовности
+    // Очистка старой готовности при смене лобби
     useEffect(() => {
         if (!readyStorageKey) return;
+        // При входе в новое лобби очищаем старую готовность
         try {
-            const raw = localStorage.getItem(readyStorageKey);
-            if (raw) {
-                const saved = JSON.parse(raw);
-                if (saved && typeof saved === 'object') {
-                    setPlayerReady(prev => ({ ...prev, ...saved }));
-                }
-            }
+            localStorage.removeItem(readyStorageKey);
+            setPlayerReady({});
+            console.log('[useCustomLobby] Очищена готовность для нового лобби');
         } catch (_) {}
     }, [readyStorageKey]);
 
-    useEffect(() => {
-        if (!readyStorageKey) return;
-        try {
-            localStorage.setItem(readyStorageKey, JSON.stringify(playerReady));
-        } catch (_) {}
-    }, [playerReady, readyStorageKey]);
+    // Не сохраняем готовность в localStorage - всегда начинаем с "не готов"
+    // useEffect(() => {
+    //     if (!readyStorageKey) return;
+    //     try {
+    //         localStorage.setItem(readyStorageKey, JSON.stringify(playerReady));
+    //     } catch (_) {}
+    // }, [playerReady, readyStorageKey]);
 
     useEffect(() => { 
         playerReadyRef.current = playerReady; 
@@ -310,6 +323,7 @@ function useCustomLobby(user, isAdmin) {
         setMatchFormat,
         togglePlayerReady,
         handleMapAction,
+        startPickBan,
         createMatch,
         clearLobby,
         makeCaptain

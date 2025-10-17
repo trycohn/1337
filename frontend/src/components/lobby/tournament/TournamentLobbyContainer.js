@@ -23,7 +23,8 @@ function TournamentLobbyContainer() {
         steamModalOpen,
         setSteamModalOpen,
         handleReadyToggle,
-        handleMapAction
+        handleMapAction,
+        startPickBan
     } = useTournamentLobby(lobbyId, user);
 
     // Определение команды пользователя
@@ -112,6 +113,21 @@ function TournamentLobbyContainer() {
                     ready={ready}
                     canToggle={!!myTeamId}
                 />
+            )}
+
+            {/* Кнопка запуска процедуры (капитаны) */}
+            {(lobby.status === 'ready' || (lobby.status === 'waiting' && lobby.match_format && lobby.team1_ready && lobby.team2_ready)) && isCaptain && (
+                <div className="start-pickban-section">
+                    <button 
+                        className="btn-start-pickban"
+                        onClick={startPickBan}
+                    >
+                        🚀 Начать BAN/PICK
+                    </button>
+                    <p className="start-hint">
+                        💡 Вы капитан команды и можете начать процедуру выбора карт
+                    </p>
+                </div>
             )}
 
             {/* Блок пик/бан карт */}

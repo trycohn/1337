@@ -582,6 +582,54 @@ class MatchLobbyService {
         
         return result.rows[0];
     }
+
+    // 🚀 Запуск процедуры пик/бан (автоматический выбор первой команды)
+    static async startPickBanProcedure(lobbyId) {
+        const result = await pool.query(
+            `SELECT * FROM match_lobbies WHERE id = $1`,
+            [lobbyId]
+        );
+        
+        if (!result.rows[0]) {
+            throw new Error('Лобби не найдено');
+        }
+        
+        const lobby = result.rows[0];
+        
+        // Проверки
+        if (!lobby.match_format) {
+            throw new Error('Формат матча не выбран');
+        }
+        
+        if (!lobby.team1_ready || !lobby.team2_ready) {
+            throw new Error('Обе команды должны быть готовы');
+        }
+        
+        if (lobby.status === 'picking') {
+            throw new Error('Процедура уже запущена');
+        }
+        
+        // Случайный выбор первой команды
+        const firstPicker = lobby.team1_id || lobby.team2_id || 1;
+        const randomTeam = Math.random() < 0.5 ? lobby.team1_id : lobby.team2_id;
+        const firstPickerTeamId = randomTeam || firstPicker;
+        
+        // Обновляем статус
+        const updateResult = await pool.query(
+            `UPDATE match_lobbies 
+             SET first_picker_team_id = $1, 
+                 current_turn_team_id = $1,
+                 status = 'picking',
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2
+             RETURNING *`,
+            [firstPickerTeamId, lobbyId]
+        );
+        
+        console.log(`✅ [MatchLobbyService] Процедура пик/бан запущена для лобби ${lobbyId}, первая команда: ${firstPickerTeamId}`);
+        
+        return updateResult.rows[0];
+    }
     
     // 🗺️ Выбор или бан карты
     static async selectMap(lobbyId, userId, mapName, action) {

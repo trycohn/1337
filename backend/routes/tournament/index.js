@@ -519,6 +519,9 @@ router.post('/lobby/:lobbyId/set-first-picker', authenticateToken, verifyAdminOr
 // 🗺️ Выбор или бан карты
 router.post('/lobby/:lobbyId/select-map', authenticateToken, MatchLobbyController.selectMap);
 
+// 🚀 Ручной запуск процедуры пик/бан (админ турнира или капитаны)
+router.post('/lobby/:lobbyId/start-pickban', authenticateToken, MatchLobbyController.startPickBan);
+
 // 📨 Повторная отправка приглашений в лобби
 router.post('/:tournamentId/lobby/:lobbyId/resend-invites', authenticateToken, verifyAdminOrCreator, MatchLobbyController.resendLobbyInvitations);
 
