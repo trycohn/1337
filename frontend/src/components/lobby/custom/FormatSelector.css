@@ -1,8 +1,5 @@
 /* 📊 FormatSelector Styles */
 .format-selector {
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 8px;
     padding: 16px;
     margin-bottom: 20px;
 }
@@ -10,7 +7,7 @@
 .format-selector-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 16px;
     padding-bottom: 12px;
     border-bottom: 1px solid #333;
@@ -32,9 +29,10 @@
 }
 
 .format-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    display: flex;
+    flex-direction: row;
     gap: 12px;
+    justify-content: center;
 }
 
 .format-option {
@@ -48,6 +46,7 @@
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
+    height: max-content;
 }
 
 .format-option:hover:not(.disabled) {

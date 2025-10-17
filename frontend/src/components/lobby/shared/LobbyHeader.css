@@ -1,8 +1,5 @@
 /* 📋 LobbyHeader Styles */
 .lobby-header {
-    background: #111;
-    border: 1px solid #ff0000;
-    border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
 }
