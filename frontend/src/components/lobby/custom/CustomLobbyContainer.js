@@ -169,7 +169,18 @@ function CustomLobbyContainer() {
         if (!user) return false;
         const isTeam1Captain = team1Users.length > 0 && team1Users[0]?.id === user.id;
         const isTeam2Captain = team2Users.length > 0 && team2Users[0]?.id === user.id;
-        return isTeam1Captain || isTeam2Captain;
+        const result = isTeam1Captain || isTeam2Captain;
+        
+        console.log('[CustomLobby] Проверка капитанства:', {
+            userId: user.id,
+            team1Captain: team1Users[0]?.id,
+            team2Captain: team2Users[0]?.id,
+            isTeam1Captain,
+            isTeam2Captain,
+            isCaptain: result
+        });
+        
+        return result;
     }, [user, team1Users, team2Users]);
 
     const handleDragStart = (e, user) => {
@@ -271,15 +282,22 @@ function CustomLobbyContainer() {
 
             {/* Кнопка запуска процедуры (админ или капитаны) */}
             {(() => {
-                const canStart = (lobby?.status === 'ready' || (lobby?.status === 'waiting' && lobby?.match_format && lobby?.team1_ready && lobby?.team2_ready)) && (isAdmin || isCaptain);
+                // Кнопка НЕ показывается если уже идет picking или завершено
+                const notStarted = lobby?.status !== 'picking' && lobby?.status !== 'ready_to_create' && lobby?.status !== 'match_created';
+                const readyToStart = lobby?.match_format && lobby?.team1_ready && lobby?.team2_ready;
+                const hasPermission = isAdmin || isCaptain;
+                const canStart = notStarted && readyToStart && hasPermission;
                 
                 console.log('[CustomLobby] Условия кнопки Start:', {
                     status: lobby?.status,
+                    notStarted,
                     format: lobby?.match_format,
                     team1Ready: lobby?.team1_ready,
                     team2Ready: lobby?.team2_ready,
                     isAdmin,
                     isCaptain,
+                    readyToStart,
+                    hasPermission,
                     canStart
                 });
                 
@@ -445,22 +463,38 @@ function CustomLobbyContainer() {
             </div>
 
             {/* Пик/бан карт */}
-            {(lobby?.status === 'ready' || lobby?.status === 'picking') && (
-                <MapSelectionBoard
-                    maps={availableMaps}
-                    selections={selections}
-                    currentTurn={lobby?.current_turn_team_id}
-                    myTeamId={null} // В custom админ управляет всем
-                    format={lobby?.match_format}
-                    status={lobby?.status}
-                    onMapAction={isAdmin ? handleMapAction : () => {}} // Неадмины не могут делать действия
-                    teamNames={{
-                        1: lobby?.team1_name || 'Команда 1',
-                        2: lobby?.team2_name || 'Команда 2'
-                    }}
-                    isCaptain={isAdmin} // Только админ может выбирать в кастомном лобби
-                />
-            )}
+            {(() => {
+                const showPickBan = lobby?.status === 'ready' || lobby?.status === 'picking';
+                
+                console.log('[CustomLobby] MapSelectionBoard:', {
+                    showPickBan,
+                    status: lobby?.status,
+                    format: lobby?.match_format,
+                    mapsCount: availableMaps?.length,
+                    selectionsCount: selections?.length,
+                    currentTurn: lobby?.current_turn_team,  // ← Исправлено: без _id
+                    firstPicker: lobby?.first_picker_team
+                });
+                
+                if (!showPickBan) return null;
+                
+                return (
+                    <MapSelectionBoard
+                        maps={availableMaps}
+                        selections={selections}
+                        currentTurn={lobby?.current_turn_team}  // ← Исправлено: без _id
+                        myTeamId={isCaptain ? (team1Users[0]?.id === user?.id ? 1 : 2) : null} // Капитан управляет своей командой
+                        format={lobby?.match_format}
+                        status={lobby?.status}
+                        onMapAction={handleMapAction}
+                        teamNames={{
+                            1: lobby?.team1_name || 'Команда 1',
+                            2: lobby?.team2_name || 'Команда 2'
+                        }}
+                        isCaptain={isAdmin || isCaptain} // Админ или капитан могут выбирать
+                    />
+                );
+            })()}
 
             {/* Подключение к серверу */}
             {lobby?.status === 'ready_to_create' && isAdmin && (

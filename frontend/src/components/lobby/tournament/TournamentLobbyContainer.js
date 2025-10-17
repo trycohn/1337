@@ -117,14 +117,19 @@ function TournamentLobbyContainer() {
 
             {/* Кнопка запуска процедуры (капитаны) */}
             {(() => {
-                const canStart = (lobby.status === 'ready' || (lobby.status === 'waiting' && lobby.match_format && lobby.team1_ready && lobby.team2_ready)) && isCaptain;
+                // Кнопка НЕ показывается если уже идет picking или завершено
+                const notStarted = lobby.status !== 'picking' && lobby.status !== 'completed';
+                const readyToStart = lobby.match_format && lobby.team1_ready && lobby.team2_ready;
+                const canStart = notStarted && readyToStart && isCaptain;
                 
                 console.log('[TournamentLobby] Условия кнопки Start:', {
                     status: lobby?.status,
+                    notStarted,
                     format: lobby?.match_format,
                     team1Ready: lobby?.team1_ready,
                     team2Ready: lobby?.team2_ready,
                     isCaptain,
+                    readyToStart,
                     canStart
                 });
                 

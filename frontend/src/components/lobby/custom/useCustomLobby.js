@@ -217,14 +217,34 @@ function useCustomLobby(user, isAdmin) {
     // Ручной запуск процедуры пик/бан
     const startPickBan = useCallback(async () => {
         if (!lobbyId) return;
+        
+        console.log('[useCustomLobby] Запуск процедуры пик/бан для лобби:', lobbyId);
+        
         const token = localStorage.getItem('token');
         try {
-            const { data } = await api.post(`/api/admin/match-lobby/${lobbyId}/start-pick`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            console.log('[useCustomLobby] Отправка запроса POST /api/admin/match-lobby/' + lobbyId + '/start-pick');
+            
+            const { data } = await api.post(
+                `/api/admin/match-lobby/${lobbyId}/start-pick`, 
+                {}, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('[useCustomLobby] Ответ от сервера:', data);
+            
             if (data?.success) {
+                console.log('[useCustomLobby] Процедура успешно запущена, обновляем состояние');
                 await refreshLobbyState();
+            } else {
+                console.error('[useCustomLobby] Сервер вернул success: false');
             }
         } catch (err) {
-            console.error('Ошибка запуска процедуры:', err);
+            console.error('[useCustomLobby] Ошибка запуска процедуры:', err);
+            console.error('[useCustomLobby] Детали ошибки:', {
+                status: err.response?.status,
+                data: err.response?.data,
+                message: err.message
+            });
             alert(err.response?.data?.error || 'Ошибка запуска процедуры');
         }
     }, [lobbyId, refreshLobbyState]);
@@ -319,12 +339,31 @@ function useCustomLobby(user, isAdmin) {
     useEffect(() => {
         if (!lobbyId) return;
         
-        const interval = setInterval(() => {
-            refreshLobbyState();
-        }, 2000);
+        let isActive = true;
         
-        return () => clearInterval(interval);
-    }, [lobbyId, refreshLobbyState]);
+        const poll = async () => {
+            if (!isActive || !lobbyId) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const r = await api.get(`/api/admin/match-lobby/${lobbyId}`, { 
+                    headers: { Authorization: `Bearer ${token}` } 
+                });
+                if (r?.data?.success && isActive) {
+                    updateLobbyState(r.data);
+                }
+            } catch (err) {
+                console.error('Polling ошибка:', err);
+            }
+        };
+        
+        const interval = setInterval(poll, 2000);
+        
+        return () => {
+            isActive = false;
+            clearInterval(interval);
+        };
+    }, [lobbyId, updateLobbyState]);
 
     return {
         lobbyId,

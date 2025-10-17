@@ -37,6 +37,16 @@ function MapSelectionBoard({
     teamNames = {},
     isCaptain = false
 }) {
+    console.log('🗺️ [MapSelectionBoard] РЕНДЕР:', {
+        mapsCount: maps?.length,
+        selectionsCount: selections?.length,
+        currentTurn,
+        myTeamId,
+        format,
+        status,
+        isCaptain
+    });
+    
     // 🎯 Определение последовательности действий
     const actionSequence = useMemo(() => {
         const sequences = {

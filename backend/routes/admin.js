@@ -2384,19 +2384,48 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, async (req, r
         const isAdmin = req.user.role === 'admin';
         const isCreator = Number(lobby.created_by) === Number(req.user.id);
         
-        // Проверяем является ли пользователь капитаном (первый в команде)
-        const captainCheck = await client.query(
-            `SELECT team FROM admin_lobby_invitations 
-             WHERE lobby_id = $1 AND user_id = $2 AND accepted = TRUE AND team IN (1,2)
-             ORDER BY team_position ASC LIMIT 1`,
-            [lobbyId, req.user.id]
-        );
-        const isCaptain = captainCheck.rows.length > 0;
+        // Проверяем является ли пользователь капитаном (первый в своей команде с team_position = 1)
+        let isCaptain = false;
+        
+        // Если не админ и не создатель - проверяем капитанство
+        if (!isAdmin && !isCreator) {
+            const captainCheck = await client.query(
+                `WITH team_captains AS (
+                    SELECT user_id, team, 
+                           ROW_NUMBER() OVER (PARTITION BY team ORDER BY COALESCE(team_position, 999), id ASC) as position
+                    FROM admin_lobby_invitations
+                    WHERE lobby_id = $1 AND accepted = TRUE AND team IN (1,2)
+                )
+                SELECT team FROM team_captains 
+                WHERE user_id = $2 AND position = 1`,
+                [lobbyId, req.user.id]
+            );
+            isCaptain = captainCheck.rows.length > 0;
+            
+            console.log('[START-PICK] Проверка капитанства:', {
+                userId: req.user.id,
+                isCaptain,
+                captainTeam: captainCheck.rows[0]?.team
+            });
+        }
         
         if (!(isAdmin || isCreator || isCaptain)) { 
             await client.query('ROLLBACK'); 
+            console.log('[START-PICK] Доступ запрещен:', { 
+                userId: req.user.id, 
+                isAdmin, 
+                isCreator, 
+                isCaptain 
+            });
             return res.status(403).json({ success: false, error: 'Только админ, создатель или капитаны могут начать пик/бан' }); 
         }
+        
+        console.log('[START-PICK] Права подтверждены:', { 
+            userId: req.user.id, 
+            isAdmin, 
+            isCreator, 
+            isCaptain 
+        });
         
         if (!lobby.match_format) { 
             await client.query('ROLLBACK'); 
@@ -2425,11 +2454,44 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, async (req, r
         const team1Name = team1Captain ? `${team1Captain}_team` : (lobby.team1_name || 'Команда 1');
         const team2Name = team2Captain ? `${team2Captain}_team` : (lobby.team2_name || 'Команда 2');
         const fp = firstPicker === 1 || firstPicker === 2 ? firstPicker : (Math.random() < 0.5 ? 1 : 2);
+        
+        console.log('[START-PICK] Запуск процедуры:', {
+            lobbyId,
+            team1Name,
+            team2Name,
+            firstPicker: fp,
+            team1Captain,
+            team2Captain
+        });
+        
         const upd = await client.query(
             `UPDATE admin_match_lobbies SET status = 'picking', first_picker_team = $1, current_turn_team = $1, team1_name = $3, team2_name = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
             [fp, lobbyId, team1Name, team2Name]
         );
+        
         await client.query('COMMIT');
+        
+        console.log('✅ [START-PICK] Процедура успешно запущена:', {
+            lobbyId,
+            newStatus: upd.rows[0].status,
+            firstPickerTeam: upd.rows[0].first_picker_team,
+            currentTurnTeam: upd.rows[0].current_turn_team
+        });
+        
+        // 📡 WebSocket уведомление
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                    lobby: upd.rows[0],
+                    message: '🚀 Процедура выбора карт запущена!' 
+                });
+                console.log(`📡 [START-PICK] WebSocket broadcast отправлен в admin_lobby_${lobbyId}`);
+            }
+        } catch (wsErr) {
+            console.error('[START-PICK] Ошибка WebSocket:', wsErr);
+        }
+        
         return res.json({ success: true, lobby: upd.rows[0] });
     } catch (e) {
         await client.query('ROLLBACK');

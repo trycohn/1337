@@ -111,12 +111,38 @@ function useTournamentLobby(lobbyId, user) {
     useEffect(() => {
         if (!lobbyId || !user) return;
         
-        const interval = setInterval(() => {
-            fetchLobbyInfo();
-        }, 3000);
+        let isActive = true;
         
-        return () => clearInterval(interval);
-    }, [lobbyId, user, fetchLobbyInfo]);
+        const poll = async () => {
+            if (!isActive || !lobbyId || !user) return;
+            
+            const token = localStorage.getItem('token');
+            const url = `${API_URL}/api/tournaments/lobby/${lobbyId}`;
+            
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok && isActive) {
+                    const data = await response.json();
+                    if (data.success && data.lobby) {
+                        setLobby(data.lobby);
+                        if (data.lobby.match_format) setSelectedFormat(data.lobby.match_format);
+                    }
+                }
+            } catch (err) {
+                // Игнорируем ошибки polling
+            }
+        };
+        
+        const interval = setInterval(poll, 3000);
+        
+        return () => {
+            isActive = false;
+            clearInterval(interval);
+        };
+    }, [lobbyId, user]);
 
     // Установка готовности
     const handleReadyToggle = useCallback(async () => {
@@ -190,8 +216,12 @@ function useTournamentLobby(lobbyId, user) {
             return;
         }
 
+        console.log('[useTournamentLobby] Запуск процедуры пик/бан для лобби:', lobbyId);
+
         try {
             const token = localStorage.getItem('token');
+            console.log('[useTournamentLobby] Отправка запроса POST /api/tournaments/lobby/' + lobbyId + '/start-pickban');
+            
             const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/start-pickban`, {
                 method: 'POST',
                 headers: {
@@ -200,13 +230,26 @@ function useTournamentLobby(lobbyId, user) {
                 }
             });
 
+            console.log('[useTournamentLobby] Ответ сервера:', {
+                ok: response.ok,
+                status: response.status
+            });
+
             if (!response.ok) {
                 const data = await response.json();
+                console.error('[useTournamentLobby] Ошибка от сервера:', data);
                 throw new Error(data.error || 'Ошибка запуска процедуры');
             }
 
             const data = await response.json();
-            if (!data.success) throw new Error(data.error);
+            console.log('[useTournamentLobby] Данные ответа:', data);
+            
+            if (!data.success) {
+                console.error('[useTournamentLobby] success = false');
+                throw new Error(data.error);
+            }
+            
+            console.log('✅ [useTournamentLobby] Процедура успешно запущена');
             
         } catch (error) {
             console.error('❌ [useTournamentLobby] Ошибка запуска процедуры:', error);
