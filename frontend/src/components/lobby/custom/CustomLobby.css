@@ -167,6 +167,16 @@
     font-size: 14px;
 }
 
+.player-name-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.captain-badge {
+    font-size: 16px;
+}
+
 .btn-ready-toggle {
     padding: 4px 8px;
     background: none;
@@ -181,6 +191,22 @@
 .btn-ready-toggle:hover {
     background: #1a1a1a;
     border-color: #ff0000;
+}
+
+.btn-make-captain {
+    padding: 4px 8px;
+    background: none;
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-make-captain:hover {
+    background: rgba(255, 215, 0, 0.1);
+    transform: scale(1.1);
 }
 
 .btn-remove {

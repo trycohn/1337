@@ -1447,23 +1447,138 @@ router.post('/match-lobby/:lobbyId/invite', authenticateToken, async (req, res) 
     }
 });
 
+// 🔄 Обновить порядок игроков в команде (для drag-and-drop капитанства)
+router.post('/match-lobby/:lobbyId/reorder-team', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { team, userIds } = req.body || {}; // userIds = массив ID в новом порядке
+    
+    if (![1, 2].includes(Number(team))) {
+        return res.status(400).json({ success: false, error: 'team должен быть 1 или 2' });
+    }
+    
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'userIds должен быть непустым массивом' });
+    }
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // Проверка прав: админ или создатель
+        const lobbyCheck = await client.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (!lobbyCheck.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
+        
+        const isCreator = Number(lobbyCheck.rows[0].created_by) === Number(req.user.id);
+        if (!(req.user.role === 'admin' || isCreator)) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ success: false, error: 'Нет прав' });
+        }
+        
+        // Обновляем позиции для каждого игрока
+        for (let i = 0; i < userIds.length; i++) {
+            const userId = userIds[i];
+            const newPosition = i + 1; // Позиция начинается с 1
+            
+            await client.query(
+                `UPDATE admin_lobby_invitations 
+                 SET team_position = $1 
+                 WHERE lobby_id = $2 AND user_id = $3 AND team = $4`,
+                [newPosition, lobbyId, userId, team]
+            );
+        }
+        
+        await client.query('COMMIT');
+        
+        console.log(`✅ [ADMIN_LOBBY] Порядок команды ${team} обновлен:`, userIds);
+        
+        // WebSocket уведомление
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                    reordered: true,
+                    team,
+                    message: 'Порядок команды обновлен'
+                });
+            }
+        } catch (_) {}
+        
+        return res.json({ success: true, message: 'Порядок обновлен' });
+        
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка обновления порядка', e);
+        return res.status(500).json({ success: false, error: 'Не удалось обновить порядок' });
+    } finally {
+        client.release();
+    }
+});
+
 // Отменить приглашение пользователя в админ-лобби
 router.delete('/match-lobby/:lobbyId/invite/:userId', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     const { lobbyId, userId } = req.params;
+    
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+        
         // Разрешаем: админ или создатель лобби
-        const r = await pool.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
-        if (r.rows.length === 0) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const r = await client.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (r.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
         const isCreator = Number(r.rows[0].created_by) === Number(req.user.id);
         if (!(req.user.role === 'admin' || isCreator)) {
+            await client.query('ROLLBACK');
             return res.status(403).json({ success: false, error: 'Нет прав на отмену приглашения' });
         }
-        await pool.query('DELETE FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2', [lobbyId, userId]);
+        
+        // Получаем команду удаляемого игрока для пересчета позиций
+        const userTeamRes = await client.query(
+            'SELECT team, team_position FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2',
+            [lobbyId, userId]
+        );
+        const userTeam = userTeamRes.rows[0]?.team;
+        const deletedPosition = userTeamRes.rows[0]?.team_position;
+        
+        // Удаляем приглашение
+        await client.query('DELETE FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2', [lobbyId, userId]);
+        
+        // Пересчитываем позиции для оставшихся в команде (сдвигаем вверх)
+        if (userTeam && deletedPosition) {
+            await client.query(
+                `UPDATE admin_lobby_invitations 
+                 SET team_position = team_position - 1 
+                 WHERE lobby_id = $1 AND team = $2 AND team_position > $3`,
+                [lobbyId, userTeam, deletedPosition]
+            );
+        }
+        
+        await client.query('COMMIT');
+        
+        // WebSocket уведомление
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                    message: 'Игрок удален из лобби'
+                });
+            }
+        } catch (_) {}
+        
         return res.json({ success: true });
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error('Ошибка отмены приглашения', e);
         return res.status(500).json({ success: false, error: 'Не удалось отменить приглашение' });
+    } finally {
+        client.release();
     }
 });
 
@@ -1599,32 +1714,87 @@ router.post('/match-lobby/:lobbyId/format', authenticateToken, async (req, res) 
     const { lobbyId } = req.params;
     const { format } = req.body || {};
     if (!['bo1','bo3','bo5'].includes(format)) return res.status(400).json({ success: false, error: 'Неверный формат' });
+    
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+        
         // Проверка прав: админ или создатель лобби
-        const lobbyCheck = await pool.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
-        if (lobbyCheck.rows.length === 0) return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        const lobbyCheck = await client.query('SELECT created_by, team1_ready, team2_ready FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (lobbyCheck.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
+        
         const isCreator = Number(lobbyCheck.rows[0].created_by) === Number(req.user.id);
         if (!(req.user.role === 'admin' || isCreator)) {
+            await client.query('ROLLBACK');
             return res.status(403).json({ success: false, error: 'Нет прав на изменение формата' });
         }
         
-        const r = await pool.query(
+        const currentLobby = lobbyCheck.rows[0];
+        
+        // Устанавливаем формат БЕЗ сброса готовности
+        const r = await client.query(
             `UPDATE admin_match_lobbies 
              SET match_format = $1,
-                 status = 'waiting',
-                 team1_ready = FALSE,
-                 team2_ready = FALSE,
-                 first_picker_team = NULL,
-                 current_turn_team = NULL,
                  updated_at = CURRENT_TIMESTAMP 
              WHERE id = $2 
              RETURNING *`,
             [format, lobbyId]
         );
-        return res.json({ success: true, lobby: r.rows[0] });
+        
+        let lobby = r.rows[0];
+        
+        // ✅ Автостарт процедуры пик/бан если обе команды уже готовы
+        if (currentLobby.team1_ready && currentLobby.team2_ready && lobby.status === 'waiting') {
+            console.log('🚀 [ADMIN_LOBBY] Автостарт процедуры после установки формата');
+            
+            // Назначаем случайную команду первой
+            const firstPicker = Math.random() < 0.5 ? 1 : 2;
+            
+            lobby = (await client.query(
+                `UPDATE admin_match_lobbies 
+                 SET status = 'picking', 
+                     first_picker_team = $1, 
+                     current_turn_team = $1,
+                     updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = $2 
+                 RETURNING *`,
+                [firstPicker, lobbyId]
+            )).rows[0];
+            
+            console.log('✅ [ADMIN_LOBBY] Процедура запущена, первый выбор:', firstPicker);
+            
+            // 📡 WebSocket уведомление всем участникам лобби
+            try {
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                        lobby, 
+                        message: '🚀 Процедура выбора карт запущена!' 
+                    });
+                }
+            } catch (_) {}
+        }
+        
+        await client.query('COMMIT');
+        
+        // 📡 WebSocket уведомление об обновлении
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { lobby });
+            }
+        } catch (_) {}
+        
+        return res.json({ success: true, lobby });
     } catch (e) {
+        await client.query('ROLLBACK');
         console.error('Ошибка установки формата', e);
         return res.status(500).json({ success: false, error: 'Не удалось установить формат' });
+    } finally {
+        client.release();
     }
 });
 
@@ -1657,14 +1827,59 @@ router.post('/match-lobby/:lobbyId/ready', authenticateToken, async (req, res) =
             [Boolean(ready), lobbyId]
         );
         let lobby = upd.rows[0];
-        // Если обе команды готовы — помечаем статус как 'ready', старт отдельной кнопкой
-        if (lobby.team1_ready && lobby.team2_ready && lobby.status === 'waiting') {
+        
+        // ✅ Автостарт процедуры пик/бан если:
+        // 1. Обе команды готовы
+        // 2. Формат матча выбран
+        // 3. Статус waiting
+        if (lobby.team1_ready && lobby.team2_ready && lobby.match_format && lobby.status === 'waiting') {
+            console.log('🚀 [ADMIN_LOBBY] Автостарт процедуры пик/бан');
+            
+            // Назначаем случайную команду первой
+            const firstPicker = Math.random() < 0.5 ? 1 : 2;
+            
+            lobby = (await client.query(
+                `UPDATE admin_match_lobbies 
+                 SET status = 'picking', 
+                     first_picker_team = $1, 
+                     current_turn_team = $1,
+                     updated_at = CURRENT_TIMESTAMP 
+                 WHERE id = $2 
+                 RETURNING *`,
+                [firstPicker, lobbyId]
+            )).rows[0];
+            
+            console.log('✅ [ADMIN_LOBBY] Процедура запущена, первый выбор:', firstPicker);
+            
+            // 📡 WebSocket уведомление всем участникам лобби
+            try {
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                        lobby, 
+                        message: '🚀 Процедура выбора карт запущена!' 
+                    });
+                }
+            } catch (_) {}
+        } 
+        // Если обе готовы, но формат не выбран - переходим в ready
+        else if (lobby.team1_ready && lobby.team2_ready && !lobby.match_format && lobby.status === 'waiting') {
             lobby = (await client.query(
                 `UPDATE admin_match_lobbies SET status = 'ready', updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *`,
                 [lobbyId]
             )).rows[0];
         }
+        
         await client.query('COMMIT');
+        
+        // 📡 WebSocket уведомление об обновлении состояния
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { lobby });
+            }
+        } catch (_) {}
+        
         return res.json({ success: true, lobby });
     } catch (e) {
         await client.query('ROLLBACK');

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useCustomLobby from './useCustomLobby';
+import useLobbySocket from '../shared/useLobbySocket';
 import LobbyHeader from '../shared/LobbyHeader';
 import MapSelectionBoard from '../shared/MapSelectionBoard';
 import ConnectionBlock from '../shared/ConnectionBlock';
@@ -39,8 +40,27 @@ function CustomLobbyContainer() {
         togglePlayerReady,
         handleMapAction,
         createMatch,
-        clearLobby
+        clearLobby,
+        updateLobbyState,
+        makeCaptain
     } = useCustomLobby(user, isAdmin);
+
+    // WebSocket подключение для получения обновлений
+    const handleLobbyUpdate = useCallback((data) => {
+        console.log('[CustomLobby] WebSocket обновление лобби:', data);
+        if (data.lobby && updateLobbyState) {
+            updateLobbyState(data);
+        }
+    }, [updateLobbyState]);
+
+    useLobbySocket({
+        lobbyId,
+        user,
+        onLobbyState: handleLobbyUpdate,
+        onLobbyUpdate: handleLobbyUpdate,
+        onError: (error) => console.error('[CustomLobby] WebSocket ошибка:', error),
+        lobbyType: 'custom'
+    });
 
     // Загрузка пользователя
     useEffect(() => {
@@ -124,12 +144,27 @@ function CustomLobbyContainer() {
         e.dataTransfer.setData('text/plain', String(user.id));
     };
 
-    const handleDrop = (team) => (e) => {
+    const handleDrop = (targetTeam) => (e) => {
         e.preventDefault();
-        const userId = e.dataTransfer.getData('text/plain');
-        if (userId) {
-            inviteUserToTeam(Number(userId), team);
+        const draggedUserId = Number(e.dataTransfer.getData('text/plain'));
+        
+        if (!draggedUserId) return;
+        
+        console.log('[CustomLobby] Drop:', { draggedUserId, targetTeam });
+        
+        // Определяем из какой команды пришел игрок
+        const fromTeam1 = team1Users.find(u => u.id === draggedUserId);
+        const fromTeam2 = team2Users.find(u => u.id === draggedUserId);
+        const fromUnassigned = unassignedUsers.find(u => u.id === draggedUserId);
+        
+        const sourceTeam = fromTeam1 ? 1 : fromTeam2 ? 2 : null;
+        
+        // Если перемещаем в другую команду - просто назначаем
+        if (sourceTeam !== targetTeam) {
+            inviteUserToTeam(draggedUserId, targetTeam);
         }
+        // Если перемещаем внутри той же команды - это изменение капитанства
+        // (пока не реализовано визуально, но можно добавить)
     };
 
     // Проверка доступа
@@ -222,7 +257,7 @@ function CustomLobbyContainer() {
                         )}
                     </div>
                     <div className="custom-team-players">
-                        {team1Users.map(u => (
+                        {team1Users.map((u, idx) => (
                             <div 
                                 key={u.id} 
                                 className="custom-player-card" 
@@ -230,22 +265,38 @@ function CustomLobbyContainer() {
                                 onDragStart={isAdmin ? (e) => handleDragStart(e, u) : undefined}
                             >
                                 <img src={u.avatar || '/default-avatar.png'} alt={u.username} onError={(e) => { e.target.src = '/default-avatar.png'; }} />
-                                <span>{u.username || u.display_name}</span>
+                                <span className="player-name-with-badge">
+                                    {u.username || u.display_name}
+                                    {idx === 0 && <span className="captain-badge" title="Капитан">👑</span>}
+                                </span>
+                                {/* Кнопка готовности: админ для всех, неадмин только для себя */}
+                                {(isAdmin || u.id === user?.id) && (
+                                    <button 
+                                        className="btn-ready-toggle"
+                                        onClick={() => togglePlayerReady(u.id, 1)}
+                                        title={u.id === user?.id ? 'Изменить свою готовность' : 'Изменить готовность игрока'}
+                                    >
+                                        {playerReady[u.id] ? '✅' : '❌'}
+                                    </button>
+                                )}
+                                {/* Кнопка назначения капитаном */}
+                                {isAdmin && idx !== 0 && (
+                                    <button 
+                                        className="btn-make-captain"
+                                        onClick={() => makeCaptain(u.id, 1)}
+                                        title="Сделать капитаном"
+                                    >
+                                        👑
+                                    </button>
+                                )}
+                                {/* Кнопка удаления только для админа */}
                                 {isAdmin && (
-                                    <>
-                                        <button 
-                                            className="btn-ready-toggle"
-                                            onClick={() => togglePlayerReady(u.id, 1)}
-                                        >
-                                            {playerReady[u.id] ? '✅' : '❌'}
-                                        </button>
-                                        <button 
-                                            className="btn-remove"
-                                            onClick={() => removeUserFromLobby(u.id)}
-                                        >
-                                            ✕
-                                        </button>
-                                    </>
+                                    <button 
+                                        className="btn-remove"
+                                        onClick={() => removeUserFromLobby(u.id)}
+                                    >
+                                        ✕
+                                    </button>
                                 )}
                             </div>
                         ))}
@@ -270,7 +321,7 @@ function CustomLobbyContainer() {
                         )}
                     </div>
                     <div className="custom-team-players">
-                        {team2Users.map(u => (
+                        {team2Users.map((u, idx) => (
                             <div 
                                 key={u.id} 
                                 className="custom-player-card" 
@@ -278,22 +329,38 @@ function CustomLobbyContainer() {
                                 onDragStart={isAdmin ? (e) => handleDragStart(e, u) : undefined}
                             >
                                 <img src={u.avatar || '/default-avatar.png'} alt={u.username} onError={(e) => { e.target.src = '/default-avatar.png'; }} />
-                                <span>{u.username || u.display_name}</span>
+                                <span className="player-name-with-badge">
+                                    {u.username || u.display_name}
+                                    {idx === 0 && <span className="captain-badge" title="Капитан">👑</span>}
+                                </span>
+                                {/* Кнопка готовности: админ для всех, неадмин только для себя */}
+                                {(isAdmin || u.id === user?.id) && (
+                                    <button 
+                                        className="btn-ready-toggle"
+                                        onClick={() => togglePlayerReady(u.id, 2)}
+                                        title={u.id === user?.id ? 'Изменить свою готовность' : 'Изменить готовность игрока'}
+                                    >
+                                        {playerReady[u.id] ? '✅' : '❌'}
+                                    </button>
+                                )}
+                                {/* Кнопка назначения капитаном */}
+                                {isAdmin && idx !== 0 && (
+                                    <button 
+                                        className="btn-make-captain"
+                                        onClick={() => makeCaptain(u.id, 2)}
+                                        title="Сделать капитаном"
+                                    >
+                                        👑
+                                    </button>
+                                )}
+                                {/* Кнопка удаления только для админа */}
                                 {isAdmin && (
-                                    <>
-                                        <button 
-                                            className="btn-ready-toggle"
-                                            onClick={() => togglePlayerReady(u.id, 2)}
-                                        >
-                                            {playerReady[u.id] ? '✅' : '❌'}
-                                        </button>
-                                        <button 
-                                            className="btn-remove"
-                                            onClick={() => removeUserFromLobby(u.id)}
-                                        >
-                                            ✕
-                                        </button>
-                                    </>
+                                    <button 
+                                        className="btn-remove"
+                                        onClick={() => removeUserFromLobby(u.id)}
+                                    >
+                                        ✕
+                                    </button>
                                 )}
                             </div>
                         ))}

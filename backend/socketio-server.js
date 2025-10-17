@@ -316,6 +316,71 @@ function createSocketServer(httpServer) {
       }
     });
 
+    // 🎮 Подключение к админ-лобби (кастомные матчи)
+    socket.on('join_admin_lobby', async (data) => {
+      try {
+        console.log(`🎮 [Socket.IO] Запрос на подключение к админ-лобби от ${socket.user.username}:`, data);
+        const { lobbyId } = data || {};
+        if (!lobbyId) {
+          socket.emit('error', { message: 'Необходимо указать lobbyId' });
+          return;
+        }
+
+        const pool = require('./db');
+        
+        // Проверяем доступ: приглашен или админ
+        const inviteCheck = await pool.query(
+          `SELECT i.*, aml.status, aml.created_by
+           FROM admin_lobby_invitations i
+           JOIN admin_match_lobbies aml ON aml.id = i.lobby_id
+           WHERE i.lobby_id = $1 AND i.user_id = $2
+           LIMIT 1`,
+          [lobbyId, socket.userId]
+        );
+        
+        const isCreator = inviteCheck.rows[0]?.created_by === socket.userId;
+        const isAdmin = socket.user.role === 'admin';
+        
+        if (!inviteCheck.rows[0] && !isAdmin && !isCreator) {
+          socket.emit('error', { message: 'У вас нет доступа к этому лобби' });
+          return;
+        }
+
+        // Присоединяемся к комнате
+        const roomName = `admin_lobby_${lobbyId}`;
+        socket.join(roomName);
+        console.log(`🎮 [Socket.IO] ${socket.user.username} присоединился к админ-лобби ${roomName}`);
+        
+        // Отправляем текущее состояние лобби
+        const lobbyRes = await pool.query('SELECT * FROM admin_match_lobbies WHERE id = $1', [lobbyId]);
+        if (lobbyRes.rows[0]) {
+          socket.emit('lobby_state', lobbyRes.rows[0]);
+        }
+        
+        // Обновляем присутствие
+        try {
+          await pool.query(
+            `INSERT INTO admin_lobby_presence(lobby_id, user_id, last_seen)
+             VALUES ($1, $2, CURRENT_TIMESTAMP)
+             ON CONFLICT (lobby_id, user_id)
+             DO UPDATE SET last_seen = EXCLUDED.last_seen`,
+            [lobbyId, socket.userId]
+          );
+        } catch (_) {}
+        
+        // Уведомляем о количестве онлайн
+        try {
+          const io = socket.server;
+          const sockets = await io.in(roomName).allSockets();
+          io.to(roomName).emit('admin_lobby_presence', { lobbyId: Number(lobbyId), onlineCount: sockets.size });
+        } catch (_) {}
+        
+      } catch (error) {
+        console.error('❌ [Socket.IO] Ошибка подключения к админ-лобби:', error);
+        socket.emit('error', { message: error.message || 'Ошибка подключения к лобби' });
+      }
+    });
+
     // 🎮 Отключение от лобби матча
     socket.on('leave_lobby', (data) => {
       const { lobbyId } = data;

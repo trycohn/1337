@@ -225,6 +225,33 @@ function useCustomLobby(user, isAdmin) {
         }
     }, [lobbyId, refreshLobbyState]);
 
+    // Сделать игрока капитаном (перемещение на первое место)
+    const makeCaptain = useCallback(async (userId, team) => {
+        if (!lobbyId || !userId || !team) return;
+        
+        const token = localStorage.getItem('token');
+        const teamUsers = team === 1 ? team1Users : team2Users;
+        
+        // Создаем новый порядок: выбранный пользователь первый, остальные по старому порядку
+        const newOrder = [
+            userId,
+            ...teamUsers.filter(u => u.id !== userId).map(u => u.id)
+        ];
+        
+        console.log('[useCustomLobby] Новый порядок команды:', { team, newOrder });
+        
+        try {
+            await api.post(
+                `/api/admin/match-lobby/${lobbyId}/reorder-team`, 
+                { team, userIds: newOrder }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            await refreshLobbyState();
+        } catch (err) {
+            console.error('Ошибка изменения капитана:', err);
+        }
+    }, [lobbyId, team1Users, team2Users, refreshLobbyState]);
+
     // Загрузка и сохранение готовности
     useEffect(() => {
         if (!readyStorageKey) return;
@@ -277,13 +304,15 @@ function useCustomLobby(user, isAdmin) {
         ensureAdminLobby,
         loadInvitedLobby,
         refreshLobbyState,
+        updateLobbyState,
         inviteUserToTeam,
         removeUserFromLobby,
         setMatchFormat,
         togglePlayerReady,
         handleMapAction,
         createMatch,
-        clearLobby
+        clearLobby,
+        makeCaptain
     };
 }
 
