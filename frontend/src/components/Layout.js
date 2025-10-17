@@ -395,7 +395,6 @@ function Layout() {
                                                     className="nav-link btn-active-matches" 
                                                     onClick={() => setIsMenuOpen(false)}
                                                 >
-                                                    <span className="matches-icon">🎮</span>
                                                     <span>Мои матчи</span>
                                                     <span className="matches-badge">{activeMatchesCount}</span>
                                                 </Link>
