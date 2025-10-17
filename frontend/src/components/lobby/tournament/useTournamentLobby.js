@@ -114,6 +114,9 @@ function useTournamentLobby(lobbyId, user) {
             return; 
         }
         
+        // Оптимистичное обновление
+        setReady(!ready);
+        
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/ready`, {
@@ -125,17 +128,21 @@ function useTournamentLobby(lobbyId, user) {
                 body: JSON.stringify({ ready: !ready })
             });
 
-            if (!response.ok) throw new Error('Ошибка установки готовности');
+            if (!response.ok) {
+                // Откат при ошибке
+                setReady(ready);
+                throw new Error('Ошибка установки готовности');
+            }
 
             const data = await response.json();
             
-            if (data.success) {
-                setReady(!ready);
+            if (!data.success) {
+                setReady(ready);
             }
         } catch (error) {
             console.error('❌ [useTournamentLobby] Ошибка готовности:', error);
         }
-    }, [user, lobbyId, ready]);
+    }, [user, lobbyId, ready, setSteamModalOpen]);
 
     // Действие с картой (pick/ban)
     const handleMapAction = useCallback(async (mapName, action) => {
@@ -212,6 +219,11 @@ function useTournamentLobby(lobbyId, user) {
         }
     }, []);
 
+    const handlePlayerReadyUpdate = useCallback((data) => {
+        console.log('[useTournamentLobby] WebSocket: готовность игрока:', data);
+        // Обновление готовности приходит через общий update
+    }, []);
+
     const handleSocketError = useCallback((error) => {
         console.error('❌ [useTournamentLobby] Socket error:', error);
         setError(error.message || 'Ошибка подключения');
@@ -225,6 +237,24 @@ function useTournamentLobby(lobbyId, user) {
         onError: handleSocketError,
         lobbyType: 'tournament'
     });
+
+    // Слушаем обновления готовности игроков
+    useEffect(() => {
+        if (!socket) return;
+        
+        const handlePlayerReadyEvent = (data) => {
+            console.log('[useTournamentLobby] WebSocket: готовность игрока обновлена:', data);
+            if (data.userId === user?.id && typeof data.ready === 'boolean') {
+                setReady(data.ready);
+            }
+        };
+        
+        socket.on('lobby_update_player_ready', handlePlayerReadyEvent);
+        
+        return () => {
+            socket.off('lobby_update_player_ready', handlePlayerReadyEvent);
+        };
+    }, [socket, user]);
 
     return {
         lobby,

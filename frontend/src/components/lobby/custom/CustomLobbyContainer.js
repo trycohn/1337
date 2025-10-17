@@ -34,6 +34,7 @@ function CustomLobbyContainer() {
         canInvite,
         ensureAdminLobby,
         loadInvitedLobby,
+        refreshLobbyState,
         inviteUserToTeam,
         removeUserFromLobby,
         setMatchFormat,
@@ -54,7 +55,7 @@ function CustomLobbyContainer() {
         }
     }, [updateLobbyState]);
 
-    useLobbySocket({
+    const { socket } = useLobbySocket({
         lobbyId,
         user,
         onLobbyState: handleLobbyUpdate,
@@ -62,6 +63,28 @@ function CustomLobbyContainer() {
         onError: (error) => console.error('[CustomLobby] WebSocket ошибка:', error),
         lobbyType: 'custom'
     });
+
+    // Слушаем обновления готовности отдельных игроков через WebSocket
+    React.useEffect(() => {
+        if (!socket) return;
+        
+        const handlePlayerReady = (data) => {
+            console.log('[CustomLobby] WebSocket: Обновление готовности игрока:', data);
+            // Обновление приходит через общий update, поэтому просто обновляем состояние
+            if (data.userId && typeof data.ready === 'boolean') {
+                // Используем refreshLobbyState для полного обновления
+                refreshLobbyState?.();
+            }
+        };
+        
+        socket.on('admin_lobby_player_ready', handlePlayerReady);
+        socket.on('admin_lobby_update', handleLobbyUpdate);
+        
+        return () => {
+            socket.off('admin_lobby_player_ready', handlePlayerReady);
+            socket.off('admin_lobby_update', handleLobbyUpdate);
+        };
+    }, [socket, handleLobbyUpdate]);
 
     // Загрузка пользователя
     useEffect(() => {
@@ -358,12 +381,15 @@ function CustomLobbyContainer() {
                                 draggable={isAdmin}
                                 onDragStart={isAdmin ? (e) => handleDragStart(e, u) : undefined}
                             >
+                                <div className="custom-player-card-content">
                                 <img src={u.avatar || '/default-avatar.png'} alt={u.username} onError={(e) => { e.target.src = '/default-avatar.png'; }} />
-                                <span className="player-name-with-badge">
+                                <span className="custom-player-card-name">
                                     {u.username || u.display_name}
                                     {idx === 0 && <span className="captain-badge" title="Капитан">👑</span>}
                                 </span>
-                                {/* Кнопка готовности: админ для всех, неадмин только для себя */}
+                                </div>
+                                <div className="custom-player-card-actions">
+                                    {/* Кнопка готовности: админ для всех, неадмин только для себя */}
                                 {(isAdmin || u.id === user?.id) && (
                                     <button 
                                         className="btn-ready-toggle"
@@ -392,6 +418,7 @@ function CustomLobbyContainer() {
                                         ✕
                                     </button>
                                 )}
+                                </div>
                             </div>
                         ))}
                     </div>

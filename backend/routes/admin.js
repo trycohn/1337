@@ -1149,6 +1149,10 @@ async function ensureAdminLobbyTables() {
             PRIMARY KEY (lobby_id, user_id)
         );
     `);
+    
+    // Миграция: добавляем поле готовности игрока
+    await pool.query(`ALTER TABLE admin_lobby_invitations ADD COLUMN IF NOT EXISTS is_ready BOOLEAN DEFAULT FALSE`);
+    
     __adminLobbyEnsured = true;
 }
 
@@ -1278,6 +1282,7 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         const invRes = await client.query(
             `SELECT DISTINCT ON (i.user_id)
                     i.user_id, i.team, i.accepted, i.declined, i.created_at, i.updated_at, i.team_position,
+                    COALESCE(i.is_ready, FALSE) as is_ready,
                     u.username, u.avatar_url, u.steam_id
              FROM admin_lobby_invitations i
              JOIN users u ON u.id = i.user_id
@@ -1310,11 +1315,11 @@ router.get('/match-lobby/:lobbyId', authenticateToken, async (req, res) => {
         const team1_users = invRes.rows
             .filter(r => r.team === 1 && r.accepted)
             .sort((a, b) => (a.team_position || 0) - (b.team_position || 0) || a.id - b.id)
-            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
+            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id, is_ready: r.is_ready }));
         const team2_users = invRes.rows
             .filter(r => r.team === 2 && r.accepted)
             .sort((a, b) => (a.team_position || 0) - (b.team_position || 0) || a.id - b.id)
-            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id }));
+            .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url, steam_id: r.steam_id, is_ready: r.is_ready }));
         let unassigned_users = invRes.rows
             .filter(r => r.team === null && r.declined === false && (r.accepted === true || Number(r.user_id) === Number(lobby.created_by)))
             .map(r => ({ id: r.user_id, username: r.username, avatar_url: r.avatar_url }));
@@ -1793,6 +1798,89 @@ router.post('/match-lobby/:lobbyId/format', authenticateToken, async (req, res) 
         await client.query('ROLLBACK');
         console.error('Ошибка установки формата', e);
         return res.status(500).json({ success: false, error: 'Не удалось установить формат' });
+    } finally {
+        client.release();
+    }
+});
+
+// 👤 Готовность отдельного игрока (сам игрок или админ)
+router.post('/match-lobby/:lobbyId/player-ready', authenticateToken, async (req, res) => {
+    await ensureAdminLobbyTables();
+    const { lobbyId } = req.params;
+    const { userId, ready } = req.body || {};
+    
+    const targetUserId = userId || req.user.id; // Если не указан userId - меняем свою готовность
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // Проверка лобби
+        const lobbyCheck = await client.query('SELECT created_by FROM admin_match_lobbies WHERE id = $1 FOR UPDATE', [lobbyId]);
+        if (!lobbyCheck.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, error: 'Лобби не найдено' });
+        }
+        
+        // Проверка прав: админ, создатель или сам игрок
+        const isAdmin = req.user.role === 'admin';
+        const isCreator = Number(lobbyCheck.rows[0].created_by) === Number(req.user.id);
+        const isSelf = Number(targetUserId) === Number(req.user.id);
+        
+        if (!(isAdmin || isCreator || isSelf)) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ success: false, error: 'Нет прав' });
+        }
+        
+        // Обновляем готовность игрока
+        await client.query(
+            `UPDATE admin_lobby_invitations 
+             SET is_ready = $1 
+             WHERE lobby_id = $2 AND user_id = $3`,
+            [Boolean(ready), lobbyId, targetUserId]
+        );
+        
+        // Проверяем готовность всей команды
+        const teamCheck = await client.query(
+            `SELECT team FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2`,
+            [lobbyId, targetUserId]
+        );
+        const playerTeam = teamCheck.rows[0]?.team;
+        
+        let teamAllReady = false;
+        if (playerTeam) {
+            const teamReadyCheck = await client.query(
+                `SELECT COUNT(*) as total, SUM(CASE WHEN is_ready THEN 1 ELSE 0 END) as ready_count
+                 FROM admin_lobby_invitations 
+                 WHERE lobby_id = $1 AND team = $2 AND accepted = TRUE`,
+                [lobbyId, playerTeam]
+            );
+            const total = parseInt(teamReadyCheck.rows[0]?.total) || 0;
+            const readyCount = parseInt(teamReadyCheck.rows[0]?.ready_count) || 0;
+            teamAllReady = total > 0 && total === readyCount;
+        }
+        
+        await client.query('COMMIT');
+        
+        // 📡 WebSocket уведомление всем в лобби
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_player_ready', { 
+                    userId: targetUserId,
+                    ready: Boolean(ready),
+                    team: playerTeam,
+                    teamAllReady
+                });
+            }
+        } catch (_) {}
+        
+        return res.json({ success: true, ready: Boolean(ready), teamAllReady });
+        
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Ошибка готовности игрока', e);
+        return res.status(500).json({ success: false, error: 'Не удалось обновить готовность' });
     } finally {
         client.release();
     }

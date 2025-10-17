@@ -583,6 +583,35 @@ class MatchLobbyService {
         return result.rows[0];
     }
 
+    // 👤 Обновление готовности отдельного игрока в турнирном лобби
+    static async setPlayerReady(lobbyId, userId, ready) {
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+            
+            // Добавляем поле is_ready если его нет
+            await client.query(`ALTER TABLE lobby_invitations ADD COLUMN IF NOT EXISTS is_ready BOOLEAN DEFAULT FALSE`);
+            
+            // Обновляем готовность
+            await client.query(
+                `UPDATE lobby_invitations 
+                 SET is_ready = $1 
+                 WHERE lobby_id = $2 AND user_id = $3`,
+                [Boolean(ready), lobbyId, userId]
+            );
+            
+            await client.query('COMMIT');
+            
+            return { success: true, ready: Boolean(ready) };
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
     // 🚀 Запуск процедуры пик/бан (автоматический выбор первой команды)
     static async startPickBanProcedure(lobbyId) {
         const result = await pool.query(

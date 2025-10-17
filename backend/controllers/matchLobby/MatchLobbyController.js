@@ -375,21 +375,23 @@ class MatchLobbyController {
             const { ready } = req.body;
             const userId = req.user.id;
             
-            const lobby = await MatchLobbyService.setReadyStatus(
-                lobbyId, 
-                userId, 
-                ready
-            );
+            // Обновляем готовность отдельного игрока
+            await MatchLobbyService.setPlayerReady(lobbyId, userId, ready);
             
             // Отправляем обновление всем участникам
             const io = req.app.get('io');
             if (io) {
+                io.to(`lobby_${lobbyId}`).emit('lobby_update_player_ready', {
+                    userId,
+                    ready: Boolean(ready)
+                });
+                
                 await MatchLobbyService.broadcastLobbyUpdate(io, lobbyId);
             }
             
             res.json({
                 success: true,
-                lobby,
+                ready: Boolean(ready),
                 message: ready ? 'Вы готовы' : 'Вы не готовы'
             });
             

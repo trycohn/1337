@@ -41,6 +41,13 @@ function useCustomLobby(user, isAdmin) {
         setInvitedPendingUsers(data.invited_pending_users || []);
         setInvitedDeclinedUsers(data.invited_declined_users || []);
         setOnlineUserIds(data.online_user_ids || []);
+        
+        // Обновляем готовность игроков из данных сервера
+        const readyState = {};
+        [...(data.team1_users || []), ...(data.team2_users || [])].forEach(u => {
+            readyState[u.id] = u.is_ready || false;
+        });
+        setPlayerReady(readyState);
     }, []);
 
     // Создать/получить админ-лобби
@@ -171,21 +178,29 @@ function useCustomLobby(user, isAdmin) {
     }, [lobbyId, refreshLobbyState]);
 
     // Готовность игрока
-    const togglePlayerReady = useCallback((userId, teamId) => {
-        setPlayerReady(prev => {
-            const next = { ...prev, [userId]: !prev[userId] };
-            setTimeout(async () => {
-                const list = teamId === 1 ? team1Users : team2Users;
-                if (list.length > 0 && list.every(u => next[u.id])) {
-                    const token = localStorage.getItem('token');
-                    try {
-                        await api.post(`/api/admin/match-lobby/${lobbyId}/ready`, { team: teamId, ready: true }, { headers: { Authorization: `Bearer ${token}` } });
-                    } catch (_) {}
-                }
-            }, 0);
-            return next;
-        });
-    }, [lobbyId, team1Users, team2Users]);
+    const togglePlayerReady = useCallback(async (userId, teamId) => {
+        if (!lobbyId) return;
+        
+        // Оптимистичное обновление UI
+        setPlayerReady(prev => ({ ...prev, [userId]: !prev[userId] }));
+        
+        const token = localStorage.getItem('token');
+        try {
+            // Отправляем на backend новый endpoint для отдельного игрока
+            const newReady = !playerReady[userId];
+            await api.post(
+                `/api/admin/match-lobby/${lobbyId}/player-ready`, 
+                { userId, ready: newReady }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('[useCustomLobby] Готовность обновлена:', { userId, ready: newReady });
+        } catch (err) {
+            console.error('Ошибка обновления готовности:', err);
+            // Откатываем оптимистичное обновление
+            setPlayerReady(prev => ({ ...prev, [userId]: !prev[userId] }));
+        }
+    }, [lobbyId, playerReady]);
 
     // Действие с картой
     const handleMapAction = useCallback(async (mapName, action) => {
