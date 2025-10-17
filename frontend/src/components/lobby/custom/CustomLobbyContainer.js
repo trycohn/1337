@@ -70,14 +70,16 @@ function CustomLobbyContainer() {
                 return;
             }
             
-            // Для неадминов проверяем приглашение
+            // Для неадминов проверяем через попытку загрузить приглашения
             try {
                 const token = localStorage.getItem('token');
                 const { data } = await api.get('/api/admin/match-lobbies/my-invites', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 
-                // Если есть хотя бы одно приглашение - доступ разрешен
+                console.log('[CustomLobby] Мои приглашения:', data);
+                
+                // Если есть хотя бы одно приглашение (принятое или непринятое) - доступ разрешен
                 if (data?.success && data.invites?.length > 0) {
                     setIsInvited(true);
                 } else {

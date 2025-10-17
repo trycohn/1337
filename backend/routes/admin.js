@@ -1503,7 +1503,7 @@ router.post('/match-lobby/:lobbyId/decline', authenticateToken, async (req, res)
     }
 });
 
-// Мои приглашения в админ-лобби (pending)
+// Мои приглашения в админ-лобби (pending и принятые)
 router.get('/match-lobbies/my-invites', authenticateToken, async (req, res) => {
     await ensureAdminLobbyTables();
     try {
@@ -1513,7 +1513,8 @@ router.get('/match-lobbies/my-invites', authenticateToken, async (req, res) => {
                     aml.status as lobby_status, aml.created_by
              FROM admin_lobby_invitations i
              JOIN admin_match_lobbies aml ON aml.id = i.lobby_id
-             WHERE i.user_id = $1 AND COALESCE(i.accepted,false) = false
+             WHERE i.user_id = $1
+               AND aml.status IN ('waiting','ready','picking','ready_to_create','match_created')
              ORDER BY i.created_at DESC NULLS LAST
              LIMIT 20`,
             [req.user.id]

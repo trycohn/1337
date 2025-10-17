@@ -13,16 +13,29 @@ function InvitePanel({ isOpen, onClose, targetTeam, onInvite, lobbyId }) {
 
     useEffect(() => {
         if (isOpen) {
+            console.log('[InvitePanel] Панель открыта, targetTeam:', targetTeam);
             loadFriends();
             setTimeout(() => searchInputRef.current?.focus(), 50);
         }
-    }, [isOpen]);
+    }, [isOpen, targetTeam]);
 
     const loadFriends = async () => {
         try {
             const token = localStorage.getItem('token');
             const { data } = await api.get('/api/friends', { headers: { Authorization: `Bearer ${token}` } });
-            const list = Array.isArray(data) ? data.map(f => f.friend) : [];
+            console.log('[InvitePanel] Друзья загружены:', data);
+            
+            const list = Array.isArray(data) ? data.map(f => {
+                const friend = f.friend || f;
+                return {
+                    id: friend.id,
+                    username: friend.username,
+                    display_name: friend.username,
+                    avatar: friend.avatar_url || friend.avatar || '/default-avatar.png'
+                };
+            }) : [];
+            
+            console.log('[InvitePanel] Обработанный список друзей:', list);
             setFriends(list);
         } catch (err) {
             console.error('Ошибка загрузки друзей:', err);
@@ -48,7 +61,18 @@ function InvitePanel({ isOpen, onClose, targetTeam, onInvite, lobbyId }) {
                     params: { q: value, limit: 10 },
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setSearchResults(Array.isArray(data) ? data : []);
+                
+                console.log('[InvitePanel] Результаты поиска:', data);
+                
+                // Нормализуем данные поиска
+                const normalized = Array.isArray(data) ? data.map(u => ({
+                    id: u.id,
+                    username: u.username || u.display_name,
+                    display_name: u.username || u.display_name,
+                    avatar: u.avatar_url || u.avatar || '/default-avatar.png'
+                })) : [];
+                
+                setSearchResults(normalized);
             } catch (err) {
                 console.error('Ошибка поиска:', err);
                 setSearchResults([]);
@@ -57,10 +81,27 @@ function InvitePanel({ isOpen, onClose, targetTeam, onInvite, lobbyId }) {
     };
 
     const handleInvite = async (userId) => {
+        console.log('[InvitePanel] Приглашение:', { userId, targetTeam });
+        
+        if (!userId) {
+            console.error('[InvitePanel] userId отсутствует!');
+            return;
+        }
+        
+        if (!targetTeam) {
+            console.error('[InvitePanel] targetTeam отсутствует!');
+            return;
+        }
+        
         if (onInvite) {
-            await onInvite(userId, targetTeam);
-            setSearchQuery('');
-            setSearchResults([]);
+            try {
+                await onInvite(userId, targetTeam);
+                setSearchQuery('');
+                setSearchResults([]);
+                console.log('[InvitePanel] Приглашение успешно отправлено');
+            } catch (error) {
+                console.error('[InvitePanel] Ошибка приглашения:', error);
+            }
         }
     };
 

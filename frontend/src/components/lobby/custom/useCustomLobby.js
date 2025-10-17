@@ -116,14 +116,29 @@ function useCustomLobby(user, isAdmin) {
 
     // Приглашение пользователя
     const inviteUserToTeam = useCallback(async (userId, team) => {
-        if (!userId || !team || !lobbyId) return;
+        console.log('[useCustomLobby] inviteUserToTeam вызван:', { userId, team, lobbyId });
+        
+        if (!userId || !team) {
+            console.error('[useCustomLobby] Отсутствует userId или team:', { userId, team });
+            return;
+        }
+        
+        if (!lobbyId) {
+            console.error('[useCustomLobby] Отсутствует lobbyId! Нужно создать лобби сначала.');
+            return;
+        }
+        
         const token = localStorage.getItem('token');
         try {
             const acceptFlag = !!team;
+            console.log('[useCustomLobby] Отправка приглашения:', { lobbyId, userId, team, acceptFlag });
+            
             await api.post(`/api/admin/match-lobby/${lobbyId}/invite`, { user_id: userId, team, accept: acceptFlag }, { headers: { Authorization: `Bearer ${token}` } });
+            
+            console.log('[useCustomLobby] Приглашение успешно, обновляем состояние');
             await refreshLobbyState();
         } catch (err) {
-            console.error('Ошибка приглашения:', err);
+            console.error('[useCustomLobby] Ошибка приглашения:', err);
         }
     }, [lobbyId, refreshLobbyState]);
 
@@ -203,7 +218,7 @@ function useCustomLobby(user, isAdmin) {
         if (!lobbyId) return;
         const token = localStorage.getItem('token');
         try {
-            await api.post(`/api/admin/match-lobby/${lobbyId}/reset`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(`/api/admin/match-lobby/${lobbyId}/clear`, {}, { headers: { Authorization: `Bearer ${token}` } });
             await refreshLobbyState();
         } catch (err) {
             console.error('Ошибка очистки лобби:', err);
