@@ -116,19 +116,37 @@ function TournamentLobbyContainer() {
             )}
 
             {/* Кнопка запуска процедуры (капитаны) */}
-            {(lobby.status === 'ready' || (lobby.status === 'waiting' && lobby.match_format && lobby.team1_ready && lobby.team2_ready)) && isCaptain && (
-                <div className="start-pickban-section">
-                    <button 
-                        className="btn-start-pickban"
-                        onClick={startPickBan}
-                    >
-                        🚀 Начать BAN/PICK
-                    </button>
-                    <p className="start-hint">
-                        💡 Вы капитан команды и можете начать процедуру выбора карт
-                    </p>
-                </div>
-            )}
+            {(() => {
+                const canStart = (lobby.status === 'ready' || (lobby.status === 'waiting' && lobby.match_format && lobby.team1_ready && lobby.team2_ready)) && isCaptain;
+                
+                console.log('[TournamentLobby] Условия кнопки Start:', {
+                    status: lobby?.status,
+                    format: lobby?.match_format,
+                    team1Ready: lobby?.team1_ready,
+                    team2Ready: lobby?.team2_ready,
+                    isCaptain,
+                    canStart
+                });
+                
+                if (!canStart) return null;
+                
+                return (
+                    <div className="start-pickban-section">
+                        <button 
+                            className="btn-start-pickban"
+                            onClick={() => {
+                                console.log('[TournamentLobby] Нажата кнопка Start BAN/PICK');
+                                startPickBan();
+                            }}
+                        >
+                            🚀 Начать BAN/PICK
+                        </button>
+                        <p className="start-hint">
+                            💡 Вы капитан команды и можете начать процедуру выбора карт
+                        </p>
+                    </div>
+                );
+            })()}
 
             {/* Блок пик/бан карт */}
             {(lobby.status === 'ready' || lobby.status === 'picking') && (

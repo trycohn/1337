@@ -1858,9 +1858,27 @@ router.post('/match-lobby/:lobbyId/player-ready', authenticateToken, async (req,
             const total = parseInt(teamReadyCheck.rows[0]?.total) || 0;
             const readyCount = parseInt(teamReadyCheck.rows[0]?.ready_count) || 0;
             teamAllReady = total > 0 && total === readyCount;
+            
+            // Если все готовы - обновляем готовность команды
+            if (teamAllReady) {
+                const col = playerTeam === 1 ? 'team1_ready' : 'team2_ready';
+                await client.query(
+                    `UPDATE admin_match_lobbies SET ${col} = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+                    [lobbyId]
+                );
+                console.log(`✅ [ADMIN_LOBBY] Команда ${playerTeam} готова!`);
+            }
         }
         
         await client.query('COMMIT');
+        
+        console.log(`📊 [ADMIN_LOBBY] Готовность игрока обновлена:`, {
+            lobbyId,
+            userId: targetUserId,
+            ready: Boolean(ready),
+            team: playerTeam,
+            teamAllReady
+        });
         
         // 📡 WebSocket уведомление всем в лобби
         try {
@@ -1872,8 +1890,17 @@ router.post('/match-lobby/:lobbyId/player-ready', authenticateToken, async (req,
                     team: playerTeam,
                     teamAllReady
                 });
+                
+                // Также отправляем общее обновление лобби
+                io.to(`admin_lobby_${lobbyId}`).emit('admin_lobby_update', { 
+                    message: `Игрок обновил готовность`
+                });
+                
+                console.log(`📡 [ADMIN_LOBBY] WebSocket broadcast отправлен в комнату admin_lobby_${lobbyId}`);
             }
-        } catch (_) {}
+        } catch (err) {
+            console.error('[ADMIN_LOBBY] Ошибка WebSocket broadcast:', err);
+        }
         
         return res.json({ success: true, ready: Boolean(ready), teamAllReady });
         

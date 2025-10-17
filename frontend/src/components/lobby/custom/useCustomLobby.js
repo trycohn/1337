@@ -315,6 +315,17 @@ function useCustomLobby(user, isAdmin) {
         });
     }, [team1Users, team2Users]);
 
+    // 🔄 Live обновление состояния лобби каждые 2 секунды
+    useEffect(() => {
+        if (!lobbyId) return;
+        
+        const interval = setInterval(() => {
+            refreshLobbyState();
+        }, 2000);
+        
+        return () => clearInterval(interval);
+    }, [lobbyId, refreshLobbyState]);
+
     return {
         lobbyId,
         lobby,

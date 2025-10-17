@@ -107,6 +107,17 @@ function useTournamentLobby(lobbyId, user) {
         fetchLobbyInfo(); 
     }, [fetchLobbyInfo]);
 
+    // 🔄 Live обновление состояния лобби каждые 3 секунды
+    useEffect(() => {
+        if (!lobbyId || !user) return;
+        
+        const interval = setInterval(() => {
+            fetchLobbyInfo();
+        }, 3000);
+        
+        return () => clearInterval(interval);
+    }, [lobbyId, user, fetchLobbyInfo]);
+
     // Установка готовности
     const handleReadyToggle = useCallback(async () => {
         if (!user?.steam_id && !user?.steamId) { 

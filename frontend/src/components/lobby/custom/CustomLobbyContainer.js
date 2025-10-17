@@ -270,21 +270,40 @@ function CustomLobbyContainer() {
             )}
 
             {/* Кнопка запуска процедуры (админ или капитаны) */}
-            {(lobby?.status === 'ready' || (lobby?.status === 'waiting' && lobby?.match_format && lobby?.team1_ready && lobby?.team2_ready)) && (isAdmin || isCaptain) && (
-                <div className="start-pickban-section">
-                    <button 
-                        className="btn-start-pickban"
-                        onClick={startPickBan}
-                    >
-                        🚀 Начать BAN/PICK
-                    </button>
-                    {!isAdmin && isCaptain && (
-                        <p className="start-hint">
-                            💡 Вы капитан команды и можете начать процедуру выбора карт
-                        </p>
-                    )}
-                </div>
-            )}
+            {(() => {
+                const canStart = (lobby?.status === 'ready' || (lobby?.status === 'waiting' && lobby?.match_format && lobby?.team1_ready && lobby?.team2_ready)) && (isAdmin || isCaptain);
+                
+                console.log('[CustomLobby] Условия кнопки Start:', {
+                    status: lobby?.status,
+                    format: lobby?.match_format,
+                    team1Ready: lobby?.team1_ready,
+                    team2Ready: lobby?.team2_ready,
+                    isAdmin,
+                    isCaptain,
+                    canStart
+                });
+                
+                if (!canStart) return null;
+                
+                return (
+                    <div className="start-pickban-section">
+                        <button 
+                            className="btn-start-pickban"
+                            onClick={() => {
+                                console.log('[CustomLobby] Нажата кнопка Start BAN/PICK');
+                                startPickBan();
+                            }}
+                        >
+                            🚀 Начать BAN/PICK
+                        </button>
+                        {!isAdmin && isCaptain && (
+                            <p className="start-hint">
+                                💡 Вы капитан команды и можете начать процедуру выбора карт
+                            </p>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Составы команд */}
             <div className="custom-lobby-teams">
@@ -399,7 +418,7 @@ function CustomLobbyContainer() {
                                         {playerReady[u.id] ? '✅' : '❌'}
                                     </button>
                                 )}
-                                {/* Кнопка назначения капитаном */}
+                                {/* Кнопка назначения капитаном игрока */}
                                 {isAdmin && idx !== 0 && (
                                     <button 
                                         className="btn-make-captain"
