@@ -1430,6 +1430,7 @@ function TournamentDetails() {
                                 onUpdateTournamentSetting={handleUpdateTournamentSetting}
                                 onDeleteTournament={openDeleteTournamentModal}
                                 onCreateMatchLobby={handleCreateMatchLobby}
+                                onResendLobbyInvites={handleResendLobbyInvites}
                                 user={user}
                             />
                         ) : (
@@ -2494,6 +2495,53 @@ function TournamentDetails() {
             setTimeout(() => setMessage(''), 5000);
         }
     }, [id, fetchTournamentData]);
+
+    // 📨 Повторная отправка приглашений в лобби
+    const handleResendLobbyInvites = useCallback(async (lobbyId) => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                throw new Error('Отсутствует токен авторизации');
+            }
+            
+            console.log('📨 Пересылаем приглашения в лобби:', lobbyId);
+            
+            const response = await api.post(
+                `/api/tournaments/${id}/lobby/${lobbyId}/resend-invites`,
+                {},
+                {
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log('✅ Приглашения отправлены:', response.data);
+            
+            setMessage(response.data.message || 'Приглашения успешно отправлены!');
+            
+        } catch (error) {
+            console.error('❌ Ошибка отправки приглашений:', error);
+            
+            let errorMessage = 'Ошибка при отправке приглашений';
+            
+            if (error.response?.status === 403) {
+                errorMessage = 'У вас нет прав для управления лобби';
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setMessage(`${errorMessage}`);
+        } finally {
+            setLoading(false);
+            setTimeout(() => setMessage(''), 5000);
+        }
+    }, [id]);
 
     // 👤 Обработчик добавления незарегистрированного участника/команды
     const handleAddParticipant = useCallback(async (dataWithPlayers) => {
