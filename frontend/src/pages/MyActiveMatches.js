@@ -9,6 +9,14 @@ function MyActiveMatches() {
     const [loading, setLoading] = useState(true);
     const [tournamentMatches, setTournamentMatches] = useState([]);
     const [customMatches, setCustomMatches] = useState([]);
+    const [hiddenMatches, setHiddenMatches] = useState(() => {
+        try {
+            const saved = localStorage.getItem('hidden_matches');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
 
     useEffect(() => {
         loadMatches();
@@ -16,7 +24,7 @@ function MyActiveMatches() {
         // Обновление каждые 10 секунд
         const interval = setInterval(loadMatches, 10000);
         return () => clearInterval(interval);
-    }, []);
+    }, [hiddenMatches]);
 
     const loadMatches = async () => {
         try {
@@ -26,13 +34,55 @@ function MyActiveMatches() {
             });
             
             if (data.success) {
-                setTournamentMatches(data.tournamentMatches || []);
-                setCustomMatches(data.customMatches || []);
+                // Фильтруем скрытые матчи
+                const filteredTournament = (data.tournamentMatches || []).filter(
+                    m => !hiddenMatches.includes(`tournament_${m.id}`)
+                );
+                const filteredCustom = (data.customMatches || []).filter(
+                    m => !hiddenMatches.includes(`custom_${m.lobby_id}`)
+                );
+                
+                setTournamentMatches(filteredTournament);
+                setCustomMatches(filteredCustom);
             }
         } catch (error) {
             console.error('Ошибка загрузки матчей:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Скрыть турнирный матч
+    const hideMatch = (matchId) => {
+        const key = `tournament_${matchId}`;
+        const updated = [...hiddenMatches, key];
+        setHiddenMatches(updated);
+        localStorage.setItem('hidden_matches', JSON.stringify(updated));
+        loadMatches();
+    };
+
+    // Выйти из кастомного лобби
+    const leaveCustomLobby = async (lobbyId) => {
+        if (!confirm('Вы уверены, что хотите выйти из этого лобби?')) {
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            await api.delete(`/api/matches/custom-lobby/${lobbyId}/leave`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            // Убираем из локального списка
+            const key = `custom_${lobbyId}`;
+            const updated = [...hiddenMatches, key];
+            setHiddenMatches(updated);
+            localStorage.setItem('hidden_matches', JSON.stringify(updated));
+            
+            loadMatches();
+        } catch (error) {
+            console.error('Ошибка выхода из лобби:', error);
+            alert('Не удалось выйти из лобби');
         }
     };
 
@@ -102,25 +152,37 @@ function MyActiveMatches() {
                             <div 
                                 key={match.id} 
                                 className="match-card"
-                                onClick={() => navigate(`/tournaments/${match.tournament_id}/match/${match.id}`)}
                             >
-                                <div className="match-card-header">
-                                    <span className="tournament-badge">
-                                        {match.tournament_name}
-                                    </span>
-                                    <span className="round-badge">
-                                        {match.round}
-                                    </span>
-                                </div>
+                                <button 
+                                    className="btn-hide-match"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        hideMatch(match.id);
+                                    }}
+                                    title="Скрыть из списка"
+                                >
+                                    ✕
+                                </button>
                                 
-                                <div className="match-teams">
-                                    <div className="team">{match.team1_name}</div>
-                                    <div className="vs">VS</div>
-                                    <div className="team">{match.team2_name}</div>
-                                </div>
-                                
-                                <div className="match-status">
-                                    {getStatusText(match.status, match.lobby_status)}
+                                <div onClick={() => navigate(`/tournaments/${match.tournament_id}/match/${match.id}`)}>
+                                    <div className="match-card-header">
+                                        <span className="tournament-badge">
+                                            {match.tournament_name}
+                                        </span>
+                                        <span className="round-badge">
+                                            {match.round}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="match-teams">
+                                        <div className="team">{match.team1_name}</div>
+                                        <div className="vs">VS</div>
+                                        <div className="team">{match.team2_name}</div>
+                                    </div>
+                                    
+                                    <div className="match-status">
+                                        {getStatusText(match.status, match.lobby_status)}
+                                    </div>
                                 </div>
                                 
                                 {match.lobby_id && (
@@ -149,25 +211,37 @@ function MyActiveMatches() {
                             <div 
                                 key={match.lobby_id} 
                                 className="match-card custom"
-                                onClick={() => navigate('/lobby/custom')}
                             >
-                                <div className="match-card-header">
-                                    <span className="custom-badge">
-                                        CUSTOM
-                                    </span>
-                                    <span className="format-badge">
-                                        {match.match_format?.toUpperCase()}
-                                    </span>
-                                </div>
+                                <button 
+                                    className="btn-leave-match"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        leaveCustomLobby(match.lobby_id);
+                                    }}
+                                    title="Покинуть лобби"
+                                >
+                                    🚪 Выйти
+                                </button>
                                 
-                                <div className="match-teams">
-                                    <div className="team">{match.team1_name}</div>
-                                    <div className="vs">VS</div>
-                                    <div className="team">{match.team2_name}</div>
-                                </div>
-                                
-                                <div className="match-status">
-                                    {getStatusText(match.lobby_status, null)}
+                                <div onClick={() => navigate('/lobby/custom')}>
+                                    <div className="match-card-header">
+                                        <span className="custom-badge">
+                                            CUSTOM
+                                        </span>
+                                        <span className="format-badge">
+                                            {match.match_format?.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="match-teams">
+                                        <div className="team">{match.team1_name}</div>
+                                        <div className="vs">VS</div>
+                                        <div className="team">{match.team2_name}</div>
+                                    </div>
+                                    
+                                    <div className="match-status">
+                                        {getStatusText(match.lobby_status, null)}
+                                    </div>
                                 </div>
                                 
                                 <button 

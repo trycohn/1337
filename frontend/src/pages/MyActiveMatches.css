@@ -94,14 +94,52 @@
     border: 1px solid #333;
     border-radius: 8px;
     padding: 20px;
-    cursor: pointer;
+    position: relative;
     transition: all 0.2s;
+}
+
+.match-card > div {
+    cursor: pointer;
 }
 
 .match-card:hover {
     background: #1a1a1a;
     border-color: #ff0000;
     transform: translateY(-2px);
+}
+
+.btn-hide-match,
+.btn-leave-match {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: 1px solid #666;
+    color: #666;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.btn-hide-match:hover {
+    background: rgba(102, 102, 102, 0.1);
+    border-color: #999;
+    color: #999;
+}
+
+.btn-leave-match {
+    border-color: #ff0000;
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.btn-leave-match:hover {
+    background: rgba(255, 0, 0, 0.1);
+    border-color: #ff0000;
+    color: #ff0000;
 }
 
 .match-card.custom {

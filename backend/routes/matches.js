@@ -123,4 +123,33 @@ router.get('/my-active', authenticateToken, async (req, res) => {
     }
 });
 
+// 🗑️ Выйти из кастомного лобби (удалить приглашение)
+router.delete('/custom-lobby/:lobbyId/leave', authenticateToken, async (req, res) => {
+    try {
+        const { lobbyId } = req.params;
+        const userId = req.user.id;
+        
+        // Удаляем приглашение пользователя
+        await pool.query(
+            `DELETE FROM admin_lobby_invitations 
+             WHERE lobby_id = $1 AND user_id = $2`,
+            [lobbyId, userId]
+        );
+        
+        console.log(`✅ Пользователь ${userId} покинул кастомное лобби ${lobbyId}`);
+        
+        res.json({
+            success: true,
+            message: 'Вы покинули лобби'
+        });
+        
+    } catch (error) {
+        console.error('Ошибка выхода из лобби:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Ошибка при выходе из лобби' 
+        });
+    }
+});
+
 module.exports = router;
