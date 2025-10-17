@@ -4,6 +4,8 @@ const router = express.Router();
 const pool = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
+// ВАЖНО: Специфичные роуты ПЕРЕД параметрическими!
+
 // 🔔 Проверить наличие активных матчей (быстрая проверка для UI)
 router.get('/has-active', authenticateToken, async (req, res) => {
     try {
@@ -148,6 +150,98 @@ router.delete('/custom-lobby/:lobbyId/leave', authenticateToken, async (req, res
         res.status(500).json({ 
             success: false,
             error: 'Ошибка при выходе из лобби' 
+        });
+    }
+});
+
+// 📊 Получить базовую информацию о кастомном матче (ПОСЛЕ специфичных роутов)
+router.get('/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        
+        // Ищем кастомное лобби с созданным матчем
+        const result = await pool.query(
+            `SELECT 
+                aml.id as lobby_id,
+                aml.status,
+                aml.match_format,
+                aml.team1_name,
+                aml.team2_name,
+                aml.connect_url,
+                aml.gotv_url,
+                aml.created_at,
+                aml.created_by
+             FROM admin_match_lobbies aml
+             WHERE aml.id = $1`,
+            [id]
+        );
+        
+        if (!result.rows[0]) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Матч не найден' 
+            });
+        }
+        
+        const lobby = result.rows[0];
+        
+        // Проверка доступа
+        const accessCheck = await pool.query(
+            `SELECT 1 FROM admin_lobby_invitations WHERE lobby_id = $1 AND user_id = $2`,
+            [id, userId]
+        );
+        
+        const isCreator = Number(lobby.created_by) === Number(userId);
+        const isInvited = accessCheck.rows.length > 0;
+        const isAdmin = req.user.role === 'admin';
+        
+        if (!isAdmin && !isCreator && !isInvited) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'Нет доступа к этому матчу' 
+            });
+        }
+        
+        // Получаем участников
+        const participants = await pool.query(
+            `SELECT 
+                ali.user_id,
+                ali.team,
+                u.username,
+                u.avatar_url,
+                u.steam_id
+             FROM admin_lobby_invitations ali
+             JOIN users u ON u.id = ali.user_id
+             WHERE ali.lobby_id = $1 AND ali.accepted = TRUE
+             ORDER BY ali.team, ali.team_position ASC`,
+            [id]
+        );
+        
+        const team1Players = participants.rows.filter(p => p.team === 1);
+        const team2Players = participants.rows.filter(p => p.team === 2);
+        
+        res.json({
+            success: true,
+            match: {
+                id: lobby.lobby_id,
+                status: lobby.status,
+                match_format: lobby.match_format,
+                team1_name: lobby.team1_name,
+                team2_name: lobby.team2_name,
+                team1_players: team1Players,
+                team2_players: team2Players,
+                connect_url: lobby.connect_url,
+                gotv_url: lobby.gotv_url,
+                created_at: lobby.created_at
+            }
+        });
+        
+    } catch (error) {
+        console.error('Ошибка получения матча:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Ошибка при получении матча' 
         });
     }
 });
