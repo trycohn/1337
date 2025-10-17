@@ -47,9 +47,18 @@ function MatchLobbyNotification({ socket, user }) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (!cancelled && res?.data?.success && Array.isArray(res.data.lobbies) && res.data.lobbies.length > 0) {
-                    const invites = res.data.lobbies.map(l => ({ lobbyId: l.id, type: 'tournament' }));
-                    setLobbyInvites(invites);
-                    setShowNotification(true);
+                    // ⏰ Фильтруем устаревшие лобби (> 1 час)
+                    const validLobbies = res.data.lobbies.filter(l => {
+                        if (!l.created_at) return true; // На всякий случай
+                        const ageHours = (Date.now() - new Date(l.created_at).getTime()) / (1000 * 60 * 60);
+                        return ageHours <= 1;
+                    });
+                    
+                    if (validLobbies.length > 0) {
+                        const invites = validLobbies.map(l => ({ lobbyId: l.id, type: 'tournament' }));
+                        setLobbyInvites(invites);
+                        setShowNotification(true);
+                    }
                 }
                 // Также подхватим админ-приглашения
                 const res2 = await axios.get('/api/admin/match-lobbies/my-invites', {
@@ -62,9 +71,14 @@ function MatchLobbyNotification({ socket, user }) {
                 }
             } catch (e) {
                 // молча игнорируем
+                console.log('⚠️ Ошибка загрузки активных лобби:', e.message);
             }
         }
-        fetchActiveLobbies();
+        
+        if (user) {
+            fetchActiveLobbies();
+        }
+        
         return () => { cancelled = true; };
     }, [user]);
 

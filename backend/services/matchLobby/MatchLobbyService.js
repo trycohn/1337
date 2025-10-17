@@ -222,10 +222,12 @@ class MatchLobbyService {
     // 🔎 Список активных лобби для пользователя (по приглашениям)
     static async getActiveLobbiesForUser(userId) {
         const result = await pool.query(
-            `SELECT l.*
+            `SELECT l.*,
+                    EXTRACT(EPOCH FROM (NOW() - l.created_at)) / 3600 as age_hours
              FROM match_lobbies l
              JOIN lobby_invitations i ON i.lobby_id = l.id AND i.user_id = $1
              WHERE l.status IN ('waiting','ready','picking')
+               AND l.created_at > NOW() - INTERVAL '${LOBBY_LIFETIME_HOURS} hours'
              ORDER BY l.updated_at DESC NULLS LAST, l.created_at DESC NULLS LAST
              LIMIT 5`,
             [userId]
