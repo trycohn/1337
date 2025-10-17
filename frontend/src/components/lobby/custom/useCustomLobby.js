@@ -206,11 +206,24 @@ function useCustomLobby(user, isAdmin) {
     const handleMapAction = useCallback(async (mapName, action) => {
         if (!lobbyId) return;
         const token = localStorage.getItem('token');
+        
+        console.log('[useCustomLobby] Действие с картой:', { mapName, action });
+        
         try {
-            await api.post(`/api/admin/match-lobby/${lobbyId}/map-action`, { map_name: mapName, action }, { headers: { Authorization: `Bearer ${token}` } });
+            await api.post(
+                `/api/admin/match-lobby/${lobbyId}/select-map`, 
+                { mapName, action }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            console.log('[useCustomLobby] Действие успешно выполнено');
             await refreshLobbyState();
         } catch (err) {
-            console.error('Ошибка действия с картой:', err);
+            console.error('[useCustomLobby] Ошибка действия с картой:', err);
+            console.error('[useCustomLobby] Детали:', {
+                status: err.response?.status,
+                data: err.response?.data
+            });
         }
     }, [lobbyId, refreshLobbyState]);
 

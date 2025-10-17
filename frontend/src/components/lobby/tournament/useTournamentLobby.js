@@ -188,26 +188,36 @@ function useTournamentLobby(lobbyId, user) {
             return;
         }
 
+        console.log('[useTournamentLobby] Действие с картой:', { mapName, action });
+
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/map-action`, {
+            const response = await fetch(`${API_URL}/api/tournaments/lobby/${lobbyId}/select-map`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ map_name: mapName, action })
+                body: JSON.stringify({ mapName, action })
             });
 
-            if (!response.ok) throw new Error('Ошибка действия с картой');
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('[useTournamentLobby] Ошибка от сервера:', errorData);
+                throw new Error(errorData.error || 'Ошибка действия с картой');
+            }
 
             const data = await response.json();
+            console.log('[useTournamentLobby] Ответ сервера:', data);
+            
             if (!data.success) throw new Error(data.error);
+            
+            console.log('✅ [useTournamentLobby] Действие успешно выполнено');
             
         } catch (error) {
             console.error('❌ [useTournamentLobby] Ошибка действия с картой:', error);
         }
-    }, [user, lobbyId]);
+    }, [user, lobbyId, setSteamModalOpen]);
 
     // Ручной запуск процедуры пик/бан
     const startPickBan = useCallback(async () => {

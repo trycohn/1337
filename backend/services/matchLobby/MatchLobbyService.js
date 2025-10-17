@@ -638,10 +638,22 @@ class MatchLobbyService {
             throw new Error('Процедура уже запущена');
         }
         
-        // Случайный выбор первой команды
-        const firstPicker = lobby.team1_id || lobby.team2_id || 1;
-        const randomTeam = Math.random() < 0.5 ? lobby.team1_id : lobby.team2_id;
-        const firstPickerTeamId = randomTeam || firstPicker;
+        // 🎲 Случайный выбор первой команды (50/50)
+        const team1Id = lobby.team1_id;
+        const team2Id = lobby.team2_id;
+        
+        if (!team1Id || !team2Id) {
+            throw new Error('Не найдены ID команд в лобби');
+        }
+        
+        const firstPickerTeamId = Math.random() < 0.5 ? team1Id : team2Id;
+        
+        console.log(`🎲 [MatchLobbyService] Случайный выбор первой команды:`, {
+            team1Id,
+            team2Id,
+            selected: firstPickerTeamId,
+            isTeam1: firstPickerTeamId === team1Id
+        });
         
         // Обновляем статус
         const updateResult = await pool.query(

@@ -1755,8 +1755,10 @@ router.post('/match-lobby/:lobbyId/format', authenticateToken, async (req, res) 
         if (currentLobby.team1_ready && currentLobby.team2_ready && lobby.status === 'waiting') {
             console.log('🚀 [ADMIN_LOBBY] Автостарт процедуры после установки формата');
             
-            // Назначаем случайную команду первой
+            // 🎲 Назначаем случайную команду первой (50/50)
             const firstPicker = Math.random() < 0.5 ? 1 : 2;
+            
+            console.log(`🎲 [ADMIN_LOBBY] Случайный выбор первой команды: ${firstPicker} (${firstPicker === 1 ? 'Команда 1' : 'Команда 2'})`);
             
             lobby = (await client.query(
                 `UPDATE admin_match_lobbies 
@@ -1950,8 +1952,10 @@ router.post('/match-lobby/:lobbyId/ready', authenticateToken, async (req, res) =
         if (lobby.team1_ready && lobby.team2_ready && lobby.match_format && lobby.status === 'waiting') {
             console.log('🚀 [ADMIN_LOBBY] Автостарт процедуры пик/бан');
             
-            // Назначаем случайную команду первой
+            // 🎲 Назначаем случайную команду первой (50/50)
             const firstPicker = Math.random() < 0.5 ? 1 : 2;
+            
+            console.log(`🎲 [ADMIN_LOBBY] Случайный выбор первой команды: ${firstPicker} (${firstPicker === 1 ? 'Команда 1' : 'Команда 2'})`);
             
             lobby = (await client.query(
                 `UPDATE admin_match_lobbies 
@@ -2453,13 +2457,21 @@ router.post('/match-lobby/:lobbyId/start-pick', authenticateToken, async (req, r
         }
         const team1Name = team1Captain ? `${team1Captain}_team` : (lobby.team1_name || 'Команда 1');
         const team2Name = team2Captain ? `${team2Captain}_team` : (lobby.team2_name || 'Команда 2');
-        const fp = firstPicker === 1 || firstPicker === 2 ? firstPicker : (Math.random() < 0.5 ? 1 : 2);
+        
+        // 🎲 Случайный выбор первой команды (50/50)
+        let fp;
+        if (firstPicker === 1 || firstPicker === 2) {
+            fp = firstPicker; // Если передан вручную - используем его
+        } else {
+            fp = Math.random() < 0.5 ? 1 : 2; // Случайный выбор
+        }
         
         console.log('[START-PICK] Запуск процедуры:', {
             lobbyId,
             team1Name,
             team2Name,
             firstPicker: fp,
+            isRandom: !(firstPicker === 1 || firstPicker === 2),
             team1Captain,
             team2Captain
         });
