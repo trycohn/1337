@@ -63,7 +63,7 @@ function MyActiveMatches() {
 
     // Выйти из кастомного лобби
     const leaveCustomLobby = async (lobbyId) => {
-        if (!confirm('Вы уверены, что хотите выйти из этого лобби?')) {
+        if (!window.confirm('Вы уверены, что хотите выйти из этого лобби?')) {
             return;
         }
         
