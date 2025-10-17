@@ -1,0 +1,217 @@
+/* 🎮 MyActiveMatches Styles */
+.my-matches-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #000;
+    min-height: 100vh;
+}
+
+.matches-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.matches-header h1 {
+    color: #fff;
+    font-size: 32px;
+    margin: 0 0 8px 0;
+}
+
+.matches-count {
+    color: #999;
+    font-size: 14px;
+    margin: 0;
+}
+
+.matches-loading,
+.no-matches {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 60px 20px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.loading-icon,
+.empty-icon {
+    font-size: 64px;
+}
+
+.no-matches h2 {
+    color: #fff;
+    font-size: 24px;
+    margin: 0;
+}
+
+.no-matches p {
+    color: #999;
+    font-size: 16px;
+    margin: 0;
+}
+
+.btn-tournaments {
+    padding: 12px 24px;
+    background: #ff0000;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-tournaments:hover {
+    background: #cc0000;
+    transform: translateY(-2px);
+}
+
+.matches-section {
+    margin-bottom: 40px;
+}
+
+.matches-section h2 {
+    color: #fff;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+}
+
+.matches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.match-card {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.match-card:hover {
+    background: #1a1a1a;
+    border-color: #ff0000;
+    transform: translateY(-2px);
+}
+
+.match-card.custom {
+    border-color: #666;
+}
+
+.match-card.custom:hover {
+    border-color: #ff0000;
+}
+
+.match-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.tournament-badge,
+.custom-badge {
+    background: #ff0000;
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-badge {
+    background: #666;
+    color: #fff;
+}
+
+.round-badge,
+.format-badge {
+    background: #333;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.team {
+    flex: 1;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.vs {
+    color: #ff0000;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.match-status {
+    color: #999;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.btn-join-lobby {
+    width: 100%;
+    padding: 10px;
+    background: #ff0000;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-join-lobby:hover {
+    background: #cc0000;
+}
+
+@media (max-width: 768px) {
+    .my-matches-container {
+        padding: 12px;
+    }
+    
+    .matches-header h1 {
+        font-size: 24px;
+    }
+    
+    .matches-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .match-teams {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+

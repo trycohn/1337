@@ -13,6 +13,7 @@ function Layout() {
     const { user, logout } = useAuth(); // Получаем пользователя из AuthContext
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [activeMatchesCount, setActiveMatchesCount] = useState(0);
     const navigate = useNavigate();
     const location = useLocation();
     const { loading, setLoading } = useLoader();
@@ -89,6 +90,26 @@ function Layout() {
         }
     }, []);
 
+    // Функция для проверки активных матчей
+    const fetchActiveMatches = useCallback(async () => {
+        if (!user) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await api.get('/api/matches/has-active', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setActiveMatchesCount(response.data.count || 0);
+            }
+        } catch (error) {
+            console.error('❌ [Layout] Ошибка проверки активных матчей:', error);
+        }
+    }, [user]);
+
     // Обновляем ref при изменении функции
     useEffect(() => {
         fetchUnreadCountRef.current = fetchUnreadCount;
@@ -112,13 +133,25 @@ function Layout() {
         }
     }, []);
 
-    // Загрузка счетчика при готовности пользователя (только один раз при загрузке)
+    // Загрузка счетчиков при готовности пользователя
     useEffect(() => {
         if (user && fetchUnreadCountRef.current) {
-            console.log('📊 [Layout] Пользователь загружен, получаем счетчик сообщений');
+            console.log('📊 [Layout] Пользователь загружен, получаем счетчики');
             fetchUnreadCountRef.current();
+            fetchActiveMatches();
         }
-    }, [user]);
+    }, [user, fetchActiveMatches]);
+
+    // Периодическое обновление активных матчей (каждые 30 секунд)
+    useEffect(() => {
+        if (!user) return;
+        
+        const interval = setInterval(() => {
+            fetchActiveMatches();
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, [user, fetchActiveMatches]);
 
     // 🚀 Socket.IO подключение с новым hook
     const socket = useSocket();
@@ -354,6 +387,17 @@ function Layout() {
                                             {hasMyTournaments && (
                                                 <Link to="/my-tournaments" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>
                                                     Мои турниры
+                                                </Link>
+                                            )}
+                                            {activeMatchesCount > 0 && (
+                                                <Link 
+                                                    to="/my-matches" 
+                                                    className="nav-link btn-active-matches" 
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                >
+                                                    <span className="matches-icon">🎮</span>
+                                                    <span>Мои матчи</span>
+                                                    <span className="matches-badge">{activeMatchesCount}</span>
                                                 </Link>
                                             )}
                                             <Link to="/profile" className="nav-link btn-ghost" onClick={() => setIsMenuOpen(false)}>Мой профиль</Link>

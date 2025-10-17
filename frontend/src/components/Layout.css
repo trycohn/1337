@@ -19,7 +19,56 @@
 .header-nav .admin-link:hover {
     color: #ff8e8e !important;
     text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
-} 
+}
+
+/* Кнопка активных матчей */
+.header-nav .btn-active-matches {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ff0000 !important;
+    color: #000 !important;
+    border: 2px solid #ff0000;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    animation: pulse-matches 2s ease-in-out infinite;
+    position: relative;
+}
+
+@keyframes pulse-matches {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+        transform: scale(1.02);
+    }
+}
+
+.header-nav .btn-active-matches:hover {
+    background: #cc0000 !important;
+    transform: scale(1.05) !important;
+    text-decoration: none;
+}
+
+.matches-icon {
+    font-size: 18px;
+}
+
+.matches-badge {
+    background: #000;
+    color: #ff0000;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+}
 
 /* Логотип сайта */
 .header-nav .site-logo {

@@ -27,6 +27,7 @@ import MatchDetailsPage from './components/tournament/MatchDetailsPage'; // Им
 import TeamProfile from './components/tournament/TeamProfile';
 import ReferralLanding from './pages/ReferralLanding';
 import MyTournaments from './pages/MyTournaments';
+import MyActiveMatches from './pages/MyActiveMatches';
 import TournamentRulesPage from './pages/TournamentRulesPage';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -95,6 +96,7 @@ function App() {
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
+                                <Route path="/my-matches" element={<PrivateRoute component={MyActiveMatches} />} />
                                 <Route path="/matches/custom/:id" element={<PrivateRoute component={CustomMatchPage} />} />
                                 <Route path="/leaderboard" element={<AdminRoute component={GlobalLeaderboardPage} />} />
                             </Route>
