@@ -64,7 +64,6 @@ router.get('/my-active', authenticateToken, async (req, res) => {
                 m.tournament_id,
                 m.round,
                 m.status,
-                m.scheduled_time,
                 m.team1_id,
                 m.team2_id,
                 t1.name as team1_name,
@@ -73,7 +72,8 @@ router.get('/my-active', authenticateToken, async (req, res) => {
                 trn.game,
                 'tournament' as match_type,
                 ml.id as lobby_id,
-                ml.status as lobby_status
+                ml.status as lobby_status,
+                m.created_at
              FROM matches m
              JOIN tournaments trn ON trn.id = m.tournament_id
              LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
@@ -83,7 +83,7 @@ router.get('/my-active', authenticateToken, async (req, res) => {
              LEFT JOIN match_lobbies ml ON ml.match_id = m.id
              WHERE (ttm1.user_id = $1 OR ttm2.user_id = $1)
                AND m.status IN ('pending', 'ready', 'in_progress')
-             ORDER BY m.scheduled_time ASC NULLS LAST, m.created_at DESC
+             ORDER BY m.created_at DESC
              LIMIT 20`,
             [userId]
         );
