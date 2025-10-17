@@ -162,9 +162,9 @@
 }
 
 .custom-player-card span {
-    flex: 1;
     color: #fff;
     font-size: 14px;
+
 }
 
 .player-name-with-badge {

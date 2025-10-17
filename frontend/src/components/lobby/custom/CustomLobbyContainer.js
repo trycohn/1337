@@ -264,11 +264,14 @@ function CustomLobbyContainer() {
                                 draggable={isAdmin}
                                 onDragStart={isAdmin ? (e) => handleDragStart(e, u) : undefined}
                             >
-                                <img src={u.avatar || '/default-avatar.png'} alt={u.username} onError={(e) => { e.target.src = '/default-avatar.png'; }} />
-                                <span className="player-name-with-badge">
+                                <div className="custom-player-card-content">
+                                    <img src={u.avatar || '/default-avatar.png'} alt={u.username} onError={(e) => { e.target.src = '/default-avatar.png'; }} />
+                                <span className="custom-player-card-name">
                                     {u.username || u.display_name}
                                     {idx === 0 && <span className="captain-badge" title="Капитан">👑</span>}
                                 </span>
+                                </div>
+                                <div className="custom-player-card-actions">
                                 {/* Кнопка готовности: админ для всех, неадмин только для себя */}
                                 {(isAdmin || u.id === user?.id) && (
                                     <button 
@@ -298,6 +301,7 @@ function CustomLobbyContainer() {
                                         ✕
                                     </button>
                                 )}
+                                </div>
                             </div>
                         ))}
                     </div>
