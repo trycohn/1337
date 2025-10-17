@@ -7,6 +7,40 @@
     min-height: 100vh;
 }
 
+.lobby-viewer-mode {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #111;
+    border: 1px solid #666;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 16px;
+}
+
+.viewer-icon {
+    font-size: 24px;
+}
+
+.viewer-text {
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.viewer-hint {
+    color: #999;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.access-hint {
+    color: #999;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
 .lobby-access-denied,
 .lobby-loading {
     display: flex;

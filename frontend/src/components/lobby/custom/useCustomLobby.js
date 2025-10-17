@@ -30,6 +30,19 @@ function useCustomLobby(user, isAdmin) {
         return true; // Backend проверяет права
     }, [isAdmin, lobby, user]);
 
+    // Обновление состояния лобби
+    const updateLobbyState = useCallback((data) => {
+        setLobby(data.lobby);
+        setSelections(data.selections || []);
+        setAvailableMaps(data.available_maps || []);
+        setTeam1Users(data.team1_users || []);
+        setTeam2Users(data.team2_users || []);
+        setUnassignedUsers(data.unassigned_users || []);
+        setInvitedPendingUsers(data.invited_pending_users || []);
+        setInvitedDeclinedUsers(data.invited_declined_users || []);
+        setOnlineUserIds(data.online_user_ids || []);
+    }, []);
+
     // Создать/получить админ-лобби
     const ensureAdminLobby = useCallback(async () => {
         if (!isAdmin) return;
@@ -52,20 +65,40 @@ function useCustomLobby(user, isAdmin) {
         } finally {
             setLoading(false);
         }
-    }, [isAdmin]);
+    }, [isAdmin, updateLobbyState]);
 
-    // Обновление состояния лобби
-    const updateLobbyState = useCallback((data) => {
-        setLobby(data.lobby);
-        setSelections(data.selections || []);
-        setAvailableMaps(data.available_maps || []);
-        setTeam1Users(data.team1_users || []);
-        setTeam2Users(data.team2_users || []);
-        setUnassignedUsers(data.unassigned_users || []);
-        setInvitedPendingUsers(data.invited_pending_users || []);
-        setInvitedDeclinedUsers(data.invited_declined_users || []);
-        setOnlineUserIds(data.online_user_ids || []);
-    }, []);
+    // Загрузить лобби для приглашенного пользователя
+    const loadInvitedLobby = useCallback(async () => {
+        if (isAdmin) return; // Админы создают лобби сами
+        
+        const token = localStorage.getItem('token');
+        setLoading(true);
+        try {
+            // Получаем список приглашений
+            const { data } = await api.get('/api/admin/match-lobbies/my-invites', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (data?.success && data.invites?.length > 0) {
+                // Берем первое активное лобби
+                const invite = data.invites[0];
+                setLobbyId(invite.lobby_id);
+                
+                // Загружаем полное состояние лобби
+                const r = await api.get(`/api/admin/match-lobby/${invite.lobby_id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (r?.data?.success) {
+                    updateLobbyState(r.data);
+                }
+            }
+        } catch (err) {
+            console.error('Ошибка загрузки приглашенного лобби:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [isAdmin, updateLobbyState]);
 
     // Загрузка состояния лобби
     const refreshLobbyState = useCallback(async () => {
@@ -227,6 +260,7 @@ function useCustomLobby(user, isAdmin) {
         loading,
         canInvite,
         ensureAdminLobby,
+        loadInvitedLobby,
         refreshLobbyState,
         inviteUserToTeam,
         removeUserFromLobby,
