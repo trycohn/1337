@@ -12,11 +12,11 @@ router.get('/has-active', authenticateToken, async (req, res) => {
         // Проверяем турнирные матчи
         const tournamentCheck = await pool.query(
             `SELECT COUNT(*) as count
-             FROM tournament_matches tm
-             LEFT JOIN tournament_team_members ttm1 ON ttm1.team_id = tm.team1_id
-             LEFT JOIN tournament_team_members ttm2 ON ttm2.team_id = tm.team2_id
+             FROM matches m
+             LEFT JOIN tournament_team_members ttm1 ON ttm1.team_id = m.team1_id
+             LEFT JOIN tournament_team_members ttm2 ON ttm2.team_id = m.team2_id
              WHERE (ttm1.user_id = $1 OR ttm2.user_id = $1)
-               AND tm.status IN ('pending', 'ready', 'in_progress')
+               AND m.status IN ('pending', 'ready', 'in_progress')
              LIMIT 1`,
             [userId]
         );
@@ -60,13 +60,13 @@ router.get('/my-active', authenticateToken, async (req, res) => {
         // 🏆 Турнирные матчи (где пользователь участник команды)
         const tournamentMatches = await pool.query(
             `SELECT DISTINCT
-                tm.id,
-                tm.tournament_id,
-                tm.round,
-                tm.status,
-                tm.scheduled_time,
-                tm.team1_id,
-                tm.team2_id,
+                m.id,
+                m.tournament_id,
+                m.round,
+                m.status,
+                m.scheduled_time,
+                m.team1_id,
+                m.team2_id,
                 t1.name as team1_name,
                 t2.name as team2_name,
                 trn.name as tournament_name,
@@ -74,16 +74,16 @@ router.get('/my-active', authenticateToken, async (req, res) => {
                 'tournament' as match_type,
                 ml.id as lobby_id,
                 ml.status as lobby_status
-             FROM tournament_matches tm
-             JOIN tournaments trn ON trn.id = tm.tournament_id
-             LEFT JOIN tournament_teams t1 ON t1.id = tm.team1_id
-             LEFT JOIN tournament_teams t2 ON t2.id = tm.team2_id
-             LEFT JOIN tournament_team_members ttm1 ON ttm1.team_id = tm.team1_id
-             LEFT JOIN tournament_team_members ttm2 ON ttm2.team_id = tm.team2_id
-             LEFT JOIN match_lobbies ml ON ml.match_id = tm.id
+             FROM matches m
+             JOIN tournaments trn ON trn.id = m.tournament_id
+             LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
+             LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+             LEFT JOIN tournament_team_members ttm1 ON ttm1.team_id = m.team1_id
+             LEFT JOIN tournament_team_members ttm2 ON ttm2.team_id = m.team2_id
+             LEFT JOIN match_lobbies ml ON ml.match_id = m.id
              WHERE (ttm1.user_id = $1 OR ttm2.user_id = $1)
-               AND tm.status IN ('pending', 'ready', 'in_progress')
-             ORDER BY tm.scheduled_time ASC NULLS LAST, tm.created_at DESC
+               AND m.status IN ('pending', 'ready', 'in_progress')
+             ORDER BY m.scheduled_time ASC NULLS LAST, m.created_at DESC
              LIMIT 20`,
             [userId]
         );
