@@ -18,16 +18,16 @@ function createSocketServer(httpServer) {
       credentials: true
     },
     
-    // 🚀 Транспорты: временно только polling, чтобы убрать WS-ошибки без ребилда фронта
-    transports: ['polling'],
+    // 🚀 Транспорты: WebSocket + polling fallback
+    transports: ['websocket', 'polling'],
     
     // ⚙️ Простые настройки
     pingTimeout: 30000,
     pingInterval: 20000,
     maxHttpBufferSize: 1e6,
     allowEIO3: false,
-    // ❌ Запрещаем upgrade до WebSocket — клиент не будет пытаться перейти на WS
-    allowUpgrades: false,
+    // ✅ Разрешаем upgrade до WebSocket
+    allowUpgrades: true,
     
     // 🛡️ Безопасность
     serveClient: false,

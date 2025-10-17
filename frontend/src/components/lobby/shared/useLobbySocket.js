@@ -36,17 +36,30 @@ function useLobbySocket({
     }, [lobbyId]);
 
     useEffect(() => {
-        if (!user || !lobbyId) {
-            console.warn('⚠️ [useLobbySocket] Нет user или lobbyId');
+        const token = localStorage.getItem('token');
+        
+        // Не создаем socket если нет критичных параметров
+        if (!user || !lobbyId || !token) {
+            if (lobbyId) {
+                console.warn('⚠️ [useLobbySocket] Пропускаем подключение:', { 
+                    hasUser: !!user, 
+                    lobbyId,
+                    hasToken: !!token
+                });
+            }
             return;
         }
 
-        const token = localStorage.getItem('token');
         console.log(`🔌 [useLobbySocket] Инициализация подключения к ${lobbyType} лобби ${lobbyId}`);
         
+        // ⚠️ Временно только polling пока не настроен WebSocket в Nginx
         const socket = io(API_URL, { 
             auth: { token }, 
-            transports: ['websocket', 'polling'] 
+            transports: ['polling', 'websocket'], // Сначала polling
+            upgrade: true, // Позволит апгрейд когда WebSocket заработает
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 5
         });
         
         socketRef.current = socket;
