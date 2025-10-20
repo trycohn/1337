@@ -161,8 +161,8 @@ function CreateTournament() {
             bracket_type: formData.bracket_type, // 🔧 ИСПРАВЛЕНО: передаем bracket_type как есть для всех типов турниров
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             mix_type: formData.format === 'mix' ? formData.mix_type : null,
-            // 🆕 Передаем wins_to_win только для MIX
-            wins_to_win: formData.format === 'mix' && formData.mix_type === 'full' ? parseInt(formData.wins_to_win || 4, 10) : null,
+            // 🆕 Передаем wins_to_win только для Full Mix + Swiss System
+            wins_to_win: formData.format === 'mix' && formData.mix_type === 'full' && formData.bracket_type === 'swiss' ? parseInt(formData.wins_to_win || 4, 10) : null,
             // 🆕 Передаём флаги требований привязок только для MIX
             require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
             require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,

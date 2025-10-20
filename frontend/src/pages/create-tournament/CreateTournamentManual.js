@@ -867,7 +867,7 @@ function CreateTournamentManual({ onBack }) {
                   {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
                 </small>
               </div>
-              {formData.mix_type === 'full' && (
+              {formData.mix_type === 'full' && formData.bracket_type === 'swiss' && (
                 <div className="form-group">
                   <label>Минимальное число раундов (до победы)</label>
                   <input
@@ -880,7 +880,7 @@ function CreateTournamentManual({ onBack }) {
                     disabled={!verificationStatus.canCreate}
                     required
                   />
-                  <small className="form-hint">Используется в Full Mix для отбора финалистов и доп. раундов</small>
+                  <small className="form-hint">Количество побед для автоматического попадания в финал (Swiss System)</small>
                 </div>
               )}
               <div className="form-group">

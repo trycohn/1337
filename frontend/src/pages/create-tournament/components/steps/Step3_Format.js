@@ -295,7 +295,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
             </small>
           </div>
 
-          {data.mix_type === 'full' && (
+          {data.mix_type === 'full' && data.bracket_type === 'swiss' && (
             <div className="form-group">
               <label>Минимум побед для выхода в финал</label>
               <input
@@ -306,7 +306,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
                 onChange={(e) => handleChange('wins_to_win', parseInt(e.target.value, 10))}
               />
               <small className="form-hint">
-                Количество побед для автоматического попадания в финал
+                Количество побед для автоматического попадания в финал (Swiss System)
               </small>
             </div>
           )}
