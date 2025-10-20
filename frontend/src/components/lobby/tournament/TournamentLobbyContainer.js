@@ -8,6 +8,7 @@ import MapSelectionBoard from '../shared/MapSelectionBoard';
 import ParticipantStatus from '../shared/ParticipantStatus';
 import ConnectionBlock from '../shared/ConnectionBlock';
 import ObserverZone from '../shared/ObserverZone';
+import TeamRosterBase from '../shared/TeamRosterBase';
 import './TournamentLobby.css';
 
 function TournamentLobbyContainer() {
@@ -103,15 +104,14 @@ function TournamentLobbyContainer() {
                 lobbyType="tournament"
             />
 
-            {/* Статус участников */}
-            {lobby.status === 'waiting' && (
-                <ParticipantStatus
-                    team1={{ id: lobby.team1_id, name: lobby.team1_name, ready: lobby.team1_ready }}
-                    team2={{ id: lobby.team2_id, name: lobby.team2_name, ready: lobby.team2_ready }}
-                    myTeamId={myTeamId}
-                    onReadyToggle={handleReadyToggle}
-                    ready={ready}
-                    canToggle={!!myTeamId}
+            {/* Блок подключения */}
+            {(lobby.status === 'ready_to_create' || lobby.status === 'completed') && (
+                <ConnectionBlock
+                    connectUrl={lobby.connect_url}
+                    gotvUrl={lobby.gotv_url}
+                    serverLocation={lobby.server_location}
+                    status={lobby.status === 'completed' ? 'active' : 'ready'}
+                    matchPageUrl={lobby.match_id ? `/tournaments/${lobby.tournament_id}/matches/${lobby.match_id}` : null}
                 />
             )}
 
@@ -153,6 +153,47 @@ function TournamentLobbyContainer() {
                 );
             })()}
 
+            {/* Составы команд */}
+            <div className="tournament-teams-rosters">
+                <TeamRosterBase
+                    teamName={lobby.team1_name}
+                    players={(lobby.team1_participants || []).map(p => ({
+                        id: p.user_id,
+                        username: p.username,
+                        display_name: p.username,
+                        avatar: p.avatar_url || '/default-avatar.png',
+                        is_captain: p.is_captain
+                    }))}
+                    teamNumber={1}
+                    showReady={lobby.status === 'waiting'}
+                    isReady={lobby.team1_ready}
+                    canToggleReady={myTeamId === lobby.team1_id}
+                    onToggleReady={handleReadyToggle}
+                />
+                
+                <TeamRosterBase
+                    teamName={lobby.team2_name}
+                    players={(lobby.team2_participants || []).map(p => ({
+                        id: p.user_id,
+                        username: p.username,
+                        display_name: p.username,
+                        avatar: p.avatar_url || '/default-avatar.png',
+                        is_captain: p.is_captain
+                    }))}
+                    teamNumber={2}
+                    showReady={lobby.status === 'waiting'}
+                    isReady={lobby.team2_ready}
+                    canToggleReady={myTeamId === lobby.team2_id}
+                    onToggleReady={handleReadyToggle}
+                />
+            </div>
+
+            {/* Зона наблюдателей */}
+            <ObserverZone
+                observers={lobby.observers || []}
+                showUnassigned={false}
+            />
+
             {/* Блок пик/бан карт */}
             {(lobby.status === 'ready' || lobby.status === 'picking') && (
                 <MapSelectionBoard
@@ -170,23 +211,6 @@ function TournamentLobbyContainer() {
                     isCaptain={isCaptain}
                 />
             )}
-
-            {/* Блок подключения */}
-            {(lobby.status === 'ready_to_create' || lobby.status === 'completed') && (
-                <ConnectionBlock
-                    connectUrl={lobby.connect_url}
-                    gotvUrl={lobby.gotv_url}
-                    serverLocation={lobby.server_location}
-                    status={lobby.status === 'completed' ? 'active' : 'ready'}
-                    matchPageUrl={lobby.match_id ? `/tournaments/${lobby.tournament_id}/matches/${lobby.match_id}` : null}
-                />
-            )}
-
-            {/* Зона наблюдателей */}
-            <ObserverZone
-                observers={lobby.observers || []}
-                showUnassigned={false}
-            />
         </div>
     );
 }
