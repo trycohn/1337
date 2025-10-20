@@ -80,7 +80,6 @@ function deriveLobbyIdFromMatchId(matchid) {
 
 async function importMatchFromMySql(matchRow, conn) {
   const matchid = Number(matchRow.matchid);
-  const lobbyId = deriveLobbyIdFromMatchId(matchid);
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -88,11 +87,11 @@ async function importMatchFromMySql(matchRow, conn) {
     const exists = await client.query('SELECT 1 FROM matchzy_matches WHERE matchid = $1', [matchid]);
     if (exists.rows[0]) { await client.query('ROLLBACK'); return false; }
 
-    // Вставляем матч
+    // Вставляем матч (lobby_id и our_match_id будут установлены позже в linkOurRefs)
     await client.query(
-      `INSERT INTO matchzy_matches (matchid, our_match_id, lobby_id, start_time, end_time, winner, series_type, team1_name, team1_score, team2_name, team2_score, server_ip)
-       VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [matchid, lobbyId, matchRow.start_time, matchRow.end_time, matchRow.winner || '', matchRow.series_type || 'bo1', matchRow.team1_name || '', matchRow.team1_score || 0, matchRow.team2_name || '', matchRow.team2_score || 0, matchRow.server_ip || '0']
+      `INSERT INTO matchzy_matches (matchid, our_match_id, lobby_id, tournament_lobby_id, start_time, end_time, winner, series_type, team1_name, team1_score, team2_name, team2_score, server_ip)
+       VALUES ($1, NULL, NULL, NULL, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [matchid, matchRow.start_time, matchRow.end_time, matchRow.winner || '', matchRow.series_type || 'bo1', matchRow.team1_name || '', matchRow.team1_score || 0, matchRow.team2_name || '', matchRow.team2_score || 0, matchRow.server_ip || '0']
     );
 
     // Карты
@@ -180,7 +179,7 @@ async function importMatchFromMySql(matchRow, conn) {
     }
 
     await client.query('COMMIT');
-    console.log(`✅ [matchzy-poll] Импортирован матч ${matchid}${lobbyId ? ` (lobby ${lobbyId})` : ''}`);
+    console.log(`✅ [matchzy-poll] Импортирован матч ${matchid}`);
     return true;
   } catch (e) {
     try { await client.query('ROLLBACK'); } catch (_) {}
@@ -194,7 +193,7 @@ async function importMatchFromMySql(matchRow, conn) {
 async function linkOurRefs(matchid) {
   const client = await pool.connect();
   try {
-z``    // Извлекаем ID из matchid (может быть match_id для турнирных или lobby_id для кастомных)
+    // Извлекаем ID из matchid (может быть match_id для турнирных или lobby_id для кастомных)
     const extractedId = deriveLobbyIdFromMatchId(matchid);
     
     if (!extractedId) {
