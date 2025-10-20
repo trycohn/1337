@@ -47,11 +47,15 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
         try {
             // Добавляем как зарегистрированного участника по userId
             await api.post(`/api/tournaments/${tournamentId}/add-participant`, {
-                userId: user.id
+                userId: user.id,
+                participantName: user.username || `User ${user.id}` // ✅ Добавлено обязательное поле
             });
             onAdded?.();
         } catch (e) {
-            // no-op, можно отобразить уведомление
+            // Показываем сообщение об ошибке пользователю
+            const errorMessage = e.response?.data?.error || e.response?.data?.message || 'Ошибка при добавлении участника';
+            setError(Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage);
+            console.error('❌ Ошибка при добавлении участника:', e);
         } finally {
             setAddingId(null);
         }
