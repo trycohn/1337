@@ -981,7 +981,7 @@ class MatchLobbyService {
         
         // Получаем данные лобби и матча
         const lobbyResult = await client.query(
-            `SELECT ml.*, m.id as match_id, m.team1_name, m.team2_name, m.match_format
+            `SELECT ml.*, m.id as match_id, m.team1_name, m.team2_name, ml.match_format
              FROM match_lobbies ml
              LEFT JOIN matches m ON m.id = ml.match_id
              WHERE ml.id = $1`,
