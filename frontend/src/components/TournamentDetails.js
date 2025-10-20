@@ -49,6 +49,7 @@ import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
+import useTournamentSocket from '../hooks/tournament/useTournamentSocket';
 import TeamGenerator from './TeamGenerator';
 
 // 🏆 Обычный импорт PodiumSection (исправлено для устранения ошибки сборки)
@@ -296,6 +297,73 @@ function TournamentDetails() {
 
     // 🆕 ХУК ДЛЯ УПРАВЛЕНИЯ ТУРНИРОМ
     const tournamentManagement = useTournamentManagement(id);
+
+    // 🔴 LIVE ОБНОВЛЕНИЯ ЧЕРЕЗ WEBSOCKET
+    const handleTournamentUpdate = useCallback((data) => {
+        console.log('🔄 [TournamentDetails] Получено обновление турнира:', data);
+        
+        // Обновляем турнир если пришли полные данные
+        if (data && typeof data === 'object') {
+            setTournament(prev => {
+                // Сохраняем важные поля, которые могут быть не в обновлении
+                const updated = {
+                    ...prev,
+                    ...data,
+                    participants: data.participants || prev?.participants || [],
+                    teams: data.teams || prev?.teams || []
+                };
+                console.log('✅ [TournamentDetails] Турнир обновлен:', updated);
+                return updated;
+            });
+            
+            // Обновляем originalParticipants если пришли участники
+            if (data.participants && Array.isArray(data.participants)) {
+                setOriginalParticipants(data.participants);
+            }
+        }
+    }, []);
+
+    const handleParticipantUpdate = useCallback((data) => {
+        console.log('👥 [TournamentDetails] Получено обновление участника:', data);
+        
+        if (!data) return;
+        
+        const { action, participant } = data;
+        
+        if (action === 'added' && participant) {
+            // Добавляем нового участника
+            setTournament(prev => ({
+                ...prev,
+                participants: [...(prev?.participants || []), participant]
+            }));
+            setOriginalParticipants(prev => [...prev, participant]);
+            
+            console.log('✅ [TournamentDetails] Участник добавлен:', participant);
+        } else if (action === 'removed' && participant) {
+            // Удаляем участника
+            setTournament(prev => ({
+                ...prev,
+                participants: prev?.participants?.filter(p => p.id !== participant.id) || []
+            }));
+            setOriginalParticipants(prev => prev.filter(p => p.id !== participant.id));
+            
+            console.log('✅ [TournamentDetails] Участник удален:', participant);
+        }
+    }, []);
+
+    const handleSocketError = useCallback((error) => {
+        console.error('❌ [TournamentDetails] WebSocket error:', error);
+        // Не показываем ошибку пользователю, просто логируем
+    }, []);
+
+    // Подключаем WebSocket для live обновлений
+    const { isConnected: socketConnected } = useTournamentSocket({
+        tournamentId: id,
+        user,
+        onTournamentUpdate: handleTournamentUpdate,
+        onParticipantUpdate: handleParticipantUpdate,
+        onError: handleSocketError
+    });
 
     // Функции управления модальными окнами
     const openModal = useCallback((modalName) => {

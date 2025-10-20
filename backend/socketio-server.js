@@ -119,10 +119,26 @@ function createSocketServer(httpServer) {
     });
     
     // 🏆 Присоединение к турниру
-    socket.on('join_tournament', (tournamentId) => {
+    socket.on('join_tournament', (data) => {
+      // Поддержка старого формата (просто tournamentId) и нового (объект с tournamentId)
+      const tournamentId = typeof data === 'object' ? data.tournamentId : data;
       const roomName = `tournament_${tournamentId}`;
       socket.join(roomName);
-      console.log(`🏆 [Socket.IO] ${socket.user.username} присоединился к турниру ${tournamentId}`);
+      console.log(`🏆 [Socket.IO] ${socket.user.username} (ID: ${socket.userId}) присоединился к турниру ${tournamentId}`);
+      
+      // Логируем количество клиентов в комнате
+      io.in(roomName).allSockets().then((set) => {
+        const size = set ? set.size : 0;
+        console.log(`📊 [Socket.IO] В комнате турнира ${tournamentId} сейчас ${size} клиентов`);
+      }).catch(() => {});
+    });
+
+    // 🏆 Отключение от турнира
+    socket.on('leave_tournament', (data) => {
+      const tournamentId = typeof data === 'object' ? data.tournamentId : data;
+      const roomName = `tournament_${tournamentId}`;
+      socket.leave(roomName);
+      console.log(`🏆 [Socket.IO] ${socket.user.username} (ID: ${socket.userId}) покинул турнир ${tournamentId}`);
     });
 
     // 💬 Присоединение к чату
