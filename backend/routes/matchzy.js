@@ -224,7 +224,7 @@ async function importStatsForMatch(matchid) {
             return;
         }
         
-        // 3. Для кастомных лобби нужен server_id (для турнирных лобби статистика уже в основной БД)
+        // 3. Получаем server_id для импорта из MySQL БД сервера
         let serverId = null;
         if (lobbyType === 'admin') {
             const lobbyResult = await pool.query(
@@ -238,9 +238,21 @@ async function importStatsForMatch(matchid) {
             }
             
             serverId = lobbyResult.rows[0].server_id;
-            console.log(`🖥️ [MatchZy] Найден server_id=${serverId}`);
-        } else {
-            console.log(`ℹ️ [MatchZy] Турнирное лобби - статистика импортируется напрямую`);
+            console.log(`🖥️ [MatchZy] Найден server_id=${serverId} для кастомного лобби`);
+        } else if (lobbyType === 'tournament') {
+            // Получаем server_id для турнирного лобби
+            const lobbyResult = await pool.query(
+                'SELECT server_id FROM match_lobbies WHERE id = $1',
+                [lobbyId]
+            );
+            
+            if (!lobbyResult.rows[0]?.server_id) {
+                console.log(`⚠️ [MatchZy] Не найден server_id для tournament lobby_id=${lobbyId}`);
+                return;
+            }
+            
+            serverId = lobbyResult.rows[0].server_id;
+            console.log(`🖥️ [MatchZy] Найден server_id=${serverId} для турнирного лобби`);
         }
         
         // 3. Подключаемся к БД этого сервера и импортируем статистику
