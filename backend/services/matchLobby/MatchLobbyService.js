@@ -441,7 +441,41 @@ class MatchLobbyService {
             throw new Error('Лобби не найдено');
         }
         
-        return result.rows[0];
+        const lobby = result.rows[0];
+        
+        // Загружаем участников команд
+        const team1Result = await pool.query(
+            `SELECT 
+                ttm.user_id,
+                ttm.is_captain,
+                u.username,
+                u.avatar_url
+             FROM tournament_team_members ttm
+             JOIN users u ON u.id = ttm.user_id
+             WHERE ttm.team_id = $1
+             ORDER BY ttm.is_captain DESC, u.username ASC`,
+            [lobby.team1_id]
+        );
+        
+        const team2Result = await pool.query(
+            `SELECT 
+                ttm.user_id,
+                ttm.is_captain,
+                u.username,
+                u.avatar_url
+             FROM tournament_team_members ttm
+             JOIN users u ON u.id = ttm.user_id
+             WHERE ttm.team_id = $1
+             ORDER BY ttm.is_captain DESC, u.username ASC`,
+            [lobby.team2_id]
+        );
+        
+        lobby.team1_participants = team1Result.rows;
+        lobby.team2_participants = team2Result.rows;
+        
+        console.log(`✅ [MatchLobbyService] Загружено участников: команда 1 = ${team1Result.rows.length}, команда 2 = ${team2Result.rows.length}`);
+        
+        return lobby;
     }
     
     // ✅ Установка готовности участника
