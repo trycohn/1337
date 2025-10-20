@@ -388,18 +388,20 @@ class MatchLobbyService {
     }
     
     // 🎯 Получение информации о лобби
-    static async getLobbyInfo(lobbyId, userId) {
+    static async getLobbyInfo(lobbyId, userId = null) {
         const result = await pool.query(
             `SELECT l.*, 
                     m.team1_id, m.team2_id,
                     t1.name as team1_name, t2.name as team2_name,
                     t.name as tournament_name, t.game,
+                    $2::INTEGER as requested_user_id,
                     (
                         SELECT i.team_id FROM lobby_invitations i
                         WHERE i.lobby_id = l.id AND i.user_id = $2
                         LIMIT 1
                     ) as user_team_id,
                     CASE 
+                        WHEN $2 IS NULL THEN true
                         WHEN EXISTS (
                             SELECT 1 FROM lobby_invitations 
                             WHERE lobby_id = l.id AND user_id = $2
@@ -1139,39 +1141,24 @@ class MatchLobbyService {
     static async broadcastLobbyUpdate(io, lobbyId) {
         console.log(`📡 [broadcastLobbyUpdate] Начало для лобби ${lobbyId}`);
         
-        const lobby = await pool.query(
-            `SELECT l.*, 
-                    (
-                        SELECT json_agg(
-                            json_build_object(
-                                'map_name', ms.map_name,
-                                'action_type', ms.action_type,
-                                'team_id', ms.team_id,
-                                'action_order', ms.action_order
-                            ) ORDER BY ms.action_order
-                        )
-                        FROM map_selections ms
-                        WHERE ms.lobby_id = l.id
-                    ) as selections
-             FROM match_lobbies l
-             WHERE l.id = $1`,
-            [lobbyId]
-        );
-        
-        if (lobby.rows[0]) {
-            const lobbyData = lobby.rows[0];
+        try {
+            // Используем getLobbyInfo для полной загрузки ВСЕХ данных включая участников
+            const lobbyData = await this.getLobbyInfo(lobbyId, null);
+            
             console.log(`📡 [broadcastLobbyUpdate] Отправка в комнату lobby_${lobbyId}:`, {
                 status: lobbyData.status,
                 team1_ready: lobbyData.team1_ready,
                 team2_ready: lobbyData.team2_ready,
+                team1_participants_count: lobbyData.team1_participants?.length,
+                team2_participants_count: lobbyData.team2_participants?.length,
                 first_picker_team_id: lobbyData.first_picker_team_id,
                 current_turn_team_id: lobbyData.current_turn_team_id
             });
             
             io.to(`lobby_${lobbyId}`).emit('lobby_update', lobbyData);
-            console.log(`✅ [broadcastLobbyUpdate] Событие lobby_update отправлено`);
-        } else {
-            console.warn(`⚠️ [broadcastLobbyUpdate] Лобби ${lobbyId} не найдено`);
+            console.log(`✅ [broadcastLobbyUpdate] Событие lobby_update отправлено с полными данными`);
+        } catch (error) {
+            console.error(`❌ [broadcastLobbyUpdate] Ошибка для лобби ${lobbyId}:`, error.message);
         }
     }
 }
