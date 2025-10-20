@@ -34,7 +34,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
   const handleFormatChange = (newFormat) => {
     const updates = { format: newFormat };
     
-    // Автоматически устанавливаем bracket_type и participant_type
+    // Автоматически устанавливаем  bracket_type и participant_type
     if (newFormat === 'single') {
       updates.bracket_type = 'single_elimination';
       updates.participant_type = 'team'; // ✅ Всегда team для Single/Double
