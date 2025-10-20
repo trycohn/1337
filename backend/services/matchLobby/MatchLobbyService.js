@@ -1190,6 +1190,16 @@ class MatchLobbyService {
                     [connect, gotv, matchId]
                 );
                 
+                // Обновляем лобби с server_id для импорта статистики
+                await client.query(
+                    `UPDATE match_lobbies 
+                     SET server_id = $1
+                     WHERE id = $2`,
+                    [selectedServer.id, lobbyId]
+                );
+                
+                console.log(`✅ [Tournament] server_id=${selectedServer.id} записан в match_lobbies.id=${lobbyId}`);
+                
                 break;
                 
             } catch (serverError) {
