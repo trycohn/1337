@@ -109,7 +109,7 @@ router.get('/my-active', authenticateToken, async (req, res) => {
              LIMIT 10`,
             [userId]
         );
-        
+
         res.json({
             success: true,
             tournamentMatches: tournamentMatches.rows,
@@ -148,7 +148,7 @@ router.delete('/custom-lobby/:lobbyId/leave', authenticateToken, async (req, res
     } catch (error) {
         console.error('Ошибка выхода из лобби:', error);
         res.status(500).json({ 
-            success: false,
+            success: false, 
             error: 'Ошибка при выходе из лобби' 
         });
     }
@@ -157,9 +157,9 @@ router.delete('/custom-lobby/:lobbyId/leave', authenticateToken, async (req, res
 // 📊 Получить базовую информацию о кастомном матче (ПОСЛЕ специфичных роутов)
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const { id } = req.params;
-        const userId = req.user.id;
-        
+    const { id } = req.params;
+    const userId = req.user.id;
+
         // Ищем кастомное лобби с созданным матчем
         const result = await pool.query(
             `SELECT 
@@ -247,3 +247,4 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+ 
