@@ -13,9 +13,8 @@ async function ensureSystemUser() {
         
         if (userCheck.rows.length === 0) {
             // Определяем URL аватара для системного пользователя
-            const avatarUrl = process.env.NODE_ENV === 'production'
-                ? 'https://1337community.com/uploads/avatars/1337-logo-chat.png'
-                : 'http://localhost:3000/uploads/avatars/1337-logo-chat.png';
+            const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
+            const avatarUrl = `${baseUrl}/uploads/avatars/1337-logo-chat.png`;
             
             // Создаем системного пользователя с аватаром
             const result = await pool.query(
@@ -29,9 +28,8 @@ async function ensureSystemUser() {
             const existingUser = userCheck.rows[0];
             if (!existingUser.avatar_url || !existingUser.avatar_url.includes('1337-logo-chat.png')) {
                 // Обновляем аватар существующего системного пользователя
-                const avatarUrl = process.env.NODE_ENV === 'production'
-                    ? 'https://1337community.com/uploads/avatars/1337-logo-chat.png'
-                    : 'http://localhost:3000/uploads/avatars/1337-logo-chat.png';
+                const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
+                const avatarUrl = `${baseUrl}/uploads/avatars/1337-logo-chat.png`;
                 
                 await pool.query(
                     'UPDATE users SET avatar_url = $1 WHERE username = $2',
@@ -125,9 +123,9 @@ async function sendSystemNotification(recipientId, message, type = 'system', met
  * Отправляет уведомление о приглашении в турнир
  */
 async function sendTournamentInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId) {
-    const tournamentUrl = process.env.NODE_ENV === 'production'
-        ? `https://1337community.com/tournaments/${tournamentId}`
-        : `http://localhost:3000/tournaments/${tournamentId}`;
+    // Используем переменную окружения или дефолтный продакшен URL
+    const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
+    const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
         
     const message = `🏆 Вы приглашены в турнир **[${tournamentName}](${tournamentUrl})** пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения.`;
     
@@ -212,9 +210,8 @@ async function sendAdminRequestRejectedNotification(recipientId, tournamentName)
  */
 async function sendAdminInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId, invitationId) {
     // Формируем URL турнира
-    const tournamentUrl = process.env.NODE_ENV === 'production'
-        ? `https://1337community.com/tournaments/${tournamentId}`
-        : `http://localhost:3000/tournaments/${tournamentId}`;
+    const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
+    const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
     
     // Создаем расширенное сообщение с интерактивными элементами
     const message = `🛡️ Вас пригласили стать администратором турнира!
