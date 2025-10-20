@@ -75,6 +75,10 @@
     z-index: 1;
 }
 
+.tournament-main .tournament-header {
+    border: none;
+}
+
 @media (max-width: 768px) {
     .tournament-hero,
     .tournament-hero-layer {
