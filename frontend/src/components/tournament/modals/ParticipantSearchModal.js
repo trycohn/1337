@@ -46,7 +46,7 @@ const ParticipantSearchModal = ({
         switch (mode) {
             case 'admin':
                 return {
-                    title: '👑 Пригласить администратора',
+                    title: 'Пригласить администратора',
                     placeholder: 'Введите имя пользователя для поиска...',
                     emptyStateIcon: '👑',
                     emptyStateTitle: 'Поиск администраторов',
@@ -59,7 +59,7 @@ const ParticipantSearchModal = ({
             case 'participant':
             default:
                 return {
-                    title: '👥 Добавить участника',
+                    title: 'Добавить участника',
                     placeholder: 'Введите имя пользователя для поиска...',
                     emptyStateIcon: '👥',
                     emptyStateTitle: 'Поиск участников',
@@ -323,22 +323,24 @@ const ParticipantSearchModal = ({
                                                     className="action-button already-participant-btn"
                                                     disabled
                                                 >
-                                                    {mode === 'admin' ? '👑 Уже администратор' : '✅ Уже участвует'}
+                                                    {mode === 'admin' ? 'же администратор' : 'Уже участвует'}
                                                 </button>
                                             ) : (
                                                 <button 
                                                     className={`action-button ${mode === 'admin' ? 'admin-invite-btn' : 'add-participant-btn'}`}
                                                     onClick={() => {
+                                                        // Проверяем, что username существует
+                                                        const userName = user.username || `User${user.id}`;
                                                         console.log('🔘 [ParticipantSearchModal] Клик по кнопке приглашения!', {
                                                             userId: user.id,
-                                                            userName: user.username,
+                                                            userName: userName,
                                                             mode,
                                                             isAlreadyAdded
                                                         });
-                                                        handleInvite(user.id, user.username);
+                                                        handleInvite(user.id, userName);
                                                     }}
                                                 >
-                                                    {mode === 'admin' ? '👑 Пригласить админом' : '➕ Добавить участником'}
+                                                    {mode === 'admin' ? 'Пригласить админом' : 'Пригласить в турнир'}
                                                 </button>
                                             )}
                                         </div>

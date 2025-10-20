@@ -1166,14 +1166,6 @@ const TeamGenerator = ({
                                             disabled={addingParticipant}
                                             className="add-participant-input"
                                         />
-                                        <input
-                                            type="number"
-                                            placeholder="CS2 Premier"
-                                            value={addPremier}
-                                            onChange={(e)=>setAddPremier(e.target.value)}
-                                            disabled={addingParticipant}
-                                            className="add-participant-input"
-                                        />
                                         <button type="submit" className="btn btn-primary" disabled={addingParticipant}>
                                             {addingParticipant ? 'Добавление...' : 'Добавить'}
                                         </button>
@@ -1183,7 +1175,7 @@ const TeamGenerator = ({
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-search-participant">
-                                    <div className="mix-admin-search-title">Найти и добавить зарегистрированного пользователя</div>
+                                    <div className="mix-admin-search-title">Пригласить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}
@@ -1210,14 +1202,13 @@ const TeamGenerator = ({
                                     <form onSubmit={handleAddParticipant} className="add-participant-form">
                                         <input type="text" placeholder="Никнейм участника" value={addName} onChange={(e)=>setAddName(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
                                         <input type="number" placeholder="FACEIT ELO" value={addFaceit} onChange={(e)=>setAddFaceit(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
-                                        <input type="number" placeholder="CS2 Premier" value={addPremier} onChange={(e)=>setAddPremier(e.target.value)} disabled={addingParticipant} className="add-participant-input" />
                                         <button type="submit" className="btn btn-primary" disabled={addingParticipant}>{addingParticipant ? 'Добавление...' : 'Добавить'}</button>
                                     </form>
                                 </div>
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-search-participant">
-                                    <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Пригласить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}
