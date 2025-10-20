@@ -1175,7 +1175,7 @@ const TeamGenerator = ({
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-search-participant">
-                                    <div className="mix-admin-search-title">Найти и добавить зарегистрированного пользователя</div>
+                                    <div className="mix-admin-search-title">Пригласить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}
@@ -1208,7 +1208,7 @@ const TeamGenerator = ({
                             )}
                             {isAdminOrCreator && (tournament?.status || '').toString().toLowerCase() === 'active' && (
                                 <div className="mix-admin-search-participant">
-                                    <div style={{marginBottom: 8, fontWeight: 600}}>Найти и добавить зарегистрированного пользователя</div>
+                                    <div style={{marginBottom: 8, fontWeight: 600}}>Пригласить зарегистрированного пользователя</div>
                                     <LiveParticipantSearch tournamentId={tournament.id} onAdded={onTeamsUpdated} />
                                 </div>
                             )}
