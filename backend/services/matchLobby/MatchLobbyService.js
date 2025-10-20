@@ -1011,28 +1011,55 @@ class MatchLobbyService {
         const maplist = mapsResult.rows.map(r => String(r.map_name));
         
         // Получаем участников матча (команды и игроки)
-        const participantsResult = await client.query(
-            `SELECT mlp.team_number, u.steam_id, u.username
-             FROM match_lobby_participants mlp
-             JOIN users u ON u.id = mlp.user_id
-             WHERE mlp.lobby_id = $1
-             ORDER BY mlp.team_number`,
-            [lobbyId]
+        // Получаем team1_id и team2_id из matches
+        const matchTeamsResult = await client.query(
+            `SELECT m.team1_id, m.team2_id
+             FROM matches m
+             WHERE m.id = $1`,
+            [matchId]
+        );
+        
+        if (!matchTeamsResult.rows[0]) {
+            throw new Error('Команды матча не найдены');
+        }
+        
+        const { team1_id, team2_id } = matchTeamsResult.rows[0];
+        
+        // Получаем участников команды 1
+        const team1Result = await client.query(
+            `SELECT u.steam_id, u.username
+             FROM tournament_team_members ttm
+             JOIN users u ON u.id = ttm.user_id
+             WHERE ttm.team_id = $1`,
+            [team1_id]
+        );
+        
+        // Получаем участников команды 2
+        const team2Result = await client.query(
+            `SELECT u.steam_id, u.username
+             FROM tournament_team_members ttm
+             JOIN users u ON u.id = ttm.user_id
+             WHERE ttm.team_id = $1`,
+            [team2_id]
         );
         
         // Формируем объект players для MatchZy (steam_id: nickname)
         const team1PlayersObj = {};
         const team2PlayersObj = {};
         
-        participantsResult.rows.forEach(p => {
+        team1Result.rows.forEach(p => {
             if (p.steam_id) {
                 const steamId = String(p.steam_id);
                 const nickname = p.username || 'Player';
-                if (p.team_number === 1) {
-                    team1PlayersObj[steamId] = nickname;
-                } else if (p.team_number === 2) {
-                    team2PlayersObj[steamId] = nickname;
-                }
+                team1PlayersObj[steamId] = nickname;
+            }
+        });
+        
+        team2Result.rows.forEach(p => {
+            if (p.steam_id) {
+                const steamId = String(p.steam_id);
+                const nickname = p.username || 'Player';
+                team2PlayersObj[steamId] = nickname;
             }
         });
         
