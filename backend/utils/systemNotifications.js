@@ -91,30 +91,41 @@ async function getOrCreateSystemChat(recipientId) {
  */
 async function sendSystemNotification(recipientId, message, type = 'system', metadata = null) {
     try {
+        console.log(`📬 [sendSystemNotification] Начало отправки:`, { recipientId, type });
+        
+        console.log(`👤 [sendSystemNotification] Получаем системного пользователя...`);
         const systemUserId = await ensureSystemUser();
+        console.log(`✅ [sendSystemNotification] Системный пользователь ID:`, systemUserId);
+        
+        console.log(`💬 [sendSystemNotification] Создаем/получаем чат...`);
         const chatId = await getOrCreateSystemChat(recipientId);
+        console.log(`✅ [sendSystemNotification] Чат ID:`, chatId);
         
         // Отправляем сообщение с метаданными
+        console.log(`💾 [sendSystemNotification] Сохраняем сообщение в БД...`);
         const messageResult = await pool.query(
             'INSERT INTO messages (chat_id, sender_id, content, message_type, metadata, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
             [chatId, systemUserId, message, type, metadata ? JSON.stringify(metadata) : null]
         );
+        console.log(`✅ [sendSystemNotification] Сообщение сохранено, ID:`, messageResult.rows[0].id);
         
         // Помечаем сообщение как непрочитанное для получателя (избегаем дублирования)
+        console.log(`📊 [sendSystemNotification] Обновляем статус сообщения...`);
         await pool.query(`
             INSERT INTO message_status (message_id, user_id, is_read, read_at) 
             VALUES ($1, $2, $3, NULL)
             ON CONFLICT (message_id, user_id) DO NOTHING
         `, [messageResult.rows[0].id, recipientId, false]);
         
-        console.log(`Системное уведомление отправлено пользователю ${recipientId}: ${message}`);
+        console.log(`✅ Системное уведомление отправлено пользователю ${recipientId}: ${message.substring(0, 50)}...`);
         if (metadata) {
-            console.log(`Метаданные сообщения:`, metadata);
+            console.log(`📋 Метаданные сообщения:`, JSON.stringify(metadata, null, 2));
         }
         
         return messageResult.rows[0];
     } catch (error) {
-        console.error('Ошибка отправки системного уведомления:', error);
+        console.error(`❌ [sendSystemNotification] Ошибка отправки системного уведомления:`, error);
+        console.error(`❌ Stack trace:`, error.stack);
         throw error;
     }
 }
@@ -123,30 +134,48 @@ async function sendSystemNotification(recipientId, message, type = 'system', met
  * Отправляет уведомление о приглашении в турнир
  */
 async function sendTournamentInviteNotification(recipientId, tournamentName, inviterUsername, tournamentId) {
-    // Используем переменную окружения или дефолтный продакшен URL
-    const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
-    const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
+    try {
+        console.log(`📧 [sendTournamentInviteNotification] Начало отправки приглашения:`, {
+            recipientId,
+            tournamentName,
+            inviterUsername,
+            tournamentId
+        });
         
-    const message = `🏆 Вы приглашены в турнир **[${tournamentName}](${tournamentUrl})** пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения.`;
-    
-    const metadata = {
-        type: 'tournament_invitation',
-        tournament_id: tournamentId,
-        tournament_name: tournamentName,
-        inviter_username: inviterUsername,
-        actions: [
-            {
-                type: 'view_tournament',
-                label: '🏆 Перейти к турниру',
-                action: 'open_tournament',
-                style: 'primary',
-                url: tournamentUrl,
-                target: '_blank'
-            }
-        ]
-    };
-    
-    return await sendSystemNotification(recipientId, message, 'tournament_invite', metadata);
+        // Используем переменную окружения или дефолтный продакшен URL
+        const baseUrl = process.env.PUBLIC_WEB_URL || process.env.SERVER_URL || 'https://1337community.com';
+        const tournamentUrl = `${baseUrl}/tournaments/${tournamentId}`;
+        
+        console.log(`🔗 [sendTournamentInviteNotification] Сформирован URL:`, tournamentUrl);
+        
+        const message = `🏆 Вы приглашены в турнир **[${tournamentName}](${tournamentUrl})** пользователем ${inviterUsername}.\n\nПерейдите в турнир для принятия приглашения.`;
+        
+        const metadata = {
+            type: 'tournament_invitation',
+            tournament_id: tournamentId,
+            tournament_name: tournamentName,
+            inviter_username: inviterUsername,
+            actions: [
+                {
+                    type: 'view_tournament',
+                    label: '🏆 Перейти к турниру',
+                    action: 'open_tournament',
+                    style: 'primary',
+                    url: tournamentUrl,
+                    target: '_blank'
+                }
+            ]
+        };
+        
+        console.log(`📨 [sendTournamentInviteNotification] Вызываем sendSystemNotification...`);
+        const result = await sendSystemNotification(recipientId, message, 'tournament_invite', metadata);
+        
+        console.log(`✅ [sendTournamentInviteNotification] Приглашение успешно отправлено`);
+        return result;
+    } catch (error) {
+        console.error(`❌ [sendTournamentInviteNotification] Ошибка:`, error);
+        throw error;
+    }
 }
 
 /**

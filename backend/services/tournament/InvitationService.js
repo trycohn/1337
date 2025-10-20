@@ -68,13 +68,19 @@ class InvitationService {
         );
 
         // 📧 ОТПРАВЛЯЕМ СООБЩЕНИЕ В ЧАТ ОТ СИСТЕМНОГО ПОЛЬЗОВАТЕЛЯ 1337community
-        await sendTournamentInviteNotification(
-            user.id, 
-            tournament.name, 
-            inviterUsername, 
-            tournamentId
-        );
-        console.log(`✅ Сообщение-приглашение отправлено в чат пользователю ${user.username}`);
+        try {
+            await sendTournamentInviteNotification(
+                user.id, 
+                tournament.name, 
+                inviterUsername, 
+                tournamentId
+            );
+            console.log(`✅ Сообщение-приглашение отправлено в чат пользователю ${user.username}`);
+        } catch (chatError) {
+            // Логируем ошибку, но не блокируем создание приглашения
+            console.error(`⚠️ Ошибка при отправке сообщения в чат:`, chatError);
+            console.error(`⚠️ Приглашение будет создано, но без сообщения в чате`);
+        }
 
         // Отправляем уведомление приглашенному пользователю (в колокольчик)
         const isTeamTournament = tournament.participant_type === 'team';
