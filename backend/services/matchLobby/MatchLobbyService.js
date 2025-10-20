@@ -392,6 +392,7 @@ class MatchLobbyService {
         const result = await pool.query(
             `SELECT l.*, 
                     m.team1_id, m.team2_id,
+                    m.connect_url, m.gotv_url,
                     t1.name as team1_name, t2.name as team2_name,
                     t.name as tournament_name, t.game,
                     $2::INTEGER as requested_user_id,
