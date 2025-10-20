@@ -1164,14 +1164,14 @@ class MatchLobbyService {
                 console.log(`✅ [Tournament] Команда загрузки отправлена на ${server.name}!`);
                 selectedServer = server;
                 
-                // Формируем ссылки подключения
+                // Формируем ссылки подключения (steam://run/730 автоматически запускает CS2)
                 const serverPass = server.server_password || '';
-                const connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
+                const connect = `steam://run/730//+connect ${server.host}:${server.port}${serverPass ? ';password ' + serverPass : ''}`;
                 
                 const gotvHost = server.gotv_host || server.host;
                 const gotvPort = server.gotv_port || server.port;
                 const gotvPass = server.gotv_password || '';
-                const gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
+                const gotv = `steam://run/730//+connect ${gotvHost}:${gotvPort}${gotvPass ? ';password ' + gotvPass : ''}`;
                 
                 console.log(`✅ [Tournament] Конфиг загружен на сервер ${server.name}!`);
                 console.log(`📡 [Tournament] Connect: ${connect}`);
@@ -1179,15 +1179,9 @@ class MatchLobbyService {
                 // Обновляем матч с данными сервера
                 await client.query(
                     `UPDATE matches 
-                     SET connect_url = $1, gotv_url = $2, updated_at = CURRENT_TIMESTAMP
+                     SET connect_url = $1, gotv_url = $2
                      WHERE id = $3`,
                     [connect, gotv, matchId]
-                );
-                
-                // Обновляем статус сервера
-                await client.query(
-                    'UPDATE cs2_servers SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-                    ['in_use', server.id]
                 );
                 
                 break;
