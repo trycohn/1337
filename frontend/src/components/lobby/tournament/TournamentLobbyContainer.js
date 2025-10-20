@@ -119,13 +119,13 @@ function TournamentLobbyContainer() {
             />
 
             {/* Блок подключения */}
-            {(lobby.status === 'ready_to_create' || lobby.status === 'completed') && (
+            {lobby.connect_url && (
                 <ConnectionBlock
                     connectUrl={lobby.connect_url}
                     gotvUrl={lobby.gotv_url}
                     serverLocation={lobby.server_location}
-                    status={lobby.status === 'completed' ? 'active' : 'ready'}
-                    matchPageUrl={lobby.match_id ? `/tournaments/${lobby.tournament_id}/matches/${lobby.match_id}` : null}
+                    status="active"
+                    matchPageUrl={lobby.match_id ? `/tournaments/${lobby.tournament_id}/match/${lobby.match_id}` : null}
                 />
             )}
 
@@ -210,8 +210,8 @@ function TournamentLobbyContainer() {
                 showUnassigned={false}
             />
 
-            {/* Блок пик/бан карт */}
-            {(lobby.status === 'ready' || lobby.status === 'picking') && (
+            {/* Блок пик/бан карт (показывается всегда после начала процедуры) */}
+            {(lobby.status === 'ready' || lobby.status === 'picking' || lobby.status === 'ready_to_create' || lobby.status === 'completed') && lobby.match_format && (
                 <MapSelectionBoard
                     maps={lobby.available_maps || []}
                     selections={lobby.selections || []}
