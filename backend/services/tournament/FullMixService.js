@@ -576,8 +576,89 @@ class FullMixService {
         
         if (isSEorDE) {
             // 🎯 НОВАЯ ЛОГИКА: Full Mix с SE/DE сеткой
+            // Сетка должна быть создана ЗАРАНЕЕ через generateBracket
             console.log(`🏆 [FullMix] Запуск Full Mix с ${tournament.bracket_type} сеткой`);
-            return await this.startSEorDEBracket(tournamentId, userId, settings);
+            
+            // Проверяем, что сетка уже создана
+            const matchesCheck = await pool.query(
+                'SELECT COUNT(*)::int as count FROM matches WHERE tournament_id = $1',
+                [tournamentId]
+            );
+            
+            if (matchesCheck.rows[0].count === 0) {
+                throw new Error('Сначала создайте турнирную сетку через "Создать сетку"');
+            }
+            
+            // Получаем созданные команды
+            const teamsResult = await pool.query(
+                'SELECT id, name FROM tournament_teams WHERE tournament_id = $1 ORDER BY id',
+                [tournamentId]
+            );
+            
+            if (teamsResult.rows.length === 0) {
+                throw new Error('Команды не найдены. Пересоздайте турнирную сетку');
+            }
+            
+            // Распределяем участников по уже созданным командам
+            const participants = await this.getEligibleParticipants(tournamentId, settings.rating_mode);
+            const teamSize = await this.getTeamSize(tournamentId);
+            const teams = teamsResult.rows;
+            const playersNeeded = teams.length * teamSize;
+            
+            if (participants.length < playersNeeded) {
+                throw new Error(`Недостаточно участников. Нужно: ${playersNeeded}, есть: ${participants.length}`);
+            }
+            
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                
+                // Распределяем участников по командам
+                const teamsWithRosters = await this.assignParticipantsToTeams(
+                    client,
+                    tournamentId,
+                    teams,
+                    participants.slice(0, playersNeeded),
+                    teamSize,
+                    settings.rating_mode
+                );
+                
+                // Обновляем снапшот с заполненными составами
+                const snapshot = await this.getSnapshot(tournamentId, 1);
+                if (snapshot) {
+                    const updatedSnapshot = {
+                        ...snapshot.snapshot,
+                        teams: teamsWithRosters.map(t => ({
+                            team_id: t.id,
+                            name: t.name,
+                            members: t.members || []
+                        })),
+                        meta: {
+                            ...snapshot.snapshot.meta,
+                            rosters_assigned: true
+                        }
+                    };
+                    
+                    await this.saveSnapshot(tournamentId, 1, updatedSnapshot);
+                }
+                
+                await client.query('COMMIT');
+                
+                console.log(`✅ [FullMix SE/DE] Участники распределены, турнир готов к старту`);
+                
+                return { 
+                    round: 1, 
+                    settings, 
+                    teams: teamsWithRosters,
+                    message: 'Участники распределены по командам. Турнир готов!'
+                };
+                
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
         } else {
             // 🔄 СТАРАЯ ЛОГИКА: Full Mix Swiss (раундовая система)
             console.log(`🏆 [FullMix] Запуск Full Mix Swiss (раундовая система)`);
@@ -589,7 +670,8 @@ class FullMixService {
     }
 
     /**
-     * 🆕 ЗАПУСК FULL MIX С SE/DE СЕТКОЙ
+     * 🆕 ЗАПУСК FULL MIX С SE/DE СЕТКОЙ (УСТАРЕВШИЙ МЕТОД)
+     * ⚠️ DEPRECATED: Теперь используйте generateBracket (создание сетки) + start (распределение участников)
      * Создает фиксированные команды и полную сетку сразу
      */
     static async startSEorDEBracket(tournamentId, userId, settings) {

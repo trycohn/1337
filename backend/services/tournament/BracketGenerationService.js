@@ -45,12 +45,50 @@ class BracketGenerationService {
             // 2. Проверяем права доступа
             await this._checkBracketGenerationPermission(tournamentId, userId, client);
             
-            // 3. Получаем участников
-            const participants = await this._getParticipantsForBracket(tournament, client);
+            // 🆕 ПРОВЕРКА: Full Mix SE/DE создает пустые команды
+            const isFullMix = tournament.format === 'full_mix' || 
+                             (tournament.format === 'mix' && tournament.mix_type === 'full');
+            const isSEorDE = tournament.bracket_type === 'single_elimination' || 
+                            tournament.bracket_type === 'double_elimination';
             
-            // 4. Проверяем минимальное количество участников
-            if (participants.length < 2) {
-                throw new Error('Недостаточно участников для генерации турнирной сетки (минимум 2)');
+            let participants;
+            
+            if (isFullMix && isSEorDE) {
+                // ДЛЯ FULL MIX SE/DE: Создаем пустые команды
+                console.log(`🎯 [BracketGenerationService] Full Mix SE/DE - создаем пустые команды`);
+                
+                // Получаем количество участников для расчета команд
+                const allParticipants = await this._getParticipantsForBracket(tournament, client);
+                const teamSize = parseInt(tournament.team_size, 10) || 5;
+                const teamsCount = Math.floor(allParticipants.length / teamSize);
+                const nearestPowerOfTwo = Math.pow(2, Math.floor(Math.log2(teamsCount)));
+                
+                console.log(`📊 Участников: ${allParticipants.length}, команд будет: ${nearestPowerOfTwo}`);
+                
+                if (nearestPowerOfTwo < 2) {
+                    throw new Error(`Недостаточно участников. Нужно минимум ${teamSize * 2} для создания сетки`);
+                }
+                
+                // Создаем пустые команды
+                const FullMixService = require('./FullMixService');
+                const emptyTeams = await FullMixService.createFixedTeamsWithRandomNames(
+                    client,
+                    tournamentId,
+                    nearestPowerOfTwo
+                );
+                
+                // Используем пустые команды как "участников" для сетки
+                participants = emptyTeams;
+                
+                console.log(`✅ Создано ${participants.length} пустых команд для сетки`);
+            } else {
+                // ОБЫЧНАЯ ЛОГИКА: Получаем участников
+                participants = await this._getParticipantsForBracket(tournament, client);
+                
+                // Проверяем минимальное количество участников
+                if (participants.length < 2) {
+                    throw new Error('Недостаточно участников для генерации турнирной сетки (минимум 2)');
+                }
             }
             
             // 5. Очищаем существующую сетку
@@ -109,6 +147,33 @@ class BracketGenerationService {
                 seedingType: seedingOptions.seedingType,
                 generationTime: Date.now() - startTime
             });
+            
+            // 🆕 11. Для Full Mix SE/DE сохраняем начальный снапшот
+            if (isFullMix && isSEorDE) {
+                console.log(`📸 [BracketGenerationService] Сохраняем снапшот для Full Mix SE/DE`);
+                
+                const FullMixService = require('./FullMixService');
+                const snapshot = {
+                    round: 1,
+                    teams: participants.map(t => ({
+                        team_id: t.id,
+                        name: t.name,
+                        members: [] // Пустые составы
+                    })),
+                    matches: generationResult.matches || [],
+                    standings: [], // Для SE/DE standings не нужны
+                    meta: {
+                        bracket_type: tournament.bracket_type,
+                        total_teams: participants.length,
+                        is_se_de_bracket: true,
+                        eliminated: [],
+                        bracket_created: true
+                    }
+                };
+                
+                await FullMixService.saveSnapshot(tournamentId, 1, snapshot);
+                console.log(`✅ Снапшот сохранен для раунда 1`);
+            }
             
             await client.query('COMMIT');
             
