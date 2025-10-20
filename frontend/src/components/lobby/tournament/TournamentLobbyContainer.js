@@ -118,13 +118,13 @@ function TournamentLobbyContainer() {
                 lobbyType="tournament"
             />
 
-            {/* Блок подключения */}
-            {lobby.connect_url && (
+            {/* Блок подключения к серверу */}
+            {lobby.status === 'completed' && (
                 <ConnectionBlock
                     connectUrl={lobby.connect_url}
                     gotvUrl={lobby.gotv_url}
                     serverLocation={lobby.server_location}
-                    status="active"
+                    status={lobby.connect_url ? 'active' : 'waiting'}
                     matchPageUrl={lobby.match_id ? `/tournaments/${lobby.tournament_id}/match/${lobby.match_id}` : null}
                 />
             )}

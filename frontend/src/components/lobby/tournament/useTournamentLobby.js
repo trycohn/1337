@@ -21,21 +21,21 @@ function useTournamentLobby(lobbyId, user) {
         console.log('[useTournamentLobby] Сброс готовности для лобби:', lobbyId);
     }, [lobbyId]);
 
-    // Автоматический редирект на матч после завершения
-    useEffect(() => {
-        if (!lobby || redirectedRef.current) return;
-        
-        if (lobby.status === 'completed' && lobby.match_id) {
-            console.log('🎉 [useTournamentLobby] Лобби завершено, редирект на матч:', lobby.match_id);
-            redirectedRef.current = true;
-            
-            const timer = setTimeout(() => {
-                navigate(`/tournaments/${lobby.tournament_id}/matches/${lobby.match_id}`);
-            }, 2000);
-            
-            return () => clearTimeout(timer);
-        }
-    }, [lobby, navigate]);
+    // Автоматический редирект ОТКЛЮЧЕН - пользователи остаются в лобби
+    // useEffect(() => {
+    //     if (!lobby || redirectedRef.current) return;
+    //     
+    //     if (lobby.status === 'completed' && lobby.match_id) {
+    //         console.log('🎉 [useTournamentLobby] Лобби завершено, редирект на матч:', lobby.match_id);
+    //         redirectedRef.current = true;
+    //         
+    //         const timer = setTimeout(() => {
+    //             navigate(`/tournaments/${lobby.tournament_id}/match/${lobby.match_id}`);
+    //         }, 2000);
+    //         
+    //         return () => clearTimeout(timer);
+    //     }
+    // }, [lobby, navigate]);
 
     // Загрузка информации о лобби
     const fetchLobbyInfo = useCallback(async () => {
