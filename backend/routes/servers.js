@@ -296,7 +296,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 /**
- * Проверить статус сервера (RCON подключение)
+ * Проверить статус сервера (RCON подключе ние)
  * POST /api/servers/:id/check
  */
 router.post('/:id/check', authenticateToken, requireAdmin, async (req, res) => {
