@@ -71,8 +71,15 @@ router.post('/match-end', async (req, res) => {
                 console.log(`⏳ [MatchZy] Начинаем импорт статистики для matchid=${matchid}...`);
                 const mid = parseInt(matchid);
                 await importStatsForMatch(mid);
+                
+                // Связываем matchid с нашими матчами/лобби
+                const { materializePlayerStatsFromMatchzy, linkOurRefs } = require('../services/matchzyPollingService');
+                await linkOurRefs(mid);
+                
+                // Обновляем счет турнирного матча
+                await updateTournamentMatchScore(mid);
+                
                 // Материализуем player_match_stats из matchzy_* → для профилей
-                const { materializePlayerStatsFromMatchzy } = require('../services/matchzyPollingService');
                 await materializePlayerStatsFromMatchzy(mid);
                 
                 // Рассчитываем MVP для турнирных и кастомных матчей
@@ -97,6 +104,70 @@ router.post('/match-end', async (req, res) => {
 });
 
 /**
+ * Обновить счет турнирного матча после завершения
+ */
+async function updateTournamentMatchScore(matchid) {
+    const pool = require('../db');
+    
+    try {
+        // Получаем данные матча из matchzy_matches
+        const matchzyResult = await pool.query(
+            `SELECT our_match_id, tournament_lobby_id, team1_score, team2_score, winner
+             FROM matchzy_matches 
+             WHERE matchid = $1`,
+            [matchid]
+        );
+        
+        if (!matchzyResult.rows[0]) {
+            console.log(`ℹ️ [updateScore] Матч ${matchid} не найден в matchzy_matches`);
+            return;
+        }
+        
+        const { our_match_id, tournament_lobby_id, team1_score, team2_score, winner } = matchzyResult.rows[0];
+        
+        // Если нет our_match_id или нет tournament_lobby_id - это не турнирный матч
+        if (!our_match_id || !tournament_lobby_id) {
+            console.log(`ℹ️ [updateScore] Матч ${matchid} не турнирный (our_match_id=${our_match_id}, tournament_lobby_id=${tournament_lobby_id})`);
+            return;
+        }
+        
+        // Получаем team1_id и team2_id из matches
+        const matchResult = await pool.query(
+            `SELECT team1_id, team2_id FROM matches WHERE id = $1`,
+            [our_match_id]
+        );
+        
+        if (!matchResult.rows[0]) {
+            console.log(`⚠️ [updateScore] Матч ${our_match_id} не найден в таблице matches`);
+            return;
+        }
+        
+        const { team1_id, team2_id } = matchResult.rows[0];
+        
+        // Определяем winner_team_id на основе winner ('team1' или 'team2')
+        let winner_team_id = null;
+        if (winner === 'team1' && team1_id) {
+            winner_team_id = team1_id;
+        } else if (winner === 'team2' && team2_id) {
+            winner_team_id = team2_id;
+        }
+        
+        // Обновляем матч
+        await pool.query(
+            `UPDATE matches 
+             SET score1 = $1, score2 = $2, winner_team_id = $3, status = 'completed'
+             WHERE id = $4`,
+            [team1_score || 0, team2_score || 0, winner_team_id, our_match_id]
+        );
+        
+        console.log(`✅ [updateScore] Обновлен счет матча ${our_match_id}: ${team1_score}:${team2_score}, победитель: ${winner_team_id || 'нет'}`);
+        
+    } catch (error) {
+        console.error(`❌ [updateScore] Ошибка обновления счета для matchid=${matchid}:`, error.message);
+    }
+}
+
+/**
  * Импорт статистики матча из БД сервера
  */
 async function importStatsForMatch(matchid) {
@@ -106,29 +177,71 @@ async function importStatsForMatch(matchid) {
     console.log(`🔍 [MatchZy] Начинаем импорт статистики для matchid=${matchid}`);
     
     try {
-        // 1. Извлекаем lobby_id из matchid
-        const lobbyId = deriveLobbyIdFromMatchId(matchid);
+        // 1. Извлекаем ID из matchid (может быть matchId или lobbyId)
+        const extractedId = deriveLobbyIdFromMatchId(matchid);
         
-        if (!lobbyId) {
-            console.log(`⚠️ [MatchZy] Не удалось извлечь lobby_id из matchid=${matchid}`);
+        if (!extractedId) {
+            console.log(`⚠️ [MatchZy] Не удалось извлечь ID из matchid=${matchid}`);
             return;
         }
         
-        console.log(`🔍 [MatchZy] Извлечен lobby_id=${lobbyId} из matchid=${matchid}`);
+        console.log(`🔍 [MatchZy] Извлечен ID=${extractedId} из matchid=${matchid}`);
         
-        // 2. Находим server_id по lobby_id
-        const lobbyResult = await pool.query(
-            'SELECT server_id FROM admin_match_lobbies WHERE id = $1',
-            [lobbyId]
+        // 2. Проверяем сначала турнирное лобби (match_lobbies)
+        let lobbyType = null;
+        let lobbyId = null;
+        let matchId = null;
+        
+        // Проверяем турнирное лобби по match_id
+        const tournamentMatchResult = await pool.query(
+            `SELECT ml.id as lobby_id, ml.match_id 
+             FROM match_lobbies ml 
+             WHERE ml.match_id = $1`,
+            [extractedId]
         );
         
-        if (!lobbyResult.rows[0]?.server_id) {
-            console.log(`⚠️ [MatchZy] Не найден server_id для lobby_id=${lobbyId}`);
+        if (tournamentMatchResult.rows[0]) {
+            lobbyType = 'tournament';
+            lobbyId = tournamentMatchResult.rows[0].lobby_id;
+            matchId = tournamentMatchResult.rows[0].match_id;
+            console.log(`🏆 [MatchZy] Найдено турнирное лобби: lobby_id=${lobbyId}, match_id=${matchId}`);
+        } else {
+            // Проверяем кастомное лобби (admin_match_lobbies)
+            const adminLobbyResult = await pool.query(
+                'SELECT id, server_id FROM admin_match_lobbies WHERE id = $1',
+                [extractedId]
+            );
+            
+            if (adminLobbyResult.rows[0]) {
+                lobbyType = 'admin';
+                lobbyId = extractedId;
+                console.log(`🎮 [MatchZy] Найдено кастомное лобби: lobby_id=${lobbyId}`);
+            }
+        }
+        
+        if (!lobbyId) {
+            console.log(`⚠️ [MatchZy] Лобби не найдено для ID=${extractedId}`);
             return;
         }
         
-        const serverId = lobbyResult.rows[0].server_id;
-        console.log(`🖥️ [MatchZy] Найден server_id=${serverId}`);
+        // 3. Для кастомных лобби нужен server_id (для турнирных лобби статистика уже в основной БД)
+        let serverId = null;
+        if (lobbyType === 'admin') {
+            const lobbyResult = await pool.query(
+                'SELECT server_id FROM admin_match_lobbies WHERE id = $1',
+                [lobbyId]
+            );
+            
+            if (!lobbyResult.rows[0]?.server_id) {
+                console.log(`⚠️ [MatchZy] Не найден server_id для admin lobby_id=${lobbyId}`);
+                return;
+            }
+            
+            serverId = lobbyResult.rows[0].server_id;
+            console.log(`🖥️ [MatchZy] Найден server_id=${serverId}`);
+        } else {
+            console.log(`ℹ️ [MatchZy] Турнирное лобби - статистика импортируется напрямую`);
+        }
         
         // 3. Подключаемся к БД этого сервера и импортируем статистику
         await withMySql(async (conn) => {
@@ -163,14 +276,14 @@ async function importStatsForMatch(matchid) {
 }
 
 /**
- * Извлечь lobby_id из matchid
+ * Извлечь ID из matchid (новая формула: matchid = ID * 1000 + милисекунды)
  */
 function deriveLobbyIdFromMatchId(matchid) {
     try {
-        const s = String(matchid);
-        if (s.length <= 8) return null;
-        const lobbyId = Number(s.slice(0, -8));
-        return Number.isInteger(lobbyId) && lobbyId > 0 ? lobbyId : null;
+        // Новая формула: matchid = (ID * 1000) + (timestamp % 1000)
+        // Делим на 1000 и округляем вниз
+        const id = Math.floor(matchid / 1000);
+        return Number.isInteger(id) && id > 0 ? id : null;
     } catch (_) {
         return null;
     }

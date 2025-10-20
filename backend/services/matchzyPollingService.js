@@ -70,12 +70,11 @@ async function withMySql(fn, serverId = null) {
 }
 
 function deriveLobbyIdFromMatchId(matchid) {
-  // Наш формат: matchid = Number(`${lobbyId}${last8Ts}`)
+  // Новая формула: matchid = (ID * 1000) + (timestamp % 1000)
+  // Делим на 1000 и округляем вниз
   try {
-    const s = String(matchid);
-    if (s.length <= 8) return null;
-    const lobbyId = Number(s.slice(0, -8));
-    return Number.isInteger(lobbyId) && lobbyId > 0 ? lobbyId : null;
+    const id = Math.floor(matchid / 1000);
+    return Number.isInteger(id) && id > 0 ? id : null;
   } catch (_) { return null; }
 }
 
@@ -195,17 +194,40 @@ async function importMatchFromMySql(matchRow, conn) {
 async function linkOurRefs(matchid) {
   const client = await pool.connect();
   try {
-    // 1) Пробуем связать с ADMIN лобби по нашему формату matchid → admin_lobby_id → match_id
-    const adminLobbyId = deriveLobbyIdFromMatchId(matchid);
-    if (adminLobbyId) {
-      const admin = await client.query('SELECT match_id FROM admin_match_lobbies WHERE id = $1', [adminLobbyId]);
-      const ourMatchId = admin.rows[0]?.match_id;
-      if (ourMatchId) {
-        await client.query('UPDATE matchzy_matches SET our_match_id = $1, lobby_id = $2 WHERE matchid = $3 AND (our_match_id IS NULL OR lobby_id IS NULL)', [ourMatchId, adminLobbyId, matchid]);
-        await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE lobby_id = $2 AND (our_match_id IS NULL)', [ourMatchId, adminLobbyId]);
-        console.log(`🔗 [matchzy-poll] Связал admin лобби ${adminLobbyId} с матчем ${matchid} → our_match_id=${ourMatchId}`);
-        return;
-      }
+z``    // Извлекаем ID из matchid (может быть match_id для турнирных или lobby_id для кастомных)
+    const extractedId = deriveLobbyIdFromMatchId(matchid);
+    
+    if (!extractedId) {
+      console.log(`⚠️ [linkOurRefs] Не удалось извлечь ID из matchid=${matchid}`);
+      return;
+    }
+    
+    // 1) Сначала пробуем связать с ТУРНИРНЫМ лобби по match_id
+    const tournamentMatch = await client.query(
+      `SELECT ml.id AS lobby_id, m.id AS match_id
+       FROM match_lobbies ml
+       JOIN matches m ON m.id = ml.match_id
+       WHERE m.id = $1`,
+      [extractedId]
+    );
+    
+    if (tournamentMatch.rows[0]) {
+      const tlobby = tournamentMatch.rows[0].lobby_id;
+      const ourMatchId = tournamentMatch.rows[0].match_id;
+      await client.query('UPDATE matchzy_matches SET our_match_id = $1, tournament_lobby_id = $2 WHERE matchid = $3 AND (our_match_id IS NULL OR tournament_lobby_id IS NULL)', [ourMatchId, tlobby, matchid]);
+      await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE tournament_lobby_id = $2 AND (our_match_id IS NULL)', [ourMatchId, tlobby]);
+      console.log(`🔗 [matchzy-poll] Связал tournament лобби ${tlobby} с матчем ${matchid} → our_match_id=${ourMatchId}`);
+      return;
+    }
+    
+    // 2) Пробуем связать с ADMIN лобби
+    const admin = await client.query('SELECT match_id FROM admin_match_lobbies WHERE id = $1', [extractedId]);
+    const adminMatchId = admin.rows[0]?.match_id;
+    if (adminMatchId) {
+      await client.query('UPDATE matchzy_matches SET our_match_id = $1, lobby_id = $2 WHERE matchid = $3 AND (our_match_id IS NULL OR lobby_id IS NULL)', [adminMatchId, extractedId, matchid]);
+      await client.query('UPDATE matchzy_pickban_steps SET our_match_id = $1 WHERE lobby_id = $2 AND (our_match_id IS NULL)', [adminMatchId, extractedId]);
+      console.log(`🔗 [matchzy-poll] Связал admin лобби ${extractedId} с матчем ${matchid} → our_match_id=${adminMatchId}`);
+      return;
     }
 
     // 2) Пробуем связать с ТУРНИРНЫМ лобби по именам команд и времени
@@ -701,6 +723,6 @@ async function reconcileUnmaterialized(limit = 20) {
   }
 }
 
-module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql, materializePlayerStatsFromMatchzy, reconcileUnmaterialized };
+module.exports = { start, stop, pollOnce, withMySql, importMatchFromMySql, materializePlayerStatsFromMatchzy, reconcileUnmaterialized, linkOurRefs };
 
 
