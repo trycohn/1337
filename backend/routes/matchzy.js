@@ -290,6 +290,102 @@ function deriveLobbyIdFromMatchId(matchid) {
 }
 
 /**
+ * POST /api/matchzy/import-match-stats/:matchId
+ * Ручной импорт статистики для турнирного матча
+ */
+router.post('/import-match-stats/:matchId', async (req, res) => {
+    try {
+        const matchId = parseInt(req.params.matchId);
+        
+        if (!matchId || isNaN(matchId)) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Неверный ID матча' 
+            });
+        }
+        
+        console.log(`📥 [Manual Import] Запрос импорта статистики для match_id=${matchId}`);
+        
+        const pool = require('../db');
+        
+        // Проверяем существование матча и получаем lobby_id
+        const matchResult = await pool.query(
+            `SELECT ml.id as lobby_id, m.id as match_id, m.team1_name, m.team2_name
+             FROM matches m
+             LEFT JOIN match_lobbies ml ON ml.match_id = m.id
+             WHERE m.id = $1`,
+            [matchId]
+        );
+        
+        if (!matchResult.rows[0]) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Матч не найден' 
+            });
+        }
+        
+        const matchData = matchResult.rows[0];
+        console.log(`✅ [Manual Import] Найден матч: ${matchData.team1_name} vs ${matchData.team2_name}`);
+        
+        // Генерируем matchid на основе match_id (используя нашу формулу)
+        // Ищем существующий matchid в matchzy_matches или создаем новый
+        const existingResult = await pool.query(
+            `SELECT matchid FROM matchzy_matches WHERE our_match_id = $1 ORDER BY matchid DESC LIMIT 1`,
+            [matchId]
+        );
+        
+        let matchid;
+        if (existingResult.rows[0]) {
+            matchid = existingResult.rows[0].matchid;
+            console.log(`🔍 [Manual Import] Найден существующий matchid=${matchid}`);
+        } else {
+            // Генерируем matchid на основе формулы
+            matchid = (matchId * 1000) + Math.floor(Math.random() * 1000);
+            console.log(`🆕 [Manual Import] Сгенерирован новый matchid=${matchid}`);
+        }
+        
+        // Запускаем импорт в фоне
+        setTimeout(async () => {
+            try {
+                console.log(`⏳ [Manual Import] Начинаем импорт для matchid=${matchid}...`);
+                
+                await importStatsForMatch(matchid);
+                
+                const { materializePlayerStatsFromMatchzy, linkOurRefs } = require('../services/matchzyPollingService');
+                await linkOurRefs(matchid);
+                await updateTournamentMatchScore(matchid);
+                await materializePlayerStatsFromMatchzy(matchid);
+                
+                // Рассчитываем MVP
+                try {
+                    const MVPCalculator = require('../services/mvpCalculator');
+                    await MVPCalculator.calculateMatchMVP(matchid);
+                } catch (mvpError) {
+                    console.error(`⚠️ [Manual Import] Ошибка расчета MVP:`, mvpError.message);
+                }
+                
+                console.log(`✅ [Manual Import] Импорт завершен для match_id=${matchId}`);
+            } catch (error) {
+                console.error(`❌ [Manual Import] Ошибка импорта:`, error.message);
+            }
+        }, 100);
+        
+        res.json({ 
+            success: true, 
+            message: 'Импорт статистики запущен',
+            matchid 
+        });
+        
+    } catch (error) {
+        console.error('❌ [Manual Import] Ошибка:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+/**
  * POST /api/matchzy/stats
  * Webhook для приема статистики от MatchZy (legacy, для совместимости)
  */

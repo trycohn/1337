@@ -294,6 +294,46 @@ const MatchDetailsPage = () => {
         setIsEditMatchModalOpen(true);
     };
 
+    // 📥 Ручной импорт статистики
+    const [isImporting, setIsImporting] = useState(false);
+    const handleImportStats = async () => {
+        if (!matchId) return;
+        
+        const confirmImport = window.confirm(
+            'Импортировать статистику матча?\n\n' +
+            'Это обновит счет и статистику игроков на основе данных с игрового сервера.'
+        );
+        
+        if (!confirmImport) return;
+        
+        try {
+            setIsImporting(true);
+            const token = localStorage.getItem('token');
+            
+            const response = await api.post(
+                `/api/matchzy/import-match-stats/${matchId}`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            if (response.data.success) {
+                alert('Импорт статистики запущен! Обновите страницу через несколько секунд.');
+                // Обновляем данные через 3 секунды
+                setTimeout(() => {
+                    fetchMatchDetails();
+                    setPollVersion(v => v + 1);
+                }, 3000);
+            } else {
+                throw new Error(response.data.error || 'Ошибка импорта');
+            }
+        } catch (error) {
+            console.error('Ошибка импорта статистики:', error);
+            alert(error.response?.data?.error || error.message || 'Ошибка импорта статистики');
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
     // ✏️ Сохранение отредактированного матча
     const handleSaveEditedMatch = async (updatedData) => {
         try {
@@ -1131,6 +1171,15 @@ const MatchDetailsPage = () => {
                                         Завершить матч
                                     </button>
                                 )}
+                                <button 
+                                    className="btn btn-secondary" 
+                                    onClick={handleImportStats} 
+                                    disabled={isImporting}
+                                    title="Импортировать статистику с игрового сервера"
+                                    style={{ marginLeft: '8px' }}
+                                >
+                                    {isImporting ? 'Импорт...' : '📥 Импорт статистики'}
+                                </button>
                             </>
                         )}
                         <button className="btn btn-secondary" onClick={() => setIsShareModalOpen(true)}>
