@@ -334,9 +334,19 @@ class BracketGenerationService {
      * @private
      */
     static async _getParticipantsForBracket(tournament, client) {
-        if (tournament.format === 'mix') {
-            // Для микс-турниров используем сгенерированные команды
-            return await this._getMixTeams(tournament.id, client);
+        // 🆕 Для Full Mix SE/DE используем участников, а не команды (команды создаются автоматически)
+        const isFullMix = tournament.format === 'full_mix' || 
+                         (tournament.format === 'mix' && tournament.mix_type === 'full');
+        const isSEorDE = tournament.bracket_type === 'single_elimination' || 
+                        tournament.bracket_type === 'double_elimination';
+        
+        if (isFullMix && isSEorDE) {
+            // Для Full Mix SE/DE возвращаем обычных участников
+            console.log(`🎯 [_getParticipantsForBracket] Full Mix SE/DE - получаем участников`);
+            return await ParticipantRepository.getByTournamentId(tournament.id);
+        } else if (tournament.format === 'mix') {
+            // Для классических микс-турниров используем сгенерированные команды
+            return await this._getMixTeams(tournament.id, client, tournament);
         } else if (tournament.participant_type === 'team') {
             // Для командных турниров используем команды
             return await TournamentRepository.getTeamsWithMembers(tournament.id);
@@ -350,10 +360,16 @@ class BracketGenerationService {
      * 🏆 Получение микс-команд
      * @private
      */
-    static async _getMixTeams(tournamentId, client) {
+    static async _getMixTeams(tournamentId, client, tournament) {
         const teams = await TeamRepository.getByTournamentId(tournamentId);
         
-        if (teams.length === 0) {
+        // 🆕 Для Full Mix SE/DE команды могут отсутствовать (будут созданы автоматически)
+        const isFullMix = tournament?.format === 'full_mix' || 
+                         (tournament?.format === 'mix' && tournament?.mix_type === 'full');
+        const isSEorDE = tournament?.bracket_type === 'single_elimination' || 
+                        tournament?.bracket_type === 'double_elimination';
+        
+        if (teams.length === 0 && !(isFullMix && isSEorDE)) {
             throw new Error('Для генерации турнирной сетки микс-турнира необходимо сначала сформировать команды');
         }
         
