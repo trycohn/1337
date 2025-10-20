@@ -629,13 +629,56 @@ class MatchLobbyService {
             // Добавляем поле is_ready если его нет
             await client.query(`ALTER TABLE lobby_invitations ADD COLUMN IF NOT EXISTS is_ready BOOLEAN DEFAULT FALSE`);
             
-            // Обновляем готовность
+            // Обновляем готовность игрока
             await client.query(
                 `UPDATE lobby_invitations 
                  SET is_ready = $1 
                  WHERE lobby_id = $2 AND user_id = $3`,
                 [Boolean(ready), lobbyId, userId]
             );
+            
+            // Получаем команду игрока
+            const teamResult = await client.query(
+                `SELECT team_id FROM lobby_invitations WHERE lobby_id = $1 AND user_id = $2`,
+                [lobbyId, userId]
+            );
+            
+            const playerTeam = teamResult.rows[0]?.team_id;
+            
+            if (playerTeam) {
+                // Проверяем готовность всей команды
+                const teamReadyCheck = await client.query(
+                    `SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_ready THEN 1 ELSE 0 END) as ready_count
+                     FROM lobby_invitations
+                     WHERE lobby_id = $1 AND team_id = $2`,
+                    [lobbyId, playerTeam]
+                );
+                
+                const total = parseInt(teamReadyCheck.rows[0]?.total) || 0;
+                const readyCount = parseInt(teamReadyCheck.rows[0]?.ready_count) || 0;
+                const teamAllReady = total > 0 && total === readyCount;
+                
+                console.log(`📊 [setPlayerReady] Готовность команды ${playerTeam}:`, {
+                    total,
+                    readyCount,
+                    teamAllReady
+                });
+                
+                // Обновляем готовность команды в match_lobbies
+                if (playerTeam === (await client.query(`SELECT team1_id FROM match_lobbies l JOIN matches m ON l.match_id = m.id WHERE l.id = $1`, [lobbyId])).rows[0]?.team1_id) {
+                    await client.query(
+                        `UPDATE match_lobbies SET team1_ready = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                        [teamAllReady, lobbyId]
+                    );
+                } else {
+                    await client.query(
+                        `UPDATE match_lobbies SET team2_ready = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                        [teamAllReady, lobbyId]
+                    );
+                }
+            }
             
             await client.query('COMMIT');
             
