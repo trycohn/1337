@@ -777,9 +777,17 @@ class MatchLobbyService {
             
             // Проверяем права пользователя и текущий ход
             const lobbyResult = await client.query(
-                `SELECT l.*, i.team_id as user_team_id
+                `SELECT l.*, 
+                        i.team_id as user_team_id,
+                        m.team1_id,
+                        m.team2_id,
+                        t1.name as team1_name,
+                        t2.name as team2_name
                  FROM match_lobbies l
                  JOIN lobby_invitations i ON l.id = i.lobby_id
+                 LEFT JOIN matches m ON m.id = l.match_id
+                 LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
+                 LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
                  WHERE l.id = $1 AND i.user_id = $2`,
                 [lobbyId, userId]
             );
@@ -837,6 +845,11 @@ class MatchLobbyService {
 
             // Дублируем шаг в историю pick/ban для страницы матча (турнирное лобби)
             try {
+                // Определяем название команды по user_team_id
+                const teamName = lobby.user_team_id === lobby.team1_id 
+                    ? lobby.team1_name 
+                    : lobby.team2_name;
+                
                 await client.query(
                     `INSERT INTO matchzy_pickban_steps (tournament_lobby_id, series_type, step_index, action, team_name, team_id, mapname, actor_steamid64)
                      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
@@ -845,7 +858,7 @@ class MatchLobbyService {
                         lobby.match_format || 'bo1',
                         actionOrder,
                         action,
-                        lobby.user_team_id === 1 ? lobby.team1_name : lobby.team2_name,
+                        teamName,
                         lobby.user_team_id,
                         mapName,
                         null
@@ -980,11 +993,19 @@ class MatchLobbyService {
         const path = require('path');
         const fs = require('fs');
         
-        // Получаем данные лобби и матча
+        // Получаем данные лобби и матча с названиями команд
         const lobbyResult = await client.query(
-            `SELECT ml.*, m.id as match_id, m.team1_name, m.team2_name, ml.match_format
+            `SELECT ml.*, 
+                    m.id as match_id, 
+                    m.team1_id,
+                    m.team2_id,
+                    ml.match_format,
+                    t1.name as team1_name,
+                    t2.name as team2_name
              FROM match_lobbies ml
              LEFT JOIN matches m ON m.id = ml.match_id
+             LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
+             LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
              WHERE ml.id = $1`,
             [lobbyId]
         );
@@ -1092,11 +1113,11 @@ class MatchLobbyService {
             side_type: 'standard',
             players_per_team, // динамическое значение
             team1: { 
-                name: (lobby.team1_name && lobby.team1_name !== 'Команда 1') ? lobby.team1_name : 'TEAM_A', 
+                name: lobby.team1_name || 'TEAM_A', 
                 players: team1PlayersObj // объект {steam_id: nickname}
             },
             team2: { 
-                name: (lobby.team2_name && lobby.team2_name !== 'Команда 2') ? lobby.team2_name : 'TEAM_B', 
+                name: lobby.team2_name || 'TEAM_B', 
                 players: team2PlayersObj // объект {steam_id: nickname}
             },
             // Webhook настройки для автоматической отправки статистики
