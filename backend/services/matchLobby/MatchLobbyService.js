@@ -445,18 +445,20 @@ class MatchLobbyService {
         
         const lobby = result.rows[0];
         
-        // Загружаем участников команд
+        // Загружаем участников команд с их готовностью
         const team1Result = await pool.query(
             `SELECT 
                 ttm.user_id,
                 ttm.is_captain,
                 u.username,
-                u.avatar_url
+                u.avatar_url,
+                COALESCE(li.is_ready, FALSE) as is_ready
              FROM tournament_team_members ttm
              JOIN users u ON u.id = ttm.user_id
+             LEFT JOIN lobby_invitations li ON li.lobby_id = $2 AND li.user_id = ttm.user_id
              WHERE ttm.team_id = $1
              ORDER BY ttm.is_captain DESC, u.username ASC`,
-            [lobby.team1_id]
+            [lobby.team1_id, lobbyId]
         );
         
         const team2Result = await pool.query(
@@ -464,12 +466,14 @@ class MatchLobbyService {
                 ttm.user_id,
                 ttm.is_captain,
                 u.username,
-                u.avatar_url
+                u.avatar_url,
+                COALESCE(li.is_ready, FALSE) as is_ready
              FROM tournament_team_members ttm
              JOIN users u ON u.id = ttm.user_id
+             LEFT JOIN lobby_invitations li ON li.lobby_id = $2 AND li.user_id = ttm.user_id
              WHERE ttm.team_id = $1
              ORDER BY ttm.is_captain DESC, u.username ASC`,
-            [lobby.team2_id]
+            [lobby.team2_id, lobbyId]
         );
         
         lobby.team1_participants = team1Result.rows;
@@ -694,7 +698,10 @@ class MatchLobbyService {
     // 🚀 Запуск процедуры пик/бан (автоматический выбор первой команды)
     static async startPickBanProcedure(lobbyId) {
         const result = await pool.query(
-            `SELECT * FROM match_lobbies WHERE id = $1`,
+            `SELECT l.*, m.team1_id, m.team2_id
+             FROM match_lobbies l
+             JOIN matches m ON l.match_id = m.id
+             WHERE l.id = $1`,
             [lobbyId]
         );
         
@@ -703,6 +710,15 @@ class MatchLobbyService {
         }
         
         const lobby = result.rows[0];
+        
+        console.log(`🔍 [startPickBanProcedure] Лобби ${lobbyId}:`, {
+            match_format: lobby.match_format,
+            team1_ready: lobby.team1_ready,
+            team2_ready: lobby.team2_ready,
+            status: lobby.status,
+            team1_id: lobby.team1_id,
+            team2_id: lobby.team2_id
+        });
         
         // Проверки
         if (!lobby.match_format) {

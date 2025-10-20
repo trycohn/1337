@@ -176,7 +176,8 @@ function TournamentLobbyContainer() {
                         username: p.username,
                         display_name: p.username,
                         avatar: p.avatar_url || '/default-avatar.png',
-                        is_captain: p.is_captain
+                        is_captain: p.is_captain,
+                        is_ready: p.is_ready
                     }))}
                     teamNumber={1}
                     showReady={lobby.status !== 'completed' && lobby.status !== 'ready_to_create'}
@@ -192,7 +193,8 @@ function TournamentLobbyContainer() {
                         username: p.username,
                         display_name: p.username,
                         avatar: p.avatar_url || '/default-avatar.png',
-                        is_captain: p.is_captain
+                        is_captain: p.is_captain,
+                        is_ready: p.is_ready
                     }))}
                     teamNumber={2}
                     showReady={lobby.status !== 'completed' && lobby.status !== 'ready_to_create'}

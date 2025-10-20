@@ -43,6 +43,16 @@ function TeamRosterBase({
                                 <span className="player-captain-badge" title="Капитан">👑</span>
                             )}
                         </div>
+                        {showReady && (
+                            <div className="player-ready-status">
+                                <span 
+                                    className={`ready-indicator ${player.is_ready ? 'ready' : 'not-ready'}`}
+                                    title={player.is_ready ? 'Готов' : 'Не готов'}
+                                >
+                                    {player.is_ready ? '✅' : '❌'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 ))}
                 

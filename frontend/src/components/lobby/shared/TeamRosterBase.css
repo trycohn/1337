@@ -129,6 +129,32 @@
     font-size: 14px;
 }
 
+.player-ready-status {
+    margin-left: auto;
+}
+
+.ready-indicator {
+    font-size: 16px;
+    display: inline-block;
+}
+
+.ready-indicator.ready {
+    animation: pulse-ready 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ready {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.ready-indicator.not-ready {
+    opacity: 0.5;
+}
+
 .team-roster-ready-btn {
     width: 100%;
     padding: 10px;
