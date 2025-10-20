@@ -45,19 +45,25 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
         if (!user?.id) return;
         setAddingId(user.id);
         try {
-            // ✅ Добавляем как зарегистрированного участника по userId с обязательным полем participantName
-            await api.post(`/api/tournaments/${tournamentId}/add-participant`, {
-                userId: user.id,
-                participantName: user.username || `User${user.id}` // Обязательное поле для валидации
+            // 📧 Отправляем приглашение пользователю (НЕ добавляем напрямую!)
+            await api.post(`/api/tournaments/${tournamentId}/invite`, {
+                username: user.username || `User${user.id}` // Backend ожидает username для поиска пользователя
             });
-            onAdded?.();
-            setQuery(''); // Очищаем поле поиска после успешного добавления
+            
+            // Показываем сообщение об успехе
+            setError(''); // Очищаем предыдущие ошибки
+            setQuery(''); // Очищаем поле поиска после успешной отправки приглашения
             setResults([]); // Очищаем результаты
+            
+            // Уведомляем родительский компонент (для обновления интерфейса, если нужно)
+            onAdded?.();
+            
+            console.log(`✅ Приглашение успешно отправлено пользователю ${user.username}`);
         } catch (e) {
             // Показываем сообщение об ошибке пользователю
-            const errorMessage = e.response?.data?.error || e.response?.data?.message || 'Ошибка при добавлении участника';
+            const errorMessage = e.response?.data?.error || e.response?.data?.message || 'Ошибка при отправке приглашения';
             setError(Array.isArray(errorMessage) ? errorMessage.join(', ') : errorMessage);
-            console.error('❌ Ошибка при добавлении участника:', e);
+            console.error('❌ Ошибка при отправке приглашения:', e);
         } finally {
             setAddingId(null);
         }
@@ -94,7 +100,7 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
                                 </div>
                             </div>
                             <button className="btn btn-primary" disabled={addingId===u.id} onClick={() => handleAdd(u)}>
-                                {addingId===u.id ? 'Добавление...' : 'Добавить'}
+                                {addingId===u.id ? 'Отправка...' : 'Пригласить'}
                             </button>
                         </div>
                     ))}

@@ -43,10 +43,13 @@ class ParticipantController {
         res.json({ message: result.message });
     });
 
-    // 👤 Ручное добавление участника
+    // 👤 Ручное добавление участника (НАПРЯМУЮ, НЕ ПРИГЛАШЕНИЕ!)
     static addParticipant = asyncHandler(async (req, res) => {
         const { id } = req.params;
         const { participantName, userId, faceit_elo, cs2_premier_rank } = req.body;
+        
+        console.log(`🚨 [addParticipant] Вызван метод ПРЯМОГО ДОБАВЛЕНИЯ участника!`);
+        console.log(`📋 Данные:`, { tournamentId: id, participantName, userId, adminId: req.user.id });
         
         const validationResult = TournamentValidator.validateAddParticipant(req.body);
         if (!validationResult.isValid) {
@@ -166,10 +169,13 @@ class ParticipantController {
         res.json(result);
     });
 
-    // 📧 Отправка приглашения в турнир
+    // 📧 Отправка приглашения в турнир (ПРИГЛАШЕНИЕ, НЕ ПРЯМОЕ ДОБАВЛЕНИЕ!)
     static inviteToTournament = asyncHandler(async (req, res) => {
         const { id } = req.params;
         const { username, email } = req.body;
+        
+        console.log(`📧 [inviteToTournament] Вызван метод ПРИГЛАШЕНИЯ участника!`);
+        console.log(`📋 Данные:`, { tournamentId: id, username, email, inviterId: req.user.id });
         
         const validationResult = TournamentValidator.validateInvitation(req.body);
         if (!validationResult.isValid) {
