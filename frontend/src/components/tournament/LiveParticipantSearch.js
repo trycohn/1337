@@ -45,12 +45,14 @@ function LiveParticipantSearch({ tournamentId, onAdded }) {
         if (!user?.id) return;
         setAddingId(user.id);
         try {
-            // Добавляем как зарегистрированного участника по userId
+            // ✅ Добавляем как зарегистрированного участника по userId с обязательным полем participantName
             await api.post(`/api/tournaments/${tournamentId}/add-participant`, {
                 userId: user.id,
-                participantName: user.username || `User ${user.id}` // ✅ Добавлено обязательное поле
+                participantName: user.username || `User${user.id}` // Обязательное поле для валидации
             });
             onAdded?.();
+            setQuery(''); // Очищаем поле поиска после успешного добавления
+            setResults([]); // Очищаем результаты
         } catch (e) {
             // Показываем сообщение об ошибке пользователю
             const errorMessage = e.response?.data?.error || e.response?.data?.message || 'Ошибка при добавлении участника';

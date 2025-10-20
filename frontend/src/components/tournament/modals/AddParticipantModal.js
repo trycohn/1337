@@ -138,21 +138,6 @@ const AddParticipantModal = ({
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="participant-cs2">CS2 Premier Rank (необязательно)</label>
-                        <input
-                            id="participant-cs2"
-                            type="number"
-                            name="cs2_premier_rank"
-                            value={newParticipantData.cs2_premier_rank}
-                            onChange={handleInputChange}
-                            placeholder="15000"
-                            min="0"
-                            max="50000"
-                            disabled={isLoading}
-                        />
-                    </div>
-
                     {/* Для командных турниров - добавление игроков */}
                     {isTeamTournament && (
                         <div className="form-group">

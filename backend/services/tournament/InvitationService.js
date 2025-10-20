@@ -4,6 +4,7 @@ const ParticipantRepository = require('../../repositories/tournament/Participant
 const TeamRepository = require('../../repositories/tournament/TeamRepository');
 const { logTournamentEvent } = require('../../utils/tournament/logger');
 const { sendNotification } = require('../../notifications');
+const { sendTournamentInviteNotification } = require('../../utils/systemNotifications');
 
 class InvitationService {
     /**
@@ -66,7 +67,16 @@ class InvitationService {
             [tournamentId, user.id, inviterId, 'pending']
         );
 
-        // Отправляем уведомление приглашенному пользователю
+        // 📧 ОТПРАВЛЯЕМ СООБЩЕНИЕ В ЧАТ ОТ СИСТЕМНОГО ПОЛЬЗОВАТЕЛЯ 1337community
+        await sendTournamentInviteNotification(
+            user.id, 
+            tournament.name, 
+            inviterUsername, 
+            tournamentId
+        );
+        console.log(`✅ Сообщение-приглашение отправлено в чат пользователю ${user.username}`);
+
+        // Отправляем уведомление приглашенному пользователю (в колокольчик)
         const isTeamTournament = tournament.participant_type === 'team';
         const notificationMessage = isTeamTournament 
             ? `Вы приглашены в командный турнир "${tournament.name}" пользователем ${inviterUsername}. Перейдите на страницу турнира и зарегистрируйте свою команду для участия.`
