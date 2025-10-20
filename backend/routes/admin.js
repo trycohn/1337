@@ -2094,9 +2094,13 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                  ORDER BY action_order ASC`,
                 [lobbyId]
             );
+            // Добавляем префикс de_ если его нет
             const maplist = picksRes.rows
                 .filter(r => r.action_type === 'pick')
-                .map(r => String(r.map_name));
+                .map(r => {
+                    const mapName = String(r.map_name);
+                    return mapName.startsWith('de_') ? mapName : `de_${mapName}`;
+                });
 
             // Получаем составы команд (только принявшие приглашение)
             const teamRes = await client.query(
@@ -2134,10 +2138,11 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
             const team2Count = Object.keys(team2PlayersObj).length;
             const players_per_team = Math.max(team1Count, team2Count, 1);
 
-            // Формируем уникальный matchid (ЧИСЛО для MatchZy!)
-            const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
-            const matchid = parseInt(`${lobbyId}${ts}`); // ЧИСЛО, не строка!
-            const fileName = `${format}-lobby${lobbyId}-${Date.now()}.json`;
+            // MatchZy требует matchid как ЧИСЛО (integer) меньше 2,147,483,647
+            // Генерируем безопасный matchid: lobbyId * 1000 + миллисекунды % 1000
+            const now = Date.now();
+            const matchid = (lobbyId * 1000) + (now % 1000);
+            const fileName = `${format}-lobby${lobbyId}-${now}.json`;
             
             const cfg = {
                 matchid, // ЧИСЛО для MatchZy
@@ -2249,14 +2254,14 @@ router.post('/match-lobby/:lobbyId/select-map', authenticateToken, async (req, r
                                 
                                 console.log(`⏱️ [T+${Date.now()-T0}ms] Формируем ссылки подключения`);
                                 
-                                // Формируем ссылки подключения
+                                // Формируем ссылки подключения (steam://run/730 автоматически запускает CS2)
                                 const serverPass = server.server_password || '';
-                                connect = `steam://connect/${server.host}:${server.port}${serverPass ? '/' + serverPass : ''}`;
+                                connect = `steam://run/730//+connect ${server.host}:${server.port}${serverPass ? ';password ' + serverPass : ''}`;
                                 
                                 const gotvHost = server.gotv_host || server.host;
                                 const gotvPort = server.gotv_port || server.port;
                                 const gotvPass = server.gotv_password || '';
-                                gotv = `steam://connect/${gotvHost}:${gotvPort}${gotvPass ? '/' + gotvPass : ''}`;
+                                gotv = `steam://run/730//+connect ${gotvHost}:${gotvPort}${gotvPass ? ';password ' + gotvPass : ''}`;
                                 
                                 console.log(`✅ Конфиг загружен на сервер ${server.name}!`);
                                 console.log(`📡 Connect: ${connect}`);

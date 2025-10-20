@@ -1008,7 +1008,11 @@ class MatchLobbyService {
             [lobbyId]
         );
         
-        const maplist = mapsResult.rows.map(r => String(r.map_name));
+        // Добавляем префикс de_ если его нет
+        const maplist = mapsResult.rows.map(r => {
+            const mapName = String(r.map_name);
+            return mapName.startsWith('de_') ? mapName : `de_${mapName}`;
+        });
         
         // Получаем участников матча (команды и игроки)
         // Получаем team1_id и team2_id из matches
@@ -1073,10 +1077,11 @@ class MatchLobbyService {
         const team2Count = Object.keys(team2PlayersObj).length;
         const players_per_team = Math.max(team1Count, team2Count, 1);
         
-        // MatchZy требует matchid как ЧИСЛО (integer)!
-        const ts = Date.now().toString().slice(-8); // Последние 8 цифр timestamp
-        const matchid = parseInt(`${matchId}${ts}`); // ЧИСЛО, не строка!
-        const fileName = `${matchFormat}-match${matchId}-${Date.now()}.json`;
+        // MatchZy требует matchid как ЧИСЛО (integer) меньше 2,147,483,647
+        // Генерируем безопасный matchid: matchId * 1000 + миллисекунды % 1000
+        const now = Date.now();
+        const matchid = (matchId * 1000) + (now % 1000);
+        const fileName = `${matchFormat}-match${matchId}-${now}.json`;
         
         const cfg = {
             matchid, // ЧИСЛО для MatchZy
