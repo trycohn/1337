@@ -189,6 +189,27 @@
     padding-top: 12px;
 }
 
+/* 🆕 Информация о SE/DE сетке для Full Mix */
+.fullmix-sede-info {
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.fullmix-sede-description {
+    padding: 24px 16px;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+.fullmix-sede-description p {
+    margin: 8px 0;
+}
+
+.fullmix-sede-description p:first-child {
+    color: #fff;
+    font-weight: 600;
+}
+
 /* Кнопки раундов (единый стиль) */
 .fullmix-rounds .fullmix-round-btn,
 .fullmixdraft-rounds .fullmix-round-btn {

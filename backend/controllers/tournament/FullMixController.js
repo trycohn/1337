@@ -352,6 +352,32 @@ class FullMixController {
         const items = await FullMixService.getEliminatedDetailed(tournamentId);
         res.json({ success: true, recovered: result, items });
     });
+
+    // 🆕 РЕДРАФТ СОСТАВОВ ДЛЯ СЛЕДУЮЩЕГО РАУНДА (SE/DE)
+    static redraft = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const roundNumber = parseInt(req.params.round);
+        
+        console.log(`🔄 [FullMixController.redraft] Редрафт составов для турнира ${tournamentId}, раунд ${roundNumber}`);
+        
+        const result = await FullMixService.redraftRosterForNextRound(tournamentId, roundNumber);
+        
+        // Отправляем WebSocket обновление
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_rosters_updated', { 
+                tournamentId, 
+                round: roundNumber,
+                teams: result.teams
+            });
+        } catch (_) {}
+        
+        res.json({ 
+            success: true, 
+            message: `Составы команд переформированы для раунда ${roundNumber}`,
+            ...result 
+        });
+    });
 }
 
 module.exports = FullMixController;

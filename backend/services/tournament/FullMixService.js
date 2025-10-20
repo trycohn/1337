@@ -571,12 +571,140 @@ class FullMixService {
             rating_mode: options.rating_mode || 'random'
         });
 
-        // Генерация Раунда 1
-        const roundNumber = 1;
-        const snapshot = await this.generateRoundSnapshot(tournamentId, roundNumber, settings.rating_mode);
-        await this.saveSnapshot(tournamentId, roundNumber, snapshot);
+        // 🆕 ПРОВЕРЯЕМ ТИП СЕТКИ
+        const isSEorDE = await this.isSEorDEBracket(tournamentId);
+        
+        if (isSEorDE) {
+            // 🎯 НОВАЯ ЛОГИКА: Full Mix с SE/DE сеткой
+            console.log(`🏆 [FullMix] Запуск Full Mix с ${tournament.bracket_type} сеткой`);
+            return await this.startSEorDEBracket(tournamentId, userId, settings);
+        } else {
+            // 🔄 СТАРАЯ ЛОГИКА: Full Mix Swiss (раундовая система)
+            console.log(`🏆 [FullMix] Запуск Full Mix Swiss (раундовая система)`);
+            const roundNumber = 1;
+            const snapshot = await this.generateRoundSnapshot(tournamentId, roundNumber, settings.rating_mode);
+            await this.saveSnapshot(tournamentId, roundNumber, snapshot);
+            return { round: roundNumber, settings, snapshot };
+        }
+    }
 
-        return { round: roundNumber, settings, snapshot };
+    /**
+     * 🆕 ЗАПУСК FULL MIX С SE/DE СЕТКОЙ
+     * Создает фиксированные команды и полную сетку сразу
+     */
+    static async startSEorDEBracket(tournamentId, userId, settings) {
+        console.log(`🎯 [FullMix SE/DE] Начало генерации сетки для турнира ${tournamentId}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // 1. Получаем турнир и участников
+            const tournament = await TournamentService.getTournament(tournamentId);
+            const participants = await this.getEligibleParticipants(tournamentId, settings.rating_mode);
+            const teamSize = await this.getTeamSize(tournamentId);
+            
+            console.log(`👥 Найдено ${participants.length} участников, размер команды: ${teamSize}`);
+            
+            // 2. Вычисляем количество команд (должно быть степень двойки)
+            const teamsCount = Math.floor(participants.length / teamSize);
+            const nearestPowerOfTwo = Math.pow(2, Math.floor(Math.log2(teamsCount)));
+            const actualTeamsCount = nearestPowerOfTwo;
+            const playersNeeded = actualTeamsCount * teamSize;
+            
+            console.log(`🔢 Команд: ${teamsCount}, ближайшая степень 2: ${actualTeamsCount}, игроков нужно: ${playersNeeded}`);
+            
+            if (participants.length < playersNeeded) {
+                throw new Error(`Недостаточно участников. Нужно минимум ${playersNeeded} для ${actualTeamsCount} команд размером ${teamSize}`);
+            }
+            
+            // 3. Создаем фиксированные команды со случайными названиями из пула
+            const teams = await this.createFixedTeamsWithRandomNames(
+                client, 
+                tournamentId, 
+                actualTeamsCount
+            );
+            
+            console.log(`✅ Создано ${teams.length} фиксированных команд`);
+            
+            // 4. Распределяем участников по командам (первый раз)
+            const teamsWithRosters = await this.assignParticipantsToTeams(
+                client,
+                tournamentId,
+                teams,
+                participants.slice(0, playersNeeded), // Берем только нужное количество
+                teamSize,
+                settings.rating_mode
+            );
+            
+            console.log(`✅ Участники распределены по командам`);
+            
+            // 5. Генерируем полную сетку SE или DE используя существующие движки
+            const bracketType = tournament.bracket_type;
+            let bracketResult;
+            
+            if (bracketType === 'single_elimination') {
+                const SingleEliminationEngine = require('./SingleEliminationEngine');
+                bracketResult = await SingleEliminationEngine.generateBracket(
+                    tournamentId,
+                    teamsWithRosters,
+                    { isFullMix: true, seedingType: 'random' }
+                );
+            } else if (bracketType === 'double_elimination') {
+                const DoubleEliminationEngine = require('./DoubleEliminationEngine');
+                bracketResult = await DoubleEliminationEngine.generateBracket(
+                    tournamentId,
+                    teamsWithRosters,
+                    { 
+                        isFullMix: true, 
+                        seedingType: 'random',
+                        fullDoubleElimination: tournament.full_double_elimination || false
+                    }
+                );
+            } else {
+                throw new Error(`Неподдерживаемый тип сетки для Full Mix: ${bracketType}`);
+            }
+            
+            console.log(`✅ Сетка ${bracketType} создана: ${bracketResult.matches?.length || 0} матчей`);
+            
+            // 6. Сохраняем снапшот для первого раунда
+            const snapshot = {
+                round: 1,
+                teams: teamsWithRosters.map(t => ({
+                    team_id: t.id,
+                    name: t.name,
+                    members: t.members || []
+                })),
+                matches: bracketResult.matches || [],
+                standings: [], // Для SE/DE standings не нужны
+                meta: {
+                    bracket_type: bracketType,
+                    total_teams: actualTeamsCount,
+                    is_se_de_bracket: true,
+                    eliminated: [] // Пока никто не выбыл
+                }
+            };
+            
+            await this.saveSnapshot(tournamentId, 1, snapshot);
+            
+            await client.query('COMMIT');
+            
+            console.log(`✅ [FullMix SE/DE] Турнир ${tournamentId} запущен с сеткой ${bracketType}`);
+            
+            return { 
+                round: 1, 
+                settings, 
+                snapshot,
+                bracket: bracketResult
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ [FullMix SE/DE] Ошибка при запуске:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     static async generateNextRound(tournamentId, baseRoundNumber = null) {
@@ -1586,7 +1714,209 @@ class FullMixService {
         // Раунд считается завершённым ТОЛЬКО если есть хотя бы один матч и нет незавершённых
         return total > 0 && pending === 0;
     }
+
+    /**
+     * 🆕 СОЗДАНИЕ ФИКСИРОВАННЫХ КОМАНД СО СЛУЧАЙНЫМИ НАЗВАНИЯМИ
+     * Команды создаются один раз в начале турнира и сохраняют свои названия
+     */
+    static async createFixedTeamsWithRandomNames(client, tournamentId, teamsCount) {
+        console.log(`🎲 [createFixedTeamsWithRandomNames] Создаем ${teamsCount} команд`);
+        
+        // Получаем случайные названия из пула
+        const namePoolResult = await client.query(
+            `SELECT name FROM full_mix_team_names WHERE active = TRUE ORDER BY RANDOM() LIMIT $1`,
+            [teamsCount]
+        );
+        
+        const namePool = namePoolResult.rows.map(r => r.name);
+        
+        // Если в пуле меньше названий чем нужно, добавляем fallback
+        while (namePool.length < teamsCount) {
+            namePool.push(`Team ${namePool.length + 1}`);
+        }
+        
+        console.log(`📝 Получено названий из пула: ${namePool.length}`);
+        
+        // Создаем команды
+        const teams = [];
+        for (let i = 0; i < teamsCount; i++) {
+            const teamName = namePool[i];
+            const teamResult = await client.query(
+                `INSERT INTO tournament_teams (tournament_id, name, creator_id) 
+                 VALUES ($1, $2, NULL) RETURNING id, name`,
+                [tournamentId, teamName]
+            );
+            
+            teams.push({
+                id: teamResult.rows[0].id,
+                name: teamResult.rows[0].name,
+                members: []
+            });
+        }
+        
+        console.log(`✅ Создано ${teams.length} команд с названиями:`, teams.map(t => t.name));
+        
+        return teams;
+    }
+
+    /**
+     * 🆕 РАСПРЕДЕЛЕНИЕ УЧАСТНИКОВ ПО КОМАНДАМ
+     * Используется при старте турнира и при редрафте между раундами
+     */
+    static async assignParticipantsToTeams(client, tournamentId, teams, participants, teamSize, ratingMode) {
+        console.log(`👥 [assignParticipantsToTeams] Распределяем ${participants.length} участников по ${teams.length} командам`);
+        
+        // Очищаем текущие составы команд
+        const teamIds = teams.map(t => t.id);
+        await client.query(
+            `DELETE FROM tournament_team_members WHERE team_id = ANY($1::int[])`,
+            [teamIds]
+        );
+        
+        // Формируем команды используя существующую логику
+        const teamRosters = this.formTeams(participants, ratingMode, teamSize);
+        
+        console.log(`📊 Сформировано ${teamRosters.length} составов команд`);
+        
+        // Назначаем капитанов и добавляем участников в команды
+        for (let i = 0; i < teams.length && i < teamRosters.length; i++) {
+            const team = teams[i];
+            const roster = teamRosters[i];
+            const members = roster.members || roster;
+            
+            // Выбираем капитана (игрока с максимальным рейтингом)
+            const captain = this.chooseCaptain(members, ratingMode);
+            const captainUserId = captain?.user_id || null;
+            const captainRating = captain?.faceit_elo || captain?.cs2_premier_rank || null;
+            
+            // Добавляем всех членов команды
+            for (const member of members) {
+                const isCaptain = captainUserId && member.user_id === captainUserId;
+                
+                await client.query(
+                    `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain, captain_rating)
+                     VALUES ($1, $2, $3, $4, $5)`,
+                    [team.id, member.user_id || null, member.participant_id || null, isCaptain, captainRating]
+                );
+            }
+            
+            team.members = members;
+            team.captain = captain;
+        }
+        
+        console.log(`✅ Участники распределены по ${teams.length} командам`);
+        
+        return teams;
+    }
+
+    /**
+     * 🆕 РЕДРАФТ СОСТАВОВ ДЛЯ СЛЕДУЮЩЕГО РАУНДА (SE/DE)
+     * После завершения раунда администратор может передрафтить составы команд
+     */
+    static async redraftRosterForNextRound(tournamentId, roundNumber) {
+        console.log(`🔄 [redraftRosterForNextRound] Редрафт составов для раунда ${roundNumber}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Проверяем, что предыдущий раунд завершен
+            if (roundNumber > 1) {
+                const prevRoundCompleted = await this.isRoundCompleted(tournamentId, roundNumber - 1);
+                if (!prevRoundCompleted) {
+                    throw new Error(`Раунд ${roundNumber - 1} еще не завершен`);
+                }
+            }
+            
+            // Получаем команды, которые играют в этом раунде
+            const teamIds = await this.getRoundTeamIdsFromBracket(tournamentId, roundNumber);
+            
+            if (teamIds.length === 0) {
+                throw new Error(`Нет команд для раунда ${roundNumber}`);
+            }
+            
+            // Получаем информацию о командах
+            const teamsResult = await client.query(
+                `SELECT id, name FROM tournament_teams WHERE id = ANY($1::int[]) ORDER BY id`,
+                [teamIds]
+            );
+            
+            const teams = teamsResult.rows;
+            
+            // Получаем доступных участников (исключая выбывших)
+            const settings = await this.getSettings(tournamentId);
+            const eliminated = await this.getEliminatedParticipants(tournamentId);
+            const allParticipants = await this.getEligibleParticipants(tournamentId, settings.rating_mode);
+            
+            // Фильтруем выбывших
+            const eliminatedIds = new Set(eliminated.map(p => p.participant_id || p.user_id));
+            const availableParticipants = allParticipants.filter(p => {
+                return !eliminatedIds.has(p.participant_id) && !eliminatedIds.has(p.user_id);
+            });
+            
+            console.log(`👥 Доступно участников: ${availableParticipants.length}, выбыло: ${eliminated.length}`);
+            
+            // Получаем размер команды
+            const teamSize = await this.getTeamSize(tournamentId);
+            const playersNeeded = teams.length * teamSize;
+            
+            if (availableParticipants.length < playersNeeded) {
+                throw new Error(`Недостаточно участников для редрафта. Нужно: ${playersNeeded}, доступно: ${availableParticipants.length}`);
+            }
+            
+            // Редрафтим составы
+            const teamsWithNewRosters = await this.assignParticipantsToTeams(
+                client,
+                tournamentId,
+                teams,
+                availableParticipants.slice(0, playersNeeded),
+                teamSize,
+                settings.rating_mode
+            );
+            
+            await client.query('COMMIT');
+            
+            console.log(`✅ Редрафт выполнен для раунда ${roundNumber}`);
+            
+            return {
+                round: roundNumber,
+                teams: teamsWithNewRosters,
+                availableParticipants: availableParticipants.length,
+                eliminated: eliminated.length
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ Ошибка при редрафте:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * 🆕 ПОЛУЧЕНИЕ ВЫБЫВШИХ УЧАСТНИКОВ
+     * Возвращает список участников, которые выбыли после поражения их команд
+     */
+    static async getEliminatedParticipants(tournamentId) {
+        // Получаем последний снапшот
+        const latestSnapshot = await pool.query(
+            `SELECT snapshot FROM full_mix_snapshots 
+             WHERE tournament_id = $1 
+             ORDER BY round_number DESC 
+             LIMIT 1`,
+            [tournamentId]
+        );
+        
+        if (latestSnapshot.rows.length === 0) {
+            return [];
+        }
+        
+        const eliminated = latestSnapshot.rows[0].snapshot?.meta?.eliminated || [];
+        return Array.isArray(eliminated) ? eliminated : [];
+    }
 }
+
 
 module.exports = FullMixService;
 

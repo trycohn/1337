@@ -102,7 +102,7 @@ function ConnectionBlock({
             {matchPageUrl && (
                 <div className="connection-match-link">
                     <a href={matchPageUrl} className="btn-match-page">
-                        📊 Перейти на страницу матча
+                        Перейти на страницу матча
                     </a>
                 </div>
             )}

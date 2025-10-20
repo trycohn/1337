@@ -95,6 +95,9 @@ class MatchService {
         // Отправляем объявление в чат турнира
         await this._sendMatchResultAnnouncement(match, resultData, tournament);
 
+        // 🆕 ДЛЯ FULL MIX SE/DE: ОБРАБОТКА ВЫБЫВАНИЯ УЧАСТНИКОВ
+        await this._handleFullMixElimination(tournament, match, resultData.winner_team_id);
+
         console.log('✅ MatchService: Результат матча обновлен');
         return { 
             tournament: updatedTournament,
@@ -1051,6 +1054,115 @@ class MatchService {
     static async getById(matchId) {
         console.log(`🔍 MatchService: Получение матча ${matchId} с информацией об участниках`);
         return await MatchRepository.getByIdWithParticipants(matchId);
+    }
+
+    /**
+     * 🆕 ОБРАБОТКА ВЫБЫВАНИЯ УЧАСТНИКОВ ДЛЯ FULL MIX SE/DE
+     * При поражении команды все её участники выбывают из турнира
+     * @private
+     */
+    static async _handleFullMixElimination(tournament, match, winnerTeamId) {
+        try {
+            // Проверяем, является ли это Full Mix турниром
+            const isFullMix = tournament.format === 'full_mix' || 
+                             (tournament.format === 'mix' && tournament.mix_type === 'full');
+            
+            if (!isFullMix) {
+                return; // Не Full Mix - пропускаем
+            }
+            
+            // Проверяем тип сетки
+            const isSEorDE = tournament.bracket_type === 'single_elimination' || 
+                            tournament.bracket_type === 'double_elimination';
+            
+            if (!isSEorDE) {
+                return; // Не SE/DE - пропускаем (Swiss использует свою логику)
+            }
+            
+            console.log(`🏴 [handleFullMixElimination] Обработка выбывания для Full Mix ${tournament.bracket_type}`);
+            
+            // Определяем проигравшую команду
+            const loserTeamId = winnerTeamId === match.team1_id ? match.team2_id : match.team1_id;
+            
+            console.log(`📊 Матч: ${match.id}, Победитель: ${winnerTeamId}, Проигравший: ${loserTeamId}`);
+            
+            // Проверяем, это матч из верхней или нижней сетки (для DE)
+            let shouldEliminate = true;
+            
+            if (tournament.bracket_type === 'double_elimination') {
+                // В DE проверяем, есть ли у матча loser_next_match_id
+                // Если есть - команда идет в нижнюю сетку, не выбывает
+                if (match.loser_next_match_id) {
+                    console.log(`⬇️ Команда ${loserTeamId} идет в нижнюю сетку (матч ${match.loser_next_match_id})`);
+                    shouldEliminate = false;
+                } else {
+                    console.log(`🏴 Команда ${loserTeamId} выбывает (матч из нижней сетки или финал)`);
+                }
+            }
+            
+            if (!shouldEliminate) {
+                return; // Команда не выбывает, идет в нижнюю сетку
+            }
+            
+            // Получаем участников проигравшей команды
+            const membersResult = await pool.query(
+                `SELECT ttm.participant_id, ttm.user_id, tp.name
+                 FROM tournament_team_members ttm
+                 LEFT JOIN tournament_participants tp ON tp.id = ttm.participant_id
+                 WHERE ttm.team_id = $1`,
+                [loserTeamId]
+            );
+            
+            const eliminatedMembers = membersResult.rows;
+            
+            console.log(`👥 Выбывает ${eliminatedMembers.length} участников команды ${loserTeamId}`);
+            
+            // Получаем текущий список выбывших из последнего снапшота
+            const snapshotResult = await pool.query(
+                `SELECT id, snapshot FROM full_mix_snapshots 
+                 WHERE tournament_id = $1 
+                 ORDER BY round_number DESC 
+                 LIMIT 1`,
+                [tournament.id]
+            );
+            
+            if (snapshotResult.rows.length > 0) {
+                const currentSnapshot = snapshotResult.rows[0].snapshot;
+                const currentEliminated = currentSnapshot?.meta?.eliminated || [];
+                
+                // Добавляем новых выбывших
+                const newEliminated = eliminatedMembers.map(m => ({
+                    participant_id: m.participant_id,
+                    user_id: m.user_id,
+                    name: m.name,
+                    eliminated_in_round: match.round,
+                    eliminated_in_match: match.id,
+                    team_id: loserTeamId
+                }));
+                
+                const updatedEliminated = [...currentEliminated, ...newEliminated];
+                
+                // Обновляем снапшот
+                const updatedSnapshot = {
+                    ...currentSnapshot,
+                    meta: {
+                        ...currentSnapshot.meta,
+                        eliminated: updatedEliminated
+                    }
+                };
+                
+                await pool.query(
+                    `UPDATE full_mix_snapshots SET snapshot = $1 WHERE id = $2`,
+                    [JSON.stringify(updatedSnapshot), snapshotResult.rows[0].id]
+                );
+                
+                console.log(`✅ Обновлен список выбывших: было ${currentEliminated.length}, стало ${updatedEliminated.length}`);
+            }
+            
+        } catch (error) {
+            console.error(`❌ Ошибка при обработке выбывания:`, error);
+            // Не прерываем основной процесс
+        }
     }
 }
 

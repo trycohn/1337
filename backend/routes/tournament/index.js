@@ -539,6 +539,7 @@ router.get('/:id/fullmix/snapshots', FullMixController.snapshots);
 router.get('/:id/fullmix/rounds/:round', FullMixController.getRound);
 router.post('/:id/fullmix/rounds/:round/approve', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.approve);
 router.post('/:id/fullmix/rounds/:round/reshuffle', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.reshuffle);
+router.post('/:id/fullmix/rounds/:round/redraft', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.redraft);
 router.get('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 router.put('/:id/fullmix/settings', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, FullMixController.settings);
 // PREVIEW (черновики раундов): только админы/создатели

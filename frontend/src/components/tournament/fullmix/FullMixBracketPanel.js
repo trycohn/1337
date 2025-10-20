@@ -294,6 +294,12 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         const map = { random: 'Random', rating: 'По рейтингу' };
         return map[(settings?.rating_mode || 'random')] || 'Random';
     }, [settings?.rating_mode]);
+    
+    // 🆕 Проверяем, является ли это SE/DE сеткой
+    const isSEorDE = useMemo(() => {
+        const bracketType = (tournament?.bracket_type || '').toLowerCase();
+        return bracketType === 'single_elimination' || bracketType === 'double_elimination';
+    }, [tournament?.bracket_type]);
 
     const teams = snapshot?.teams || [];
     const matches = snapshot?.matches || [];
@@ -494,27 +500,29 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
 
             <div className="fullmix-panel">
             {/* Standings */}
-            <div className="fullmix-standings">
-                <div className="fullmix-standings-headline">
-                    <h4 className="fullmix-standings-title">Standings</h4>
-                    <div className="fullmix-standings-round">
-                        {displayRoundLabel === 'ФИНАЛ'
-                            ? 'ФИНАЛ'
-                            : `Раунд ${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+            {/* 🆕 Standings НЕ отображаем для SE/DE */}
+            {!isSEorDE && (
+                <div className="fullmix-standings">
+                    <div className="fullmix-standings-headline">
+                        <h4 className="fullmix-standings-title">Standings</h4>
+                        <div className="fullmix-standings-round">
+                            {displayRoundLabel === 'ФИНАЛ'
+                                ? 'ФИНАЛ'
+                                : `Раунд ${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+                        </div>
                     </div>
-                </div>
-                <div className="fullmix-standings-scroll">
-                    <table className="fullmix-standings-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Игрок</th>
-                                <th>G</th>
-                                <th>W</th>
-                                <th>L</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <div className="fullmix-standings-scroll">
+                        <table className="fullmix-standings-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Игрок</th>
+                                    <th>G</th>
+                                    <th>W</th>
+                                    <th>L</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                             {sortedStandings.map((s, idx) => {
                                 const u = parseInt(s.user_id, 10);
                                 const p = parseInt(s.participant_id, 10);
@@ -540,6 +548,26 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     </table>
                 </div>
             </div>
+            )}
+
+            {/* 🆕 Для SE/DE показываем информацию о турнирной сетке */}
+            {isSEorDE && (
+                <div className="fullmix-sede-info">
+                    <div className="fullmix-standings-headline">
+                        <h4 className="fullmix-standings-title">
+                            {tournament?.bracket_type === 'single_elimination' ? 'Single Elimination' : 'Double Elimination'}
+                        </h4>
+                        <div className="fullmix-standings-round">
+                            {displayRoundLabel === 'ФИНАЛ' ? 'ФИНАЛ' : `Раунд ${displayRoundLabel}`}
+                        </div>
+                    </div>
+                    <div className="fullmix-sede-description">
+                        <p>Турнирная сетка {tournament?.bracket_type === 'single_elimination' ? 'SE' : 'DE'} с фиксированными командами.</p>
+                        <p>Участники переформируются между раундами.</p>
+                        <p>При поражении команды все её участники выбывают из турнира.</p>
+                    </div>
+                </div>
+            )}
 
             {/* Правая часть удалена по требованию */}
             </div>
