@@ -148,7 +148,8 @@ function CreateTournamentManual({ onBack }) {
             bracket_type: formData.bracket_type,
             mix_rating_type: formData.format === 'mix' ? formData.mix_rating_type : null,
             mix_type: formData.format === 'mix' ? formData.mix_type : null,
-            wins_to_win: formData.format === 'mix' && formData.mix_type === 'full' ? parseInt(formData.wins_to_win || 4, 10) : null,
+            // wins_to_win только для Swiss System
+            wins_to_win: formData.bracket_type === 'swiss' ? parseInt(formData.wins_to_win || 4, 10) : null,
             require_faceit_linked: formData.format === 'mix' && formData.mix_rating_type === 'faceit' ? !!formData.require_faceit_linked : false,
             require_steam_linked: formData.format === 'mix' && formData.mix_rating_type === 'premier' ? !!formData.require_steam_linked : false,
             seeding_type: formData.seeding_type,
@@ -867,7 +868,7 @@ function CreateTournamentManual({ onBack }) {
                   {formData.mix_type === 'full' && 'Команды пересобираются после каждого завершенного тура'}
                 </small>
               </div>
-              {formData.mix_type === 'full' && formData.bracket_type === 'swiss' && (
+              {formData.bracket_type === 'swiss' && (
                 <div className="form-group">
                   <label>Минимальное число раундов (до победы)</label>
                   <input
@@ -880,7 +881,7 @@ function CreateTournamentManual({ onBack }) {
                     disabled={!verificationStatus.canCreate}
                     required
                   />
-                  <small className="form-hint">Количество побед для автоматического попадания в финал (Swiss System)</small>
+                  <small className="form-hint">Количество побед для автоматического попадания в финал. Используется только в Swiss System.</small>
                 </div>
               )}
               <div className="form-group">

@@ -281,11 +281,9 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
           // Mix специфичные
           mix_type: wizardData.format.format === 'mix' ? wizardData.format.mix_type : null,
           mix_rating_type: wizardData.format.format === 'mix' ? wizardData.format.mix_rating_type : null,
-          // wins_to_win только для Full Mix + Swiss System
-          wins_to_win: wizardData.format.format === 'mix' && 
-                      wizardData.format.mix_type === 'full' && 
-                      wizardData.format.bracket_type === 'swiss'
-            ? parseInt(wizardData.format.wins_to_win, 10) : null,
+          // wins_to_win только для Swiss System (независимо от mix_type)
+          wins_to_win: wizardData.format.bracket_type === 'swiss'
+            ? parseInt(wizardData.format.wins_to_win || 4, 10) : null,
           require_faceit_linked: wizardData.format.format === 'mix' && 
                                  wizardData.format.mix_rating_type === 'faceit' 
             ? wizardData.format.require_faceit_linked : false,

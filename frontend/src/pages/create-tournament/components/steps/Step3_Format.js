@@ -44,7 +44,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
       updates.participant_type = 'team'; // ✅ Всегда team для Single/Double
       updates.team_size = 5; // Дефолт 5v5
     } else if (newFormat === 'mix') {
-      updates.bracket_type = 'swiss';
+      // НЕ устанавливаем bracket_type автоматически - пользователь выбирает сам
       updates.participant_type = 'solo'; // ✅ Solo только для Mix
       updates.team_size = 5;
       updates.mix_type = 'classic';
@@ -258,25 +258,14 @@ function Step3_Format({ data, basicInfo, onChange }) {
             <label>Тип микса</label>
             <select
               value={data.mix_type || 'classic'}
-              onChange={(e) => {
-                const newMixType = e.target.value;
-                const updates = { mix_type: newMixType };
-                
-                // При выборе Full Mix автоматически ставим Swiss
-                if (newMixType === 'full') {
-                  updates.bracket_type = 'swiss';
-                  updates.mix_rating_type = 'mixed';
-                }
-                
-                onChange({ ...data, ...updates });
-              }}
+              onChange={(e) => handleChange('mix_type', e.target.value)}
             >
               <option value="classic">Классический (формирование 1 раз)</option>
               <option value="full">Full MIX (после каждого раунда)</option>
             </select>
             <small className="form-hint">
               {data.mix_type === 'classic' && 'Команды формируются один раз перед стартом турнира'}
-              {data.mix_type === 'full' && 'Команды пересобираются после каждого завершенного раунда'}
+              {data.mix_type === 'full' && 'Команды пересобираются после каждого завершенного раунда. Работает с любым типом сетки.'}
             </small>
           </div>
 
@@ -295,7 +284,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
             </small>
           </div>
 
-          {data.mix_type === 'full' && data.bracket_type === 'swiss' && (
+          {data.bracket_type === 'swiss' && (
             <div className="form-group">
               <label>Минимум побед для выхода в финал</label>
               <input
@@ -306,7 +295,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
                 onChange={(e) => handleChange('wins_to_win', parseInt(e.target.value, 10))}
               />
               <small className="form-hint">
-                Количество побед для автоматического попадания в финал (Swiss System)
+                Количество побед для автоматического попадания в финал. Используется только в Swiss System для определения финалистов.
               </small>
             </div>
           )}
