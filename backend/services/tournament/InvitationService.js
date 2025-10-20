@@ -57,15 +57,28 @@ class InvitationService {
             'SELECT * FROM tournament_invitations WHERE tournament_id = $1 AND user_id = $2 AND status = $3',
             [tournamentId, user.id, 'pending']
         );
+        
+        let invitationResult;
+        
         if (inviteCheck.rows.length > 0) {
-            throw new Error('Этот пользователь уже приглашен в турнир');
+            // Удаляем старое приглашение и создаем новое
+            console.log(`♻️ InvitationService: Найдено существующее приглашение (ID: ${inviteCheck.rows[0].id}), удаляем и создаем новое`);
+            
+            await pool.query(
+                'DELETE FROM tournament_invitations WHERE id = $1',
+                [inviteCheck.rows[0].id]
+            );
+            
+            console.log(`✅ Старое приглашение удалено`);
         }
 
-        // Создаем приглашение
-        const invitationResult = await pool.query(
+        // Создаем новое приглашение
+        invitationResult = await pool.query(
             'INSERT INTO tournament_invitations (tournament_id, user_id, invited_by, status) VALUES ($1, $2, $3, $4) RETURNING *',
             [tournamentId, user.id, inviterId, 'pending']
         );
+        
+        console.log(`✅ Новое приглашение создано (ID: ${invitationResult.rows[0].id})`);
 
         // 📧 ОТПРАВЛЯЕМ СООБЩЕНИЕ В ЧАТ ОТ СИСТЕМНОГО ПОЛЬЗОВАТЕЛЯ 1337community
         try {
