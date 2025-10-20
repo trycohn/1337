@@ -39,6 +39,20 @@ function TournamentLobbyContainer() {
     const isCaptain = lobby?.team1_participants?.find(p => p.user_id === user?.id)?.is_captain ||
                      lobby?.team2_participants?.find(p => p.user_id === user?.id)?.is_captain;
 
+    // Логирование для диагностики
+    console.log('[TournamentLobby] Данные лобби:', {
+        lobbyId,
+        status: lobby?.status,
+        team1_name: lobby?.team1_name,
+        team2_name: lobby?.team2_name,
+        team1_participants_count: lobby?.team1_participants?.length,
+        team2_participants_count: lobby?.team2_participants?.length,
+        team1_participants: lobby?.team1_participants,
+        team2_participants: lobby?.team2_participants,
+        myTeamId,
+        isCaptain
+    });
+
     if (loading) {
         return (
             <div className="tournament-lobby-container">
@@ -165,9 +179,9 @@ function TournamentLobbyContainer() {
                         is_captain: p.is_captain
                     }))}
                     teamNumber={1}
-                    showReady={lobby.status === 'waiting'}
+                    showReady={lobby.status !== 'completed' && lobby.status !== 'ready_to_create'}
                     isReady={lobby.team1_ready}
-                    canToggleReady={myTeamId === lobby.team1_id}
+                    canToggleReady={myTeamId === lobby.team1_id && lobby.status === 'waiting'}
                     onToggleReady={handleReadyToggle}
                 />
                 
@@ -181,9 +195,9 @@ function TournamentLobbyContainer() {
                         is_captain: p.is_captain
                     }))}
                     teamNumber={2}
-                    showReady={lobby.status === 'waiting'}
+                    showReady={lobby.status !== 'completed' && lobby.status !== 'ready_to_create'}
                     isReady={lobby.team2_ready}
-                    canToggleReady={myTeamId === lobby.team2_id}
+                    canToggleReady={myTeamId === lobby.team2_id && lobby.status === 'waiting'}
                     onToggleReady={handleReadyToggle}
                 />
             </div>
