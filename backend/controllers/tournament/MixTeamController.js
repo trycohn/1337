@@ -429,23 +429,11 @@ class MixTeamController {
                     );
                     
                     const rosters = {};
+                    const matchRosters = {}; // 🆕 Составы по матчам {matchId: {team1_id: X, team2_id: Y, team1_roster: [], team2_roster: []}}
                     
-                    // 🔍 Определяем текущий раунд турнира
-                    const currentRoundResult = await pool.query(
-                        `SELECT MAX(round) as current_round 
-                         FROM matches 
-                         WHERE tournament_id = $1 AND winner_team_id IS NULL`,
-                        [tournamentId]
-                    );
+                    console.log(`📜 [Full Mix SE/DE] Собираем исторические составы из ${matchesResult.rows.length} матчей`);
                     
-                    const currentRound = currentRoundResult.rows[0]?.current_round || 1;
-                    
-                    console.log(`📊 Текущий раунд турнира: ${currentRound}`);
-                    
-                    // Собираем исторические составы из metadata матчей
-                    // Используем формат ключа: {team_id}_{match_id} для уникальности
-                    const rostersByMatch = {}; // {matchId: {team1: roster, team2: roster}}
-                    
+                    // Собираем составы ПО МАТЧАМ (не по командам!)
                     for (const match of matchesResult.rows) {
                         try {
                             // metadata может быть JSON строкой или объектом
@@ -461,51 +449,55 @@ class MixTeamController {
                             const shouldShowRoster = isMatchCompleted || isRostersConfirmed;
                             
                             if (shouldShowRoster && roundRosters) {
-                                console.log(`✅ Показываем состав матча ${match.id}, раунд ${match.round}`);
+                                console.log(`✅ Матч ${match.id}, раунд ${match.round}: сохраняем составы`);
                                 
-                                // Сохраняем составы С ПРИВЯЗКОЙ К МАТЧУ
-                                // Используем последний раунд где команда играла
+                                // 🆕 СОХРАНЯЕМ ПО МАТЧУ
+                                matchRosters[match.id] = {
+                                    match_id: match.id,
+                                    round: match.round,
+                                    team1_id: match.team1_id,
+                                    team2_id: match.team2_id,
+                                    team1_roster: roundRosters.team1_roster || [],
+                                    team2_roster: roundRosters.team2_roster || [],
+                                    confirmed_at: roundRosters.confirmed_at
+                                };
+                                
+                                // ТАКЖЕ сохраняем в старом формате для обратной совместимости
+                                // Ключ: team{team_id}_match{match_id}
                                 if (match.team1_id && roundRosters.team1_roster) {
-                                    const key = `${match.team1_id}`;
-                                    // Перезаписываем только если это более поздний раунд
-                                    if (!rosters[key] || rosters[key].round < match.round) {
-                                        rosters[key] = {
-                                            team_id: match.team1_id,
-                                            match_id: match.id,
-                                            round: match.round,
-                                            members: roundRosters.team1_roster,
-                                            historical: true,
-                                            confirmed_at: roundRosters.confirmed_at
-                                        };
-                                    }
+                                    rosters[`team${match.team1_id}_match${match.id}`] = {
+                                        team_id: match.team1_id,
+                                        match_id: match.id,
+                                        round: match.round,
+                                        members: roundRosters.team1_roster,
+                                        historical: true
+                                    };
                                 }
                                 
-                                // Для team2
                                 if (match.team2_id && roundRosters.team2_roster) {
-                                    const key = `${match.team2_id}`;
-                                    // Перезаписываем только если это более поздний раунд
-                                    if (!rosters[key] || rosters[key].round < match.round) {
-                                        rosters[key] = {
-                                            team_id: match.team2_id,
-                                            match_id: match.id,
-                                            round: match.round,
-                                            members: roundRosters.team2_roster,
-                                            historical: true,
-                                            confirmed_at: roundRosters.confirmed_at
-                                        };
-                                    }
+                                    rosters[`team${match.team2_id}_match${match.id}`] = {
+                                        team_id: match.team2_id,
+                                        match_id: match.id,
+                                        round: match.round,
+                                        members: roundRosters.team2_roster,
+                                        historical: true
+                                    };
                                 }
                             } else {
-                                console.log(`⏭️ Пропускаем матч ${match.id}, раунд ${match.round} - не завершен и не подтвержден`);
+                                console.log(`⏭️ Матч ${match.id}, раунд ${match.round}: составы не показываем (не подтверждены)`);
                             }
                         } catch (metaError) {
                             console.warn(`⚠️ Ошибка парсинга metadata матча ${match.id}:`, metaError.message);
                         }
                     }
                     
-                    console.log(`✅ Найдено ${Object.keys(rosters).length} исторических составов`);
+                    console.log(`✅ Найдено составов: ${Object.keys(rosters).length} (старый формат), ${Object.keys(matchRosters).length} матчей (новый формат)`);
                     
-                    return res.status(200).json({ rosters, historical: true });
+                    return res.status(200).json({ 
+                        rosters, 
+                        matchRosters, // 🆕 Новый формат - составы по матчам
+                        historical: true 
+                    });
                 } catch (error) {
                     console.error(`❌ Ошибка при получении исторических составов:`, error);
                     // В случае ошибки возвращаем пустые составы
