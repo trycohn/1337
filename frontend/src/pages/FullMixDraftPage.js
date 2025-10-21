@@ -277,10 +277,20 @@ function FullMixDraftPage() {
         setMessage('Подтверждаем составы...');
         setLoading(true);
         try {
-            // 🆕 Проверяем тип сетки турнира
-            const t = window.__CURRENT_TOURNAMENT__ || null;
-            const bracketType = (t?.bracket_type || '').toString().toLowerCase();
+            // 🆕 Получаем данные турнира напрямую из API для точной проверки
+            console.log('🔍 Проверяем тип сетки турнира...');
+            const tournamentResponse = await api.get(`/api/tournaments/${tournamentId}`);
+            const tournament = tournamentResponse.data;
+            
+            const bracketType = (tournament?.bracket_type || '').toString().toLowerCase();
             const isSEorDE = bracketType === 'single_elimination' || bracketType === 'double_elimination';
+            
+            console.log('📊 Тип турнира:', {
+                bracket_type: tournament?.bracket_type,
+                format: tournament?.format,
+                mix_type: tournament?.mix_type,
+                isSEorDE
+            });
             
             if (isSEorDE) {
                 // ДЛЯ SE/DE используем новый endpoint confirm-rosters
