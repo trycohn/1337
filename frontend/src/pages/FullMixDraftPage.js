@@ -277,15 +277,30 @@ function FullMixDraftPage() {
         setMessage('Подтверждаем составы...');
         setLoading(true);
         try {
-            await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/approve`, { approveTeams: true });
+            // 🆕 Проверяем тип сетки турнира
+            const t = window.__CURRENT_TOURNAMENT__ || null;
+            const bracketType = (t?.bracket_type || '').toString().toLowerCase();
+            const isSEorDE = bracketType === 'single_elimination' || bracketType === 'double_elimination';
+            
+            if (isSEorDE) {
+                // ДЛЯ SE/DE используем новый endpoint confirm-rosters
+                console.log('🆕 SE/DE: используем endpoint confirm-rosters');
+                await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/confirm-rosters`);
+            } else {
+                // ДЛЯ SWISS используем старый endpoint approve
+                console.log('🔄 Swiss: используем endpoint approve');
+                await api.post(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}/approve`, { approveTeams: true });
+            }
+            
             setApproved(true);
-            setMessage('Составы подтверждены');
+            setMessage('Составы подтверждены и сохранены');
             await loadSnapshot(round);
         } catch (e) {
-            setMessage(e?.response?.data?.error || 'Ошибка подтверждения');
+            console.error('❌ Ошибка подтверждения:', e);
+            setMessage(e?.response?.data?.error || e?.response?.data?.message || 'Ошибка подтверждения');
         } finally {
             setLoading(false);
-            setTimeout(() => setMessage(''), 2000);
+            setTimeout(() => setMessage(''), 3000);
         }
     }, [tournamentId, round, loadSnapshot]);
 
