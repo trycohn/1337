@@ -81,8 +81,27 @@ const BracketRenderer = ({
                 }
             } catch (_) {}
         };
+        
+        // 🆕 Обработка подтверждения составов
+        const handleRostersConfirmed = (payload) => {
+            console.log('🔄 [BracketRenderer] fullmix_rosters_confirmed:', payload);
+            if (payload && Number(payload.tournamentId) === Number(tournament?.id)) {
+                console.log('✅ Составы подтверждены - обновляем');
+                if (showRosters) {
+                    fetchTeamRosters();
+                }
+            }
+        };
+        
         socket.on('tournament_update', handleTournamentUpdate);
-        return () => { try { socket.off('tournament_update', handleTournamentUpdate); } catch (_) {} };
+        socket.on('fullmix_rosters_confirmed', handleRostersConfirmed);
+        
+        return () => { 
+            try { 
+                socket.off('tournament_update', handleTournamentUpdate);
+                socket.off('fullmix_rosters_confirmed', handleRostersConfirmed);
+            } catch (_) {} 
+        };
     }, [tournament?.id, showRosters, fetchTeamRosters]);
 
     const toggleRosters = useCallback(async () => {
@@ -93,6 +112,12 @@ const BracketRenderer = ({
             setShowRosters(false);
         }
     }, [showRosters, fetchTeamRosters]);
+    
+    // 🆕 Принудительное обновление составов
+    const refreshRosters = useCallback(async () => {
+        console.log('🔄 [BracketRenderer] Принудительное обновление составов');
+        await fetchTeamRosters();
+    }, [fetchTeamRosters]);
     const recomputeContainerSize = useCallback(() => {
         try {
             if (!rendererRef.current) return;
@@ -645,6 +670,18 @@ const BracketRenderer = ({
                             <img src="/images/svg/bars-solid-full.svg" alt="Раскрыть команды" className="bracket-nav-icon-img" />
                         )}
                     </button>
+                    
+                    {/* 🆕 Обновить составы */}
+                    {showRosters && (
+                        <button 
+                            className="bracket-nav-icon-button"
+                            onClick={refreshRosters}
+                            title="Обновить составы команд"
+                            disabled={loadingRosters}
+                        >
+                            <span className="bracket-nav-icon">🔄</span>
+                        </button>
+                    )}
 
                     <button 
                         className="bracket-nav-icon-button"
