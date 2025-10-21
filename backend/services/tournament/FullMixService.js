@@ -1958,13 +1958,29 @@ class FullMixService {
             const eliminated = await this.getEliminatedParticipants(tournamentId);
             const allParticipants = await this.getEligibleParticipants(tournamentId, settings.rating_mode);
             
+            console.log(`📊 Всего участников турнира: ${allParticipants.length}`);
+            console.log(`🏴 Всего выбывших: ${eliminated.length}`);
+            console.log(`🏴 Список выбывших:`, eliminated.map(e => ({
+                participant_id: e.participant_id,
+                user_id: e.user_id,
+                name: e.name
+            })));
+            
             // Фильтруем выбывших
-            const eliminatedIds = new Set(eliminated.map(p => p.participant_id || p.user_id));
+            const eliminatedIds = new Set(eliminated.map(p => p.participant_id || p.user_id).filter(Boolean));
+            
+            console.log(`🔍 Выбывшие ID (Set):`, Array.from(eliminatedIds));
+            
             const availableParticipants = allParticipants.filter(p => {
-                return !eliminatedIds.has(p.participant_id) && !eliminatedIds.has(p.user_id);
+                const isEliminated = eliminatedIds.has(p.participant_id) || eliminatedIds.has(p.user_id);
+                if (isEliminated) {
+                    console.log(`❌ Фильтруем выбывшего: ${p.name} (participant_id: ${p.participant_id}, user_id: ${p.user_id})`);
+                }
+                return !isEliminated;
             });
             
-            console.log(`👥 Доступно участников: ${availableParticipants.length}, выбыло: ${eliminated.length}`);
+            console.log(`✅ Доступно участников после фильтрации: ${availableParticipants.length}`);
+            console.log(`✅ Список доступных:`, availableParticipants.map(p => p.name));
             
             // Получаем размер команды
             const teamSize = await this.getTeamSize(tournamentId);
@@ -2119,23 +2135,38 @@ class FullMixService {
     /**
      * 🆕 ПОЛУЧЕНИЕ ВЫБЫВШИХ УЧАСТНИКОВ
      * Возвращает список участников, которые выбыли после поражения их команд
+     * Собирает из ВСЕХ снапшотов для учета выбывших во всех раундах
      */
     static async getEliminatedParticipants(tournamentId) {
-        // Получаем последний снапшот
-        const latestSnapshot = await pool.query(
-            `SELECT snapshot FROM full_mix_snapshots 
+        console.log(`🏴 [getEliminatedParticipants] Получение выбывших для турнира ${tournamentId}`);
+        
+        // Получаем ВСЕ снапшоты турнира
+        const snapshotsResult = await pool.query(
+            `SELECT round_number, snapshot FROM full_mix_snapshots 
              WHERE tournament_id = $1 
-             ORDER BY round_number DESC 
-             LIMIT 1`,
+             ORDER BY round_number`,
             [tournamentId]
         );
         
-        if (latestSnapshot.rows.length === 0) {
+        if (snapshotsResult.rows.length === 0) {
+            console.log(`ℹ️ Нет снапшотов для турнира ${tournamentId}`);
             return [];
         }
         
-        const eliminated = latestSnapshot.rows[0].snapshot?.meta?.eliminated || [];
-        return Array.isArray(eliminated) ? eliminated : [];
+        // Собираем всех выбывших из всех раундов
+        const allEliminated = [];
+        
+        for (const row of snapshotsResult.rows) {
+            const eliminated = row.snapshot?.meta?.eliminated || [];
+            if (Array.isArray(eliminated) && eliminated.length > 0) {
+                console.log(`🏴 Раунд ${row.round_number}: найдено ${eliminated.length} выбывших`);
+                allEliminated.push(...eliminated);
+            }
+        }
+        
+        console.log(`✅ Всего выбыло участников: ${allEliminated.length}`);
+        
+        return allEliminated;
     }
 }
 
