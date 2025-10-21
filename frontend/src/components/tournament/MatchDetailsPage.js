@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PickBanTimeline } from './match-stats/PickBanTimeline';
 import { LeadersPanel } from './match-stats/LeadersPanel';
 import { ScoreTable } from './match-stats/ScoreTable';
@@ -58,8 +58,8 @@ const MatchDetailsPage = () => {
     const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
     const [feedbackChecked, setFeedbackChecked] = useState(false);
 
-    // 🔍 ОБЪЯВЛЯЕМ fetchMatchDetails СРАЗУ (до использования в других хуках)
-    const fetchMatchDetails = useCallback(async () => {
+    // 🔍 fetchMatchDetails БЕЗ useCallback для избежания бесконечного цикла
+    const fetchMatchDetails = async () => {
         try {
             setLoading(true);
             
@@ -121,12 +121,13 @@ const MatchDetailsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [tournamentId, matchId, pollVersion]);
+    };
 
     // 🔄 ВЫЗЫВАЕМ fetchMatchDetails при загрузке и изменениях
     useEffect(() => {
         fetchMatchDetails();
-    }, [fetchMatchDetails]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournamentId, matchId, pollVersion]);
 
     useEffect(() => {
         // Фолбек: получаем id пользователя из JWT, если контекст недоступен
@@ -145,22 +146,22 @@ const MatchDetailsPage = () => {
     const handleTournamentUpdate = useCallback((data) => {
         console.log('🔄 [MatchDetailsPage] Получено обновление турнира:', data);
         
-        // Если обновление касается нашего матча - перезагружаем данные
+        // Если обновление касается нашего матча - увеличиваем pollVersion для перезагрузки
         if (data && typeof data === 'object') {
             const updateType = data._metadata?.updateType;
             
             // Обновление матча
             if (updateType === 'match_updated' && data.matchId === parseInt(matchId)) {
                 console.log('🎯 [MatchDetailsPage] Обновление нашего матча, перезагружаем...');
-                fetchMatchDetails();
+                setPollVersion(v => v + 1);
             }
             // Общее обновление матчей
             else if (data.matches || updateType === 'matches_update') {
                 console.log('🔄 [MatchDetailsPage] Обнаружено обновление матчей, перезагружаем...');
-                fetchMatchDetails();
+                setPollVersion(v => v + 1);
             }
         }
-    }, [fetchMatchDetails, matchId]);
+    }, [matchId]);
 
     const handleMatchUpdate = useCallback((data) => {
         console.log('🎯 [MatchDetailsPage] Получено обновление матча:', data);
@@ -168,9 +169,9 @@ const MatchDetailsPage = () => {
         // Если это обновление нашего матча - обновляем данные
         if (data && data.matchId === parseInt(matchId)) {
             console.log('✅ [MatchDetailsPage] Обновление относится к нашему матчу, перезагружаем...');
-            fetchMatchDetails();
+            setPollVersion(v => v + 1);
         }
-    }, [matchId, fetchMatchDetails]);
+    }, [matchId]);
 
     // Подключаем WebSocket для live обновлений
     useTournamentSocket({
@@ -644,15 +645,18 @@ const MatchDetailsPage = () => {
         return statusTexts[status] || status;
     };
 
-    function getDisplayedScores(matchObj) {
-        const maps = matchObj?.maps_data;
+    // 🎯 Используем useMemo для кеширования вычисленного счета
+    const displayedScores = useMemo(() => {
+        if (!match) return [0, 0];
         
-        console.log('🎯 [getDisplayedScores] Расчет счета:', {
+        const maps = match?.maps_data;
+        
+        console.log('🎯 [useMemo displayedScores] Расчет счета:', {
             hasMaps: Array.isArray(maps),
             mapsCount: maps?.length,
             maps: maps,
-            matchScore1: matchObj?.score1,
-            matchScore2: matchObj?.score2
+            matchScore1: match?.score1,
+            matchScore2: match?.score2
         });
         
         if (Array.isArray(maps) && maps.length > 0) {
@@ -676,11 +680,11 @@ const MatchDetailsPage = () => {
             console.log(`📊 Несколько карт, wins: ${wins1}:${wins2}`);
             if (wins1 + wins2 > 0) return [wins1, wins2];
         }
-        const s1 = parseInt(matchObj?.score1) || 0;
-        const s2 = parseInt(matchObj?.score2) || 0;
+        const s1 = parseInt(match?.score1) || 0;
+        const s2 = parseInt(match?.score2) || 0;
         console.log(`📊 Fallback к score1:score2 =`, [s1, s2]);
         return [s1, s2];
-    }
+    }, [match, match?.maps_data, match?.score1, match?.score2]);
 
     const formatDate = (date) => {
         if (!date) return '';
@@ -1259,13 +1263,9 @@ const MatchDetailsPage = () => {
                     {/* Счет */}
                     <div className="match-score-block">
                         <div className="match-score">
-                            {(() => { const [d1, d2] = getDisplayedScores(match); return (
-                                <>
-                                    <span className={`score ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}>{d1}</span>
-                                    <span className="score-separator">:</span>
-                                    <span className={`score ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}>{d2}</span>
-                                </>
-                            ); })()}
+                            <span className={`score ${match.winner_team_id === match.team1_id ? 'winner' : ''}`}>{displayedScores[0]}</span>
+                            <span className="score-separator">:</span>
+                            <span className={`score ${match.winner_team_id === match.team2_id ? 'winner' : ''}`}>{displayedScores[1]}</span>
                         </div>
                         <div className="match-format">
                             {match.round_name || `Раунд ${match.round}`}
