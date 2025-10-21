@@ -431,6 +431,7 @@ class MixTeamController {
                     const rosters = {};
                     
                     // Собираем исторические составы из metadata матчей
+                    // Используем последний подтвержденный состав каждой команды
                     for (const match of matchesResult.rows) {
                         try {
                             // metadata может быть JSON строкой или объектом
@@ -441,10 +442,9 @@ class MixTeamController {
                             const roundRosters = metadata?.round_rosters;
                             
                             if (roundRosters && roundRosters.confirmed_at) {
-                                // Для team1 - используем match.id как уникальный ключ
-                                const team1Key = `${match.team1_id}_match${match.id}`;
+                                // Для team1 - используем team_id как ключ (последний состав)
                                 if (match.team1_id && roundRosters.team1_roster) {
-                                    rosters[team1Key] = {
+                                    rosters[match.team1_id] = {
                                         team_id: match.team1_id,
                                         match_id: match.id,
                                         round: match.round,
@@ -455,9 +455,8 @@ class MixTeamController {
                                 }
                                 
                                 // Для team2
-                                const team2Key = `${match.team2_id}_match${match.id}`;
                                 if (match.team2_id && roundRosters.team2_roster) {
-                                    rosters[team2Key] = {
+                                    rosters[match.team2_id] = {
                                         team_id: match.team2_id,
                                         match_id: match.id,
                                         round: match.round,
