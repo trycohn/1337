@@ -463,11 +463,43 @@ const MatchResultModal = ({
                 [team === 1 ? 'score1' : 'score2']: score
             };
             
-            // Возвращаем обновленные данные
-            return { ...prev, maps_data: newMapsData };
+            // 🆕 ПЕРЕСЧИТЫВАЕМ ОБЩИЙ СЧЕТ НА ОСНОВЕ ВЫИГРАННЫХ КАРТ
+            let wins1 = 0, wins2 = 0;
+            for (const map of newMapsData) {
+                const s1 = parseInt(map.score1) || 0;
+                const s2 = parseInt(map.score2) || 0;
+                if (s1 > s2) wins1++;
+                else if (s2 > s1) wins2++;
+            }
+            
+            console.log(`🗺️ Карта ${mapIndex + 1}, команда ${team}: ${score} | Общий счет: ${wins1}:${wins2}`);
+            
+            // Автоматически определяем победителя по общему счету
+            let newWinner = prev.winner_team_id;
+            let newSelectedWinner = null;
+            
+            if (wins1 > wins2) {
+                newWinner = selectedMatch.team1_id;
+                newSelectedWinner = 'team1';
+            } else if (wins2 > wins1) {
+                newWinner = selectedMatch.team2_id;
+                newSelectedWinner = 'team2';
+            }
+            
+            // Обновляем selectedWinner state
+            if (newSelectedWinner) {
+                setSelectedWinner(newSelectedWinner);
+            }
+            
+            // Возвращаем обновленные данные с пересчитанным счетом
+            return { 
+                ...prev, 
+                maps_data: newMapsData,
+                score1: wins1,
+                score2: wins2,
+                winner_team_id: newWinner
+            };
         });
-        
-        console.log(`🗺️ Изменен счет карты ${mapIndex + 1}, команда ${team}: ${score}`);
     };
 
     const handleMapNameChange = (mapIndex, mapName) => {

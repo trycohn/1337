@@ -92,6 +92,14 @@ function useTournamentSocket({
             }
         });
 
+        // 🆕 Специальное событие для обновлений матчей (Full Mix)
+        socket.on('fullmix_match_updated', (data) => {
+            console.log(`🎯 [useTournamentSocket] fullmix_match_updated получено:`, data);
+            if (data && onTournamentUpdate) {
+                onTournamentUpdate({ ...data, _metadata: { updateType: 'match_updated' } });
+            }
+        });
+
         // Обработчики ошибок
         socket.on('error', (error) => {
             console.error(`❌ [useTournamentSocket] Socket error:`, error);

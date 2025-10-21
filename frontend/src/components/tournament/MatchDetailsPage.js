@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PickBanTimeline } from './match-stats/PickBanTimeline';
 import { LeadersPanel } from './match-stats/LeadersPanel';
 import { ScoreTable } from './match-stats/ScoreTable';
@@ -15,6 +15,7 @@ import MatchShareModal from './modals/MatchShareModal';
 import EditMatchResultModal from './modals/EditMatchResultModal'; // ✏️ Модальное окно редактирования
 import { MatchFeedbackManager } from '../feedback'; // 🎮 Match Feedback система
 import api from '../../axios'; // 🔧 ИСПРАВЛЕНО: импорт axios
+import useTournamentSocket from '../../hooks/tournament/useTournamentSocket'; // 🔴 WebSocket для live обновлений
 import './MatchDetailsPage.css';
 
 /**
@@ -74,6 +75,46 @@ const MatchDetailsPage = () => {
         fetchMatchDetails();
     }, [tournamentId, matchId, pollVersion]);
     
+    // 🔴 LIVE ОБНОВЛЕНИЯ МАТЧА ЧЕРЕЗ WEBSOCKET
+    const handleTournamentUpdate = useCallback((data) => {
+        console.log('🔄 [MatchDetailsPage] Получено обновление турнира:', data);
+        
+        // Если обновление касается нашего матча - перезагружаем данные
+        if (data && typeof data === 'object') {
+            const updateType = data._metadata?.updateType;
+            
+            // Обновление матча
+            if (updateType === 'match_updated' && data.matchId === parseInt(matchId)) {
+                console.log('🎯 [MatchDetailsPage] Обновление нашего матча, перезагружаем...');
+                fetchMatchDetails();
+            }
+            // Общее обновление матчей
+            else if (data.matches || updateType === 'matches_update') {
+                console.log('🔄 [MatchDetailsPage] Обнаружено обновление матчей, перезагружаем...');
+                fetchMatchDetails();
+            }
+        }
+    }, [fetchMatchDetails, matchId]);
+
+    const handleMatchUpdate = useCallback((data) => {
+        console.log('🎯 [MatchDetailsPage] Получено обновление матча:', data);
+        
+        // Если это обновление нашего матча - обновляем данные
+        if (data && data.matchId === parseInt(matchId)) {
+            console.log('✅ [MatchDetailsPage] Обновление относится к нашему матчу, перезагружаем...');
+            fetchMatchDetails();
+        }
+    }, [matchId, fetchMatchDetails]);
+
+    // Подключаем WebSocket для live обновлений
+    useTournamentSocket({
+        tournamentId,
+        user,
+        onTournamentUpdate: handleTournamentUpdate,
+        onParticipantUpdate: () => {}, // Не используется на странице матча
+        onError: (error) => console.error('❌ [MatchDetailsPage] WebSocket error:', error)
+    });
+    
     // 🎮 FEEDBACK: Проверка нужно ли показать feedback
     useEffect(() => {
         const checkFeedbackNeeded = async () => {
@@ -102,7 +143,7 @@ const MatchDetailsPage = () => {
         checkFeedbackNeeded();
     }, [match, user, feedbackChecked]);
 
-    const fetchMatchDetails = async () => {
+    const fetchMatchDetails = useCallback(async () => {
         try {
             setLoading(true);
             
@@ -164,7 +205,7 @@ const MatchDetailsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [tournamentId, matchId, pollVersion]);
 
     const fetchTeamHistory = async (team1Id, team2Id) => {
         try {
