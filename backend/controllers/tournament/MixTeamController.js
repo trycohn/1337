@@ -419,48 +419,67 @@ class MixTeamController {
             if (isFullMix && isSEorDE) {
                 console.log(`📜 [MixTeamController] Full Mix SE/DE - возвращаем исторические составы из матчей`);
                 
-                const matchesResult = await pool.query(
-                    `SELECT id, round, team1_id, team2_id, metadata 
-                     FROM matches 
-                     WHERE tournament_id = $1 
-                     ORDER BY round`,
-                    [tournamentId]
-                );
-                
-                const rosters = {};
-                
-                // Собираем исторические составы из metadata матчей
-                for (const match of matchesResult.rows) {
-                    const roundRosters = match.metadata?.round_rosters;
+                try {
+                    const matchesResult = await pool.query(
+                        `SELECT id, round, team1_id, team2_id, metadata 
+                         FROM matches 
+                         WHERE tournament_id = $1 
+                         ORDER BY round`,
+                        [tournamentId]
+                    );
                     
-                    if (roundRosters && roundRosters.confirmed_at) {
-                        // Для team1
-                        if (match.team1_id && roundRosters.team1_roster) {
-                            rosters[match.team1_id] = {
-                                team_id: match.team1_id,
-                                round: match.round,
-                                members: roundRosters.team1_roster,
-                                historical: true,
-                                confirmed_at: roundRosters.confirmed_at
-                            };
-                        }
-                        
-                        // Для team2
-                        if (match.team2_id && roundRosters.team2_roster) {
-                            rosters[match.team2_id] = {
-                                team_id: match.team2_id,
-                                round: match.round,
-                                members: roundRosters.team2_roster,
-                                historical: true,
-                                confirmed_at: roundRosters.confirmed_at
-                            };
+                    const rosters = {};
+                    
+                    // Собираем исторические составы из metadata матчей
+                    for (const match of matchesResult.rows) {
+                        try {
+                            // metadata может быть JSON строкой или объектом
+                            const metadata = typeof match.metadata === 'string' 
+                                ? JSON.parse(match.metadata) 
+                                : match.metadata;
+                            
+                            const roundRosters = metadata?.round_rosters;
+                            
+                            if (roundRosters && roundRosters.confirmed_at) {
+                                // Для team1 - используем match.id как уникальный ключ
+                                const team1Key = `${match.team1_id}_match${match.id}`;
+                                if (match.team1_id && roundRosters.team1_roster) {
+                                    rosters[team1Key] = {
+                                        team_id: match.team1_id,
+                                        match_id: match.id,
+                                        round: match.round,
+                                        members: roundRosters.team1_roster,
+                                        historical: true,
+                                        confirmed_at: roundRosters.confirmed_at
+                                    };
+                                }
+                                
+                                // Для team2
+                                const team2Key = `${match.team2_id}_match${match.id}`;
+                                if (match.team2_id && roundRosters.team2_roster) {
+                                    rosters[team2Key] = {
+                                        team_id: match.team2_id,
+                                        match_id: match.id,
+                                        round: match.round,
+                                        members: roundRosters.team2_roster,
+                                        historical: true,
+                                        confirmed_at: roundRosters.confirmed_at
+                                    };
+                                }
+                            }
+                        } catch (metaError) {
+                            console.warn(`⚠️ Ошибка парсинга metadata матча ${match.id}:`, metaError.message);
                         }
                     }
+                    
+                    console.log(`✅ Найдено ${Object.keys(rosters).length} исторических составов`);
+                    
+                    return res.status(200).json({ rosters, historical: true });
+                } catch (error) {
+                    console.error(`❌ Ошибка при получении исторических составов:`, error);
+                    // В случае ошибки возвращаем пустые составы
+                    return res.status(200).json({ rosters: {}, historical: true, error: error.message });
                 }
-                
-                console.log(`✅ Найдено ${Object.keys(rosters).length} исторических составов`);
-                
-                return res.status(200).json({ rosters, historical: true });
             }
             
             // 🔒 Для Full Mix Swiss: скрываем команды до approve
