@@ -296,12 +296,12 @@ class FullMixService {
     }
     static async getLatestEliminatedIds(tournamentId) {
         try {
+            // 🆕 ИСПРАВЛЕНО: Берем ВСЕ снапшоты, не только последние 3
             const res = await pool.query(
                 `SELECT snapshot->'meta' AS meta
                  FROM full_mix_snapshots
                  WHERE tournament_id = $1
-                 ORDER BY round_number DESC
-                 LIMIT 3`,
+                 ORDER BY round_number`,
                 [tournamentId]
             );
             const ids = new Set();
@@ -320,6 +320,7 @@ class FullMixService {
                     }
                 }
             }
+            console.log(`🏴 [getLatestEliminatedIds] Турнир ${tournamentId}: найдено ${ids.size} выбывших ID`);
             return ids;
         } catch (_) { return new Set(); }
     }
