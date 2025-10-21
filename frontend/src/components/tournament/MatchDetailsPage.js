@@ -58,6 +58,76 @@ const MatchDetailsPage = () => {
     const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
     const [feedbackChecked, setFeedbackChecked] = useState(false);
 
+    // 🔍 ОБЪЯВЛЯЕМ fetchMatchDetails СРАЗУ (до использования в других хуках)
+    const fetchMatchDetails = useCallback(async () => {
+        try {
+            setLoading(true);
+            
+            // Получаем данные матча и турнира (публичные роуты)
+            const [matchResponse, tournamentResponse] = await Promise.all([
+                fetch(`/api/tournaments/${tournamentId}/match/${matchId}`),
+                fetch(`/api/tournaments/${tournamentId}`)
+            ]);
+
+            if (!matchResponse.ok || !tournamentResponse.ok) {
+                throw new Error('Не удалось загрузить данные матча');
+            }
+
+            const matchData = await matchResponse.json();
+            const tournamentData = await tournamentResponse.json();
+            
+            // Новый публичный роут возвращает данные в поле data
+            const matchInfo = matchData.data || matchData;
+            const tournamentInfo = tournamentData.data || tournamentData;
+            
+            setMatch(matchInfo);
+            // 🆕 Лобби-статистика (если матч создан через лобби)
+            let matchzyMatchId = null;
+            try {
+                const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
+                if (ls?.data?.success) {
+                    // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
+                    const s = ls.data;
+                    matchInfo.maps_data = s.maps?.map(m => ({
+                        map_name: m.mapname,
+                        team1_score: m.team1_score,
+                        team2_score: m.team2_score
+                    })) || matchInfo.maps_data;
+                    matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
+                        action_type: x.action,
+                        team_id: x.team_id,
+                        map_name: x.mapname
+                    })) : matchInfo.selections) || [];
+                    // Присвоим, чтобы отрисовали блоки карт и историю
+                    setMatch({ ...matchInfo });
+                    setLobbyStats(s);
+                    matchzyMatchId = s.matchid;
+                }
+            } catch (_) { /* нет лобби-статистики — не критично */ }
+            setTournament(tournamentInfo);
+            
+            // Загружаем историю матчей команд
+            if (matchInfo.team1_id && matchInfo.team2_id) {
+                await fetchTeamHistory(matchInfo.team1_id, matchInfo.team2_id);
+            }
+            
+            // 🎬 Загружаем доступные демки (если есть matchzy matchid)
+            if (matchzyMatchId) {
+                await fetchAvailableDemos(matchzyMatchId);
+            }
+        } catch (err) {
+            console.error('Ошибка загрузки деталей матча:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [tournamentId, matchId, pollVersion]);
+
+    // 🔄 ВЫЗЫВАЕМ fetchMatchDetails при загрузке и изменениях
+    useEffect(() => {
+        fetchMatchDetails();
+    }, [fetchMatchDetails]);
+
     useEffect(() => {
         // Фолбек: получаем id пользователя из JWT, если контекст недоступен
         try {
@@ -70,10 +140,6 @@ const MatchDetailsPage = () => {
             // ignore
         }
     }, [user]);
-
-    useEffect(() => {
-        fetchMatchDetails();
-    }, [tournamentId, matchId, pollVersion]);
     
     // 🔴 LIVE ОБНОВЛЕНИЯ МАТЧА ЧЕРЕЗ WEBSOCKET
     const handleTournamentUpdate = useCallback((data) => {
@@ -142,70 +208,6 @@ const MatchDetailsPage = () => {
         
         checkFeedbackNeeded();
     }, [match, user, feedbackChecked]);
-
-    const fetchMatchDetails = useCallback(async () => {
-        try {
-            setLoading(true);
-            
-            // Получаем данные матча и турнира (публичные роуты)
-            const [matchResponse, tournamentResponse] = await Promise.all([
-                fetch(`/api/tournaments/${tournamentId}/match/${matchId}`),
-                fetch(`/api/tournaments/${tournamentId}`)
-            ]);
-
-            if (!matchResponse.ok || !tournamentResponse.ok) {
-                throw new Error('Не удалось загрузить данные матча');
-            }
-
-            const matchData = await matchResponse.json();
-            const tournamentData = await tournamentResponse.json();
-            
-            // Новый публичный роут возвращает данные в поле data
-            const matchInfo = matchData.data || matchData;
-            const tournamentInfo = tournamentData.data || tournamentData;
-            
-            setMatch(matchInfo);
-            // 🆕 Лобби-статистика (если матч создан через лобби)
-            let matchzyMatchId = null;
-            try {
-                const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
-                if (ls?.data?.success) {
-                    // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
-                    const s = ls.data;
-                    matchInfo.maps_data = s.maps?.map(m => ({
-                        map_name: m.mapname,
-                        team1_score: m.team1_score,
-                        team2_score: m.team2_score
-                    })) || matchInfo.maps_data;
-                    matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
-                        action_type: x.action,
-                        team_id: x.team_id,
-                        map_name: x.mapname
-                    })) : matchInfo.selections) || [];
-                    // Присвоим, чтобы отрисовали блоки карт и историю
-                    setMatch({ ...matchInfo });
-                    setLobbyStats(s);
-                    matchzyMatchId = s.matchid;
-                }
-            } catch (_) { /* нет лобби-статистики — не критично */ }
-            setTournament(tournamentInfo);
-            
-            // Загружаем историю матчей команд
-            if (matchInfo.team1_id && matchInfo.team2_id) {
-                await fetchTeamHistory(matchInfo.team1_id, matchInfo.team2_id);
-            }
-            
-            // 🎬 Загружаем доступные демки (если есть matchzy matchid)
-            if (matchzyMatchId) {
-                await fetchAvailableDemos(matchzyMatchId);
-            }
-        } catch (err) {
-            console.error('Ошибка загрузки деталей матча:', err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [tournamentId, matchId, pollVersion]);
 
     const fetchTeamHistory = async (team1Id, team2Id) => {
         try {
