@@ -942,7 +942,14 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const { user } = useAuth();
     const [isHovered, setIsHovered] = useState(false);
     const [isCreatingLobby, setIsCreatingLobby] = useState(false);
-    const canShowActions = isAdminOrCreator && tournament?.status === 'in_progress';
+    
+    // 🆕 Для Full Mix турниров также показываем действия (статус может быть 'active')
+    const isFullMix = tournament?.format === 'full_mix' || 
+                     (tournament?.format === 'mix' && tournament?.mix_type === 'full');
+    const canShowActions = isAdminOrCreator && (
+        tournament?.status === 'in_progress' || 
+        (isFullMix && tournament?.status === 'active')
+    );
 
     function isUserCaptainOfMatch() {
         if (!user || !tournament || tournament.participant_type !== 'team') return false;
