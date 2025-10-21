@@ -271,8 +271,8 @@ const MatchResultModal = ({
         };
     }, [matchResultData.maps_data]);
 
-    // 🎯 АВТОМАТИЧЕСКИЙ РАСЧЕТ ОБЩЕГО СЧЕТА ПО КАРТАМ
-    const calculateOverallScoreFromMaps = useCallback(() => {
+    // 🎯 РУЧНОЙ ПЕРЕСЧЕТ СЧЕТА (для кнопки "Рассчитать счет по картам")
+    const calculateOverallScoreFromMaps = () => {
         const mapsData = matchResultData.maps_data || [];
         if (mapsData.length === 0) return;
         
@@ -288,63 +288,29 @@ const MatchResultModal = ({
             } else if (score2 > score1) {
                 team2Wins++;
             }
-            // Ничьи не засчитываются в общий счет
         });
         
-        // Обновляем общий счет матча
+        console.log(`🧮 [Ручной пересчет] Счет по картам: ${team1Wins}:${team2Wins}`);
+        
+        // Обновляем общий счет
         setMatchResultData(prev => ({
             ...prev,
             score1: team1Wins,
             score2: team2Wins
         }));
         
-        // 🔧 ИСПРАВЛЕНО: Улучшенное автоматическое определение победителя
-        // 🏆 ПРИОРИТЕТНЫЙ КРИТЕРИЙ: Количество выигранных карт важнее общего счета
+        // Обновляем победителя
         let newWinner = null;
         if (team1Wins > team2Wins) {
             newWinner = 'team1';
         } else if (team2Wins > team1Wins) {
             newWinner = 'team2';
         }
-        // Если равный счет - оставляем null (ничья)
         
-        // Обновляем победителя только если он изменился
-        if (newWinner !== selectedWinner) {
-            console.log('🏆 Автоматически обновляем победителя (ПРИОРИТЕТ: карты):', {
-                previousWinner: selectedWinner,
-                newWinner: newWinner,
-                reason: 'calculateOverallScoreFromMaps - карты имеют приоритет'
-            });
+        if (newWinner) {
             setSelectedWinner(newWinner);
         }
-        
-        console.log('📊 Автоматический расчет счета:', {
-            mapsPlayed: mapsData.length,
-            team1Wins,
-            team2Wins,
-            previousWinner: selectedWinner,
-            newWinner: newWinner,
-            team1Name: selectedMatch?.team1_name || 'Команда 1',
-            team2Name: selectedMatch?.team2_name || 'Команда 2'
-        });
-    }, [matchResultData.maps_data, setMatchResultData, selectedWinner, selectedMatch]);
-
-    // 🎯 ОТСЛЕЖИВАНИЕ ИЗМЕНЕНИЙ РЕЗУЛЬТАТОВ ПО КАРТАМ
-    useEffect(() => {
-        // Автоматически пересчитываем общий счет когда изменяются результаты по картам
-        if (!autoCalculateScore) return; // Пропускаем если автоматический расчет отключен
-        
-        const mapsData = matchResultData.maps_data || [];
-        
-        // Проверяем, есть ли карты с результатами
-        const hasMapResults = mapsData.some(map => 
-            (parseInt(map.score1) || 0) !== 0 || (parseInt(map.score2) || 0) !== 0
-        );
-        
-        if (hasMapResults && mapsData.length > 0) {
-            calculateOverallScoreFromMaps();
-        }
-    }, [matchResultData.maps_data, calculateOverallScoreFromMaps, autoCalculateScore]);
+    };
 
     // 🎯 ТУЛТИП С СОСТАВОМ КОМАНДЫ (ОБНОВЛЕННЫЙ ДЛЯ МОДАЛЬНОЙ СИСТЕМЫ)
     const TeamTooltip = ({ team, composition, show }) => {
