@@ -408,11 +408,62 @@ class MixTeamController {
         console.log(`🔍 [MixTeamController] Получение карты составов команд турнира ${tournamentId}`);
 
         try {
-            // 🔒 Backend‑gate для Full Mix: скрываем команды до approve
             const baseTournament = await TournamentService.getTournament(tournamentId);
             const fmt = (baseTournament?.format || '').toString().trim().toLowerCase();
             const mixType = (baseTournament?.mix_type || '').toString().trim().toLowerCase();
             const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
+            const isSEorDE = baseTournament?.bracket_type === 'single_elimination' || 
+                            baseTournament?.bracket_type === 'double_elimination';
+            
+            // 🆕 ДЛЯ FULL MIX SE/DE: Возвращаем ИСТОРИЧЕСКИЕ составы из metadata матчей
+            if (isFullMix && isSEorDE) {
+                console.log(`📜 [MixTeamController] Full Mix SE/DE - возвращаем исторические составы из матчей`);
+                
+                const matchesResult = await pool.query(
+                    `SELECT id, round, team1_id, team2_id, metadata 
+                     FROM matches 
+                     WHERE tournament_id = $1 
+                     ORDER BY round`,
+                    [tournamentId]
+                );
+                
+                const rosters = {};
+                
+                // Собираем исторические составы из metadata матчей
+                for (const match of matchesResult.rows) {
+                    const roundRosters = match.metadata?.round_rosters;
+                    
+                    if (roundRosters && roundRosters.confirmed_at) {
+                        // Для team1
+                        if (match.team1_id && roundRosters.team1_roster) {
+                            rosters[match.team1_id] = {
+                                team_id: match.team1_id,
+                                round: match.round,
+                                members: roundRosters.team1_roster,
+                                historical: true,
+                                confirmed_at: roundRosters.confirmed_at
+                            };
+                        }
+                        
+                        // Для team2
+                        if (match.team2_id && roundRosters.team2_roster) {
+                            rosters[match.team2_id] = {
+                                team_id: match.team2_id,
+                                round: match.round,
+                                members: roundRosters.team2_roster,
+                                historical: true,
+                                confirmed_at: roundRosters.confirmed_at
+                            };
+                        }
+                    }
+                }
+                
+                console.log(`✅ Найдено ${Object.keys(rosters).length} исторических составов`);
+                
+                return res.status(200).json({ rosters, historical: true });
+            }
+            
+            // 🔒 Для Full Mix Swiss: скрываем команды до approve
             if (isFullMix) {
                 const snapRes = await pool.query(
                     `SELECT approved_teams
@@ -429,6 +480,7 @@ class MixTeamController {
                 }
             }
 
+            // ОБЫЧНАЯ ЛОГИКА: Получаем текущие составы команд
             const teams = await TeamRepository.getByTournamentId(tournamentId);
             const rosters = {};
             for (const team of teams) {

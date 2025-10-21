@@ -1933,6 +1933,9 @@ class FullMixService {
                 if (!prevRoundCompleted) {
                     throw new Error(`Раунд ${roundNumber - 1} еще не завершен`);
                 }
+                
+                // 🆕 ОЧИЩАЕМ СОСТАВЫ КОМАНД ПРЕДЫДУЩЕГО РАУНДА при переходе на новый
+                console.log(`🧹 Очищаем составы команд для раунда ${roundNumber}`);
             }
             
             // Получаем команды, которые играют в этом раунде
@@ -1981,20 +1984,132 @@ class FullMixService {
                 settings.rating_mode
             );
             
+            // 🆕 СОХРАНЯЕМ СНАПШОТ С НОВЫМИ СОСТАВАМИ (не подтвержденными)
+            const snapshot = {
+                round: roundNumber,
+                teams: teamsWithNewRosters.map(t => ({
+                    team_id: t.id,
+                    name: t.name,
+                    members: t.members || []
+                })),
+                matches: [], // Матчи уже созданы в сетке
+                standings: [],
+                meta: {
+                    is_se_de_bracket: true,
+                    rosters_confirmed: false, // 🔴 Составы НЕ подтверждены
+                    eliminated: eliminated
+                }
+            };
+            
+            await this.saveSnapshot(tournamentId, roundNumber, snapshot);
+            
             await client.query('COMMIT');
             
-            console.log(`✅ Редрафт выполнен для раунда ${roundNumber}`);
+            console.log(`✅ Редрафт выполнен для раунда ${roundNumber}, ожидает подтверждения`);
             
             return {
                 round: roundNumber,
                 teams: teamsWithNewRosters,
                 availableParticipants: availableParticipants.length,
-                eliminated: eliminated.length
+                eliminated: eliminated.length,
+                rostersConfirmed: false
             };
             
         } catch (error) {
             await client.query('ROLLBACK');
             console.error(`❌ Ошибка при редрафте:`, error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
+    /**
+     * 🆕 ПОДТВЕРЖДЕНИЕ СОСТАВОВ РАУНДА
+     * После подтверждения составы становятся видимыми в сетке
+     * И сохраняются в матчах для исторической информации
+     */
+    static async confirmRoundRosters(tournamentId, roundNumber) {
+        console.log(`✅ [confirmRoundRosters] Подтверждение составов раунда ${roundNumber}`);
+        
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Получаем текущий снапшот
+            const snapshot = await this.getSnapshot(tournamentId, roundNumber);
+            
+            if (!snapshot) {
+                throw new Error(`Снапшот раунда ${roundNumber} не найден`);
+            }
+            
+            // Проверяем, что составы еще не подтверждены
+            if (snapshot.snapshot?.meta?.rosters_confirmed) {
+                throw new Error(`Составы раунда ${roundNumber} уже подтверждены`);
+            }
+            
+            // 🆕 СОХРАНЯЕМ СОСТАВЫ В МАТЧАХ ДЛЯ ИСТОРИИ
+            const teams = snapshot.snapshot.teams || [];
+            
+            // Получаем матчи этого раунда
+            const matchesResult = await client.query(
+                `SELECT id, team1_id, team2_id FROM matches 
+                 WHERE tournament_id = $1 AND round = $2`,
+                [tournamentId, roundNumber]
+            );
+            
+            console.log(`📝 Сохраняем составы в ${matchesResult.rows.length} матчах раунда ${roundNumber}`);
+            
+            // Для каждого матча сохраняем составы команд в metadata
+            for (const match of matchesResult.rows) {
+                const team1Roster = teams.find(t => t.team_id === match.team1_id);
+                const team2Roster = teams.find(t => t.team_id === match.team2_id);
+                
+                const matchMetadata = {
+                    round_rosters: {
+                        round: roundNumber,
+                        team1_roster: team1Roster?.members || [],
+                        team2_roster: team2Roster?.members || [],
+                        confirmed_at: new Date().toISOString()
+                    }
+                };
+                
+                await client.query(
+                    `UPDATE matches 
+                     SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb 
+                     WHERE id = $2`,
+                    [JSON.stringify(matchMetadata), match.id]
+                );
+            }
+            
+            console.log(`✅ Составы сохранены в матчах для исторической информации`);
+            
+            // Обновляем флаг подтверждения в снапшоте
+            const updatedSnapshot = {
+                ...snapshot.snapshot,
+                meta: {
+                    ...snapshot.snapshot.meta,
+                    rosters_confirmed: true,
+                    confirmed_at: new Date().toISOString()
+                }
+            };
+            
+            await this.saveSnapshot(tournamentId, roundNumber, updatedSnapshot);
+            
+            await client.query('COMMIT');
+            
+            console.log(`✅ Составы раунда ${roundNumber} подтверждены и сохранены`);
+            
+            return {
+                round: roundNumber,
+                confirmed: true,
+                teams: updatedSnapshot.teams,
+                matchesUpdated: matchesResult.rows.length
+            };
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error(`❌ Ошибка при подтверждении составов:`, error);
             throw error;
         } finally {
             client.release();

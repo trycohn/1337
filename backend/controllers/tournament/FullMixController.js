@@ -368,17 +368,45 @@ class FullMixController {
             broadcastToTournament(tournamentId, 'fullmix_rosters_updated', { 
                 tournamentId, 
                 round: roundNumber,
-                teams: result.teams
+                teams: result.teams,
+                confirmed: false
             });
         } catch (_) {}
         
         res.json({ 
             success: true, 
-            message: `Составы команд переформированы для раунда ${roundNumber}`,
+            message: `Составы команд переформированы для раунда ${roundNumber}. Требуется подтверждение.`,
+            ...result 
+        });
+    });
+
+    // 🆕 ПОДТВЕРЖДЕНИЕ СОСТАВОВ РАУНДА (SE/DE)
+    static confirmRosters = asyncHandler(async (req, res) => {
+        const tournamentId = parseInt(req.params.id);
+        const roundNumber = parseInt(req.params.round);
+        
+        console.log(`✅ [FullMixController.confirmRosters] Подтверждение составов раунда ${roundNumber}`);
+        
+        const result = await FullMixService.confirmRoundRosters(tournamentId, roundNumber);
+        
+        // Отправляем WebSocket обновление
+        try {
+            const { broadcastToTournament } = require('../../socketio-server');
+            broadcastToTournament(tournamentId, 'fullmix_rosters_confirmed', { 
+                tournamentId, 
+                round: roundNumber,
+                confirmed: true
+            });
+        } catch (_) {}
+        
+        res.json({ 
+            success: true, 
+            message: `Составы раунда ${roundNumber} подтверждены`,
             ...result 
         });
     });
 }
+
 
 module.exports = FullMixController;
 
