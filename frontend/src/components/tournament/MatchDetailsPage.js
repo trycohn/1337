@@ -646,27 +646,39 @@ const MatchDetailsPage = () => {
 
     function getDisplayedScores(matchObj) {
         const maps = matchObj?.maps_data;
+        
+        console.log('🎯 [getDisplayedScores] Расчет счета:', {
+            hasMaps: Array.isArray(maps),
+            mapsCount: maps?.length,
+            maps: maps,
+            matchScore1: matchObj?.score1,
+            matchScore2: matchObj?.score2
+        });
+        
         if (Array.isArray(maps) && maps.length > 0) {
             // Одна карта — показываем реальный счёт карты
             if (maps.length === 1) {
                 const only = maps[0];
-                const m1 = (only.score1 ?? only.team1_score);
-                const m2 = (only.score2 ?? only.team2_score);
-                if (typeof m1 === 'number' && typeof m2 === 'number') return [m1, m2];
+                const m1 = parseInt(only.score1 ?? only.team1_score) || 0;
+                const m2 = parseInt(only.score2 ?? only.team2_score) || 0;
+                console.log('📊 Одна карта, возвращаем счет:', [m1, m2]);
+                return [m1, m2];
             }
             // Несколько карт — показываем количество выигранных карт
             let wins1 = 0, wins2 = 0;
             for (const m of maps) {
-                const m1 = (m.score1 ?? m.team1_score);
-                const m2 = (m.score2 ?? m.team2_score);
-                if (typeof m1 === 'number' && typeof m2 === 'number') {
-                    if (m1 > m2) wins1++; else if (m2 > m1) wins2++;
-                }
+                const m1 = parseInt(m.score1 ?? m.team1_score) || 0;
+                const m2 = parseInt(m.score2 ?? m.team2_score) || 0;
+                console.log(`  Карта: ${m.map_name || m.mapName || 'unknown'} - ${m1}:${m2}`);
+                if (m1 > m2) wins1++;
+                else if (m2 > m1) wins2++;
             }
+            console.log(`📊 Несколько карт, wins: ${wins1}:${wins2}`);
             if (wins1 + wins2 > 0) return [wins1, wins2];
         }
-        const s1 = Number.isFinite(matchObj?.score1) ? matchObj.score1 : 0;
-        const s2 = Number.isFinite(matchObj?.score2) ? matchObj.score2 : 0;
+        const s1 = parseInt(matchObj?.score1) || 0;
+        const s2 = parseInt(matchObj?.score2) || 0;
+        console.log(`📊 Fallback к score1:score2 =`, [s1, s2]);
         return [s1, s2];
     }
 
