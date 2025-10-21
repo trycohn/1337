@@ -1410,6 +1410,17 @@ const MatchDetailsPage = () => {
                 matchData={editMatchData}
                 match={match}
                 onSave={handleSaveEditedMatch}
+                onDataChange={(updatedData) => {
+                    // 🔴 LIVE обновление счета на странице при изменении в модальном окне
+                    console.log('🔄 [MatchDetailsPage] Live обновление счета:', updatedData);
+                    setMatch(prev => ({
+                        ...prev,
+                        score1: updatedData.score1,
+                        score2: updatedData.score2,
+                        winner_team_id: updatedData.winner_team_id,
+                        maps_data: updatedData.maps_data
+                    }));
+                }}
             />
             
             {/* 🎮 FEEDBACK: Система обратной связи после матча */}

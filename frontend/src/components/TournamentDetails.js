@@ -270,6 +270,30 @@ function TournamentDetails() {
         maps_data: []
     });
     
+    // 🔴 LIVE обновление матчей при изменении matchResultData
+    useEffect(() => {
+        if (selectedMatch && matchResultData) {
+            console.log('🔄 [TournamentDetails] Обновляем матч в списке matches:', {
+                matchId: selectedMatch.id,
+                score: `${matchResultData.score1}:${matchResultData.score2}`
+            });
+            
+            setMatches(prevMatches => 
+                prevMatches.map(m => 
+                    m.id === selectedMatch.id 
+                        ? { 
+                            ...m, 
+                            score1: matchResultData.score1,
+                            score2: matchResultData.score2,
+                            winner_team_id: matchResultData.winner_team_id,
+                            maps_data: matchResultData.maps_data
+                          }
+                        : m
+                )
+            );
+        }
+    }, [matchResultData, selectedMatch]);
+    
     const [selectedMatchForDetails, setSelectedMatchForDetailsBase] = useState(null);
 
     // Обертка для логирования изменений selectedMatchForDetails
