@@ -642,15 +642,27 @@ class FullMixService {
                     await this.saveSnapshot(tournamentId, 1, updatedSnapshot);
                 }
                 
+                // 🆕 ОБНОВЛЯЕМ СТАТУС ТУРНИРА НА "in_progress"
+                console.log(`🔄 [FullMix SE/DE] Обновляем статус турнира на "in_progress"`);
+                await client.query(
+                    `UPDATE tournaments SET status = $1 WHERE id = $2`,
+                    ['in_progress', tournamentId]
+                );
+                
                 await client.query('COMMIT');
                 
-                console.log(`✅ [FullMix SE/DE] Участники распределены, турнир готов к старту`);
+                console.log(`✅ [FullMix SE/DE] Участники распределены, турнир запущен`);
+                
+                // Отправляем WebSocket обновление
+                const { broadcastTournamentUpdate } = require('../../notifications');
+                const updatedTournament = await TournamentService.getTournament(tournamentId);
+                broadcastTournamentUpdate(tournamentId, updatedTournament, 'startFullMixSEDE');
                 
                 return { 
                     round: 1, 
                     settings, 
                     teams: teamsWithRosters,
-                    message: 'Участники распределены по командам. Турнир готов!'
+                    message: 'Турнир запущен! Участники распределены по командам.'
                 };
                 
             } catch (error) {
@@ -665,6 +677,19 @@ class FullMixService {
             const roundNumber = 1;
             const snapshot = await this.generateRoundSnapshot(tournamentId, roundNumber, settings.rating_mode);
             await this.saveSnapshot(tournamentId, roundNumber, snapshot);
+            
+            // 🆕 ОБНОВЛЯЕМ СТАТУС ТУРНИРА НА "in_progress"
+            console.log(`🔄 [FullMix Swiss] Обновляем статус турнира на "in_progress"`);
+            await pool.query(
+                `UPDATE tournaments SET status = $1 WHERE id = $2`,
+                ['in_progress', tournamentId]
+            );
+            
+            // Отправляем WebSocket обновление
+            const { broadcastTournamentUpdate } = require('../../notifications');
+            const updatedTournament = await TournamentService.getTournament(tournamentId);
+            broadcastTournamentUpdate(tournamentId, updatedTournament, 'startFullMixSwiss');
+            
             return { round: roundNumber, settings, snapshot };
         }
     }
