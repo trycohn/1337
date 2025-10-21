@@ -1125,7 +1125,22 @@ const MatchCard = ({ match, tournament, onEditMatch, canEditMatches, onMatchClic
     const participant2 = getParticipantData(1);
     const renderTeamRosterInline = (teamId) => {
         if (!showRosters || !teamId) return null;
-        const roster = rostersByTeamId[Number(teamId)];
+        
+        // 🆕 Формируем правильный ключ для Full Mix SE/DE: {team_id}_match{match_id}
+        const isFullMix = tournament?.format === 'full_mix' || (tournament?.format === 'mix' && tournament?.mix_type === 'full');
+        const isSEorDE = tournament?.bracket_type === 'single_elimination' || tournament?.bracket_type === 'double_elimination';
+        
+        let roster;
+        if (isFullMix && isSEorDE) {
+            // Для Full Mix SE/DE используем ключ с match_id
+            const rosterKey = `${teamId}_match${match.id}`;
+            roster = rostersByTeamId[rosterKey];
+            console.log(`🔍 Ищем состав для Full Mix SE/DE: ключ=${rosterKey}, найдено=${!!roster}`);
+        } else {
+            // Для обычных турниров используем просто teamId
+            roster = rostersByTeamId[Number(teamId)];
+        }
+        
         const members = Array.isArray(roster?.members) ? roster.members : [];
         if (members.length === 0) return null;
         const captainUserId = roster?.captain_user_id || null;
