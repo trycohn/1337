@@ -18,6 +18,17 @@ function useTournamentSocket({
     const [isConnected, setIsConnected] = useState(false);
     const reconnectAttemptsRef = useRef(0);
     const maxReconnectAttempts = 5;
+    
+    // 🔴 Сохраняем callbacks в refs для избежания переподключений
+    const onTournamentUpdateRef = useRef(onTournamentUpdate);
+    const onParticipantUpdateRef = useRef(onParticipantUpdate);
+    const onErrorRef = useRef(onError);
+    
+    useEffect(() => {
+        onTournamentUpdateRef.current = onTournamentUpdate;
+        onParticipantUpdateRef.current = onParticipantUpdate;
+        onErrorRef.current = onError;
+    }, [onTournamentUpdate, onParticipantUpdate, onError]);
 
     const disconnect = useCallback(() => {
         if (socketRef.current) {
@@ -32,13 +43,12 @@ function useTournamentSocket({
         const token = localStorage.getItem('token');
         
         // Не создаем socket если нет критичных параметров
-        if (!tournamentId || !token) {
-            if (tournamentId) {
-                console.warn('⚠️ [useTournamentSocket] Пропускаем подключение:', { 
-                    tournamentId,
-                    hasToken: !!token
-                });
-            }
+        if (!tournamentId) {
+            return;
+        }
+        
+        if (!token) {
+            console.warn('⚠️ [useTournamentSocket] Нет токена, пропускаем подключение');
             return;
         }
 
@@ -67,10 +77,9 @@ function useTournamentSocket({
             setIsConnected(true);
             reconnectAttemptsRef.current = 0;
             
-            // Присоединяемся к комнате турнира
+            // Присоединяемся к комнате турнира (userId опционален)
             socket.emit('join_tournament', { 
-                tournamentId: Number(tournamentId),
-                userId: user?.id 
+                tournamentId: Number(tournamentId)
             });
             
             console.log(`📡 [useTournamentSocket] Присоединились к комнате tournament_${tournamentId}`);
@@ -79,32 +88,32 @@ function useTournamentSocket({
         // Получение обновлений турнира
         socket.on('tournament_update', (data) => {
             console.log(`🔄 [useTournamentSocket] tournament_update получено:`, data);
-            if (data && onTournamentUpdate) {
-                onTournamentUpdate(data);
+            if (data && onTournamentUpdateRef.current) {
+                onTournamentUpdateRef.current(data);
             }
         });
 
         // Специальное событие для обновлений участников
         socket.on('participant_update', (data) => {
             console.log(`👥 [useTournamentSocket] participant_update получено:`, data);
-            if (data && onParticipantUpdate) {
-                onParticipantUpdate(data);
+            if (data && onParticipantUpdateRef.current) {
+                onParticipantUpdateRef.current(data);
             }
         });
 
         // 🆕 Специальное событие для обновлений матчей (Full Mix)
         socket.on('fullmix_match_updated', (data) => {
             console.log(`🎯 [useTournamentSocket] fullmix_match_updated получено:`, data);
-            if (data && onTournamentUpdate) {
-                onTournamentUpdate({ ...data, _metadata: { updateType: 'match_updated' } });
+            if (data && onTournamentUpdateRef.current) {
+                onTournamentUpdateRef.current({ ...data, _metadata: { updateType: 'match_updated' } });
             }
         });
 
         // Обработчики ошибок
         socket.on('error', (error) => {
             console.error(`❌ [useTournamentSocket] Socket error:`, error);
-            if (onError) {
-                onError(error);
+            if (onErrorRef.current) {
+                onErrorRef.current(error);
             }
         });
 
@@ -115,8 +124,8 @@ function useTournamentSocket({
             
             if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
                 console.error(`❌ [useTournamentSocket] Превышено максимальное количество попыток переподключения`);
-                if (onError) {
-                    onError(new Error('Не удалось подключиться к серверу'));
+                if (onErrorRef.current) {
+                    onErrorRef.current(new Error('Не удалось подключиться к серверу'));
                 }
             }
         });
@@ -142,7 +151,8 @@ function useTournamentSocket({
             socketRef.current = null;
             setIsConnected(false);
         };
-    }, [tournamentId, user?.id, onTournamentUpdate, onParticipantUpdate, onError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tournamentId]);
 
     return {
         socket: socketRef.current,
