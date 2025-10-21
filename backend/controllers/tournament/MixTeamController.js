@@ -430,8 +430,20 @@ class MixTeamController {
                     
                     const rosters = {};
                     
+                    // 🔍 Определяем текущий раунд турнира
+                    const currentRoundResult = await pool.query(
+                        `SELECT MAX(round) as current_round 
+                         FROM matches 
+                         WHERE tournament_id = $1 AND winner_team_id IS NULL`,
+                        [tournamentId]
+                    );
+                    
+                    const currentRound = currentRoundResult.rows[0]?.current_round || 1;
+                    
+                    console.log(`📊 Текущий раунд турнира: ${currentRound}`);
+                    
                     // Собираем исторические составы из metadata матчей
-                    // Используем последний подтвержденный состав каждой команды
+                    // ТОЛЬКО для завершенных раундов (раунд < currentRound)
                     for (const match of matchesResult.rows) {
                         try {
                             // metadata может быть JSON строкой или объектом
@@ -441,8 +453,14 @@ class MixTeamController {
                             
                             const roundRosters = metadata?.round_rosters;
                             
-                            if (roundRosters && roundRosters.confirmed_at) {
-                                // Для team1 - используем team_id как ключ (последний состав)
+                            // 🔴 ПОКАЗЫВАЕМ СОСТАВЫ ТОЛЬКО ДЛЯ ЗАВЕРШЕННЫХ РАУНДОВ ИЛИ ЕСЛИ ЕСТЬ ПОБЕДИТЕЛЬ
+                            const isMatchCompleted = match.winner_team_id !== null;
+                            const shouldShowRoster = isMatchCompleted || (roundRosters && roundRosters.confirmed_at);
+                            
+                            if (shouldShowRoster && roundRosters) {
+                                console.log(`✅ Показываем состав матча ${match.id}, раунд ${match.round}`);
+                                
+                                // Для team1
                                 if (match.team1_id && roundRosters.team1_roster) {
                                     rosters[match.team1_id] = {
                                         team_id: match.team1_id,
@@ -465,6 +483,8 @@ class MixTeamController {
                                         confirmed_at: roundRosters.confirmed_at
                                     };
                                 }
+                            } else {
+                                console.log(`⏭️ Пропускаем матч ${match.id}, раунд ${match.round} - не завершен и не подтвержден`);
                             }
                         } catch (metaError) {
                             console.warn(`⚠️ Ошибка парсинга metadata матча ${match.id}:`, metaError.message);

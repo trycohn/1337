@@ -98,6 +98,9 @@ class MatchService {
         // 🆕 ДЛЯ FULL MIX SE/DE: ОБРАБОТКА ВЫБЫВАНИЯ УЧАСТНИКОВ
         await this._handleFullMixElimination(tournament, match, resultData.winner_team_id);
 
+        // 🆕 ДЛЯ FULL MIX SE/DE: СОЗДАНИЕ СНАПШОТА СЛЕДУЮЩЕГО РАУНДА
+        await this._createNextRoundSnapshotIfNeeded(tournament, match.round);
+
         console.log('✅ MatchService: Результат матча обновлен');
         return { 
             tournament: updatedTournament,
@@ -1054,6 +1057,93 @@ class MatchService {
     static async getById(matchId) {
         console.log(`🔍 MatchService: Получение матча ${matchId} с информацией об участниках`);
         return await MatchRepository.getByIdWithParticipants(matchId);
+    }
+
+    /**
+     * 🆕 СОЗДАНИЕ СНАПШОТА СЛЕДУЮЩЕГО РАУНДА (FULL MIX SE/DE)
+     * После завершения всех матчей раунда автоматически создается снапшот следующего раунда
+     * @private
+     */
+    static async _createNextRoundSnapshotIfNeeded(tournament, currentRound) {
+        try {
+            // Проверяем, является ли это Full Mix SE/DE турниром
+            const isFullMix = tournament.format === 'full_mix' || 
+                             (tournament.format === 'mix' && tournament.mix_type === 'full');
+            const isSEorDE = tournament.bracket_type === 'single_elimination' || 
+                            tournament.bracket_type === 'double_elimination';
+            
+            if (!isFullMix || !isSEorDE) {
+                return; // Не Full Mix SE/DE - пропускаем
+            }
+            
+            console.log(`🔍 [createNextRoundSnapshot] Проверяем необходимость создания снапшота для раунда ${currentRound + 1}`);
+            
+            // Проверяем, завершены ли ВСЕ матчи текущего раунда
+            const roundCheckResult = await pool.query(
+                `SELECT COUNT(*)::int as total, 
+                        COUNT(*) FILTER (WHERE winner_team_id IS NOT NULL)::int as completed
+                 FROM matches 
+                 WHERE tournament_id = $1 AND round = $2`,
+                [tournament.id, currentRound]
+            );
+            
+            const total = roundCheckResult.rows[0]?.total || 0;
+            const completed = roundCheckResult.rows[0]?.completed || 0;
+            
+            if (total === 0 || completed < total) {
+                console.log(`⏳ Раунд ${currentRound} еще не завершен (${completed}/${total})`);
+                return; // Раунд не завершен
+            }
+            
+            console.log(`✅ Раунд ${currentRound} завершен (${completed}/${total})`);
+            
+            // Проверяем, существует ли уже снапшот следующего раунда
+            const nextRound = currentRound + 1;
+            const FullMixService = require('./FullMixService');
+            const existingSnapshot = await FullMixService.getSnapshot(tournament.id, nextRound);
+            
+            if (existingSnapshot) {
+                console.log(`ℹ️ Снапшот раунда ${nextRound} уже существует`);
+                return; // Снапшот уже создан
+            }
+            
+            // Проверяем, есть ли матчи следующего раунда (должны быть в сетке)
+            const nextRoundMatchesResult = await pool.query(
+                `SELECT COUNT(*)::int as count FROM matches WHERE tournament_id = $1 AND round = $2`,
+                [tournament.id, nextRound]
+            );
+            
+            if (nextRoundMatchesResult.rows[0]?.count === 0) {
+                console.log(`🏁 Раунд ${currentRound} был финальным - нет матчей раунда ${nextRound}`);
+                return; // Это был финальный раунд
+            }
+            
+            // Создаем пустой снапшот для следующего раунда
+            const eliminated = await FullMixService.getEliminatedParticipants(tournament.id);
+            
+            const nextRoundSnapshot = {
+                round: nextRound,
+                teams: [], // Пустые составы - будут заполнены при редрафте
+                matches: [],
+                standings: [],
+                meta: {
+                    is_se_de_bracket: true,
+                    rosters_confirmed: false,
+                    rosters_drafted: false,
+                    eliminated: eliminated,
+                    created_automatically: true,
+                    previous_round_completed: currentRound
+                }
+            };
+            
+            await FullMixService.saveSnapshot(tournament.id, nextRound, nextRoundSnapshot);
+            
+            console.log(`✅ Автоматически создан снапшот для раунда ${nextRound}`);
+            
+        } catch (error) {
+            console.error(`❌ Ошибка при создании снапшота следующего раунда:`, error);
+            // Не прерываем основной процесс
+        }
     }
 
     /**
