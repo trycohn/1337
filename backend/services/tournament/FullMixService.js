@@ -38,8 +38,27 @@ class FullMixService {
         if (!Array.isArray(teamIds) || teamIds.length === 0) {
             return { round: roundNumber, teams: [], matches: [], standings: standings || await this.calculateStandings(tournamentId) };
         }
-        // Пул доступных участников
-        let participants = await this.getEligibleParticipants(tournamentId, 'random', standings);
+        
+        // 🆕 Получаем пул доступных участников С УЧЕТОМ ВЫБЫВШИХ
+        const allParticipants = await this.getEligibleParticipants(tournamentId, 'random', standings);
+        const eliminated = await this.getEliminatedParticipants(tournamentId);
+        
+        console.log(`📊 [generateRosterPreviewForFixedTeams] Раунд ${roundNumber}:`);
+        console.log(`   Всего участников: ${allParticipants.length}`);
+        console.log(`   Выбывших: ${eliminated.length}`);
+        
+        // Фильтруем выбывших
+        const eliminatedIds = new Set(eliminated.map(p => p.participant_id || p.user_id).filter(Boolean));
+        const participants = allParticipants.filter(p => {
+            const isEliminated = eliminatedIds.has(p.participant_id) || eliminatedIds.has(p.user_id);
+            if (isEliminated) {
+                console.log(`   ❌ Исключаем выбывшего: ${p.name}`);
+            }
+            return !isEliminated;
+        });
+        
+        console.log(`   ✅ Доступных участников: ${participants.length}`);
+        
         const teamSize = await this.getTeamSize(tournamentId);
         // Случайно перемешиваем и нарезаем по размеру команд
         const shuffled = [...participants];
