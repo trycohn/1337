@@ -473,7 +473,9 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                     <span>
                         Текущий раунд: {displayRoundLabel === 'ФИНАЛ'
                             ? 'ФИНАЛ'
-                            : `${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+                            : isSEorDE 
+                                ? `${displayRoundLabel}` 
+                                : `${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
                     </span>
                     {rounds.length === 0 && (
                         <button className="btn btn-primary" onClick={startFirstRound}>Стартовать раунд 1</button>
@@ -508,7 +510,9 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                         <div className="fullmix-standings-round">
                             {displayRoundLabel === 'ФИНАЛ'
                                 ? 'ФИНАЛ'
-                                : `Раунд ${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
+                                : isSEorDE
+                                    ? `Раунд ${displayRoundLabel}`
+                                    : `Раунд ${displayRoundLabel}${settings?.wins_to_win ? ` из ${settings.wins_to_win}` : ''}`}
                         </div>
                     </div>
                     <div className="fullmix-standings-scroll">

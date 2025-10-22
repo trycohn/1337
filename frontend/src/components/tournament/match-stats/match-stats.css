@@ -522,6 +522,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: space-between;
 }
 .skeleton-card {
   border: 1px solid #333;

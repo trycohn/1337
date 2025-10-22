@@ -453,11 +453,9 @@ class MixTeamController {
                                 
                                 // Сохраняем составы по team_id (ключ - просто ID команды)
                                 // Берем ПОСЛЕДНИЙ (максимальный раунд) состав каждой команды
-                                // 🆕 УНИКАЛЬНЫЙ КЛЮЧ для каждого матча: {team_id}_match{match_id}
-                                // Это позволяет сохранить разные составы команды в разных раундах
+                                // 🆕 СОХРАНЯЕМ В ДВУХ ФОРМАТАХ для совместимости
                                 if (match.team1_id && roundRosters.team1_roster) {
-                                    const key = `${match.team1_id}_match${match.id}`;
-                                    rosters[key] = {
+                                    const rosterData = {
                                         team_id: match.team1_id,
                                         match_id: match.id,
                                         round: match.round,
@@ -465,12 +463,22 @@ class MixTeamController {
                                         historical: true,
                                         confirmed_at: roundRosters.confirmed_at
                                     };
+                                    
+                                    // 1. Ключ для сетки (с match_id): {team_id}_match{match_id}
+                                    const matchKey = `${match.team1_id}_match${match.id}`;
+                                    rosters[matchKey] = rosterData;
+                                    
+                                    // 2. Ключ для вкладки "Mix команды" (только team_id) - ПОСЛЕДНИЙ состав
+                                    const simpleKey = match.team1_id;
+                                    if (!rosters[simpleKey] || rosters[simpleKey].round < match.round) {
+                                        rosters[simpleKey] = {...rosterData};
+                                    }
+                                    
                                     console.log(`   → Team ${match.team1_id} (матч ${match.id}): сохранен состав раунда ${match.round}`);
                                 }
                                 
                                 if (match.team2_id && roundRosters.team2_roster) {
-                                    const key = `${match.team2_id}_match${match.id}`;
-                                    rosters[key] = {
+                                    const rosterData = {
                                         team_id: match.team2_id,
                                         match_id: match.id,
                                         round: match.round,
@@ -478,6 +486,17 @@ class MixTeamController {
                                         historical: true,
                                         confirmed_at: roundRosters.confirmed_at
                                     };
+                                    
+                                    // 1. Ключ для сетки (с match_id): {team_id}_match{match_id}
+                                    const matchKey = `${match.team2_id}_match${match.id}`;
+                                    rosters[matchKey] = rosterData;
+                                    
+                                    // 2. Ключ для вкладки "Mix команды" (только team_id) - ПОСЛЕДНИЙ состав
+                                    const simpleKey = match.team2_id;
+                                    if (!rosters[simpleKey] || rosters[simpleKey].round < match.round) {
+                                        rosters[simpleKey] = {...rosterData};
+                                    }
+                                    
                                     console.log(`   → Team ${match.team2_id} (матч ${match.id}): сохранен состав раунда ${match.round}`);
                                 }
                             } else {
