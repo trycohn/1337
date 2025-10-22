@@ -1,0 +1,373 @@
+/**
+ * 🏆 TEAM STANDINGS TABLE STYLES
+ * Монохромная тема с медалями
+ */
+
+/* ========================================
+   КОНТЕЙНЕР
+======================================== */
+.team-standings-table {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+/* ========================================
+   ЗАГОЛОВОК
+======================================== */
+.standings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #ff0000;
+}
+
+.standings-header h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.standings-count {
+    color: #999;
+    font-size: 13px;
+    background: #111;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #333;
+}
+
+/* ========================================
+   СПИСОК КОМАНД
+======================================== */
+.standings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 800px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+}
+
+/* Кастомный scrollbar */
+.standings-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.standings-list::-webkit-scrollbar-track {
+    background: #111;
+    border-radius: 3px;
+}
+
+.standings-list::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.standings-list::-webkit-scrollbar-thumb:hover {
+    background: #ff0000;
+}
+
+/* ========================================
+   СТРОКА КОМАНДЫ
+======================================== */
+.standings-row {
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 12px;
+    transition: all 0.3s ease;
+}
+
+.standings-row:hover {
+    background: #1a1a1a;
+    border-color: #ff0000;
+    transform: translateX(4px);
+}
+
+/* Специальные стили для топ-3 */
+.standings-row.placement-1 {
+    border-left: 4px solid #ffd700;
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.05) 0%, #111 100%);
+}
+
+.standings-row.placement-2 {
+    border-left: 4px solid #c0c0c0;
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.05) 0%, #111 100%);
+}
+
+.standings-row.placement-3 {
+    border-left: 4px solid #cd7f32;
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.05) 0%, #111 100%);
+}
+
+/* ========================================
+   МЕСТО
+======================================== */
+.standings-placement {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.placement-medal {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.placement-text {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ========================================
+   ИНФОРМАЦИЯ О КОМАНДЕ
+======================================== */
+.standings-team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.team-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.team-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.team-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.team-name {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-name a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.team-name a:hover {
+    color: #ff0000;
+}
+
+/* ========================================
+   АВАТАРЫ УЧАСТНИКОВ
+======================================== */
+.team-members-avatars {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.member-avatar-link {
+    position: relative;
+    text-decoration: none;
+}
+
+.member-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.member-avatar:hover {
+    border-color: #ff0000;
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.captain-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    background: #000;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffd700;
+}
+
+.more-members {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #222;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* ========================================
+   СТАТИСТИКА W:L
+======================================== */
+.standings-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-value {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.stat-value.win {
+    color: #00ff00;
+}
+
+.stat-value.loss {
+    color: #ff6b6b;
+}
+
+.stat-label {
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-divider {
+    color: #666;
+    font-size: 14px;
+    margin: 0 4px;
+}
+
+/* ========================================
+   LOADING & EMPTY
+======================================== */
+.standings-loading,
+.standings-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: #999;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #333;
+    border-top-color: #ff0000;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   АДАПТИВ
+======================================== */
+@media (max-width: 1200px) {
+    .team-standings-table {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .team-standings-table {
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .standings-header h3 {
+        font-size: 16px;
+    }
+
+    .standings-row {
+        grid-template-columns: 40px 1fr auto;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .placement-medal {
+        font-size: 24px;
+    }
+
+    .team-avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .team-name {
+        font-size: 13px;
+    }
+
+    .member-avatar {
+        width: 24px;
+        height: 24px;
+    }
+
+    .standings-stats {
+        font-size: 12px;
+    }
+
+    .stat-value {
+        font-size: 14px;
+    }
+}
+

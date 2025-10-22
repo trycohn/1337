@@ -5,6 +5,7 @@ import MatchDetailsModal from './modals/MatchDetailsModal';
 import './TournamentResults.css';
 import PodiumSection from './PodiumSection';
 import TournamentStatsPanel from './TournamentStatsPanel';
+import TeamStandingsTable from './TeamStandingsTable';
 
 const TournamentResults = ({ tournament }) => {
     // Определяем мобильное устройство
@@ -135,33 +136,56 @@ const TournamentResults = ({ tournament }) => {
         );
     }
 
+    // Показываем двухколоночный layout только для завершенных турниров
+    const showTwoColumnLayout = tournament.status === 'completed';
+
     return (
         <div className="results-tournament-results">
-            {/* Блок 1: Призовые места (если турнир завершен и есть призеры) */}
+            {/* 🏆 Подиум победителей (всегда сверху если турнир завершен) */}
             {tournament.status === 'completed' && (
-                <div className="results-winners-section">
-                    <div className="results-section-header">
-                        <h3>Призовые места</h3>
-                        <div className="results-tournament-info">
-                            <span className="results-format">{getFormatDisplayName(tournament.format || tournament.bracket_type)}</span>
-                        </div>
-                    </div>
-                    <div className="results-podium">
-                        <PodiumSection tournament={tournament} matches={tournament.matches} />
-                    </div>
+                <div className="results-podium-section">
+                    <PodiumSection tournament={tournament} matches={tournament.matches} />
                 </div>
             )}
 
-            {/* Блок 2: Статистика турнира (только для завершенных турниров с лобби) */}
-            {tournament.status === 'completed' && tournament.lobby_enabled && tournament.game === 'Counter-Strike 2' && (
-                <TournamentStatsPanel tournamentId={tournament.id} />
+            {/* 📊 Двухколоночный layout для завершенных турниров */}
+            {showTwoColumnLayout ? (
+                <div className="results-two-column-layout">
+                    {/* ЛЕВАЯ КОЛОНКА: Таблица мест команд (40%) */}
+                    <div className="results-left-column">
+                        <TeamStandingsTable 
+                            tournamentId={tournament.id} 
+                            tournament={tournament}
+                        />
+                    </div>
+
+                    {/* ПРАВАЯ КОЛОНКА: Статистика MVP + Лидеры (60%) */}
+                    <div className="results-right-column">
+                        {tournament.lobby_enabled && tournament.game === 'Counter-Strike 2' ? (
+                            <TournamentStatsPanel tournamentId={tournament.id} />
+                        ) : (
+                            <div className="no-stats-placeholder">
+                                <div className="placeholder-icon">📊</div>
+                                <h3>Статистика недоступна</h3>
+                                <p>Турнир проводился без игрового лобби</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                /* Для незавершенных турниров - старый layout */
+                <>
+                    {tournament.lobby_enabled && tournament.game === 'Counter-Strike 2' && (
+                        <TournamentStatsPanel tournamentId={tournament.id} />
+                    )}
+                </>
             )}
 
-            {/* Блок 3: История матчей */}
+            {/* 📜 История матчей (всегда внизу, полная ширина) */}
             {tournamentResults.completedMatches.length > 0 && (
                 <div className="results-match-history-section">
                     <div className="results-section-header">
-                        <h3>История матчей</h3>
+                        <h3>📊 История матчей</h3>
                         <div className="results-history-stats">
                             <span className="results-matches-count">{tournamentResults.completedMatches.length} завершенных матчей</span>
                         </div>
@@ -362,7 +386,7 @@ function renderWinners(winners) {
     );
 }
 
-// Рендер элемента истории матчей
+// Рендер элемента истории матчей (улучшенная версия v2.0)
 function renderMatchHistoryItem(match, tournament, openMatchDetails, isMobile = false) {
     const winner = getParticipantInfo(match.winner_team_id, tournament);
     const loserId = match.winner_team_id === match.team1_id ? match.team2_id : match.team1_id;
@@ -377,59 +401,118 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails, isMobile = 
         }
     };
 
+    // Получаем карты если есть
+    const maps = match.maps_data || [];
+    const hasMaps = Array.isArray(maps) && maps.length > 0;
+
     return (
         <div 
             key={match.id} 
-            className={`results-match-history-item ${isMobile ? 'mobile-clickable' : ''}`}
+            className={`results-match-history-item-v2 ${isMobile ? 'mobile-clickable' : ''}`}
             onClick={isMobile ? handleMatchClick : undefined}
         >
-            <div className="results-match-info">
-                <div className="results-match-header">
-                    <span className="results-match-number">#{match.tournament_match_number || match.match_number || match.id}</span>
-                    {special && <span className="results-bracket-type">{special}</span>}
-                </div>
-                
-                <div className="results-match-result">
-                    <div className="results-participants">
-                        <div className="results-participant results-winner" style={{fontWeight: 700, color: '#ff0000'}}>
-                            <div className="results-participant-avatar">
-                                <img 
-                                    src={ensureHttps(winner?.avatar_url) || '/default-avatar.png'}
-                                    alt={winner?.name || 'Winner'}
-                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                />
-                            </div>
-                            <span className="results-participant-name">{winner?.name || 'Winner'}</span>
+            {/* Заголовок матча */}
+            <div className="match-header-v2">
+                <div className="match-number-badge">#{match.tournament_match_number || match.match_number || match.id}</div>
+                {special && <div className="match-type-badge">{special}</div>}
+            </div>
+
+            {/* Основной контент */}
+            <div className="match-content-v2">
+                {/* Команда победителя */}
+                <div className="match-team winner-team">
+                    <div className="team-info">
+                        <div className="team-avatar-v2">
+                            <img 
+                                src={ensureHttps(winner?.avatar_url) || '/default-avatar.png'}
+                                alt={winner?.name || 'Winner'}
+                                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                            />
                         </div>
-                        
-                        <div className="results-score">
-                            {getFormattedScore(match)}
-                        </div>
-                        
-                        <div className="results-participant results-loser">
-                            <div className="results-participant-avatar">
-                                <img 
-                                    src={ensureHttps(loser?.avatar_url) || '/default-avatar.png'}
-                                    alt={loser?.name || 'Loser'}
-                                    onError={(e) => { e.target.src = '/default-avatar.png'; }}
-                                />
-                            </div>
-                            <span className="results-participant-name">{loser?.name || 'Loser'}</span>
-                        </div>
+                        <div className="team-name-v2">{winner?.name || 'Winner'}</div>
                     </div>
                     
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`/tournaments/${tournament.id}/match/${match.id}`, '_blank');
-                        }}
-                        className="results-match-details-link"
-                        title="Открыть страницу матча"
-                    >
-                        Посмотреть матч
-                    </button>
+                    {/* Аватары участников победителей */}
+                    {winner?.members && winner.members.length > 0 && (
+                        <div className="team-members-row">
+                            {winner.members.slice(0, 5).map((member, idx) => (
+                                <div key={idx} className="member-mini-avatar" title={member.name}>
+                                    <img 
+                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
+                                        alt={member.name}
+                                        onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Счет */}
+                <div className="match-score-v2">
+                    <div className="score-display">{getFormattedScore(match)}</div>
+                    {hasMaps && (
+                        <div className="maps-count">{maps.length} {maps.length === 1 ? 'карта' : maps.length < 5 ? 'карты' : 'карт'}</div>
+                    )}
+                </div>
+
+                {/* Команда проигравших */}
+                <div className="match-team loser-team">
+                    <div className="team-info">
+                        <div className="team-avatar-v2">
+                            <img 
+                                src={ensureHttps(loser?.avatar_url) || '/default-avatar.png'}
+                                alt={loser?.name || 'Loser'}
+                                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                            />
+                        </div>
+                        <div className="team-name-v2">{loser?.name || 'Loser'}</div>
+                    </div>
+                    
+                    {/* Аватары участников проигравших */}
+                    {loser?.members && loser.members.length > 0 && (
+                        <div className="team-members-row">
+                            {loser.members.slice(0, 5).map((member, idx) => (
+                                <div key={idx} className="member-mini-avatar" title={member.name}>
+                                    <img 
+                                        src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
+                                        alt={member.name}
+                                        onError={(e) => { e.target.src = '/default-avatar.png'; }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Карты (если есть) */}
+            {hasMaps && (
+                <div className="match-maps-v2">
+                    {maps.map((map, idx) => (
+                        <div key={idx} className="map-result">
+                            <span className="map-name">{map.map_name || map.name || `Карта ${idx + 1}`}</span>
+                            <span className="map-score">
+                                {map.score1 || map.team1_score}:{map.score2 || map.team2_score}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Кнопка деталей */}
+            {!isMobile && (
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`/tournaments/${tournament.id}/match/${match.id}`, '_blank');
+                    }}
+                    className="match-details-btn-v2"
+                    title="Открыть страницу матча"
+                >
+                    Посмотреть матч →
+                </button>
+            )}
         </div>
     );
 }

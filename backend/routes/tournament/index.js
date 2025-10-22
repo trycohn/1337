@@ -556,6 +556,18 @@ router.post('/:id/fullmix/eliminated/recover', authenticateToken, verifyEmailReq
 
 // 📊 **СТАТИСТИКА ТУРНИРОВ (НОВОЕ v4.28.0)**
 
+// 🏆 Получение итоговой таблицы мест команд (публичный)
+router.get('/:id/standings', async (req, res) => {
+    try {
+        const StandingsService = require('../../services/tournament/StandingsService');
+        const result = await StandingsService.getTournamentStandings(parseInt(req.params.id));
+        res.json(result);
+    } catch (error) {
+        console.error('❌ [Standings] Ошибка:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // 📊 Получение полной статистики турнира (публичный)
 router.get('/:id/stats', TournamentStatsController.getTournamentStats);
 

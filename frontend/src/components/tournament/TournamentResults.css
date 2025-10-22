@@ -1,9 +1,64 @@
-/* 🏆 TournamentResults - Новые стили для вкладки результатов */
+/**
+ * 🏆 TOURNAMENT RESULTS V2.0 - FACEIT CLASSIC STYLE
+ * Двухколоночный layout: таблица команд + статистика
+ */
 
 .results-tournament-results {
-    padding: 20px;
-    max-width: 1200px;
+    padding: 24px;
+    max-width: 1400px;
     margin: 0 auto;
+}
+
+/* ========================================
+   ПОДИУМ СЕКЦИЯ
+======================================== */
+.results-podium-section {
+    margin-bottom: 32px;
+}
+
+/* ========================================
+   ДВУХКОЛОНОЧНЫЙ LAYOUT
+======================================== */
+.results-two-column-layout {
+    display: grid;
+    grid-template-columns: 40% 60%;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.results-left-column {
+    min-width: 0;
+}
+
+.results-right-column {
+    min-width: 0;
+}
+
+/* No stats placeholder */
+.no-stats-placeholder {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.placeholder-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.no-stats-placeholder h3 {
+    color: #fff;
+    font-size: 20px;
+    margin: 0 0 8px 0;
+}
+
+.no-stats-placeholder p {
+    color: #999;
+    font-size: 14px;
+    margin: 0;
 }
 
 /* === СОСТОЯНИЯ === */
@@ -258,18 +313,220 @@
 /* показываем полный состав, индикатор +N не нужен */
 .results-member-more { display: none; }
 
-/* === ИСТОРИЯ МАТЧЕЙ === */
-
+/* ========================================
+   ИСТОРИЯ МАТЧЕЙ V2.0 (улучшенная)
+======================================== */
 .results-match-history-section {
-    margin-bottom: 20px;
+    margin-top: 40px;
 }
 
 .results-match-history-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
+/* Новая карточка матча v2.0 */
+.results-match-history-item-v2 {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.results-match-history-item-v2:hover {
+    border-color: #ff0000;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+}
+
+.results-match-history-item-v2.mobile-clickable {
+    cursor: pointer;
+}
+
+.results-match-history-item-v2.mobile-clickable:active {
+    transform: scale(0.98);
+}
+
+/* Заголовок матча */
+.match-header-v2 {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.match-number-badge {
+    background: #ff0000;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.match-type-badge {
+    background: #222;
+    color: #999;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #333;
+}
+
+/* Основной контент */
+.match-content-v2 {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* Команды */
+.match-team {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.team-avatar-v2 {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #333;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.team-avatar-v2 img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.team-name-v2 {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.winner-team .team-name-v2 {
+    color: #ff0000;
+}
+
+/* Аватары участников */
+.team-members-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.member-mini-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #333;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.member-mini-avatar:hover {
+    border-color: #ff0000;
+    transform: scale(1.2);
+    z-index: 10;
+}
+
+.member-mini-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Счет */
+.match-score-v2 {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.score-display {
+    background: #000;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 20px;
+    border: 1px solid #333;
+}
+
+.maps-count {
+    color: #666;
+    font-size: 11px;
+}
+
+/* Карты */
+.match-maps-v2 {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid #222;
+}
+
+.map-result {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 6px 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+}
+
+.map-name {
+    color: #999;
+}
+
+.map-score {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Кнопка деталей */
+.match-details-btn-v2 {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    color: #ff0000;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.match-details-btn-v2:hover {
+    background: #ff0000;
+    color: #fff;
+}
+
+/* Старые стили (обратная совместимость) */
 .results-match-history-item {
     padding: 15px;
     transition: border-color 0.2s ease;
@@ -380,11 +637,25 @@
     color: #fff;
 }
 
-/* === АДАПТИВНОСТЬ === */
+/* ========================================
+   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ
+======================================== */
+
+@media (max-width: 1200px) {
+    .results-two-column-layout {
+        grid-template-columns: 45% 55%;
+    }
+}
 
 @media (max-width: 768px) {
     .results-tournament-results {
-        padding: 6px;
+        padding: 12px;
+    }
+
+    /* Двухколоночный layout стекается вертикально */
+    .results-two-column-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
     
     .results-section-header {
@@ -472,5 +743,56 @@
     }
     .results-match-number {
         width: 36px;
+    }
+
+    /* Адаптив для новой версии истории матчей v2.0 */
+    .results-match-history-item-v2 {
+        padding: 12px;
+    }
+
+    .match-content-v2 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .match-team {
+        width: 100%;
+    }
+
+    .match-score-v2 {
+        order: -1;
+        margin-bottom: 12px;
+    }
+
+    .score-display {
+        font-size: 18px;
+        padding: 10px 16px;
+    }
+
+    .team-avatar-v2 {
+        width: 32px;
+        height: 32px;
+    }
+
+    .team-name-v2 {
+        font-size: 14px;
+    }
+
+    .member-mini-avatar {
+        width: 20px;
+        height: 20px;
+    }
+
+    .match-details-btn-v2 {
+        display: none;
+    }
+
+    .match-maps-v2 {
+        flex-wrap: wrap;
+    }
+
+    .map-result {
+        font-size: 11px;
+        padding: 4px 8px;
     }
 }
