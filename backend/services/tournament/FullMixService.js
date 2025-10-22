@@ -2123,35 +2123,53 @@ class FullMixService {
             
             // 🆕 СИНХРОНИЗАЦИЯ tournament_team_members для корректной работы endpoint /teams
             // Обновляем текущие составы команд в основной таблице
-            console.log(`🔄 Синхронизация tournament_team_members...`);
+            console.log(`🔄 Синхронизация tournament_team_members для раунда ${roundNumber}...`);
+            console.log(`📊 Количество команд в снапшоте: ${teams.length}`);
             
-            for (const team of teams) {
-                // Очищаем старый состав команды
-                await client.query(
-                    `DELETE FROM tournament_team_members WHERE team_id = $1`,
-                    [team.team_id]
-                );
+            if (teams.length === 0) {
+                console.warn(`⚠️ Снапшот не содержит команд! Синхронизация пропущена.`);
+            } else {
+                console.log(`📋 Команды для синхронизации:`, teams.map(t => `Team ${t.team_id} (${t.members?.length || 0} участников)`));
                 
-                // Добавляем новый состав
-                if (Array.isArray(team.members) && team.members.length > 0) {
-                    for (let i = 0; i < team.members.length; i++) {
-                        const member = team.members[i];
-                        await client.query(
-                            `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain)
-                             VALUES ($1, $2, $3, $4)`,
-                            [
-                                team.team_id,
-                                member.user_id || null,
-                                member.participant_id || null,
-                                i === 0 // Первый участник = капитан
-                            ]
-                        );
+                for (const team of teams) {
+                    console.log(`🔄 Синхронизация Team ${team.team_id}...`);
+                    
+                    // Очищаем старый состав команды
+                    const deleteResult = await client.query(
+                        `DELETE FROM tournament_team_members WHERE team_id = $1`,
+                        [team.team_id]
+                    );
+                    console.log(`   🗑️ Удалено старых записей: ${deleteResult.rowCount}`);
+                    
+                    // Добавляем новый состав
+                    if (Array.isArray(team.members) && team.members.length > 0) {
+                        for (let i = 0; i < team.members.length; i++) {
+                            const member = team.members[i];
+                            console.log(`   📝 Добавляем участника ${i + 1}/${team.members.length}:`, {
+                                user_id: member.user_id,
+                                participant_id: member.participant_id,
+                                name: member.name
+                            });
+                            
+                            await client.query(
+                                `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain)
+                                 VALUES ($1, $2, $3, $4)`,
+                                [
+                                    team.team_id,
+                                    member.user_id || null,
+                                    member.participant_id || null,
+                                    i === 0 // Первый участник = капитан
+                                ]
+                            );
+                        }
+                        console.log(`   ✅ Team ${team.team_id}: обновлено ${team.members.length} участников`);
+                    } else {
+                        console.warn(`   ⚠️ Team ${team.team_id}: нет участников для добавления!`);
                     }
-                    console.log(`   ✅ Team ${team.team_id}: обновлено ${team.members.length} участников`);
                 }
+                
+                console.log(`✅ tournament_team_members синхронизирована`);
             }
-            
-            console.log(`✅ tournament_team_members синхронизирована`);
             
             // Обновляем флаг подтверждения в снапшоте
             const updatedSnapshot = {
