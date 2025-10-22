@@ -661,18 +661,40 @@ class MixTeamController {
             const isFullMix = fmt === 'full_mix' || (fmt === 'mix' && mixType === 'full');
 
             if (isFullMix) {
+                // 🆕 Проверяем тип сетки для правильной валидации
+                const isSEorDE = baseTournament?.bracket_type === 'single_elimination' || 
+                                baseTournament?.bracket_type === 'double_elimination';
+                
                 // 2) Берём последний снапшот; если его нет — считаем не подтвержденным
                 const snapRes = await pool.query(
-                    `SELECT approved_teams
+                    `SELECT approved_teams, snapshot
                      FROM full_mix_snapshots
                      WHERE tournament_id = $1
                      ORDER BY round_number DESC
                      LIMIT 1`,
                     [tournamentId]
                 );
-                const lastApproved = snapRes.rows.length > 0 ? (snapRes.rows[0].approved_teams === true) : false;
+                
+                let lastApproved = false;
+                
+                if (snapRes.rows.length > 0) {
+                    const snap = snapRes.rows[0];
+                    
+                    if (isSEorDE) {
+                        // Для SE/DE проверяем rosters_confirmed в metadata
+                        const rostersConfirmed = snap.snapshot?.meta?.rosters_confirmed === true || 
+                                                snap.snapshot?.meta?.rosters_confirmed === 'true';
+                        lastApproved = rostersConfirmed;
+                        console.log(`🔍 [MixTeamController] Full Mix SE/DE - rosters_confirmed: ${rostersConfirmed}`);
+                    } else {
+                        // Для Swiss проверяем approved_teams
+                        lastApproved = snap.approved_teams === true;
+                        console.log(`🔍 [MixTeamController] Full Mix Swiss - approved_teams: ${lastApproved}`);
+                    }
+                }
+                
                 if (!lastApproved) {
-                    console.log(`🛡️ [MixTeamController] Full Mix not approved → скрываем команды`);
+                    console.log(`🛡️ [MixTeamController] Full Mix не подтвержден → скрываем команды`);
                     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
                     res.set('Pragma', 'no-cache');
                     res.set('Expires', '0');
