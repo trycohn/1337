@@ -136,6 +136,7 @@
     flex-direction: row;
     gap: 6px;
     min-width: 0;
+    justify-content: space-between;
 }
 
 .team-main {

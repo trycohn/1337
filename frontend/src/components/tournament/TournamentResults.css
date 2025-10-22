@@ -29,8 +29,6 @@
 
 /* No stats placeholder */
 .no-stats-placeholder {
-    background: #111;
-    border: 1px solid #333;
     border-radius: 8px;
     padding: 60px 20px;
     text-align: center;
