@@ -39,14 +39,17 @@ class StandingsService {
                         tt.id as team_id,
                         tt.name as team_name,
                         NULL as avatar_url,
-                        json_agg(
-                            json_build_object(
-                                'user_id', u.id,
-                                'name', COALESCE(u.username, tp.name),
-                                'avatar_url', u.avatar_url,
-                                'is_captain', ttm.is_captain
-                            ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
-                        ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL) as members
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'user_id', u.id,
+                                    'name', COALESCE(u.username, tp.name),
+                                    'avatar_url', u.avatar_url,
+                                    'is_captain', ttm.is_captain
+                                ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
+                            ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL),
+                            '[]'::json
+                        ) as members
                     FROM tournament_teams tt
                     LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
@@ -59,6 +62,11 @@ class StandingsService {
                 teams = participantsResult.rows;
                 
                 console.log(`📊 [Standings] MIX турнир: получено ${teams.length} команд`);
+                
+                // 🔍 Диагностика members
+                teams.forEach((team, idx) => {
+                    console.log(`   Team ${idx + 1}: ${team.team_name}, members: ${team.members?.length || 0}`);
+                });
                 
             } else if (tournament.participant_type === 'solo') {
                 // ═══════════════════════════════════════════
@@ -88,20 +96,25 @@ class StandingsService {
                 console.log(`📊 [Standings] SOLO турнир: получено ${teams.length} участников`);
                 
             } else {
-                // Для командных турниров (team, mix, cs2_*)
+                // ═══════════════════════════════════════════
+                // Для командных турниров (team, cs2_*)
+                // ═══════════════════════════════════════════
                 const participantsQuery = `
                     SELECT 
                         tt.id as team_id,
                         tt.name as team_name,
                         NULL as avatar_url,
-                        json_agg(
-                            json_build_object(
-                                'user_id', u.id,
-                                'name', COALESCE(u.username, tp.name),
-                                'avatar_url', u.avatar_url,
-                                'is_captain', ttm.is_captain
-                            ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
-                        ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL) as members
+                        COALESCE(
+                            json_agg(
+                                json_build_object(
+                                    'user_id', u.id,
+                                    'name', COALESCE(u.username, tp.name),
+                                    'avatar_url', u.avatar_url,
+                                    'is_captain', ttm.is_captain
+                                ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
+                            ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL),
+                            '[]'::json
+                        ) as members
                     FROM tournament_teams tt
                     LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
@@ -114,6 +127,11 @@ class StandingsService {
                 teams = participantsResult.rows;
                 
                 console.log(`📊 [Standings] TEAM турнир: получено ${teams.length} команд`);
+                
+                // 🔍 Диагностика members
+                teams.forEach((team, idx) => {
+                    console.log(`   Team ${idx + 1}: ${team.team_name}, members: ${team.members?.length || 0}`);
+                });
             }
 
             // Получаем все матчи
@@ -592,6 +610,17 @@ class StandingsService {
                 actualRoster = lastMatch.team2_players;
             }
 
+            // 🔍 Детальная диагностика
+            console.log(`🔍 [_updateMixTeamRosters] ${team.team_name}:`, {
+                lastMatch_id: lastMatch.id,
+                team_side: lastMatch.team1_id === team.team_id ? 'team1' : 'team2',
+                has_team1_players: !!lastMatch.team1_players,
+                has_team2_players: !!lastMatch.team2_players,
+                team1_players_count: Array.isArray(lastMatch.team1_players) ? lastMatch.team1_players.length : 0,
+                team2_players_count: Array.isArray(lastMatch.team2_players) ? lastMatch.team2_players.length : 0,
+                actualRoster_length: Array.isArray(actualRoster) ? actualRoster.length : 0
+            });
+
             // Если есть фактический состав из матча - используем его
             if (actualRoster && Array.isArray(actualRoster) && actualRoster.length > 0) {
                 console.log(`✅ [_updateMixTeamRosters] ${team.team_name}: обновлен состав (${actualRoster.length} игроков)`);
@@ -618,7 +647,7 @@ class StandingsService {
 
             } else {
                 // Fallback: используем оригинальный состав из tournament_team_members
-                console.log(`⚠️ [_updateMixTeamRosters] ${team.team_name}: нет данных о составе в матче, используем оригинальный`);
+                console.log(`⚠️ [_updateMixTeamRosters] ${team.team_name}: нет данных о составе в матче (team1_players/team2_players пусты), используем оригинальный (${team.members?.length || 0} игроков)`);
                 updatedStandings.push(team);
             }
         }

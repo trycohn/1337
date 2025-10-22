@@ -34,6 +34,21 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
                 first_team: response.data.standings?.[0]
             });
 
+            // 🔍 Детальная диагностика аватаров
+            if (response.data.standings) {
+                response.data.standings.forEach((team, idx) => {
+                    console.log(`🔍 [TeamStandings] Команда #${idx + 1}:`, {
+                        name: team.team_name,
+                        placement: team.placement,
+                        avatar_url: team.avatar_url,
+                        members_count: team.members?.length || 0,
+                        has_members: !!team.members,
+                        first_member: team.members?.[0],
+                        roster_from_match: team.roster_from_match
+                    });
+                });
+            }
+
             if (response.data.success && response.data.standings) {
                 setStandings(response.data.standings);
             } else {
@@ -170,27 +185,44 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
                                 </div>
 
                                 {/* Аватары участников (кликабельные) - показываем для ВСЕХ типов */}
-                                {team.members && team.members.length > 0 && team.members[0]?.user_id && (
+                                {team.members && Array.isArray(team.members) && team.members.length > 0 && (
                                     <div className="team-members-avatars">
-                                        {team.members.slice(0, 5).map((member, idx) => (
-                                            <Link 
-                                                key={idx}
-                                                to={`/user/${member.user_id}`}
-                                                className="member-avatar-link"
-                                                title={member.name}
-                                            >
+                                        {team.members.slice(0, 5).map((member, idx) => {
+                                            // Проверка наличия данных
+                                            if (!member || (!member.user_id && !member.name)) {
+                                                console.warn(`⚠️ [TeamStandings] Пропущен некорректный member:`, member);
+                                                return null;
+                                            }
+
+                                            // Если есть user_id - делаем ссылку, иначе просто аватар
+                                            const avatarContent = (
                                                 <div className="member-avatar">
                                                     <img 
                                                         src={ensureHttps(member.avatar_url) || '/default-avatar.png'}
-                                                        alt={member.name}
+                                                        alt={member.name || 'Player'}
                                                         onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                                     />
                                                     {member.is_captain && (
                                                         <div className="captain-badge">👑</div>
                                                     )}
                                                 </div>
-                                            </Link>
-                                        ))}
+                                            );
+
+                                            return member.user_id ? (
+                                                <Link 
+                                                    key={idx}
+                                                    to={`/user/${member.user_id}`}
+                                                    className="member-avatar-link"
+                                                    title={member.name}
+                                                >
+                                                    {avatarContent}
+                                                </Link>
+                                            ) : (
+                                                <div key={idx} className="member-avatar-link" title={member.name}>
+                                                    {avatarContent}
+                                                </div>
+                                            );
+                                        })}
                                         {team.members.length > 5 && (
                                             <div className="member-avatar more-members">
                                                 +{team.members.length - 5}
