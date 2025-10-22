@@ -2121,6 +2121,39 @@ class FullMixService {
             
             console.log(`✅ Составы сохранены в матчах для исторической информации`);
             
+            // 🆕 СИНХРОНИЗАЦИЯ tournament_team_members для корректной работы endpoint /teams
+            // Обновляем текущие составы команд в основной таблице
+            console.log(`🔄 Синхронизация tournament_team_members...`);
+            
+            for (const team of teams) {
+                // Очищаем старый состав команды
+                await client.query(
+                    `DELETE FROM tournament_team_members WHERE team_id = $1`,
+                    [team.team_id]
+                );
+                
+                // Добавляем новый состав
+                if (Array.isArray(team.members) && team.members.length > 0) {
+                    for (let i = 0; i < team.members.length; i++) {
+                        const member = team.members[i];
+                        await client.query(
+                            `INSERT INTO tournament_team_members (team_id, user_id, participant_id, position, is_captain)
+                             VALUES ($1, $2, $3, $4, $5)`,
+                            [
+                                team.team_id,
+                                member.user_id || null,
+                                member.participant_id || null,
+                                i + 1,
+                                i === 0 // Первый участник = капитан
+                            ]
+                        );
+                    }
+                    console.log(`   ✅ Team ${team.team_id}: обновлено ${team.members.length} участников`);
+                }
+            }
+            
+            console.log(`✅ tournament_team_members синхронизирована`);
+            
             // Обновляем флаг подтверждения в снапшоте
             const updatedSnapshot = {
                 ...snapshot.snapshot,

@@ -81,7 +81,20 @@ function FullMixDraftPage() {
             const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${r}`);
             const item = res.data?.item || null;
             setSnapshot(item);
-            setApproved(!!(item && item.approved_teams === true));
+            
+            // 🆕 Для SE/DE проверяем meta.rosters_confirmed, для Swiss - approved_teams
+            const rostersConfirmed = item?.snapshot?.meta?.rosters_confirmed === true || item?.snapshot?.meta?.rosters_confirmed === 'true';
+            const approvedTeamsFlag = item?.approved_teams === true;
+            const isApproved = rostersConfirmed || approvedTeamsFlag;
+            
+            console.log('📊 Статус подтверждения:', {
+                round: r,
+                rosters_confirmed: rostersConfirmed,
+                approved_teams: approvedTeamsFlag,
+                isApproved
+            });
+            
+            setApproved(isApproved);
             setMatchesApproved(!!(item && item.approved_matches === true));
         } catch (_) {
             setSnapshot(null);
