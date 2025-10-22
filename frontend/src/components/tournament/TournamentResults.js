@@ -489,14 +489,18 @@ function renderMatchHistoryItem(match, tournament, openMatchDetails, isMobile = 
             {/* Карты (если есть) */}
             {hasMaps && (
                 <div className="match-maps-v2">
-                    {maps.map((map, idx) => (
-                        <div key={idx} className="map-result">
-                            <span className="map-name">{map.map_name || map.name || `Карта ${idx + 1}`}</span>
-                            <span className="map-score">
-                                {map.score1 || map.team1_score}:{map.score2 || map.team2_score}
-                            </span>
-                        </div>
-                    ))}
+                    {maps.map((map, idx) => {
+                        // 🔧 ИСПРАВЛЕНИЕ: fallback на 0 для пустых значений
+                        const mapScore1 = (map.score1 ?? map.team1_score) ?? 0;
+                        const mapScore2 = (map.score2 ?? map.team2_score) ?? 0;
+                        
+                        return (
+                            <div key={idx} className="map-result">
+                                <span className="map-name">{map.map_name || map.name || `Карта ${idx + 1}`}</span>
+                                <span className="map-score">{mapScore1}:{mapScore2}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -525,24 +529,25 @@ function getComputedScoresForMatch(m) {
     if (Array.isArray(maps) && maps.length > 0) {
         if (maps.length === 1) {
             const only = maps[0];
-            const s1 = (only.score1 ?? only.team1_score);
-            const s2 = (only.score2 ?? only.team2_score);
-            if (typeof s1 === 'number' && typeof s2 === 'number') return [s1, s2];
+            // 🔧 ИСПРАВЛЕНИЕ: fallback на 0 если счет не указан
+            const s1 = (only.score1 ?? only.team1_score) ?? 0;
+            const s2 = (only.score2 ?? only.team2_score) ?? 0;
+            return [Number(s1), Number(s2)];
         } else {
             let wins1 = 0, wins2 = 0;
             for (const mm of maps) {
-                const s1 = (mm.score1 ?? mm.team1_score);
-                const s2 = (mm.score2 ?? mm.team2_score);
-                if (typeof s1 === 'number' && typeof s2 === 'number') {
-                    if (s1 > s2) wins1++; else if (s2 > s1) wins2++;
-                }
+                // 🔧 ИСПРАВЛЕНИЕ: fallback на 0 если счет не указан
+                const s1 = (mm.score1 ?? mm.team1_score) ?? 0;
+                const s2 = (mm.score2 ?? mm.team2_score) ?? 0;
+                if (s1 > s2) wins1++; else if (s2 > s1) wins2++;
             }
             if (wins1 + wins2 > 0) return [wins1, wins2];
         }
     }
-    const s1 = (typeof m?.score1 === 'number') ? m.score1 : 0;
-    const s2 = (typeof m?.score2 === 'number') ? m.score2 : 0;
-    return [s1, s2];
+    // 🔧 ИСПРАВЛЕНИЕ: fallback на 0 если общий счет не указан
+    const s1 = m?.score1 ?? 0;
+    const s2 = m?.score2 ?? 0;
+    return [Number(s1), Number(s2)];
 }
 function getFormatDisplayName(format) {
     const formats = {
