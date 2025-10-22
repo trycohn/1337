@@ -116,6 +116,17 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
                 {standings.map((team, index) => {
                     const medal = getMedalEmoji(team.placement);
                     const placement = getPlacementDisplay(team);
+                    
+                    // 🔍 Диагностика для 4-го места
+                    if (index === 3) {
+                        console.log(`🔍 [TeamStandings] Команда #${index + 1}:`, {
+                            team_name: team.team_name,
+                            placement: team.placement,
+                            placement_range: team.placement_range,
+                            medal,
+                            placement_display: placement
+                        });
+                    }
 
                     return (
                         <div 

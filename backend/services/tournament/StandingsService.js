@@ -249,11 +249,17 @@ class StandingsService {
             // 4-е место и далее: группируем по раундам LOSERS bracket
             const losersTeams = Array.from(teamStats.values()).filter(
                 team => !team.placement && 
-                       team.bracket_type === 'loser' &&
+                       team.bracket_type && 
+                       team.bracket_type.startsWith('loser') && // loser, loser_final, loser_semifinal
                        team.eliminated_in_round !== null
             );
 
             console.log(`📊 [DE] Команд в Losers Bracket без места: ${losersTeams.length}`);
+            
+            // Отладка: показываем какие команды нашли
+            losersTeams.forEach(team => {
+                console.log(`   - ${team.team_name}: bracket_type=${team.bracket_type}, round=${team.eliminated_in_round}`);
+            });
 
             // Группируем по раундам losers bracket
             const losersByRound = losersTeams.reduce((acc, team) => {
@@ -269,16 +275,23 @@ class StandingsService {
 
             loserRounds.forEach(round => {
                 const teamsInRound = losersByRound[round];
-                const placementRange = teamsInRound.length > 1 
-                    ? `${currentPlace}-${currentPlace + teamsInRound.length - 1}`
-                    : `${currentPlace}`;
+                
+                console.log(`📊 [DE] Losers Round ${round}: ${teamsInRound.length} команд, текущее место: ${currentPlace}`);
 
-                console.log(`📊 [DE] Losers Round ${round}: ${teamsInRound.length} команд → места ${placementRange}`);
-
-                teamsInRound.forEach(team => {
-                    team.placement_range = placementRange;
-                    team.placement = currentPlace;
-                });
+                if (teamsInRound.length === 1) {
+                    // Одна команда - точное место без диапазона
+                    teamsInRound[0].placement = currentPlace;
+                    teamsInRound[0].placement_range = null;
+                    console.log(`   → ${teamsInRound[0].team_name}: место ${currentPlace} (точное)`);
+                } else {
+                    // Несколько команд - диапазон
+                    const placementRange = `${currentPlace}-${currentPlace + teamsInRound.length - 1}`;
+                    teamsInRound.forEach(team => {
+                        team.placement_range = placementRange;
+                        team.placement = currentPlace;
+                        console.log(`   → ${team.team_name}: места ${placementRange}`);
+                    });
+                }
 
                 currentPlace += teamsInRound.length;
             });
@@ -348,16 +361,48 @@ class StandingsService {
 
             rounds.forEach(round => {
                 const teamsInRound = byRound[round];
-                const placementRange = teamsInRound.length > 1 
-                    ? `${currentPlace}-${currentPlace + teamsInRound.length - 1}`
-                    : `${currentPlace}`;
+                
+                console.log(`📊 [SE] Round ${round}: ${teamsInRound.length} команд, текущее место: ${currentPlace}`);
 
-                teamsInRound.forEach(team => {
-                    team.placement_range = placementRange;
-                    team.placement = currentPlace;
-                });
+                if (teamsInRound.length === 1) {
+                    // Одна команда - точное место без диапазона
+                    teamsInRound[0].placement = currentPlace;
+                    teamsInRound[0].placement_range = null;
+                    console.log(`   → ${teamsInRound[0].team_name}: место ${currentPlace} (точное)`);
+                } else {
+                    // Несколько команд - диапазон
+                    const placementRange = `${currentPlace}-${currentPlace + teamsInRound.length - 1}`;
+                    teamsInRound.forEach(team => {
+                        team.placement_range = placementRange;
+                        team.placement = currentPlace;
+                        console.log(`   → ${team.team_name}: места ${placementRange}`);
+                    });
+                }
 
                 currentPlace += teamsInRound.length;
+            });
+        }
+
+        // 🔧 FALLBACK: Если остались команды без placement - назначаем им последние места
+        const teamsWithoutPlacement = Array.from(teamStats.values()).filter(
+            team => !team.placement
+        );
+
+        if (teamsWithoutPlacement.length > 0) {
+            console.log(`⚠️ [_calculateStandings] Найдено ${teamsWithoutPlacement.length} команд без placement - назначаем последние места`);
+            
+            // Находим текущее максимальное место
+            const maxPlacement = Math.max(...Array.from(teamStats.values())
+                .filter(t => t.placement)
+                .map(t => t.placement), 0);
+            
+            let fallbackPlace = maxPlacement + 1;
+            
+            teamsWithoutPlacement.forEach(team => {
+                team.placement = fallbackPlace;
+                team.placement_range = null;
+                console.log(`   → ${team.team_name}: место ${fallbackPlace} (fallback, bracket=${team.bracket_type})`);
+                fallbackPlace++;
             });
         }
 
@@ -380,7 +425,12 @@ class StandingsService {
         console.log(`📊 [_calculateStandings] Финальный результат:`, {
             total: result.length,
             with_placement: result.filter(t => t.placement).length,
-            top_3: result.slice(0, 3).map(t => ({ name: t.team_name, placement: t.placement }))
+            all_placements: result.map(t => ({ 
+                name: t.team_name, 
+                placement: t.placement, 
+                placement_range: t.placement_range,
+                display: t.placement_range || t.placement || '-'
+            }))
         });
 
         return result;
