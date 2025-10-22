@@ -36,6 +36,49 @@ export function useMixTeams(tournamentId, isEnabled = false) {
     useEffect(() => {
         if (isEnabled) fetchTeams(false);
     }, [isEnabled, fetchTeams]);
+    
+    // 🆕 WebSocket подписка на обновления команд
+    useEffect(() => {
+        if (!isEnabled || !tournamentId) return;
+        
+        let socket;
+        try {
+            const { getSocketInstance } = require('../../services/socketClient_v5_simplified');
+            socket = getSocketInstance && getSocketInstance();
+        } catch (_) {
+            return;
+        }
+        
+        if (!socket) return;
+        
+        const handleTeamsUpdate = (payload) => {
+            try {
+                const tid = Number(payload?.tournamentId || payload?.id);
+                if (tid === Number(tournamentId)) {
+                    console.log(`🔄 [useMixTeams] Получено обновление команд для турнира ${tournamentId}, обновляем...`);
+                    fetchTeams(true); // Принудительное обновление (игнорируем кеш)
+                }
+            } catch (_) {}
+        };
+        
+        const handleRostersConfirmed = (payload) => {
+            try {
+                const tid = Number(payload?.tournamentId);
+                if (tid === Number(tournamentId)) {
+                    console.log(`✅ [useMixTeams] Составы подтверждены для турнира ${tournamentId}, обновляем...`);
+                    fetchTeams(true);
+                }
+            } catch (_) {}
+        };
+        
+        socket.on && socket.on('tournament_update', handleTeamsUpdate);
+        socket.on && socket.on('fullmix_rosters_confirmed', handleRostersConfirmed);
+        
+        return () => {
+            socket.off && socket.off('tournament_update', handleTeamsUpdate);
+            socket.off && socket.off('fullmix_rosters_confirmed', handleRostersConfirmed);
+        };
+    }, [isEnabled, tournamentId, fetchTeams]);
 
     return {
         teams,

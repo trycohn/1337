@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import MixTeamCard from './MixTeamCard';
 import api from '../../../utils/api';
@@ -11,7 +11,6 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     const isFullMix = formatNorm === 'full_mix' || (formatNorm === 'mix' && mixTypeNorm === 'full');
     const [rounds, setRounds] = useState([]);
     const [currentRound, setCurrentRound] = useState(null);
-    const [snapshot, setSnapshot] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const loadRounds = useCallback(async () => {
@@ -31,11 +30,11 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         if (!isFullMix) return;
         setLoading(true);
         try {
-            const res = await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}`);
-            setSnapshot(res.data?.item || null);
+            await api.get(`/api/tournaments/${tournamentId}/fullmix/rounds/${round}`);
+            // Снапшот загружен, но нам не нужно сохранять его в state
+            // teams приходят из пропса и обновляются через useMixTeams
         } catch (e) {
             console.warn('[FullMix] Не удалось загрузить снапшот раунда:', e?.message || e);
-            setSnapshot(null);
         } finally {
             setLoading(false);
         }
@@ -67,12 +66,14 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
         };
     }, [isFullMix, tournamentId, loadRounds, loadSnapshot]);
 
-    // Команды лежат внутри item.snapshot.teams (JSONB из БД)
-    const fullMixTeams = useMemo(() => (snapshot?.snapshot?.teams || snapshot?.teams || []), [snapshot]);
-    const isApprovedTeams = !!(snapshot && snapshot.approved_teams === true);
-    // Упрощаем: для Full Mix показываем только утвержденные команды из снапшота,
-    // черновики не отображаем здесь (переносим в отдельную страницу)
-    const teamsToRender = isFullMix ? (isApprovedTeams ? fullMixTeams : []) : teams;
+    // 🆕 УПРОЩЕННАЯ ЛОГИКА: Используем teams из пропса
+    // Backend уже правильно:
+    // 1. Проверяет подтверждение (rosters_confirmed для SE/DE, approved_teams для Swiss)
+    // 2. Фильтрует команды (только текущий раунд для SE/DE, все команды для Swiss)
+    // 3. Возвращает пустой массив если не подтверждено
+    const teamsToRender = teams;
+    
+    console.log(`📊 [MixTeamsView] Турнир ${tournamentId}: format=${formatNorm}, mix_type=${mixTypeNorm}, команд=${teams.length}`);
 
     const [actionMessage, setActionMessage] = useState('');
     const [busy, setBusy] = useState(false);
@@ -167,10 +168,14 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                 </div>
             )}
 
-            {isFullMix && teamsToRender.length === 0 ? (
+            {teamsToRender.length === 0 ? (
                 <div className="no-teams-message-mixteams">
-                    <h4>Команды еще не сформированы</h4>
-                    <p>Для управления черновиком используйте кнопку «Открыть черновик».</p>
+                    <h4>Команды {isFullMix ? 'еще не подтверждены' : 'еще не сформированы'}</h4>
+                    <p>
+                        {isFullMix 
+                            ? 'Для подтверждения составов используйте кнопку «Открыть черновик».' 
+                            : 'Как только организатор сформирует команды, они появятся здесь.'}
+                    </p>
                 </div>
             ) : (
                 <div className="mixed-teams-grid-mixteams">
