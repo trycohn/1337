@@ -150,19 +150,27 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
                                             onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                         />
                                     </div>
-                                    <div className="team-name">
-                                        {tournament?.participant_type === 'solo' ? (
-                                            <Link to={`/user/${team.members?.[0]?.user_id}`}>
-                                                {team.team_name}
-                                            </Link>
-                                        ) : (
-                                            <span>{team.team_name}</span>
+                                    <div className="team-name-wrapper">
+                                        <div className="team-name">
+                                            {tournament?.participant_type === 'solo' && !tournament?.format?.includes('mix') ? (
+                                                // Чистые SOLO турниры - ссылка на игрока
+                                                <Link to={`/user/${team.members?.[0]?.user_id}`}>
+                                                    {team.team_name}
+                                                </Link>
+                                            ) : (
+                                                // Mix и Team турниры - просто название
+                                                <span>{team.team_name}</span>
+                                            )}
+                                        </div>
+                                        {/* Метка для Mix команд */}
+                                        {(tournament?.format === 'mix' || tournament?.format === 'full_mix') && (
+                                            <div className="team-type-label">Mix Team</div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Аватары участников (кликабельные) */}
-                                {team.members && team.members.length > 0 && (
+                                {/* Аватары участников (кликабельные) - показываем для ВСЕХ типов */}
+                                {team.members && team.members.length > 0 && team.members[0]?.user_id && (
                                     <div className="team-members-avatars">
                                         {team.members.slice(0, 5).map((member, idx) => (
                                             <Link 

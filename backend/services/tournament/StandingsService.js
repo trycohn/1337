@@ -29,9 +29,41 @@ class StandingsService {
             // Получаем все команды/участников в зависимости от типа турнира
             let teams = [];
             
-            // 🔧 ИСПРАВЛЕНИЕ: Поддержка SOLO турниров
-            if (tournament.participant_type === 'solo') {
-                // Для SOLO турниров участники напрямую в tournament_participants
+            // 🔧 ИСПРАВЛЕНИЕ: Поддержка всех типов турниров
+            if (tournament.format === 'mix' || tournament.format === 'full_mix') {
+                // ═══════════════════════════════════════════
+                // MIX ТУРНИРЫ: Используем команды (не участников!)
+                // ═══════════════════════════════════════════
+                const participantsQuery = `
+                    SELECT 
+                        tt.id as team_id,
+                        tt.name as team_name,
+                        NULL as avatar_url,
+                        json_agg(
+                            json_build_object(
+                                'user_id', u.id,
+                                'name', COALESCE(u.username, tp.name),
+                                'avatar_url', u.avatar_url,
+                                'is_captain', ttm.is_captain
+                            ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
+                        ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL) as members
+                    FROM tournament_teams tt
+                    LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                    LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                    LEFT JOIN users u ON tp.user_id = u.id
+                    WHERE tt.tournament_id = $1
+                    GROUP BY tt.id, tt.name
+                `;
+                
+                const participantsResult = await pool.query(participantsQuery, [tournamentId]);
+                teams = participantsResult.rows;
+                
+                console.log(`📊 [Standings] MIX турнир: получено ${teams.length} команд`);
+                
+            } else if (tournament.participant_type === 'solo') {
+                // ═══════════════════════════════════════════
+                // SOLO турниры (не Mix!)
+                // ═══════════════════════════════════════════
                 const participantsQuery = `
                     SELECT 
                         tp.id as team_id,
@@ -102,7 +134,13 @@ class StandingsService {
             });
 
             // Рассчитываем места команд
-            const standings = this._calculateStandings(teams, matches, tournament);
+            let standings = this._calculateStandings(teams, matches, tournament);
+
+            // 🆕 ДЛЯ MIX ТУРНИРОВ: Заменяем состав на фактический из последнего матча
+            if (tournament.format === 'mix' || tournament.format === 'full_mix') {
+                console.log(`🔄 [Standings] Mix турнир - обновляем составы команд на момент выбывания`);
+                standings = await this._updateMixTeamRosters(standings, matches);
+            }
 
             console.log(`✅ [Standings] Рассчитано ${standings.length} позиций`);
 
@@ -218,13 +256,43 @@ class StandingsService {
             secondPlace.placement = 2;
         }
 
-        // 🔧 ИСПРАВЛЕНИЕ: Разная логика для SE и DE
+        // 🔧 ИСПРАВЛЕНИЕ: Разная логика для SE, DE и Swiss
         const isDoubleElimination = tournament.bracket_type === 'double_elimination' || 
                                    tournament.bracket_type === 'doubleElimination';
+        
+        const isSwiss = tournament.bracket_type && 
+                       (tournament.bracket_type.toLowerCase().includes('swiss') ||
+                        tournament.format === 'swiss');
 
-        console.log(`🎯 [_calculateStandings] Тип турнира: ${isDoubleElimination ? 'DE' : 'SE'}`);
+        console.log(`🎯 [_calculateStandings] Тип турнира:`, {
+            bracket_type: tournament.bracket_type,
+            format: tournament.format,
+            isSwiss,
+            isDE: isDoubleElimination,
+            isSE: !isDoubleElimination && !isSwiss
+        });
 
-        if (isDoubleElimination) {
+        if (isSwiss) {
+            // ═══════════════════════════════════════════
+            // SWISS SYSTEM: Только топ-2
+            // ═══════════════════════════════════════════
+            
+            console.log(`🎲 [SWISS] Только 1 и 2 места определяются из финала`);
+            
+            // В Swiss остальные команды не ранжируются после финала
+            // Места 3+ можно определить по общему счету W:L из раундов Swiss
+            // Но это требует отдельной логики standings из Swiss раундов
+            
+            // Пока оставляем только топ-2
+            const restTeams = Array.from(teamStats.values()).filter(
+                team => !team.placement
+            );
+            
+            console.log(`⚠️ [SWISS] Остальные ${restTeams.length} команд не ранжируются (Swiss не имеет четкой bracket структуры)`);
+            
+            // Можно добавить места по W:L статистике в будущем
+            
+        } else if (isDoubleElimination) {
             // ═══════════════════════════════════════════
             // DOUBLE ELIMINATION: Специальная логика
             // ═══════════════════════════════════════════
@@ -434,6 +502,79 @@ class StandingsService {
         });
 
         return result;
+    }
+
+    /**
+     * 🔄 Обновление составов Mix команд на фактический из последнего матча
+     * @param {Array} standings - Рассчитанные места команд
+     * @param {Array} matches - Все матчи турнира
+     * @private
+     */
+    async _updateMixTeamRosters(standings, matches) {
+        console.log(`🔄 [_updateMixTeamRosters] Обновление составов для ${standings.length} команд`);
+
+        const updatedStandings = [];
+
+        for (const team of standings) {
+            // Находим последний матч команды (наибольший round)
+            const teamMatches = matches.filter(m => 
+                m.team1_id === team.team_id || m.team2_id === team.team_id
+            );
+
+            if (teamMatches.length === 0) {
+                console.log(`⚠️ [_updateMixTeamRosters] Команда ${team.team_name} (ID: ${team.team_id}) не играла матчей`);
+                updatedStandings.push(team);
+                continue;
+            }
+
+            // Сортируем по раунду (последний матч = наибольший round)
+            const lastMatch = teamMatches.sort((a, b) => (b.round || 0) - (a.round || 0))[0];
+
+            console.log(`🔍 [_updateMixTeamRosters] ${team.team_name}: последний матч ID ${lastMatch.id}, раунд ${lastMatch.round}`);
+
+            // Определяем какой стороной была команда
+            let actualRoster = null;
+
+            if (lastMatch.team1_id === team.team_id) {
+                actualRoster = lastMatch.team1_players;
+            } else if (lastMatch.team2_id === team.team_id) {
+                actualRoster = lastMatch.team2_players;
+            }
+
+            // Если есть фактический состав из матча - используем его
+            if (actualRoster && Array.isArray(actualRoster) && actualRoster.length > 0) {
+                console.log(`✅ [_updateMixTeamRosters] ${team.team_name}: обновлен состав (${actualRoster.length} игроков)`);
+                
+                // Преобразуем формат
+                const members = actualRoster.map(player => ({
+                    user_id: player.user_id || player.id,
+                    name: player.username || player.name,
+                    avatar_url: player.avatar_url,
+                    is_captain: false // В матчах нет информации о капитане
+                }));
+
+                // Первый игрок = капитан
+                if (members.length > 0) {
+                    members[0].is_captain = true;
+                }
+
+                updatedStandings.push({
+                    ...team,
+                    members,
+                    roster_from_match: lastMatch.id,
+                    roster_round: lastMatch.round
+                });
+
+            } else {
+                // Fallback: используем оригинальный состав из tournament_team_members
+                console.log(`⚠️ [_updateMixTeamRosters] ${team.team_name}: нет данных о составе в матче, используем оригинальный`);
+                updatedStandings.push(team);
+            }
+        }
+
+        console.log(`✅ [_updateMixTeamRosters] Обновлено составов: ${updatedStandings.filter(t => t.roster_from_match).length}`);
+
+        return updatedStandings;
     }
 }
 

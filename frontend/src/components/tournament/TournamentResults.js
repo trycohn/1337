@@ -3,7 +3,6 @@ import { getParticipantInfo, enrichMatchWithParticipantNames } from '../../utils
 import { ensureHttps } from '../../utils/userHelpers';
 import MatchDetailsModal from './modals/MatchDetailsModal';
 import './TournamentResults.css';
-import PodiumSection from './PodiumSection';
 import TournamentStatsPanel from './TournamentStatsPanel';
 import TeamStandingsTable from './TeamStandingsTable';
 
@@ -141,13 +140,6 @@ const TournamentResults = ({ tournament }) => {
 
     return (
         <div className="results-tournament-results">
-            {/* 🏆 Подиум победителей (всегда сверху если турнир завершен) */}
-            {tournament.status === 'completed' && (
-                <div className="results-podium-section">
-                    <PodiumSection tournament={tournament} matches={tournament.matches} />
-                </div>
-            )}
-
             {/* 📊 Двухколоночный layout для завершенных турниров */}
             {showTwoColumnLayout ? (
                 <div className="results-two-column-layout">
