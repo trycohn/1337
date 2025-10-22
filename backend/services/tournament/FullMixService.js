@@ -1,6 +1,7 @@
 const pool = require('../../db');
 const TournamentService = require('./TournamentService');
 const MatchService = require('./MatchService');
+const TournamentRepository = require('../../repositories/tournament/TournamentRepository');
 
 /**
  * FullMixService
@@ -933,7 +934,30 @@ class FullMixService {
     static async completeRound(tournamentId, roundNumber) {
         const completed = await this.isRoundCompleted(tournamentId, roundNumber);
         const standings = await this.calculateStandings(tournamentId);
-        // Если раунд завершён — автоинкремент current_round в настройках
+        
+        // 🆕 ПРОВЕРЯЕМ ЯВЛЯЕТСЯ ЛИ ЭТО ФИНАЛЬНЫМ РАУНДОМ ДЛЯ SE/DE
+        const isSEorDE = await this.isSEorDEBracket(tournamentId);
+        const isFinalRound = isSEorDE ? await this.checkIfFinalRound(tournamentId, roundNumber) : false;
+        
+        if (isFinalRound) {
+            console.log(`🏆 [completeRound] Финальный раунд ${roundNumber} завершен! Завершаем турнир...`);
+            
+            // Завершаем турнир
+            await pool.query(
+                `UPDATE tournaments SET status = $1 WHERE id = $2`,
+                ['completed', tournamentId]
+            );
+            
+            console.log(`✅ Турнир ${tournamentId} завершен!`);
+            
+            return {
+                tournament_completed: true,
+                final_round: roundNumber,
+                message: 'Турнир успешно завершен!'
+            };
+        }
+        
+        // Если раунд завершён (но не финальный) — автоинкремент current_round в настройках
         if (completed) {
             await pool.query(
                 `UPDATE tournament_full_mix_settings
@@ -2238,6 +2262,58 @@ class FullMixService {
         console.log(`✅ Всего выбыло участников: ${allEliminated.length}`);
         
         return allEliminated;
+    }
+    
+    /**
+     * 🆕 ПРОВЕРКА ЯВЛЯЕТСЯ ЛИ РАУНД ФИНАЛЬНЫМ ДЛЯ SE/DE
+     * Для SE: финальный раунд = когда в раунде только 1 матч
+     * Для DE: финальный раунд = Grand Final (последний матч турнира)
+     */
+    static async checkIfFinalRound(tournamentId, roundNumber) {
+        console.log(`🔍 [checkIfFinalRound] Проверяем раунд ${roundNumber} турнира ${tournamentId}`);
+        
+        // Получаем информацию о турнире
+        const tournament = await TournamentRepository.getById(tournamentId);
+        const bracketType = (tournament?.bracket_type || '').toLowerCase();
+        
+        // Получаем количество матчей в этом раунде
+        const matchesResult = await pool.query(
+            `SELECT COUNT(*) as count FROM matches WHERE tournament_id = $1 AND round = $2`,
+            [tournamentId, roundNumber]
+        );
+        const matchesInRound = parseInt(matchesResult.rows[0]?.count) || 0;
+        
+        console.log(`📊 Раунд ${roundNumber}: матчей=${matchesInRound}, тип=${bracketType}`);
+        
+        if (bracketType === 'single_elimination') {
+            // Для SE: финал = когда в раунде 1 матч
+            const isFinal = matchesInRound === 1;
+            console.log(`🎯 SE: раунд ${roundNumber} ${isFinal ? 'ЯВЛЯЕТСЯ' : 'НЕ ЯВЛЯЕТСЯ'} финальным`);
+            return isFinal;
+        } else if (bracketType === 'double_elimination') {
+            // Для DE: проверяем наличие матчей Grand Final
+            const grandFinalResult = await pool.query(
+                `SELECT COUNT(*) as count 
+                 FROM matches 
+                 WHERE tournament_id = $1 
+                 AND round = $2 
+                 AND (
+                     bracket_type = 'grand_final' 
+                     OR round_name ILIKE '%grand%final%'
+                     OR round_name ILIKE '%финал%'
+                 )`,
+                [tournamentId, roundNumber]
+            );
+            const hasGrandFinal = parseInt(grandFinalResult.rows[0]?.count) > 0;
+            
+            // Или просто 1 матч в раунде (упрощенная проверка)
+            const isFinal = hasGrandFinal || matchesInRound === 1;
+            console.log(`🎯 DE: раунд ${roundNumber} ${isFinal ? 'ЯВЛЯЕТСЯ' : 'НЕ ЯВЛЯЕТСЯ'} финальным (hasGrandFinal=${hasGrandFinal}, matchesInRound=${matchesInRound})`);
+            return isFinal;
+        }
+        
+        console.log(`⚠️ Неизвестный тип сетки: ${bracketType}`);
+        return false;
     }
 }
 

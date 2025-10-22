@@ -387,6 +387,23 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
         setActionMessage('Завершаем текущий раунд...');
         try {
             const res = await api.post(`/api/tournaments/${tournamentId}/fullmix/complete-round`, { round: usedRound });
+            
+            // 🆕 ПРОВЕРКА: ТУРНИР ЗАВЕРШЕН?
+            if (res.data?.tournament_completed === true) {
+                console.log(`🏆 Турнир завершен после раунда ${usedRound}!`);
+                setActionMessage(`🏆 Турнир завершен! Финальный раунд ${usedRound} сыгран.`);
+                
+                // Закрываем модальное окно если оно открыто
+                setConfirmFinishOpen(false);
+                
+                // Перезагружаем страницу для обновления данных турнира
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+                return;
+            }
+            
             await loadRounds();
             // После завершения раунда НЕ генерируем следующий автоматически.
             // Ожидаем действий администратора в черновике (двухэтапное утверждение).
@@ -585,11 +602,37 @@ function FullMixBracketPanel({ tournament, isAdminOrCreator }) {
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>✕</button>
                         </div>
                         <div style={{ color: '#ccc', marginBottom: 16 }}>
-                            Завершить раунд № {(settings?.current_round ?? currentRound) || '—'}? После завершения переформирование в этом раунде будет недоступно.
+                            {(() => {
+                                const roundNum = settings?.current_round ?? currentRound;
+                                const matchesInRound = matches?.filter(m => m.round === roundNum)?.length || 0;
+                                const isFinalRound = isSEorDE && matchesInRound === 1;
+                                
+                                if (isFinalRound) {
+                                    return (
+                                        <>
+                                            <div style={{ marginBottom: 12 }}>
+                                                🏆 Завершить финальный раунд турнира?
+                                            </div>
+                                            <div style={{ fontSize: 12, color: '#888' }}>
+                                                После завершения турнир перейдет в статус "Завершен".
+                                            </div>
+                                        </>
+                                    );
+                                }
+                                
+                                return `Завершить раунд № ${roundNum || '—'}? После завершения переформирование в этом раунде будет недоступно.`;
+                            })()}
                         </div>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                             <button className="btn btn-secondary" onClick={() => setConfirmFinishOpen(false)}>Отмена</button>
-                            <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(settings?.current_round || currentRound || lastCompletedRound); }}>Завершить</button>
+                            <button className="btn btn-primary" onClick={async () => { setConfirmFinishOpen(false); await completeCurrentRound(settings?.current_round || currentRound || lastCompletedRound); }}>
+                                {(() => {
+                                    const roundNum = settings?.current_round ?? currentRound;
+                                    const matchesInRound = matches?.filter(m => m.round === roundNum)?.length || 0;
+                                    const isFinalRound = isSEorDE && matchesInRound === 1;
+                                    return isFinalRound ? 'Завершить турнир' : 'Завершить';
+                                })()}
+                            </button>
                         </div>
                     </div>
                 </div>
