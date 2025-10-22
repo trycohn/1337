@@ -160,7 +160,7 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
                                 Отображаются команды текущего раунда{currentRound ? ` (Раунд ${currentRound})` : ''}
                             </span>
                             <span style={{ color: '#888', fontSize: 12, marginLeft: 8 }}>
-                                Исторические составы доступны во вкладке "Bracket"
+                                Составы других раундов доступны во вкладке "Сетка"
                             </span>
                         </>
                     ) : (
