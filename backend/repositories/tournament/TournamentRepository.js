@@ -301,24 +301,60 @@ class TournamentRepository {
      */
     static async getTeamsWithMembers(tournamentId) {
         try {
-            // 🆕 СНАЧАЛА ПОЛУЧАЕМ ИНФОРМАЦИЮ О ТУРНИРЕ для определения типа рейтинга
+            // 🆕 СНАЧАЛА ПОЛУЧАЕМ ИНФОРМАЦИЮ О ТУРНИРЕ для определения типа рейтинга И формата
             const tournamentResult = await pool.query(
-                'SELECT mix_rating_type, status FROM tournaments WHERE id = $1',
+                'SELECT mix_rating_type, status, format, mix_type, bracket_type FROM tournaments WHERE id = $1',
                 [tournamentId]
             );
             
-            const ratingType = tournamentResult.rows[0]?.mix_rating_type || 'faceit';
-            const tournamentStatus = (tournamentResult.rows[0]?.status || '').toString().trim().toLowerCase();
-            console.log(`📊 [getTeamsWithMembers] Турнир ${tournamentId}: тип рейтинга = ${ratingType}`);
+            const tournament = tournamentResult.rows[0];
+            const ratingType = tournament?.mix_rating_type || 'faceit';
+            const tournamentStatus = (tournament?.status || '').toString().trim().toLowerCase();
+            const isFullMix = tournament?.format === 'full_mix' || (tournament?.format === 'mix' && tournament?.mix_type === 'full');
+            const isSEorDE = tournament?.bracket_type === 'single_elimination' || tournament?.bracket_type === 'double_elimination';
+            
+            console.log(`📊 [getTeamsWithMembers] Турнир ${tournamentId}: тип рейтинга = ${ratingType}, isFullMix=${isFullMix}, isSEorDE=${isSEorDE}`);
 
-            // Получаем все команды турнира
-            const teamsResult = await pool.query(
-                `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
-                 FROM tournament_teams tt
-                 WHERE tt.tournament_id = $1
-                 ORDER BY tt.id`,
-                [tournamentId]
-            );
+            // 🆕 ДЛЯ FULL MIX SE/DE: ПОЛУЧАЕМ ТОЛЬКО КОМАНДЫ ТЕКУЩЕГО РАУНДА
+            let teamsResult;
+            
+            if (isFullMix && isSEorDE) {
+                // Получаем текущий раунд
+                const currentRoundResult = await pool.query(
+                    `SELECT MAX(round) as current_round 
+                     FROM matches 
+                     WHERE tournament_id = $1 AND winner_team_id IS NULL`,
+                    [tournamentId]
+                );
+                const currentRound = currentRoundResult.rows[0]?.current_round || 1;
+                
+                console.log(`📍 [getTeamsWithMembers] Full Mix SE/DE - текущий раунд: ${currentRound}`);
+                
+                // Получаем только команды, играющие в текущем раунде
+                teamsResult = await pool.query(
+                    `SELECT DISTINCT tt.id, tt.tournament_id, tt.name, tt.creator_id
+                     FROM tournament_teams tt
+                     INNER JOIN matches m ON (m.team1_id = tt.id OR m.team2_id = tt.id)
+                     WHERE tt.tournament_id = $1 AND m.round = $2
+                     ORDER BY tt.id`,
+                    [tournamentId, currentRound]
+                );
+                
+                console.log(`✅ [getTeamsWithMembers] Найдено ${teamsResult.rows.length} активных команд раунда ${currentRound}`);
+            } else {
+                // Для обычных турниров (включая Full Mix Swiss) - все команды
+                console.log(`📍 [getTeamsWithMembers] Обычный турнир или Swiss - получаем ВСЕ команды`);
+                
+                teamsResult = await pool.query(
+                    `SELECT tt.id, tt.tournament_id, tt.name, tt.creator_id
+                     FROM tournament_teams tt
+                     WHERE tt.tournament_id = $1
+                     ORDER BY tt.id`,
+                    [tournamentId]
+                );
+                
+                console.log(`✅ [getTeamsWithMembers] Найдено ${teamsResult.rows.length} команд`);
+            }
 
             // Для каждой команды получаем участников с ПОЛНЫМИ полями рейтинга
             const teams = await Promise.all(teamsResult.rows.map(async (team) => {

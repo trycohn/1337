@@ -2137,13 +2137,12 @@ class FullMixService {
                     for (let i = 0; i < team.members.length; i++) {
                         const member = team.members[i];
                         await client.query(
-                            `INSERT INTO tournament_team_members (team_id, user_id, participant_id, position, is_captain)
-                             VALUES ($1, $2, $3, $4, $5)`,
+                            `INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain)
+                             VALUES ($1, $2, $3, $4)`,
                             [
                                 team.team_id,
                                 member.user_id || null,
                                 member.participant_id || null,
-                                i + 1,
                                 i === 0 // Первый участник = капитан
                             ]
                         );
