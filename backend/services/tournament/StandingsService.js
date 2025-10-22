@@ -389,7 +389,7 @@ class StandingsService {
             // SINGLE ELIMINATION: Стандартная логика
             // ═══════════════════════════════════════════
             
-            // 3-е место: матч за 3 место
+            // 3-е место: матч за 3 место (если есть)
             const thirdPlaceMatch = matches.find(m => 
                 m.bracket_type === 'placement'
             );
@@ -398,6 +398,7 @@ class StandingsService {
                 const thirdPlace = teamStats.get(thirdPlaceMatch.winner_team_id);
                 if (thirdPlace) {
                     thirdPlace.placement = 3;
+                    console.log(`🥉 [SE] 3-е место: ${thirdPlace.team_name} (матч за 3 место)`);
                 }
 
                 // 4-е место
@@ -407,6 +408,44 @@ class StandingsService {
                 const fourthPlace = teamStats.get(fourthPlaceId);
                 if (fourthPlace) {
                     fourthPlace.placement = 4;
+                    console.log(`   [SE] 4-е место: ${fourthPlace.team_name} (матч за 3 место)`);
+                }
+            } else {
+                // 🔧 ИСПРАВЛЕНИЕ: Если нет матча за 3 место - назначаем места проигравшим полуфиналов
+                console.log(`⚠️ [SE] Нет матча за 3 место - ищем проигравших полуфиналов`);
+                
+                // Находим раунд финала
+                const finalRound = finalMatch.round;
+                
+                // Проигравшие в раунде перед финалом = полуфиналисты
+                const semifinalists = Array.from(teamStats.values()).filter(
+                    team => !team.placement && 
+                           team.eliminated_in_round === (finalRound - 1)
+                );
+
+                console.log(`📊 [SE] Найдено ${semifinalists.length} проигравших в раунде ${finalRound - 1} (полуфинал)`);
+
+                if (semifinalists.length > 0) {
+                    if (semifinalists.length === 1) {
+                        // Только 1 команда → 3-е место
+                        semifinalists[0].placement = 3;
+                        console.log(`🥉 [SE] 3-е место: ${semifinalists[0].team_name} (проигравший полуфинала)`);
+                    } else if (semifinalists.length === 2) {
+                        // 2 команды → 3-4 места
+                        semifinalists[0].placement = 3;
+                        semifinalists[0].placement_range = '3-4';
+                        semifinalists[1].placement = 3;
+                        semifinalists[1].placement_range = '3-4';
+                        console.log(`🥉 [SE] 3-4 места: ${semifinalists[0].team_name}, ${semifinalists[1].team_name} (проигравшие полуфиналов)`);
+                    } else {
+                        // >2 команд (странно, но возможно) → диапазон
+                        const range = `3-${2 + semifinalists.length}`;
+                        semifinalists.forEach(team => {
+                            team.placement = 3;
+                            team.placement_range = range;
+                        });
+                        console.log(`🥉 [SE] Места ${range}: ${semifinalists.length} проигравших полуфиналов`);
+                    }
                 }
             }
 
@@ -423,9 +462,21 @@ class StandingsService {
                 return acc;
             }, {});
 
+            // 🔧 ИСПРАВЛЕНИЕ: Определяем начальное место динамически
+            // Находим максимальное уже установленное место
+            const maxPlacement = Math.max(
+                ...Array.from(teamStats.values())
+                    .filter(t => t.placement)
+                    .map(t => t.placement),
+                0
+            );
+            
+            let currentPlace = maxPlacement + 1;
+            
+            console.log(`📊 [SE] Начинаем группировку с места ${currentPlace} (max установленное: ${maxPlacement})`);
+
             // Назначаем места группами
             const rounds = Object.keys(byRound).map(Number).sort((a, b) => b - a);
-            let currentPlace = 5; // Начинаем с 5-го места (1-4 уже заняты)
 
             rounds.forEach(round => {
                 const teamsInRound = byRound[round];
