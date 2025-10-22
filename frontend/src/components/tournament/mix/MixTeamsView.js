@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import MixTeamCard from './MixTeamCard';
 import api from '../../../utils/api';
@@ -74,6 +74,12 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
     const teamsToRender = teams;
     
     console.log(`📊 [MixTeamsView] Турнир ${tournamentId}: format=${formatNorm}, mix_type=${mixTypeNorm}, команд=${teams.length}`);
+    
+    // 🆕 Определяем тип сетки (ПЕРЕД любыми return!)
+    const isSEorDE = useMemo(() => {
+        const bracketType = (tournament?.bracket_type || '').toLowerCase();
+        return bracketType === 'single_elimination' || bracketType === 'double_elimination';
+    }, [tournament?.bracket_type]);
 
     const [actionMessage, setActionMessage] = useState('');
     const [busy, setBusy] = useState(false);
@@ -142,22 +148,38 @@ function MixTeamsView({ tournament, teams = [], isLoading = false, isAdminOrCrea
             </div>
         );
     }
-
+    
     return (
         <div className="teams-display-mixteams">
             {isFullMix && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-                    <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
-                    <div className="fullmixdraft-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {rounds.map(r => (
-                            <button key={r.round_number} className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`} disabled={r.round_number === currentRound} onClick={() => setCurrentRound(r.round_number)}>
-                                {r.round_number}
-                            </button>
-                        ))}
-                        {rounds.length === 0 && <span style={{ color: '#888' }}>Нет раундов</span>}
-                    </div>
+                    {/* 🆕 ДЛЯ SE/DE показываем только информацию о текущем раунде БЕЗ переключения */}
+                    {isSEorDE ? (
+                        <>
+                            <span style={{ color: '#ccc', fontSize: 13 }}>
+                                Отображаются команды текущего раунда{currentRound ? ` (Раунд ${currentRound})` : ''}
+                            </span>
+                            <span style={{ color: '#888', fontSize: 12, marginLeft: 8 }}>
+                                Исторические составы доступны во вкладке "Bracket"
+                            </span>
+                        </>
+                    ) : (
+                        <>
+                            {/* ДЛЯ SWISS оставляем переключение раундов */}
+                            <span style={{ color: '#ccc', fontSize: 13 }}>Раунды:</span>
+                            <div className="fullmixdraft-rounds" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {rounds.map(r => (
+                                    <button key={r.round_number} className={`fullmix-round-btn ${r.round_number === currentRound ? 'is-active' : ''}`} disabled={r.round_number === currentRound} onClick={() => setCurrentRound(r.round_number)}>
+                                        {r.round_number}
+                                    </button>
+                                ))}
+                                {rounds.length === 0 && <span style={{ color: '#888' }}>Нет раундов</span>}
+                            </div>
+                        </>
+                    )}
+                    
                     {isAdminOrCreator && (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
                             {rounds.length === 0 && (
                                 <button className="btn btn-primary" disabled={busy} onClick={startFirstRound}>Сформировать команды для 1 раунда</button>
                             )}

@@ -319,14 +319,28 @@ class TournamentRepository {
             let teamsResult;
             
             if (isFullMix && isSEorDE) {
-                // Получаем текущий раунд
+                // 🆕 Получаем текущий раунд для SE/DE
+                // Сначала пробуем найти незавершенные матчи
                 const currentRoundResult = await pool.query(
                     `SELECT MAX(round) as current_round 
                      FROM matches 
                      WHERE tournament_id = $1 AND winner_team_id IS NULL`,
                     [tournamentId]
                 );
-                const currentRound = currentRoundResult.rows[0]?.current_round || 1;
+                
+                let currentRound = currentRoundResult.rows[0]?.current_round;
+                
+                // Если нет незавершенных матчей - берем максимальный раунд
+                if (!currentRound) {
+                    const maxRoundResult = await pool.query(
+                        `SELECT MAX(round) as max_round FROM matches WHERE tournament_id = $1`,
+                        [tournamentId]
+                    );
+                    currentRound = maxRoundResult.rows[0]?.max_round || 1;
+                    console.log(`📍 [getTeamsWithMembers] Все матчи завершены, используем максимальный раунд: ${currentRound}`);
+                } else {
+                    console.log(`📍 [getTeamsWithMembers] Найдены незавершенные матчи в раунде: ${currentRound}`);
+                }
                 
                 console.log(`📍 [getTeamsWithMembers] Full Mix SE/DE - текущий раунд: ${currentRound}`);
                 
