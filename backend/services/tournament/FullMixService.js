@@ -942,17 +942,68 @@ class FullMixService {
         if (isFinalRound) {
             console.log(`🏆 [completeRound] Финальный раунд ${roundNumber} завершен! Завершаем турнир...`);
             
-            // Завершаем турнир
-            await pool.query(
-                `UPDATE tournaments SET status = $1 WHERE id = $2`,
-                ['completed', tournamentId]
+            // 🆕 ОПРЕДЕЛЯЕМ ПОБЕДИТЕЛЕЙ ИЗ ФИНАЛЬНОГО МАТЧА
+            const finalMatchResult = await pool.query(
+                `SELECT m.id, m.winner_team_id, m.team1_id, m.team2_id,
+                        tt_winner.name as winner_name,
+                        tt_loser.name as loser_name
+                 FROM matches m
+                 LEFT JOIN tournament_teams tt_winner ON tt_winner.id = m.winner_team_id
+                 LEFT JOIN tournament_teams tt_loser ON tt_loser.id = CASE 
+                    WHEN m.winner_team_id = m.team1_id THEN m.team2_id
+                    WHEN m.winner_team_id = m.team2_id THEN m.team1_id
+                 END
+                 WHERE m.tournament_id = $1 AND m.round = $2 AND m.winner_team_id IS NOT NULL
+                 LIMIT 1`,
+                [tournamentId, roundNumber]
             );
             
-            console.log(`✅ Турнир ${tournamentId} завершен!`);
+            const finalMatch = finalMatchResult.rows[0];
+            
+            if (finalMatch) {
+                const winnerId = finalMatch.winner_team_id;
+                const winnerName = finalMatch.winner_name;
+                const secondPlaceId = (finalMatch.winner_team_id === finalMatch.team1_id) 
+                    ? finalMatch.team2_id 
+                    : finalMatch.team1_id;
+                const secondPlaceName = finalMatch.loser_name;
+                
+                console.log(`🥇 Победитель: Team ${winnerId} (${winnerName})`);
+                console.log(`🥈 Второе место: Team ${secondPlaceId} (${secondPlaceName})`);
+                
+                // Сохраняем победителей в турнир
+                await pool.query(
+                    `UPDATE tournaments 
+                     SET status = $1, 
+                         winner_id = $2, 
+                         winner_name = $3,
+                         second_place_id = $4,
+                         second_place_name = $5
+                     WHERE id = $6`,
+                    ['completed', winnerId, winnerName, secondPlaceId, secondPlaceName, tournamentId]
+                );
+                
+                console.log(`✅ Турнир ${tournamentId} завершен! Победители сохранены.`);
+            } else {
+                // Финальный матч не найден или не завершен
+                console.warn(`⚠️ Финальный матч раунда ${roundNumber} не найден или не завершен`);
+                
+                // Все равно завершаем турнир
+                await pool.query(
+                    `UPDATE tournaments SET status = $1 WHERE id = $2`,
+                    ['completed', tournamentId]
+                );
+                
+                console.log(`✅ Турнир ${tournamentId} завершен (без определения победителей)`);
+            }
             
             return {
                 tournament_completed: true,
                 final_round: roundNumber,
+                winner_id: finalMatch?.winner_team_id,
+                winner_name: finalMatch?.winner_name,
+                second_place_id: finalMatch ? ((finalMatch.winner_team_id === finalMatch.team1_id) ? finalMatch.team2_id : finalMatch.team1_id) : null,
+                second_place_name: finalMatch?.loser_name,
                 message: 'Турнир успешно завершен!'
             };
         }
