@@ -26,4 +26,4 @@ router.get('/user/:userId/rank', AchievementsController.getUserGlobalRank);
 // 📋 Конфигурация наград (сколько монет за каждый ранг)
 router.get('/rewards-config', AchievementsController.getRewardsConfig);
 
-module.exports = router;
+module.exports = router; 
