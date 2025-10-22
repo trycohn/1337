@@ -26,30 +26,63 @@ class StandingsService {
                 throw new Error('Tournament not found');
             }
 
-            // Получаем все команды/участников
-            const participantsQuery = `
-                SELECT 
-                    tt.id as team_id,
-                    tt.name as team_name,
-                    tt.avatar_url,
-                    json_agg(
-                        json_build_object(
-                            'user_id', u.id,
-                            'name', COALESCE(u.username, tp.name),
-                            'avatar_url', u.avatar_url,
-                            'is_captain', ttm.is_captain
-                        ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
-                    ) as members
-                FROM tournament_teams tt
-                LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
-                LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
-                LEFT JOIN users u ON tp.user_id = u.id
-                WHERE tt.tournament_id = $1
-                GROUP BY tt.id, tt.name, tt.avatar_url
-            `;
+            // Получаем все команды/участников в зависимости от типа турнира
+            let teams = [];
+            
+            // 🔧 ИСПРАВЛЕНИЕ: Поддержка SOLO турниров
+            if (tournament.participant_type === 'solo') {
+                // Для SOLO турниров участники напрямую в tournament_participants
+                const participantsQuery = `
+                    SELECT 
+                        tp.id as team_id,
+                        COALESCE(u.username, tp.name) as team_name,
+                        u.avatar_url,
+                        json_build_array(
+                            json_build_object(
+                                'user_id', u.id,
+                                'name', COALESCE(u.username, tp.name),
+                                'avatar_url', u.avatar_url,
+                                'is_captain', true
+                            )
+                        ) as members
+                    FROM tournament_participants tp
+                    LEFT JOIN users u ON tp.user_id = u.id
+                    WHERE tp.tournament_id = $1
+                `;
+                
+                const participantsResult = await pool.query(participantsQuery, [tournamentId]);
+                teams = participantsResult.rows;
+                
+                console.log(`📊 [Standings] SOLO турнир: получено ${teams.length} участников`);
+                
+            } else {
+                // Для командных турниров (team, mix, cs2_*)
+                const participantsQuery = `
+                    SELECT 
+                        tt.id as team_id,
+                        tt.name as team_name,
+                        tt.avatar_url,
+                        json_agg(
+                            json_build_object(
+                                'user_id', u.id,
+                                'name', COALESCE(u.username, tp.name),
+                                'avatar_url', u.avatar_url,
+                                'is_captain', ttm.is_captain
+                            ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
+                        ) as members
+                    FROM tournament_teams tt
+                    LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
+                    LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                    LEFT JOIN users u ON tp.user_id = u.id
+                    WHERE tt.tournament_id = $1
+                    GROUP BY tt.id, tt.name, tt.avatar_url
+                `;
 
-            const participantsResult = await pool.query(participantsQuery, [tournamentId]);
-            const teams = participantsResult.rows;
+                const participantsResult = await pool.query(participantsQuery, [tournamentId]);
+                teams = participantsResult.rows;
+                
+                console.log(`📊 [Standings] TEAM турнир: получено ${teams.length} команд`);
+            }
 
             // Получаем все матчи
             const matchesQuery = `
@@ -59,6 +92,14 @@ class StandingsService {
             `;
             const matchesResult = await pool.query(matchesQuery, [tournamentId]);
             const matches = matchesResult.rows;
+
+            console.log(`📊 [Standings] Данные для расчета:`, {
+                tournament_id: tournamentId,
+                participant_type: tournament.participant_type,
+                format: tournament.format,
+                teams_count: teams.length,
+                matches_count: matches.length
+            });
 
             // Рассчитываем места команд
             const standings = this._calculateStandings(teams, matches, tournament);
@@ -82,7 +123,15 @@ class StandingsService {
      * @private
      */
     _calculateStandings(teams, matches, tournament) {
+        console.log(`🔍 [_calculateStandings] Начало расчета для ${teams.length} команд`);
+        
         const standings = [];
+
+        // Проверка на пустые данные
+        if (!teams || teams.length === 0) {
+            console.log(`⚠️ [_calculateStandings] Нет команд для расчета`);
+            return [];
+        }
 
         // Находим финальный матч
         const finalMatch = matches.find(m => 
@@ -91,8 +140,17 @@ class StandingsService {
             m.is_final === true
         );
 
+        console.log(`🏆 [_calculateStandings] Финальный матч:`, {
+            found: !!finalMatch,
+            id: finalMatch?.id,
+            winner_team_id: finalMatch?.winner_team_id,
+            bracket_type: finalMatch?.bracket_type
+        });
+
         if (!finalMatch || !finalMatch.winner_team_id) {
             // Турнир не завершен - возвращаем команды без мест
+            console.log(`⚠️ [_calculateStandings] Турнир не завершен, возвращаем команды без мест`);
+            
             return teams.map(team => ({
                 ...team,
                 placement: null,
@@ -229,6 +287,12 @@ class StandingsService {
                 is_winner: team.is_winner
             }))
             .sort((a, b) => (a.placement || 999) - (b.placement || 999));
+
+        console.log(`📊 [_calculateStandings] Финальный результат:`, {
+            total: result.length,
+            with_placement: result.filter(t => t.placement).length,
+            top_3: result.slice(0, 3).map(t => ({ name: t.team_name, placement: t.placement }))
+        });
 
         return result;
     }

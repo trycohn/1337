@@ -27,13 +27,27 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
 
             const response = await api.get(`/api/tournaments/${tournamentId}/standings`);
 
-            if (response.data.success) {
-                console.log(`📊 [TeamStandings] Получено ${response.data.standings.length} команд`);
+            console.log(`📊 [TeamStandings] Ответ сервера:`, {
+                success: response.data.success,
+                standings_count: response.data.standings?.length || 0,
+                totalTeams: response.data.totalTeams,
+                first_team: response.data.standings?.[0]
+            });
+
+            if (response.data.success && response.data.standings) {
                 setStandings(response.data.standings);
+            } else {
+                console.warn(`⚠️ [TeamStandings] Нет данных о standings`);
+                setStandings([]);
             }
 
         } catch (error) {
             console.error(`❌ [TeamStandings] Ошибка загрузки:`, error);
+            console.error(`❌ [TeamStandings] Детали ошибки:`, {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             setStandings([]);
         } finally {
             setLoading(false);
@@ -72,7 +86,20 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
         return (
             <div className="team-standings-table">
                 <div className="standings-empty">
-                    <p>Нет данных о командах</p>
+                    <div className="empty-icon">📊</div>
+                    <h4>Таблица недоступна</h4>
+                    <p className="empty-reason">
+                        {tournament?.status !== 'completed' 
+                            ? 'Турнир еще не завершен' 
+                            : 'Нет данных о участниках'}
+                    </p>
+                    <p className="empty-hint">
+                        Турнир: {tournament?.name || 'ID ' + tournamentId}
+                        <br />
+                        Тип: {tournament?.participant_type || 'неизвестен'}
+                        <br />
+                        Формат: {tournament?.format || 'неизвестен'}
+                    </p>
                 </div>
             </div>
         );

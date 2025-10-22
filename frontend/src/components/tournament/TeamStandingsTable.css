@@ -305,6 +305,32 @@
     color: #999;
 }
 
+.standings-empty .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.standings-empty h4 {
+    color: #fff;
+    font-size: 18px;
+    margin: 0 0 8px 0;
+}
+
+.standings-empty .empty-reason {
+    color: #ff0000;
+    font-size: 14px;
+    margin: 8px 0;
+    font-weight: 600;
+}
+
+.standings-empty .empty-hint {
+    color: #666;
+    font-size: 12px;
+    margin: 12px 0 0 0;
+    line-height: 1.6;
+}
+
 .spinner {
     width: 40px;
     height: 40px;
