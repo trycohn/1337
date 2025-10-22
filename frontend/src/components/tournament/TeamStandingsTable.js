@@ -134,15 +134,19 @@ const TeamStandingsTable = ({ tournamentId, tournament }) => {
                                 <div className="team-main">
                                     <div className="team-avatar">
                                         <img 
-                                            src={ensureHttps(team.avatar_url) || '/default-avatar.png'}
+                                            src={ensureHttps(team.avatar_url || team.members?.[0]?.avatar_url) || '/default-avatar.png'}
                                             alt={team.team_name}
                                             onError={(e) => { e.target.src = '/default-avatar.png'; }}
                                         />
                                     </div>
                                     <div className="team-name">
-                                        <Link to={`/teams/${team.team_id}`}>
-                                            {team.team_name}
-                                        </Link>
+                                        {tournament?.participant_type === 'solo' ? (
+                                            <Link to={`/user/${team.members?.[0]?.user_id}`}>
+                                                {team.team_name}
+                                            </Link>
+                                        ) : (
+                                            <span>{team.team_name}</span>
+                                        )}
                                     </div>
                                 </div>
 

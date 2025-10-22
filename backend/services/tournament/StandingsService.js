@@ -36,7 +36,7 @@ class StandingsService {
                     SELECT 
                         tp.id as team_id,
                         COALESCE(u.username, tp.name) as team_name,
-                        u.avatar_url,
+                        u.avatar_url as avatar_url,
                         json_build_array(
                             json_build_object(
                                 'user_id', u.id,
@@ -61,7 +61,7 @@ class StandingsService {
                     SELECT 
                         tt.id as team_id,
                         tt.name as team_name,
-                        tt.avatar_url,
+                        NULL as avatar_url,
                         json_agg(
                             json_build_object(
                                 'user_id', u.id,
@@ -69,13 +69,13 @@ class StandingsService {
                                 'avatar_url', u.avatar_url,
                                 'is_captain', ttm.is_captain
                             ) ORDER BY ttm.is_captain DESC NULLS LAST, ttm.id
-                        ) as members
+                        ) FILTER (WHERE u.id IS NOT NULL OR tp.id IS NOT NULL) as members
                     FROM tournament_teams tt
                     LEFT JOIN tournament_team_members ttm ON tt.id = ttm.team_id
                     LEFT JOIN tournament_participants tp ON ttm.participant_id = tp.id
                     LEFT JOIN users u ON tp.user_id = u.id
                     WHERE tt.tournament_id = $1
-                    GROUP BY tt.id, tt.name, tt.avatar_url
+                    GROUP BY tt.id, tt.name
                 `;
 
                 const participantsResult = await pool.query(participantsQuery, [tournamentId]);
@@ -136,8 +136,7 @@ class StandingsService {
         // Находим финальный матч
         const finalMatch = matches.find(m => 
             m.bracket_type === 'grand_final' || 
-            m.bracket_type === 'final' ||
-            m.is_final === true
+            m.bracket_type === 'final'
         );
 
         console.log(`🏆 [_calculateStandings] Финальный матч:`, {
@@ -221,7 +220,6 @@ class StandingsService {
 
         // 3-е место
         const thirdPlaceMatch = matches.find(m => 
-            m.is_third_place_match === true || 
             m.bracket_type === 'placement'
         );
 
