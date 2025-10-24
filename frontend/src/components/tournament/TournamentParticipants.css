@@ -102,8 +102,8 @@
 
 /* 🆕 Совокупное FACEIT ELO команды */
 .team-faceit-elo-participants {
-    font-size: 13px;
-    color: #ff6b00;
+    font-size: 10px;
+    color: #888;
     font-weight: 500;
     display: flex;
     align-items: center;
