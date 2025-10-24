@@ -272,21 +272,39 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
         const playersByMap = {};
         
         playersResult.rows.forEach(p => {
+            const kills = p.kills || 0;
+            const deaths = p.deaths || 0;
+            const assists = p.assists || 0;
+            const headshots = p.headshots || 0;
+            const damage = p.damage || 0;
+            
+            // Вычисляем K/D
+            const kd = deaths > 0 ? (kills / deaths) : kills;
+            
+            // Вычисляем HS%
+            const hs = kills > 0 ? (headshots / kills) * 100 : 0;
+            
+            // Вычисляем ADR (средний урон за раунд)
+            const totalRounds = match.team1_score + match.team2_score || 1;
+            const adr = damage / totalRounds;
+            
             const playerData = {
                 user_id: p.user_id,
                 steam_id: p.steam_id,
-                username: p.username,
+                steamid64: p.steam_id, // Для ключа в таблице
+                name: p.username || 'Unknown', // Frontend ожидает 'name', а не 'username'
                 avatar_url: p.avatar_url,
                 team_id: p.team_id,
-                kills: p.kills || 0,
-                deaths: p.deaths || 0,
-                assists: p.assists || 0,
-                kd_ratio: p.kd_ratio || 0,
-                mvps: p.mvps || 0,
-                headshots: p.headshots || 0,
-                headshot_percentage: p.headshot_percentage || 0,
-                damage: p.damage || 0,
-                adr: p.adr || 0,
+                kills,
+                deaths,
+                assists,
+                kd, // Вычисленный K/D
+                hs, // Вычисленный HS%
+                head_shot_kills: headshots,
+                headshots,
+                headshot_percentage: hs,
+                damage,
+                adr,
                 utility_damage: p.utility_damage || 0,
                 enemies_flashed: p.enemies_flashed || 0,
                 flash_duration: p.flash_duration || 0,
@@ -294,7 +312,17 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
                 first_deaths: p.first_deaths || 0,
                 clutch_won: p.clutch_won || 0,
                 clutch_lost: p.clutch_lost || 0,
-                trade_kills: p.trade_kills || 0
+                trade_kills: p.trade_kills || 0,
+                // Дополнительные поля для полной совместимости
+                enemy5ks: p.enemy5ks || 0,
+                enemy4ks: p.enemy4ks || 0,
+                enemy3ks: p.enemy3ks || 0,
+                enemy2ks: p.enemy2ks || 0,
+                acc: 0, // Пока нет данных
+                rws: 0, // Пока нет данных
+                entry: 0, // Пока нет данных
+                clutch1: 0, // Пока нет данных
+                clutch2: 0 // Пока нет данных
             };
             
             // Определяем команду по actual_team_id
@@ -311,12 +339,15 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
         
         console.log(`👥 [Match Stats] Распределение игроков: team1=${playersByTeam.team1.length}, team2=${playersByTeam.team2.length}`);
         
-        // Формируем список leaders (топ игроков)
+        // Формируем список leaders (топ игроков) из уже обработанных данных
+        const allPlayers = [...playersByTeam.team1, ...playersByTeam.team2];
         const leaders = {
-            kills: playersResult.rows[0] || null,
-            damage: playersResult.rows.sort((a, b) => (b.damage || 0) - (a.damage || 0))[0] || null,
-            mvps: playersResult.rows.sort((a, b) => (b.mvps || 0) - (a.mvps || 0))[0] || null
+            kills: allPlayers.sort((a, b) => b.kills - a.kills)[0] || null,
+            damage: allPlayers.sort((a, b) => b.damage - a.damage)[0] || null,
+            mvps: allPlayers.sort((a, b) => b.mvps - a.mvps)[0] || null
         };
+        
+        console.log(`🏆 [Match Stats] Leaders: kills=${leaders.kills?.name}, damage=${leaders.damage?.name}, mvps=${leaders.mvps?.name}`);
         
         // Формируем ответ в формате, который ожидает frontend
         res.json({
