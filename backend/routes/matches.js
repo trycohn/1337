@@ -228,19 +228,22 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
         
         console.log(`🗺️ [Match Stats] Найдено ${mapsResult.rows.length} карт(ы)`);
         
-        // Получаем pick/ban данные (если таблица существует)
+        // Получаем pick/ban данные
         let pickbanResult = { rows: [] };
         try {
             pickbanResult = await pool.query(
                 `SELECT 
-                    team,
-                    mapname,
-                    mapnumber
-                FROM matchzy_pickban
+                    step_index,
+                    action,
+                    team_id,
+                    team_name,
+                    mapname
+                FROM matchzy_pickban_steps
                 WHERE matchid = $1
-                ORDER BY mapnumber`,
+                ORDER BY step_index`,
                 [matchzyMatchId]
             );
+            console.log(`🎯 [Match Stats] Найдено ${pickbanResult.rows.length} pick/ban шагов`);
         } catch (err) {
             console.log(`⚠️ [Match Stats] Pick/ban данные недоступны:`, err.message);
         }
@@ -260,9 +263,10 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
             end_time: match.end_time,
             maps: mapsResult.rows,
             pickban: pickbanResult.rows.map(pb => ({
-                action: pb.team === 'team1' ? 'ban' : (pb.team === 'team2' ? 'ban' : 'pick'),
-                team_id: pb.team === 'team1' ? 1 : 2,
-                mapname: pb.mapname
+                action: pb.action,
+                team_id: pb.team_id,
+                mapname: pb.mapname,
+                team_name: pb.team_name
             })),
             players: playersResult.rows.map(p => ({
                 user_id: p.user_id,
