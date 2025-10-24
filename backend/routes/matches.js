@@ -195,20 +195,35 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
         
         console.log(`✅ [Match Stats] Найден матч: ${match.team1_name} ${match.team1_score}:${match.team2_score} ${match.team2_name}`);
         
-        // Получаем статистику игроков
+        // Получаем информацию о командах матча
+        const matchInfoResult = await pool.query(
+            `SELECT team1_id, team2_id FROM matches WHERE id = $1`,
+            [matchId]
+        );
+        const matchInfo = matchInfoResult.rows[0];
+        
+        // Получаем статистику игроков с привязкой к командам
         const playersResult = await pool.query(
             `SELECT 
                 pms.*,
                 u.username,
-                u.avatar_url
+                u.avatar_url,
+                CASE 
+                    WHEN ttm1.user_id IS NOT NULL THEN $2
+                    WHEN ttm2.user_id IS NOT NULL THEN $3
+                    ELSE NULL
+                END as actual_team_id
             FROM player_match_stats pms
             LEFT JOIN users u ON u.id = pms.user_id
+            LEFT JOIN tournament_team_members ttm1 ON ttm1.user_id = pms.user_id AND ttm1.team_id = $2
+            LEFT JOIN tournament_team_members ttm2 ON ttm2.user_id = pms.user_id AND ttm2.team_id = $3
             WHERE pms.match_id = $1
             ORDER BY pms.kills DESC`,
-            [matchId]
+            [matchId, matchInfo.team1_id, matchInfo.team2_id]
         );
         
         console.log(`📊 [Match Stats] Найдено ${playersResult.rows.length} игроков`);
+        console.log(`🏆 [Match Stats] team1_id=${matchInfo.team1_id}, team2_id=${matchInfo.team2_id}`);
         
         // Получаем карты
         const mapsResult = await pool.query(
@@ -248,27 +263,16 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
             console.log(`⚠️ [Match Stats] Pick/ban данные недоступны:`, err.message);
         }
         
-        // Формируем ответ
-        res.json({
-            success: true,
-            matchid: matchzyMatchId,
-            match_id: matchId,
-            team1_name: match.team1_name,
-            team2_name: match.team2_name,
-            team1_score: match.team1_score,
-            team2_score: match.team2_score,
-            winner: match.winner,
-            series_type: match.series_type,
-            start_time: match.start_time,
-            end_time: match.end_time,
-            maps: mapsResult.rows,
-            pickban: pickbanResult.rows.map(pb => ({
-                action: pb.action,
-                team_id: pb.team_id,
-                mapname: pb.mapname,
-                team_name: pb.team_name
-            })),
-            players: playersResult.rows.map(p => ({
+        // Группируем игроков по командам
+        const playersByTeam = {
+            team1: [],
+            team2: []
+        };
+        
+        const playersByMap = {};
+        
+        playersResult.rows.forEach(p => {
+            const playerData = {
                 user_id: p.user_id,
                 steam_id: p.steam_id,
                 username: p.username,
@@ -291,7 +295,53 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
                 clutch_won: p.clutch_won || 0,
                 clutch_lost: p.clutch_lost || 0,
                 trade_kills: p.trade_kills || 0
-            }))
+            };
+            
+            // Определяем команду по actual_team_id
+            if (p.actual_team_id === matchInfo.team1_id) {
+                playersByTeam.team1.push(playerData);
+            } else if (p.actual_team_id === matchInfo.team2_id) {
+                playersByTeam.team2.push(playerData);
+            } else {
+                // Если не удалось определить команду, добавляем в первую (fallback)
+                console.log(`⚠️ [Match Stats] Не удалось определить команду для игрока ${p.username}`);
+                playersByTeam.team1.push(playerData);
+            }
+        });
+        
+        console.log(`👥 [Match Stats] Распределение игроков: team1=${playersByTeam.team1.length}, team2=${playersByTeam.team2.length}`);
+        
+        // Формируем список leaders (топ игроков)
+        const leaders = {
+            kills: playersResult.rows[0] || null,
+            damage: playersResult.rows.sort((a, b) => (b.damage || 0) - (a.damage || 0))[0] || null,
+            mvps: playersResult.rows.sort((a, b) => (b.mvps || 0) - (a.mvps || 0))[0] || null
+        };
+        
+        // Формируем ответ в формате, который ожидает frontend
+        res.json({
+            success: true,
+            matchid: matchzyMatchId,
+            match: {
+                team1_name: match.team1_name,
+                team2_name: match.team2_name,
+                team1_score: match.team1_score,
+                team2_score: match.team2_score,
+                winner: match.winner,
+                series_type: match.series_type,
+                start_time: match.start_time,
+                end_time: match.end_time
+            },
+            maps: mapsResult.rows,
+            pickban: pickbanResult.rows.map(pb => ({
+                action: pb.action,
+                team_id: pb.team_id,
+                mapname: pb.mapname,
+                team_name: pb.team_name
+            })),
+            playersByTeam,
+            playersByMap,
+            leaders
         });
         
         console.log(`✅ [Match Stats] Статистика успешно отправлена`);
