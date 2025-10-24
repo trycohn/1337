@@ -154,6 +154,147 @@ router.delete('/custom-lobby/:lobbyId/leave', authenticateToken, async (req, res
     }
 });
 
+// 📊 Получить статистику турнирного матча (MatchZy)
+router.get('/tournament/:matchId/stats', async (req, res) => {
+    try {
+        const matchId = parseInt(req.params.matchId);
+        
+        console.log(`📊 [Match Stats] Запрос статистики для match_id=${matchId}`);
+        
+        // Получаем данные матча из matchzy_matches
+        const matchResult = await pool.query(
+            `SELECT 
+                matchid,
+                our_match_id,
+                lobby_id,
+                tournament_lobby_id,
+                start_time,
+                end_time,
+                winner,
+                series_type,
+                team1_name,
+                team1_score,
+                team2_name,
+                team2_score,
+                server_ip
+            FROM matchzy_matches 
+            WHERE our_match_id = $1`,
+            [matchId]
+        );
+        
+        if (matchResult.rows.length === 0) {
+            console.log(`⚠️ [Match Stats] Матч ${matchId} не найден в matchzy_matches`);
+            return res.status(404).json({
+                success: false,
+                message: 'Статистика матча не найдена'
+            });
+        }
+        
+        const match = matchResult.rows[0];
+        const matchzyMatchId = match.matchid;
+        
+        console.log(`✅ [Match Stats] Найден матч: ${match.team1_name} ${match.team1_score}:${match.team2_score} ${match.team2_name}`);
+        
+        // Получаем статистику игроков
+        const playersResult = await pool.query(
+            `SELECT 
+                pms.*,
+                u.username,
+                u.avatar_url
+            FROM player_match_stats pms
+            LEFT JOIN users u ON u.id = pms.user_id
+            WHERE pms.match_id = $1
+            ORDER BY pms.kills DESC`,
+            [matchId]
+        );
+        
+        console.log(`📊 [Match Stats] Найдено ${playersResult.rows.length} игроков`);
+        
+        // Получаем карты
+        const mapsResult = await pool.query(
+            `SELECT 
+                mapnumber,
+                mapname,
+                start_time,
+                end_time,
+                winner,
+                team1_score,
+                team2_score
+            FROM matchzy_stats_maps
+            WHERE matchid = $1
+            ORDER BY mapnumber`,
+            [matchzyMatchId]
+        );
+        
+        // Получаем pick/ban данные
+        const pickbanResult = await pool.query(
+            `SELECT 
+                team,
+                mapname,
+                mapnumber
+            FROM matchzy_stats_pickban
+            WHERE matchid = $1
+            ORDER BY mapnumber`,
+            [matchzyMatchId]
+        );
+        
+        // Формируем ответ
+        res.json({
+            success: true,
+            matchid: matchzyMatchId,
+            match_id: matchId,
+            team1_name: match.team1_name,
+            team2_name: match.team2_name,
+            team1_score: match.team1_score,
+            team2_score: match.team2_score,
+            winner: match.winner,
+            series_type: match.series_type,
+            start_time: match.start_time,
+            end_time: match.end_time,
+            maps: mapsResult.rows,
+            pickban: pickbanResult.rows.map(pb => ({
+                action: pb.team === 'team1' ? 'ban' : (pb.team === 'team2' ? 'ban' : 'pick'),
+                team_id: pb.team === 'team1' ? 1 : 2,
+                mapname: pb.mapname
+            })),
+            players: playersResult.rows.map(p => ({
+                user_id: p.user_id,
+                steam_id: p.steam_id,
+                username: p.username,
+                avatar_url: p.avatar_url,
+                team_id: p.team_id,
+                kills: p.kills || 0,
+                deaths: p.deaths || 0,
+                assists: p.assists || 0,
+                kd_ratio: p.kd_ratio || 0,
+                mvps: p.mvps || 0,
+                headshots: p.headshots || 0,
+                headshot_percentage: p.headshot_percentage || 0,
+                damage: p.damage || 0,
+                adr: p.adr || 0,
+                utility_damage: p.utility_damage || 0,
+                enemies_flashed: p.enemies_flashed || 0,
+                flash_duration: p.flash_duration || 0,
+                first_kills: p.first_kills || 0,
+                first_deaths: p.first_deaths || 0,
+                clutch_won: p.clutch_won || 0,
+                clutch_lost: p.clutch_lost || 0,
+                trade_kills: p.trade_kills || 0
+            }))
+        });
+        
+        console.log(`✅ [Match Stats] Статистика успешно отправлена`);
+        
+    } catch (error) {
+        console.error(`❌ [Match Stats] Ошибка:`, error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Ошибка при получении статистики матча',
+            details: error.message
+        });
+    }
+});
+
 // 📊 Получить базовую информацию о кастомном матче (ПОСЛЕ специфичных роутов)
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
