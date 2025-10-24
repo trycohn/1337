@@ -586,7 +586,6 @@ const TournamentParticipants = ({
                                                             </span>
                                                             <div className="member-stats-vertical-participants">
                                                                 <Skeleton width={100} height={11} />
-                                                                <Skeleton width={100} height={11} />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -615,10 +614,7 @@ const TournamentParticipants = ({
                                                             </span>
                                                             {/* 🆕 Статистика под ником (вертикально) */}
                                                             <div className="member-stats-vertical-participants">
-                                                                {(() => {
-                                                                    // Приоритет для Premier: cs2_premier_rank -> user_premier_rank
-                                                                    const premierRank = member.cs2_premier_rank || member.user_premier_rank;
-                                                                    
+                                                                {(() => {                                                            
                                                                     // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating
                                                                     const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating;
                                                                     
