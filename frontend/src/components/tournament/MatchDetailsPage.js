@@ -1187,19 +1187,50 @@ const MatchDetailsPage = () => {
           </div>
         </div>
 
-        <div className="match-stats-container">
-          <div className="match-header-container">
-            <h2>Tournament match — CS2</h2>
-            <div className="match-header-inline">
-              <span className="team-name left">{titleLeft}</span>
-              <img className="team-avatar" src={(playersByTeam?.team1?.[0]?.avatar_url || tournament?.teams?.find?.(t=>t.id===m.team1_id)?.avatar_url) || '/default-avatar.png'} alt="team1" />
-            <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
-            <span className="match-format-badge">{(m.series_type || 'BO1').toUpperCase()}</span>
-            <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
-            <img className="team-avatar" src={(playersByTeam?.team2?.[0]?.avatar_url || tournament?.teams?.find?.(t=>t.id===m.team2_id)?.avatar_url) || '/default-avatar.png'} alt="team2" />
-            <span className="team-name right">{titleRight}</span>
+        {/* Главный заголовок с командами и счетом */}
+        <div className="match-header-section">
+          <div className="match-status-bar">
+            <span className="match-status">{isCompleted ? 'Завершен' : 'В процессе'}</span>
+          </div>
+
+          <div className="match-main-header">
+            {/* Команда 1 */}
+            <div className={`team-block team-left ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>
+              <img 
+                src={playersByTeam?.team1?.[0]?.avatar_url || '/default-avatar.png'} 
+                alt={titleLeft}
+                className="team-logo"
+                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+              />
+              <h2 className="team-name">{titleLeft}</h2>
+            </div>
+
+            {/* Счет */}
+            <div className="match-score-block">
+              <div className="match-score">
+                <span className={`score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
+                <span className="score-separator">:</span>
+                <span className={`score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
+              </div>
+              <div className="match-format">
+                {m.match_format?.toUpperCase() || 'BO1'}
+              </div>
+            </div>
+
+            {/* Команда 2 */}
+            <div className={`team-block team-right ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>
+              <img 
+                src={playersByTeam?.team2?.[0]?.avatar_url || '/default-avatar.png'} 
+                alt={titleRight}
+                className="team-logo"
+                onError={(e) => { e.target.src = '/default-avatar.png'; }}
+              />
+              <h2 className="team-name">{titleRight}</h2>
+            </div>
           </div>
         </div>
+
+        <div className="match-stats-container">
 
         {/* Блок подключения показываем до завершения матча */}
         {!isCompleted && (m.connect || m.gotv) && (
