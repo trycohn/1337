@@ -281,10 +281,10 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
             // Вычисляем K/D
             const kd = deaths > 0 ? (kills / deaths) : kills;
             
-            // Вычисляем HS% (headshots / kills * 100)
-            const hs = kills > 0 ? (headshots / kills) * 100 : 0;
+            // Вычисляем HS% как десятичную дробь (frontend умножит на 100)
+            const hs = kills > 0 ? (headshots / kills) : 0;
             
-            console.log(`🎯 [Match Stats] ${p.username}: K=${kills}, D=${deaths}, HS=${headshots}, HS%=${hs.toFixed(2)}%`);
+            console.log(`🎯 [Match Stats] ${p.username}: K=${kills}, D=${deaths}, HS=${headshots}, HS(decimal)=${hs.toFixed(4)}`);
             
             // Вычисляем ADR (средний урон за раунд)
             const totalRounds = match.team1_score + match.team2_score || 1;
@@ -301,10 +301,10 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
                 deaths,
                 assists,
                 kd, // Вычисленный K/D
-                hs, // Вычисленный HS%
+                hs, // Вычисленный HS% (decimal: 0.0-1.0)
                 head_shot_kills: headshots,
                 headshots,
-                headshot_percentage: hs,
+                headshot_percentage: hs, // Также в decimal формате
                 damage,
                 adr,
                 utility_damage: p.utility_damage || 0,
@@ -343,13 +343,22 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
         
         // Формируем список leaders (топ игроков) из уже обработанных данных
         const allPlayers = [...playersByTeam.team1, ...playersByTeam.team2];
+        
+        // Сортируем копии массива для каждой категории
+        const byKills = [...allPlayers].sort((a, b) => b.kills - a.kills);
+        const byHS = [...allPlayers].sort((a, b) => b.hs - a.hs);
+        const byDamage = [...allPlayers].sort((a, b) => b.damage - a.damage);
+        
         const leaders = {
-            kills: allPlayers.sort((a, b) => b.kills - a.kills)[0] || null,
-            damage: allPlayers.sort((a, b) => b.damage - a.damage)[0] || null,
-            mvps: allPlayers.sort((a, b) => b.mvps - a.mvps)[0] || null
+            mvpApprox: byKills[0] || null, // MVP - игрок с максимальным K/D или убийствами
+            kills: byKills[0] || null,
+            hsPercent: byHS[0] || null,
+            accuracy: null, // Пока нет данных
+            clutch1: null, // Пока нет данных
+            damage: byDamage[0] || null
         };
         
-        console.log(`🏆 [Match Stats] Leaders: kills=${leaders.kills?.name}, damage=${leaders.damage?.name}, mvps=${leaders.mvps?.name}`);
+        console.log(`🏆 [Match Stats] Leaders: MVP=${leaders.mvpApprox?.name}, kills=${leaders.kills?.name}, HS%=${leaders.hsPercent?.name}`);
         
         // Формируем ответ в формате, который ожидает frontend
         res.json({
