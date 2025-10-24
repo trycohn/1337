@@ -543,8 +543,8 @@ const TournamentParticipants = ({
                                             <span className="team-members-count-participants">
                                                 {isLoadingInitial ? <Skeleton width={100} height={14} /> : `${team.members?.length || 0} участников`}
                                             </span>
-                                            {/* 🆕 Отображение совокупного FACEIT ELO для CS2 турниров */}
-                                            {!isLoadingInitial && tournament?.game === 'Counter-Strike 2' && team.members?.length > 0 && (
+                                            {/* 🆕 Отображение совокупного FACEIT ELO команды */}
+                                            {!isLoadingInitial && team.members?.length > 0 && (
                                                 <span className="team-faceit-elo-participants">
                                                     Σ FACEIT ELO: {calculateTeamFaceitElo(team.members).toLocaleString('ru-RU')}
                                                 </span>
