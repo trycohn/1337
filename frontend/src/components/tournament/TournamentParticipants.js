@@ -359,8 +359,8 @@ const TournamentParticipants = ({
         if (!members || members.length === 0) return 0;
         
         return members.reduce((total, member) => {
-            // Если у участника нет FACEIT ELO или оно null/undefined - считаем 1000 по умолчанию
-            const memberElo = member.faceit_elo || 1000;
+            // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1000 (по умолчанию)
+            const memberElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1000;
             return total + Number(memberElo);
         }, 0);
     }, []);
@@ -615,15 +615,29 @@ const TournamentParticipants = ({
                                                             </span>
                                                             {/* 🆕 Статистика под ником (вертикально) */}
                                                             <div className="member-stats-vertical-participants">
-                                                                {member.cs2_premier_rank && (
-                                                                    <span className="stat-text-participants">Premier: {member.cs2_premier_rank}</span>
-                                                                )}
-                                                                {member.faceit_elo && (
-                                                                    <span className="stat-text-participants">FACEIT: {member.faceit_elo || '1000'}</span>
-                                                                )}
-                                                                {!member.faceit_elo && !member.cs2_premier_rank && (
-                                                                    <span className="stat-text-participants stat-placeholder-participants">Статистика не указана</span>
-                                                                )}
+                                                                {(() => {
+                                                                    // Приоритет для Premier: cs2_premier_rank -> user_premier_rank
+                                                                    const premierRank = member.cs2_premier_rank || member.user_premier_rank;
+                                                                    
+                                                                    // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating
+                                                                    const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating;
+                                                                    
+                                                                    const hasStats = premierRank || faceitElo;
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            {premierRank && (
+                                                                                <span className="stat-text-participants">Premier: {premierRank}</span>
+                                                                            )}
+                                                                            {faceitElo && (
+                                                                                <span className="stat-text-participants">FACEIT: {faceitElo}</span>
+                                                                            )}
+                                                                            {!hasStats && (
+                                                                                <span className="stat-text-participants stat-placeholder-participants">Статистика не указана</span>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         </div>
                                                     </div>
