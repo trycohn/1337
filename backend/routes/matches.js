@@ -220,23 +220,30 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
                 winner,
                 team1_score,
                 team2_score
-            FROM matchzy_stats_maps
+            FROM matchzy_maps
             WHERE matchid = $1
             ORDER BY mapnumber`,
             [matchzyMatchId]
         );
         
-        // Получаем pick/ban данные
-        const pickbanResult = await pool.query(
-            `SELECT 
-                team,
-                mapname,
-                mapnumber
-            FROM matchzy_stats_pickban
-            WHERE matchid = $1
-            ORDER BY mapnumber`,
-            [matchzyMatchId]
-        );
+        console.log(`🗺️ [Match Stats] Найдено ${mapsResult.rows.length} карт(ы)`);
+        
+        // Получаем pick/ban данные (если таблица существует)
+        let pickbanResult = { rows: [] };
+        try {
+            pickbanResult = await pool.query(
+                `SELECT 
+                    team,
+                    mapname,
+                    mapnumber
+                FROM matchzy_pickban
+                WHERE matchid = $1
+                ORDER BY mapnumber`,
+                [matchzyMatchId]
+            );
+        } catch (err) {
+            console.log(`⚠️ [Match Stats] Pick/ban данные недоступны:`, err.message);
+        }
         
         // Формируем ответ
         res.json({
