@@ -1109,13 +1109,38 @@ const MatchDetailsPage = () => {
     const score2 = Number.isFinite(m.team2_score) ? m.team2_score : '-';
     const isCompleted = Number.isFinite(m.team1_score) && Number.isFinite(m.team2_score);
 
+    const isCS2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+
     return (
-      <div className="match-stats-container">
-        <div className="match-header-container">
-          <h2>Tournament match — CS2</h2>
-          <div className="match-header-inline">
-            <span className="team-name left">{titleLeft}</span>
-            <img className="team-avatar" src={(playersByTeam?.team1?.[0]?.avatar_url || tournament?.teams?.find?.(t=>t.id===m.team1_id)?.avatar_url) || '/default-avatar.png'} alt="team1" />
+      <>
+        <div className={`tournament-header ${isCS2 ? 'with-cs2-hero' : ''}`}>
+          <div className={`tournament-header-tournamentdetails ${isCS2 ? 'with-cs2-hero' : ''}`}>
+            <h2>{tournament.name}</h2>
+            <div className="header-meta">
+              <div className="header-meta-row">
+                <span className="meta-label">Матч:</span>
+                <span className="meta-value">{titleLeft} vs {titleRight}</span>
+              </div>
+              <div className="header-meta-row">
+                <span className="meta-label">Формат:</span>
+                <span className="meta-value">{m.match_format?.toUpperCase() || 'BO1'}</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => navigate(`/tournaments/${tournamentId}`)}
+              className="btn-back-tournament"
+            >
+              ← Вернуться к турниру
+            </button>
+          </div>
+        </div>
+
+        <div className="match-stats-container">
+          <div className="match-header-container">
+            <h2>Tournament match — CS2</h2>
+            <div className="match-header-inline">
+              <span className="team-name left">{titleLeft}</span>
+              <img className="team-avatar" src={(playersByTeam?.team1?.[0]?.avatar_url || tournament?.teams?.find?.(t=>t.id===m.team1_id)?.avatar_url) || '/default-avatar.png'} alt="team1" />
             <span className={`team-score ${isCompleted && Number(score1) > Number(score2) ? 'winner' : ''}`}>{score1}</span>
             <span className="match-format-badge">{(m.series_type || 'BO1').toUpperCase()}</span>
             <span className={`team-score ${isCompleted && Number(score2) > Number(score1) ? 'winner' : ''}`}>{score2}</span>
@@ -1184,6 +1209,7 @@ const MatchDetailsPage = () => {
           compact={compact}
         />
       </div>
+      </>
     );
   }
 

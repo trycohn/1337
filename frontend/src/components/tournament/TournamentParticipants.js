@@ -359,8 +359,8 @@ const TournamentParticipants = ({
         if (!members || members.length === 0) return 0;
         
         return members.reduce((total, member) => {
-            // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1000 (по умолчанию)
-            const memberElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1000;
+            // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1200 (по умолчанию)
+            const memberElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1200;
             return total + Number(memberElo);
         }, 0);
     }, []);
@@ -615,8 +615,8 @@ const TournamentParticipants = ({
                                                             {/* 🆕 Статистика под ником (вертикально) */}
                                                             <div className="member-stats-vertical-participants">
                                                                 {(() => {
-                                                                    // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1000 (по умолчанию)
-                                                                    const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1000;
+                                                                    // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1200 (по умолчанию)
+                                                                    const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1200;
                                                                     
                                                                     return (
                                                                         <span className="stat-text-participants">FACEIT: {faceitElo}</span>
