@@ -276,13 +276,15 @@ router.get('/tournament/:matchId/stats', async (req, res) => {
             const deaths = p.deaths || 0;
             const assists = p.assists || 0;
             const headshots = p.headshots || 0;
-            const damage = p.damage || 0;
+            const damage = p.damage_dealt || 0; // Правильное название поля!
             
             // Вычисляем K/D
             const kd = deaths > 0 ? (kills / deaths) : kills;
             
-            // Вычисляем HS%
+            // Вычисляем HS% (headshots / kills * 100)
             const hs = kills > 0 ? (headshots / kills) * 100 : 0;
+            
+            console.log(`🎯 [Match Stats] ${p.username}: K=${kills}, D=${deaths}, HS=${headshots}, HS%=${hs.toFixed(2)}%`);
             
             // Вычисляем ADR (средний урон за раунд)
             const totalRounds = match.team1_score + match.team2_score || 1;
