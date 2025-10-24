@@ -100,6 +100,16 @@
     color: #888888;
 }
 
+/* 🆕 Совокупное FACEIT ELO команды */
+.team-faceit-elo-participants {
+    font-size: 13px;
+    color: #ff6b00;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Действия с командой */
 .team-actions-participants {
     display: flex;
@@ -133,10 +143,19 @@
 }
 
 .member-avatar-participants {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
+}
+
+/* 🆕 Вертикальный контейнер для имени и статистики */
+.member-details-vertical-participants {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
 }
 
 .member-name-participants {
@@ -146,8 +165,8 @@
     font-size: 12px;
     line-height: 100%;
     letter-spacing: 0.08em;
-    
 }
+
 .member-link-participants {
     color: inherit;
     text-decoration: none;
@@ -161,6 +180,26 @@
     color: #ffd700;
 }
 
+/* 🆕 Вертикальная статистика под ником */
+.member-stats-vertical-participants {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-text-participants {
+    font-size: 11px;
+    color: #888888;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.stat-placeholder-participants {
+    color: #666666;
+    font-style: italic;
+}
+
+/* Старые стили для обратной совместимости */
 .member-stats-participants {
     display: flex;
     gap: 12px;

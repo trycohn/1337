@@ -354,6 +354,17 @@ const TournamentParticipants = ({
         return isParticipant ? 'participant' : 'available';
     }, [getParticipantsList]);
 
+    // 🆕 Расчет совокупного FACEIT ELO команды
+    const calculateTeamFaceitElo = useCallback((members) => {
+        if (!members || members.length === 0) return 0;
+        
+        return members.reduce((total, member) => {
+            // Если у участника нет FACEIT ELO или оно null/undefined - считаем 1000 по умолчанию
+            const memberElo = member.faceit_elo || 1000;
+            return total + Number(memberElo);
+        }, 0);
+    }, []);
+
     // 🆕 Проверка, нужно ли показывать список участников
     const shouldShowParticipantsList = useCallback(() => {
         if (!tournament) return false;
@@ -532,6 +543,12 @@ const TournamentParticipants = ({
                                             <span className="team-members-count-participants">
                                                 {isLoadingInitial ? <Skeleton width={100} height={14} /> : `${team.members?.length || 0} участников`}
                                             </span>
+                                            {/* 🆕 Отображение совокупного FACEIT ELO для CS2 турниров */}
+                                            {!isLoadingInitial && tournament?.game === 'Counter-Strike 2' && team.members?.length > 0 && (
+                                                <span className="team-faceit-elo-participants">
+                                                    Σ FACEIT ELO: {calculateTeamFaceitElo(team.members).toLocaleString('ru-RU')}
+                                                </span>
+                                            )}
                                         </div>
                                         {isAdminOrCreator && (
                                             <div className="team-actions-participants">
@@ -560,22 +577,28 @@ const TournamentParticipants = ({
                                     <div className="team-members-participants">
                                         {(isLoadingInitial ? [...Array(3)] : team.members)?.map((member, memberIndex) => (
                                             <div key={member?.id || memberIndex} className="team-member-participants">
-                                                <div className="member-info-participants">
-                                                    {isLoadingInitial ? (
-                                                        <>
-                                                            <div className="skeleton-avatar" style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a1a1a' }} />
-                                                            <span className="member-name-participants" style={{ marginLeft: 10 }}>
+                                                {isLoadingInitial ? (
+                                                    <div className="member-info-participants">
+                                                        <div className="skeleton-avatar" style={{ width: 40, height: 40, borderRadius: '50%', background: '#1a1a1a' }} />
+                                                        <div className="member-details-vertical-participants">
+                                                            <span className="member-name-participants">
                                                                 <Skeleton width={140} height={14} />
                                                             </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <img 
-                                                                src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
-                                                                alt={member.display_name || member.name || member.username}
-                                                                className={`member-avatar-participants ${getAvatarCategoryClass(member.avatar_url)}`}
-                                                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
-                                                            />
+                                                            <div className="member-stats-vertical-participants">
+                                                                <Skeleton width={100} height={11} />
+                                                                <Skeleton width={100} height={11} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="member-info-participants">
+                                                        <img 
+                                                            src={member.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'} 
+                                                            alt={member.display_name || member.name || member.username}
+                                                            className={`member-avatar-participants ${getAvatarCategoryClass(member.avatar_url)}`}
+                                                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                                        />
+                                                        <div className="member-details-vertical-participants">
                                                             <span className="member-name-participants">
                                                                 {member.user_id ? (
                                                                     <a href={`/user/${member.user_id}`} className="member-link-participants">
@@ -590,23 +613,21 @@ const TournamentParticipants = ({
                                                                     </span>
                                                                 )}
                                                             </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                                <div className="member-stats-participants">
-                                                    {isLoadingInitial ? (
-                                                        <Skeleton width={120} height={12} />
-                                                    ) : (
-                                                        <>
-                                                            {member.faceit_elo && (
-                                                                <span className="stat">FACEIT: {member.faceit_elo}</span>
-                                                            )}
-                                                            {member.cs2_premier_rank && (
-                                                                <span className="stat">CS2: {member.cs2_premier_rank}</span>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </div>
+                                                            {/* 🆕 Статистика под ником (вертикально) */}
+                                                            <div className="member-stats-vertical-participants">
+                                                                {member.cs2_premier_rank && (
+                                                                    <span className="stat-text-participants">Premier: {member.cs2_premier_rank}</span>
+                                                                )}
+                                                                {member.faceit_elo && (
+                                                                    <span className="stat-text-participants">FACEIT: {member.faceit_elo || '1000'}</span>
+                                                                )}
+                                                                {!member.faceit_elo && !member.cs2_premier_rank && (
+                                                                    <span className="stat-text-participants stat-placeholder-participants">Статистика не указана</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
