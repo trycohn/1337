@@ -614,24 +614,12 @@ const TournamentParticipants = ({
                                                             </span>
                                                             {/* 🆕 Статистика под ником (вертикально) */}
                                                             <div className="member-stats-vertical-participants">
-                                                                {(() => {                                                            
-                                                                    // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating
-                                                                    const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating;
-                                                                    
-                                                                    const hasStats = premierRank || faceitElo;
+                                                                {(() => {
+                                                                    // Приоритет для FACEIT: faceit_elo -> user_faceit_elo -> user_faceit_rating -> 1000 (по умолчанию)
+                                                                    const faceitElo = member.faceit_elo || member.user_faceit_elo || member.user_faceit_rating || 1000;
                                                                     
                                                                     return (
-                                                                        <>
-                                                                            {premierRank && (
-                                                                                <span className="stat-text-participants">Premier: {premierRank}</span>
-                                                                            )}
-                                                                            {faceitElo && (
-                                                                                <span className="stat-text-participants">FACEIT: {faceitElo}</span>
-                                                                            )}
-                                                                            {!hasStats && (
-                                                                                <span className="stat-text-participants stat-placeholder-participants">Статистика не указана</span>
-                                                                            )}
-                                                                        </>
+                                                                        <span className="stat-text-participants">FACEIT: {faceitElo}</span>
                                                                     );
                                                                 })()}
                                                             </div>
