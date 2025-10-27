@@ -131,9 +131,9 @@ async function updateTournamentMatchScore(matchid) {
             return;
         }
         
-        // Получаем team1_id и team2_id из matches
+        // Получаем team1_id, team2_id и tournament_id из matches
         const matchResult = await pool.query(
-            `SELECT team1_id, team2_id FROM matches WHERE id = $1`,
+            `SELECT team1_id, team2_id, tournament_id, round FROM matches WHERE id = $1`,
             [our_match_id]
         );
         
@@ -142,7 +142,7 @@ async function updateTournamentMatchScore(matchid) {
             return;
         }
         
-        const { team1_id, team2_id } = matchResult.rows[0];
+        const { team1_id, team2_id, tournament_id, round } = matchResult.rows[0];
         
         // Определяем winner_team_id на основе winner ('team1' или 'team2')
         let winner_team_id = null;
@@ -161,6 +161,26 @@ async function updateTournamentMatchScore(matchid) {
         );
         
         console.log(`✅ [updateScore] Обновлен счет матча ${our_match_id}: ${team1_score}:${team2_score}, победитель: ${winner_team_id || 'нет'}`);
+        
+        // 🔔 WebSocket broadcast - уведомляем всех подключенных к турниру об обновлении сетки
+        try {
+            const { broadcastToTournament } = require('../socketio-server');
+            broadcastToTournament(tournament_id, 'bracket_updated', {
+                tournamentId: tournament_id,
+                matchId: our_match_id,
+                round: round,
+                score1: team1_score || 0,
+                score2: team2_score || 0,
+                winner_team_id: winner_team_id,
+                timestamp: Date.now()
+            });
+            console.log(`📡 [updateScore] WebSocket broadcast отправлен для турнира ${tournament_id}`);
+        } catch (broadcastError) {
+            console.error(`⚠️ [updateScore] Ошибка WebSocket broadcast:`, broadcastError.message);
+            // Не падаем, если WebSocket недоступен
+        }
+        
+        return { tournament_id, match_id: our_match_id, round };
         
     } catch (error) {
         console.error(`❌ [updateScore] Ошибка обновления счета для matchid=${matchid}:`, error.message);

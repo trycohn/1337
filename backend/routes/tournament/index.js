@@ -120,6 +120,64 @@ router.post('/:id/clear-match-results', authenticateToken, verifyEmailRequired, 
 // Получение матчей турнира
 router.get('/:id/matches', MatchController.getMatches);
 
+// 🔄 Получение свежих данных сетки (для обновления без перезагрузки страницы)
+router.get('/:id/bracket/refresh', async (req, res) => {
+    const { id: tournamentId } = req.params;
+    
+    console.log(`🔄 [Bracket Refresh] Запрос обновления сетки турнира ${tournamentId}`);
+    
+    try {
+        // Получаем актуальные матчи с участниками
+        const matchesResult = await pool.query(`
+            SELECT 
+                m.id,
+                m.tournament_id,
+                m.round,
+                m.match_number,
+                m.team1_id,
+                m.team2_id,
+                m.winner_team_id,
+                m.score1,
+                m.score2,
+                m.status,
+                m.bracket_type,
+                m.bracket_position,
+                m.next_match_id,
+                m.loser_next_match_id,
+                m.maps_data,
+                m.created_at,
+                m.is_third_place_match,
+                m.tournament_match_number,
+                m.display_sequence,
+                t1.name as team1_name,
+                t2.name as team2_name,
+                tw.name as winner_name
+            FROM matches m
+            LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
+            LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
+            LEFT JOIN tournament_teams tw ON tw.id = m.winner_team_id
+            WHERE m.tournament_id = $1
+            ORDER BY m.round, m.match_number
+        `, [tournamentId]);
+        
+        console.log(`✅ [Bracket Refresh] Найдено ${matchesResult.rows.length} матчей`);
+        
+        res.json({
+            success: true,
+            matches: matchesResult.rows,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        console.error(`❌ [Bracket Refresh] Ошибка:`, error);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при обновлении данных сетки',
+            message: error.message
+        });
+    }
+});
+
 // Получение конкретного матча
 router.get('/:id/matches/:matchId', MatchController.getMatch);
 

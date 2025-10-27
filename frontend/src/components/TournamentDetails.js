@@ -638,6 +638,30 @@ function TournamentDetails() {
     // Обновляем основную функцию загрузки
     const fetchTournamentData = fetchTournamentDataHybrid;
 
+    // 🔄 Быстрое обновление сетки без перезагрузки всего турнира
+    const refreshBracket = useCallback(async () => {
+        if (!id) return;
+        
+        console.log('🔄 [Bracket Refresh] Обновление данных сетки турнира', id);
+        
+        try {
+            const response = await api.get(`/api/tournaments/${id}/bracket/refresh`);
+            
+            if (response.data && response.data.success && response.data.matches) {
+                console.log(`✅ [Bracket Refresh] Получено ${response.data.matches.length} матчей`);
+                setMatches(response.data.matches);
+                
+                // Показываем уведомление (опционально)
+                setMessage('Сетка обновлена');
+                setTimeout(() => setMessage(''), 2000);
+            }
+        } catch (error) {
+            console.error('❌ [Bracket Refresh] Ошибка обновления сетки:', error);
+            // При ошибке fallback на полную перезагрузку
+            fetchTournamentData();
+        }
+    }, [id, fetchTournamentData]);
+
     // Загрузка карт для игры
     const fetchMapsForGame = useCallback(async (gameName) => {
         if (!gameName || availableMaps[gameName]) return;
@@ -1453,6 +1477,7 @@ function TournamentDetails() {
                                                         }
                                                     }}
                                                     readOnly={false}
+                                                    onBracketUpdate={refreshBracket}
                                                 />
                                             </Suspense>
                                         </TournamentErrorBoundary>

@@ -26,7 +26,8 @@ const BracketRenderer = ({
     readOnly = false,
     focusMatchId = null,
     isAdminOrCreator = false,
-    allowRosterToggleInReadOnly = false
+    allowRosterToggleInReadOnly = false,
+    onBracketUpdate = null
 }) => {
     // 🔧 ИСПРАВЛЕНО: Используем games вместо matches
     const matches = useMemo(() => games || [], [games]);
@@ -118,6 +119,79 @@ const BracketRenderer = ({
         console.log('🔄 [BracketRenderer] Принудительное обновление составов');
         await fetchTeamRosters();
     }, [fetchTeamRosters]);
+
+    // 🔄 WebSocket подписка на обновление сетки + периодический refresh
+    useEffect(() => {
+        if (!tournament?.id || !onBracketUpdate) return;
+
+        let socket;
+        let refreshInterval;
+        let lastRefreshTime = Date.now();
+        const DEBOUNCE_TIME = 3000; // 3 секунды дебаунс
+        const PERIODIC_REFRESH_INTERVAL = 30000; // 30 секунд периодический refresh
+
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            if (token) authenticateSocket(token);
+            socket = getSocketInstance();
+        } catch (err) {
+            console.warn('⚠️ [BracketRenderer] Не удалось подключиться к WebSocket:', err);
+        }
+
+        // Обработчик WebSocket события bracket_updated
+        const handleBracketUpdated = (payload) => {
+            try {
+                if (!payload) return;
+                const tid = Number(payload.tournamentId);
+                if (tid !== Number(tournament?.id)) return;
+
+                console.log('📡 [BracketRenderer] Получено событие bracket_updated:', payload);
+
+                // Дебаунсинг: не обновляем чаще чем раз в 3 секунды
+                const now = Date.now();
+                if (now - lastRefreshTime < DEBOUNCE_TIME) {
+                    console.log('⏱️ [BracketRenderer] Пропуск обновления (дебаунс)');
+                    return;
+                }
+
+                lastRefreshTime = now;
+                onBracketUpdate();
+            } catch (error) {
+                console.error('❌ [BracketRenderer] Ошибка обработки bracket_updated:', error);
+            }
+        };
+
+        // Подписываемся на событие если WebSocket доступен
+        if (socket) {
+            socket.on('bracket_updated', handleBracketUpdated);
+            console.log('✅ [BracketRenderer] Подписка на bracket_updated активна');
+        }
+
+        // Периодический refresh как fallback (только если турнир активен)
+        const isTournamentActive = tournament?.status === 'in_progress' || tournament?.status === 'active';
+        if (isTournamentActive) {
+            refreshInterval = setInterval(() => {
+                console.log('🔄 [BracketRenderer] Периодический refresh сетки');
+                onBracketUpdate();
+            }, PERIODIC_REFRESH_INTERVAL);
+            console.log('⏰ [BracketRenderer] Периодический refresh активирован (каждые 30 сек)');
+        }
+
+        // Cleanup
+        return () => {
+            if (socket) {
+                try {
+                    socket.off('bracket_updated', handleBracketUpdated);
+                    console.log('🧹 [BracketRenderer] Отписка от bracket_updated');
+                } catch (_) {}
+            }
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                console.log('🧹 [BracketRenderer] Периодический refresh остановлен');
+            }
+        };
+    }, [tournament?.id, tournament?.status, onBracketUpdate]);
+
     const recomputeContainerSize = useCallback(() => {
         try {
             if (!rendererRef.current) return;
