@@ -1177,3 +1177,42 @@
     cursor: not-allowed;
 }
 
+@media (max-width: 768px) {
+    .tournament-status-v2.status-in-progress {
+        width: 100%;
+    }
+    .next-stage-btn.end-stage {
+        width: 100%;
+    }
+    .action-btn-v2.clear-btn {
+        width: 100%;
+    }
+    .action-btn-v2.reset-btn {
+        width: 100%;
+    }
+    .results-actions {
+        margin-top: 6px;
+    }
+    .matches-actions {
+        width: 100%;
+        margin-top: 6px;
+    }
+    .admins-section-v2 h4 {
+        font-size: 16px;
+    }
+    .admin-info .admin-name {
+        font-size: 14px;
+    }
+    .admin-info .admin-role {
+        font-size: 12px;
+    }
+    .admin-actions {
+        font-size: 12px;
+    }
+    .current-admins-list {
+        padding: 0px;
+    }
+    .section-controls {
+        width: 100%;
+    }
+}
