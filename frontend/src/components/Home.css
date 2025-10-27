@@ -1392,6 +1392,9 @@ header.header {
         gap: 5px;
         text-align: center;
     }
+    .home-container > main > .home-container > main {
+      width: 100%;
+    }
 }
 
 /* Мобильные устройства */
@@ -1573,7 +1576,7 @@ th.filtered {
     flex: 1;
     min-width: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 6px;
 }
 
@@ -1713,11 +1716,14 @@ th.filtered {
 
     .tournament-mobile-name {
         font-size: 14px;
+        order: 2;
     }
 
     .tournament-mobile-meta {
         font-size: 12px;
         gap: 8px;
+        order: 1;
+        width: 42px;
     }
 
     .tournaments-mobile-section-title {
