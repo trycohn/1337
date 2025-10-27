@@ -1272,6 +1272,46 @@ const MatchDetailsPage = () => {
           </div>
         </div>
 
+        {/* Блок управления матчем */}
+        <div className="match-status-bar">
+          <span className={`match-status ${isCompleted ? 'completed' : 'in-progress'}`}>
+            {isCompleted ? 'Завершен' : 'В процессе'}
+          </span>
+          <div className="match-status-bar-buttons">
+            {userIsAdmin && (
+              <>
+                {isCompleted ? (
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleEditMatch} 
+                    title="Редактировать результат матча"
+                  >
+                    Редактировать матч
+                  </button>
+                ) : (
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={handleCompleteMatch} 
+                    title="Завершить матч и зафиксировать результат"
+                    disabled={tournament?.status === 'completed'}
+                  >
+                    Завершить матч
+                  </button>
+                )}
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={handleImportStats} 
+                  disabled={isImporting}
+                  title="Импортировать статистику с игрового сервера"
+                  style={{ marginLeft: '8px' }}
+                >
+                  {isImporting ? 'Импорт...' : '📥 Импорт статистики'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         <div className="match-stats-container">
 
         {/* Блок подключения показываем до завершения матча */}
