@@ -20,7 +20,19 @@ function mapImage(name) {
 
 export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compact = false }) {
   const [open, setOpen] = useState(null);
-  if (!Array.isArray(maps) || maps.length === 0) return null;
+  
+  console.log('[MapsAccordion] Рендер:', {
+    mapsCount: maps?.length,
+    maps,
+    playersByMapKeys: Object.keys(playersByMap || {}),
+    compact
+  });
+  
+  if (!Array.isArray(maps) || maps.length === 0) {
+    console.log('[MapsAccordion] Карты отсутствуют или пустой массив');
+    return null;
+  }
+  
   return (
     <div className="maps-accordion-container">
       <h3>Карты серии</h3>
@@ -29,9 +41,24 @@ export function MapsAccordion({ titleLeft, titleRight, maps, playersByMap, compa
           const isOpen = open === m.mapnumber;
           const t1 = playersByMap?.[m.mapnumber]?.team1 || [];
           const t2 = playersByMap?.[m.mapnumber]?.team2 || [];
+          
+          console.log(`[MapsAccordion] Карта ${m.mapnumber}:`, {
+            mapname: m.mapname,
+            isOpen,
+            team1_players: t1.length,
+            team2_players: t2.length
+          });
+          
           return (
             <div key={m.mapnumber} className="match-accordion">
-              <div className="list-row accordion-row" onClick={() => setOpen(isOpen?null:m.mapnumber)}>
+              <div 
+                className="list-row accordion-row" 
+                onClick={() => {
+                  console.log(`[MapsAccordion] Клик на карту ${m.mapnumber}, было: ${open}, будет: ${isOpen ? null : m.mapnumber}`);
+                  setOpen(isOpen ? null : m.mapnumber);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="list-row-left">
                   <img src={mapImage(m.mapname)} alt={m.mapname} className="map-thumb" />
                   <strong>Map {m.mapnumber + 1}: {m.mapname}</strong>
