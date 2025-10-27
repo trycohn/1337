@@ -96,36 +96,36 @@ const MatchDetailsPage = () => {
             
             setMatch(matchInfo);
             // 🆕 Лобби-статистика (если матч создан через лобби)
-            // НЕ загружаем статистику если матч завершен вручную
+            // Всегда пытаемся загрузить один раз
             let matchzyMatchId = null;
-            const isManuallyCompleted = matchInfo.status === 'completed' && !matchInfo.has_stats;
             
-            if (!isManuallyCompleted) {
-                try {
-                    const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
-                    if (ls?.data?.success) {
-                        // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
-                        const s = ls.data;
-                        matchInfo.maps_data = s.maps?.map(m => ({
-                            map_name: m.mapname,
-                            team1_score: m.team1_score,
-                            team2_score: m.team2_score
-                        })) || matchInfo.maps_data;
-                        matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
-                            action_type: x.action,
-                            team_id: x.team_id,
-                            map_name: x.mapname
-                        })) : matchInfo.selections) || [];
-                        // Присвоим, чтобы отрисовали блоки карт и историю
-                        setMatch({ ...matchInfo });
-                        setLobbyStats(s);
-                        matchzyMatchId = s.matchid;
-                    }
-                } catch (err) { 
-                    console.log('📊 [MatchDetailsPage] Статистика недоступна:', err.response?.data?.message || 'Нет данных');
+            try {
+                const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
+                if (ls?.data?.success) {
+                    console.log('✅ [MatchDetailsPage] Статистика загружена успешно');
+                    // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
+                    const s = ls.data;
+                    matchInfo.maps_data = s.maps?.map(m => ({
+                        map_name: m.mapname,
+                        team1_score: m.team1_score,
+                        team2_score: m.team2_score
+                    })) || matchInfo.maps_data;
+                    matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
+                        action_type: x.action,
+                        team_id: x.team_id,
+                        map_name: x.mapname
+                    })) : matchInfo.selections) || [];
+                    // Присвоим, чтобы отрисовали блоки карт и историю
+                    setMatch({ ...matchInfo });
+                    setLobbyStats(s);
+                    matchzyMatchId = s.matchid;
                 }
-            } else {
-                console.log('⏸️ [MatchDetailsPage] Матч завершен вручную, статистика не загружается');
+            } catch (err) { 
+                console.log('📊 [MatchDetailsPage] Статистика недоступна (это нормально для ручных матчей):', err.response?.status);
+                // Для завершенных матчей БЕЗ статистики - не проблема
+                if (matchInfo.status === 'completed') {
+                    console.log('⏸️ [MatchDetailsPage] Матч завершен, статистика отсутствует - показываем базовые данные');
+                }
             }
             setTournament(tournamentInfo);
             
