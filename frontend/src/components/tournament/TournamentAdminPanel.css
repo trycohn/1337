@@ -1178,6 +1178,16 @@
 }
 
 @media (max-width: 768px) {
+    body, html {
+        overflow-x: hidden;
+    }
+    .tournament-details-tournamentdetails h2 {
+        min-height: 0;
+        margin-bottom: 0px;
+    }
+    .header-meta {
+        margin-top: 0px;
+    }
     .admin-panel-header-v2 {
         gap: 0;
     }
