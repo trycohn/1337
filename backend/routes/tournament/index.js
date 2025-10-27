@@ -127,34 +127,42 @@ router.get('/:id/bracket/refresh', async (req, res) => {
     console.log(`🔄 [Bracket Refresh] Запрос обновления сетки турнира ${tournamentId}`);
     
     try {
-        // Получаем актуальные матчи с участниками
+        // Получаем актуальные матчи с участниками (используем проверенную структуру из MatchRepository)
         const matchesResult = await pool.query(`
             SELECT 
                 m.id,
                 m.tournament_id,
                 m.round,
                 m.match_number,
+                m.tournament_match_number,
                 m.team1_id,
                 m.team2_id,
-                m.winner_team_id,
                 m.score1,
                 m.score2,
+                m.winner_team_id,
+                m.match_date,
                 m.status,
+                m.maps_data,
                 m.bracket_type,
                 m.next_match_id,
                 m.loser_next_match_id,
-                m.maps_data,
-                m.created_at,
                 m.is_third_place_match,
-                m.tournament_match_number,
+                m.is_preliminary_round,
+                m.bye_match,
+                m.target_slot,
                 m.position_in_round,
-                t1.name as team1_name,
-                t2.name as team2_name,
-                tw.name as winner_name
+                m.source_match1_id,
+                m.source_match2_id,
+                m.round_name,
+                m.match_title,
+                -- Имена команд/участников для UI
+                COALESCE(tt1.name, tp1.name) as team1_name,
+                COALESCE(tt2.name, tp2.name) as team2_name
             FROM matches m
-            LEFT JOIN tournament_teams t1 ON t1.id = m.team1_id
-            LEFT JOIN tournament_teams t2 ON t2.id = m.team2_id
-            LEFT JOIN tournament_teams tw ON tw.id = m.winner_team_id
+            LEFT JOIN tournament_teams tt1 ON m.team1_id = tt1.id
+            LEFT JOIN tournament_teams tt2 ON m.team2_id = tt2.id
+            LEFT JOIN tournament_participants tp1 ON m.team1_id = tp1.id
+            LEFT JOIN tournament_participants tp2 ON m.team2_id = tp2.id
             WHERE m.tournament_id = $1
             ORDER BY m.round, m.match_number
         `, [tournamentId]);
