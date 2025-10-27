@@ -14,7 +14,7 @@
     border-radius: 0;
     margin-bottom: 20px;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Play, Arial, sans-serif;
 }
 /* ===== Р—РђР“РћР›РћР’РћРљ РЎ РљРќРћРџРљРђРњР РЈРџР РђР’Р›Р•РќРРЇ ===== */
 .admin-panel-header-v2 {
@@ -1178,8 +1178,14 @@
 }
 
 @media (max-width: 768px) {
+    .admin-panel-header-v2 {
+        gap: 0;
+    }
     .tournament-status-v2.status-in-progress {
         width: 100%;
+    }
+    .tournament-status-v2 {
+        justify-content: center;
     }
     .next-stage-btn.end-stage {
         width: 100%;
@@ -1214,5 +1220,8 @@
     }
     .section-controls {
         width: 100%;
+    }
+    .status-text-v2 {
+        font-size: 18px;
     }
 }
