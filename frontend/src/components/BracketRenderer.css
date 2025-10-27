@@ -1096,6 +1096,9 @@
   .bracket-render-upper-section { margin-bottom: 12px; padding: 16px; }
   .bracket-render-lower-section { margin-top: 8px; padding: 16px; }
   .bracket-round-column { width: 90vw; margin: 0 auto; min-width: auto; }
+  .\32\.0-bracket-share-content {
+    padding: 20px 24px;
+  }
 }
 
 .bracket-render-section-title {
