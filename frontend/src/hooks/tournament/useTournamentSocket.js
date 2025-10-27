@@ -54,11 +54,12 @@ function useTournamentSocket({
 
         console.log(`🔌 [useTournamentSocket] Инициализация подключения к турниру ${tournamentId}`);
         
-        // Создаем socket соединение
+        // Создаем socket соединение (polling-only для стабильности)
         const socket = io(API_URL, { 
-            auth: { token }, 
-            transports: ['polling', 'websocket'],
-            upgrade: true,
+            auth: { token },
+            path: '/socket.io',
+            transports: ['polling'],
+            upgrade: false,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
             reconnectionAttempts: maxReconnectAttempts,

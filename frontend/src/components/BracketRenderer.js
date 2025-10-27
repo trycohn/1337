@@ -162,19 +162,45 @@ const BracketRenderer = ({
         };
 
         // Подписываемся на событие если WebSocket доступен
+        let socketConnected = false;
         if (socket) {
             socket.on('bracket_updated', handleBracketUpdated);
             console.log('✅ [BracketRenderer] Подписка на bracket_updated активна');
+            
+            // Отслеживаем состояние подключения
+            socketConnected = socket.connected;
+            const onConnect = () => {
+                socketConnected = true;
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                    console.log('🔄 [BracketRenderer] Socket подключен — останавливаем интервал');
+                }
+            };
+            const onDisconnect = () => {
+                socketConnected = false;
+                // Запускаем fallback интервал
+                if (!refreshInterval && isTournamentActive) {
+                    refreshInterval = setInterval(() => {
+                        console.log('🔄 [BracketRenderer] Fallback refresh (socket disconnected)');
+                        onBracketUpdate();
+                    }, PERIODIC_REFRESH_INTERVAL);
+                }
+            };
+            socket.on('connect', onConnect);
+            socket.on('disconnect', onDisconnect);
         }
 
-        // Периодический refresh как fallback (только если турнир активен)
+        // Периодический refresh как fallback (только если турнир активен И сокет не подключен)
         const isTournamentActive = tournament?.status === 'in_progress' || tournament?.status === 'active';
-        if (isTournamentActive) {
+        if (isTournamentActive && !socketConnected) {
             refreshInterval = setInterval(() => {
-                console.log('🔄 [BracketRenderer] Периодический refresh сетки');
+                console.log('🔄 [BracketRenderer] Периодический refresh сетки (fallback)');
                 onBracketUpdate();
             }, PERIODIC_REFRESH_INTERVAL);
-            console.log('⏰ [BracketRenderer] Периодический refresh активирован (каждые 30 сек)');
+            console.log('⏰ [BracketRenderer] Fallback refresh активирован (каждые 30 сек)');
+        } else if (socketConnected) {
+            console.log('✅ [BracketRenderer] Socket подключен — интервал не запускается');
         }
 
         // Cleanup
@@ -182,7 +208,9 @@ const BracketRenderer = ({
             if (socket) {
                 try {
                     socket.off('bracket_updated', handleBracketUpdated);
-                    console.log('🧹 [BracketRenderer] Отписка от bracket_updated');
+                    socket.off('connect', onConnect);
+                    socket.off('disconnect', onDisconnect);
+                    console.log('🧹 [BracketRenderer] Отписка от событий сокета');
                 } catch (_) {}
             }
             if (refreshInterval) {
