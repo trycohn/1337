@@ -163,13 +163,17 @@ const BracketRenderer = ({
 
         // Подписываемся на событие если WebSocket доступен
         let socketConnected = false;
+        let onConnect = null;
+        let onDisconnect = null;
+        
         if (socket) {
             socket.on('bracket_updated', handleBracketUpdated);
             console.log('✅ [BracketRenderer] Подписка на bracket_updated активна');
             
             // Отслеживаем состояние подключения
             socketConnected = socket.connected;
-            const onConnect = () => {
+            
+            onConnect = () => {
                 socketConnected = true;
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
@@ -177,8 +181,10 @@ const BracketRenderer = ({
                     console.log('🔄 [BracketRenderer] Socket подключен — останавливаем интервал');
                 }
             };
-            const onDisconnect = () => {
+            
+            onDisconnect = () => {
                 socketConnected = false;
+                const isTournamentActive = tournament?.status === 'in_progress' || tournament?.status === 'active';
                 // Запускаем fallback интервал
                 if (!refreshInterval && isTournamentActive) {
                     refreshInterval = setInterval(() => {
@@ -187,6 +193,7 @@ const BracketRenderer = ({
                     }, PERIODIC_REFRESH_INTERVAL);
                 }
             };
+            
             socket.on('connect', onConnect);
             socket.on('disconnect', onDisconnect);
         }
@@ -208,8 +215,8 @@ const BracketRenderer = ({
             if (socket) {
                 try {
                     socket.off('bracket_updated', handleBracketUpdated);
-                    socket.off('connect', onConnect);
-                    socket.off('disconnect', onDisconnect);
+                    if (onConnect) socket.off('connect', onConnect);
+                    if (onDisconnect) socket.off('disconnect', onDisconnect);
                     console.log('🧹 [BracketRenderer] Отписка от событий сокета');
                 } catch (_) {}
             }
