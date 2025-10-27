@@ -107,7 +107,7 @@ function useTournamentLobby(lobbyId, user) {
         fetchLobbyInfo(); 
     }, [fetchLobbyInfo]);
 
-    // 🔄 Live обновление состояния лобби каждые 3 секунды
+    // 🔄 Live обновление состояния лобби каждые 5 секунд
     useEffect(() => {
         if (!lobbyId || !user) return;
         
@@ -136,7 +136,7 @@ function useTournamentLobby(lobbyId, user) {
             }
         };
         
-        const interval = setInterval(poll, 3000);
+        const interval = setInterval(poll, 5000); // 5 секунд
         
         return () => {
             isActive = false;

@@ -82,28 +82,37 @@ const MatchDetailsPage = () => {
             
             setMatch(matchInfo);
             // 🆕 Лобби-статистика (если матч создан через лобби)
+            // НЕ загружаем статистику если матч завершен вручную
             let matchzyMatchId = null;
-            try {
-                const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
-                if (ls?.data?.success) {
-                    // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
-                    const s = ls.data;
-                    matchInfo.maps_data = s.maps?.map(m => ({
-                        map_name: m.mapname,
-                        team1_score: m.team1_score,
-                        team2_score: m.team2_score
-                    })) || matchInfo.maps_data;
-                    matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
-                        action_type: x.action,
-                        team_id: x.team_id,
-                        map_name: x.mapname
-                    })) : matchInfo.selections) || [];
-                    // Присвоим, чтобы отрисовали блоки карт и историю
-                    setMatch({ ...matchInfo });
-                    setLobbyStats(s);
-                    matchzyMatchId = s.matchid;
+            const isManuallyCompleted = matchInfo.status === 'completed' && !matchInfo.has_stats;
+            
+            if (!isManuallyCompleted) {
+                try {
+                    const ls = await api.get(`/api/matches/tournament/${matchId}/stats?v=${pollVersion}`);
+                    if (ls?.data?.success) {
+                        // Встраиваем карточки карт и selections в существующую страницу (аккордеоны будут позже)
+                        const s = ls.data;
+                        matchInfo.maps_data = s.maps?.map(m => ({
+                            map_name: m.mapname,
+                            team1_score: m.team1_score,
+                            team2_score: m.team2_score
+                        })) || matchInfo.maps_data;
+                        matchInfo.selections = (Array.isArray(s.pickban) ? s.pickban.map(x => ({
+                            action_type: x.action,
+                            team_id: x.team_id,
+                            map_name: x.mapname
+                        })) : matchInfo.selections) || [];
+                        // Присвоим, чтобы отрисовали блоки карт и историю
+                        setMatch({ ...matchInfo });
+                        setLobbyStats(s);
+                        matchzyMatchId = s.matchid;
+                    }
+                } catch (err) { 
+                    console.log('📊 [MatchDetailsPage] Статистика недоступна:', err.response?.data?.message || 'Нет данных');
                 }
-            } catch (_) { /* нет лобби-статистики — не критично */ }
+            } else {
+                console.log('⏸️ [MatchDetailsPage] Матч завершен вручную, статистика не загружается');
+            }
             setTournament(tournamentInfo);
             
             // Загружаем историю матчей команд
@@ -146,6 +155,12 @@ const MatchDetailsPage = () => {
     const handleTournamentUpdate = useCallback((data) => {
         console.log('🔄 [MatchDetailsPage] Получено обновление турнира:', data);
         
+        // НЕ обновляем если матч завершен вручную
+        if (match?.status === 'completed' && !lobbyStats) {
+            console.log('⏸️ [MatchDetailsPage] Матч завершен вручную, автообновление отключено');
+            return;
+        }
+        
         // Если обновление касается нашего матча - увеличиваем pollVersion для перезагрузки
         if (data && typeof data === 'object') {
             const updateType = data._metadata?.updateType;
@@ -161,17 +176,23 @@ const MatchDetailsPage = () => {
                 setPollVersion(v => v + 1);
             }
         }
-    }, [matchId]);
+    }, [matchId, match, lobbyStats]);
 
     const handleMatchUpdate = useCallback((data) => {
         console.log('🎯 [MatchDetailsPage] Получено обновление матча:', data);
+        
+        // НЕ обновляем если матч завершен вручную
+        if (match?.status === 'completed' && !lobbyStats) {
+            console.log('⏸️ [MatchDetailsPage] Матч завершен вручную, автообновление отключено');
+            return;
+        }
         
         // Если это обновление нашего матча - обновляем данные
         if (data && data.matchId === parseInt(matchId)) {
             console.log('✅ [MatchDetailsPage] Обновление относится к нашему матчу, перезагружаем...');
             setPollVersion(v => v + 1);
         }
-    }, [matchId]);
+    }, [matchId, match, lobbyStats]);
 
     // Подключаем WebSocket для live обновлений
     useTournamentSocket({
@@ -362,11 +383,11 @@ const MatchDetailsPage = () => {
             
             if (response.data.success) {
                 alert('Импорт статистики запущен! Обновите страницу через несколько секунд.');
-                // Обновляем данные через 3 секунды
+                // Обновляем данные через 5 секунд
                 setTimeout(() => {
                     fetchMatchDetails();
                     setPollVersion(v => v + 1);
-                }, 3000);
+                }, 5000);
             } else {
                 throw new Error(response.data.error || 'Ошибка импорта');
             }

@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 
 export function StatusPanel({ completedAt, onRefresh }) {
-  // Тихое автообновление каждые 15 секунд (без отображения таймера)
+  // Тихое автообновление каждые 5 секунд (без отображения таймера)
   useEffect(() => {
     if (!onRefresh) return;
     
     const interval = setInterval(() => {
       onRefresh();
-    }, 15000); // 15 секунд
+    }, 5000); // 5 секунд
     
     return () => clearInterval(interval);
   }, [onRefresh]);

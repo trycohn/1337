@@ -134,11 +134,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #111;
     padding: 15px 20px;
-    border-radius: 8px 8px 0 0;
-    border: 1px solid #333;
-    border-bottom: none;
 }
 
 .match-status {
@@ -185,11 +181,7 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 40px;
-    background: #111;
-    padding: 40px;
-    border: 1px solid #333;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
+    padding: 20px 40px;
     margin-bottom: 40px;
 }
 
@@ -211,6 +203,10 @@
     top: -20px;
     font-size: 24px;
     animation: bounce 2s infinite;
+}
+
+.team-block .team-name {
+    color: #c1c1c1;
 }
 
 @keyframes bounce {

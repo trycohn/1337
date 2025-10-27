@@ -348,7 +348,7 @@ function useCustomLobby(user, isAdmin) {
         });
     }, [team1Users, team2Users]);
 
-    // 🔄 Live обновление состояния лобби каждые 2 секунды
+    // 🔄 Live обновление состояния лобби каждые 5 секунд
     useEffect(() => {
         if (!lobbyId) return;
         
@@ -370,7 +370,7 @@ function useCustomLobby(user, isAdmin) {
             }
         };
         
-        const interval = setInterval(poll, 2000);
+        const interval = setInterval(poll, 5000); // 5 секунд
         
         return () => {
             isActive = false;
