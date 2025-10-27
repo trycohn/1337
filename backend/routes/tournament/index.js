@@ -141,7 +141,6 @@ router.get('/:id/bracket/refresh', async (req, res) => {
                 m.score2,
                 m.status,
                 m.bracket_type,
-                m.bracket_position,
                 m.next_match_id,
                 m.loser_next_match_id,
                 m.maps_data,
@@ -149,6 +148,7 @@ router.get('/:id/bracket/refresh', async (req, res) => {
                 m.is_third_place_match,
                 m.tournament_match_number,
                 m.display_sequence,
+                m.position_in_round,
                 t1.name as team1_name,
                 t2.name as team2_name,
                 tw.name as winner_name
