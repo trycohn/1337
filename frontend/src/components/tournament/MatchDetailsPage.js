@@ -1362,7 +1362,7 @@ const MatchDetailsPage = () => {
                     </span>
                     <span className="match-date">{formatDate(match.match_date || match.created_at)}</span>
                     <div className="match-status-bar-buttons">
-                        {isAdminOrCreator && tournament?.status !== 'completed' && (
+                        {isAdminOrCreator && (
                             <>
                                 {match.status === 'completed' ? (
                                     <button 
@@ -1377,6 +1377,7 @@ const MatchDetailsPage = () => {
                                         className="btn btn-primary" 
                                         onClick={handleCompleteMatch} 
                                         title="Завершить матч и зафиксировать результат"
+                                        disabled={tournament?.status === 'completed'}
                                     >
                                         Завершить матч
                                     </button>
