@@ -64,13 +64,27 @@ const MatchDetailsPage = () => {
             setLoading(true);
             
             // Получаем данные матча и турнира (публичные роуты)
-            const [matchResponse, tournamentResponse] = await Promise.all([
-                fetch(`/api/tournaments/${tournamentId}/match/${matchId}`),
-                fetch(`/api/tournaments/${tournamentId}`)
-            ]);
+            let matchResponse, tournamentResponse;
+            try {
+                [matchResponse, tournamentResponse] = await Promise.all([
+                    fetch(`/api/tournaments/${tournamentId}/match/${matchId}`),
+                    fetch(`/api/tournaments/${tournamentId}`)
+                ]);
+            } catch (fetchError) {
+                console.error('❌ [MatchDetailsPage] Ошибка сетевого запроса:', fetchError);
+                throw new Error('Ошибка подключения к серверу. Проверьте интернет-соединение.');
+            }
 
-            if (!matchResponse.ok || !tournamentResponse.ok) {
-                throw new Error('Не удалось загрузить данные матча');
+            if (!matchResponse.ok) {
+                const errorText = await matchResponse.text();
+                console.error('❌ [MatchDetailsPage] Ошибка загрузки матча:', matchResponse.status, errorText);
+                throw new Error(`Ошибка загрузки матча (${matchResponse.status})`);
+            }
+            
+            if (!tournamentResponse.ok) {
+                const errorText = await tournamentResponse.text();
+                console.error('❌ [MatchDetailsPage] Ошибка загрузки турнира:', tournamentResponse.status, errorText);
+                throw new Error(`Ошибка загрузки турнира (${tournamentResponse.status})`);
             }
 
             const matchData = await matchResponse.json();
