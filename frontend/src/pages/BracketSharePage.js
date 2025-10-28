@@ -160,13 +160,7 @@ function BracketSharePage() {
     }
   }, [id, fetchTournamentData]);
 
-  useEffect(() => {
-    if (!id) return;
-    const interval = setInterval(() => {
-      try { fetchTournamentData(); } catch (_) {}
-    }, 20000);
-    return () => clearInterval(interval);
-  }, [id, fetchTournamentData]);
+  // Периодический refresh убран: BracketRenderer уже имеет fallback интервал 30 сек при отключенном socket
 
   return (
     <div className="2.0-bracket-share-page" style={{ background: '#000', minHeight: '100vh' }}>

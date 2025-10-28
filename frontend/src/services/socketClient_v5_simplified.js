@@ -11,9 +11,9 @@ const SOCKET_CONFIG = {
   options: {
     path: '/socket.io',
     
-    // 🚀 Стабильный polling-only режим (без WebSocket upgrade)
-    transports: ['polling'],
-    upgrade: false,
+    // 🚀 Polling handshake + WebSocket upgrade для real-time
+    transports: ['polling', 'websocket'],
+    upgrade: true,
     
     // Production настройки
     timeout: 20000,
@@ -75,7 +75,13 @@ export const getSocketInstance = () => {
       console.log('🏓 [Socket.IO V5 Simplified] Ping от сервера');
     });
     
-    // Upgrade отключён (polling-only режим)
+    socketInstance.io.engine.on('upgrade', (transport) => {
+      console.log('⬆️ [Socket.IO V5 Simplified] Upgrade на WebSocket успешен!', transport.name);
+    });
+    
+    socketInstance.io.engine.on('upgradeError', (error) => {
+      console.warn('⚠️ [Socket.IO V5 Simplified] Ошибка upgrade:', error.message);
+    });
   }
   
   return socketInstance;
