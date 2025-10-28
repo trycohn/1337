@@ -117,4 +117,8 @@
   padding: 20px 124px;
 }
 
-
+@media (max-width: 768px) {
+  .\32\.0-bracket-share-content {
+    padding: 20px 24px;
+  }
+}
