@@ -95,14 +95,15 @@ class TournamentRepository {
             require_steam_linked = false,
             is_series_final = false,
             access_type = 'open',
-            is_hidden = false
+            is_hidden = false,
+            application_form_config = {}
         } = tournamentData;
 
         const result = await pool.query(
             `INSERT INTO tournaments
-             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, mix_type, full_double_elimination, lobby_match_format, final_match_format, require_faceit_linked, require_steam_linked, is_series_final, access_type, is_hidden)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *`,
-            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null), full_double_elimination || false, lobby_match_format || null, final_match_format || null, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open', !!is_hidden]
+             (name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, mix_type, full_double_elimination, lobby_match_format, final_match_format, require_faceit_linked, require_steam_linked, is_series_final, access_type, is_hidden, application_form_config)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
+            [name, game, format, created_by, status, participant_type, max_participants, start_date, description, bracket_type, team_size, mix_rating_type, (format === 'mix' ? (mix_type === 'full' ? 'full' : 'classic') : null), full_double_elimination || false, lobby_match_format || null, final_match_format || null, !!require_faceit_linked, !!require_steam_linked, !!is_series_final, access_type === 'closed' ? 'closed' : 'open', !!is_hidden, application_form_config || {}]
         );
 
         return result.rows[0];

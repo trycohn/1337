@@ -1,0 +1,106 @@
+.apply-form-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #fff;
+}
+
+.apply-form-title {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.apply-form-subtitle {
+  margin: 0 0 16px 0;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.apply-alert {
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #333;
+}
+.apply-alert.error {
+  background: #3b0000;
+  border-color: #660000;
+}
+.apply-alert.success {
+  background: #002b00;
+  border-color: #006600;
+}
+
+.apply-form {
+  display: block;
+}
+
+.apply-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.apply-field {}
+
+.apply-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.apply-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 44px; /* удобный тап-таргет */
+}
+.apply-input:focus {
+  outline: none;
+  border-color: #ff0000;
+  box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
+}
+
+.apply-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.apply-submit, .apply-cancel {
+  min-height: 44px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+  .apply-form-container {
+    padding: 12px;
+  }
+  .apply-form-title {
+    font-size: 20px;
+  }
+  .apply-grid {
+    grid-template-columns: 1fr; /* в одну колонку на мобилках */
+    gap: 10px;
+  }
+  .apply-actions {
+    flex-direction: column;
+  }
+  .apply-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Малые экраны */
+@media (max-width: 480px) {
+  .apply-input {
+    padding: 10px;
+    min-height: 42px;
+  }
+}
+
+

@@ -2891,6 +2891,16 @@ function TournamentDetails() {
                                                         return;
                                                     }
 
+                                                    // 🆕 Требование анкеты
+                                                    if (tournament?.application_form_config && tournament.application_form_config.enabled) {
+                                                        if (tournament?.id) {
+                                                            window.open(`/tournaments/${tournament.id}/apply`, '_blank', 'noopener,noreferrer');
+                                                        }
+                                                        setMessage('Откройте новую вкладку и заполните анкету, затем повторите попытку участия');
+                                                        setTimeout(() => setMessage(''), 5000);
+                                                        return;
+                                                    }
+
                                                     const participantType = tournament.participant_type;
                                                     
                                                     // Для командных турниров открываем модалку выбора команды

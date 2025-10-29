@@ -21,7 +21,7 @@ class ParticipantController {
             );
         } catch (err) {
             const code = err.code;
-            if (code === 'FACEIT_LINK_REQUIRED' || code === 'STEAM_LINK_REQUIRED') {
+            if (code === 'FACEIT_LINK_REQUIRED' || code === 'STEAM_LINK_REQUIRED' || code === 'APPLICATION_REQUIRED' || code === 'APPLICATION_PENDING') {
                 return res.status(400).json({ error: err.message, code });
             }
             throw err;

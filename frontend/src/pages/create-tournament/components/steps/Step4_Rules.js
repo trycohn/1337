@@ -12,6 +12,15 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
   const [loadingMaps, setLoadingMaps] = useState(false);
   const [mapsInitialized, setMapsInitialized] = useState(false); // 🆕 Флаг инициализации
   const [mapMode, setMapMode] = useState('default'); // 'default' | 'wingman'
+  const [localFormConfig, setLocalFormConfig] = useState(() => {
+    const cfg = (data && data.application_form_config) || {};
+    return {
+      enabled: !!cfg.enabled,
+      fill_mode: cfg.fill_mode || 'all', // all|captain
+      min_age: cfg.min_age || '',
+      fields: Array.isArray(cfg.fields) ? cfg.fields : []
+    };
+  });
 
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
@@ -213,6 +222,120 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
             <small className="form-hint">Если включено — принять участие смогут только пользователи с привязанным FACEIT аккаунтом.</small>
           </div>
         )}
+
+        {/* 🆕 Анкета участника (конструктор) */}
+        <div className="form-group" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #333' }}>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={localFormConfig.enabled}
+              onChange={(e) => {
+                const next = { ...localFormConfig, enabled: e.target.checked };
+                setLocalFormConfig(next);
+                onChange({ ...data, application_form_config: next });
+              }}
+            />
+            <span>Требовать заполнение анкеты при участии</span>
+          </label>
+
+          {localFormConfig.enabled && (
+            <div style={{ marginTop: '12px', padding: '12px', background: '#1a1a1a', border: '1px solid #333', borderRadius: '6px', display: 'grid', gap: '12px' }}>
+              {/* Режим заполнения */}
+              <div>
+                <label>Кто заполняет</label>
+                <select
+                  value={localFormConfig.fill_mode}
+                  onChange={(e) => {
+                    const next = { ...localFormConfig, fill_mode: e.target.value };
+                    setLocalFormConfig(next);
+                    onChange({ ...data, application_form_config: next });
+                  }}
+                >
+                  <option value="all">Каждый игрок</option>
+                  <option value="captain">Только капитан команды</option>
+                </select>
+                <small className="form-hint">Для командных турниров можно требовать анкету только от капитана</small>
+              </div>
+
+              {/* Минимальный возраст (опционально) */}
+              <div>
+                <label>Минимальный возраст (опционально)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="120"
+                  value={localFormConfig.min_age}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const next = { ...localFormConfig, min_age: v === '' ? '' : parseInt(v, 10) };
+                    setLocalFormConfig(next);
+                    onChange({ ...data, application_form_config: next });
+                  }}
+                  placeholder="Напр. 16"
+                />
+                <small className="form-hint">Если указано — проверим дату рождения на соответствие</small>
+              </div>
+
+              {/* Поля анкеты */}
+              <div>
+                <label>Поля анкеты</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                  {[
+                    { key: 'last_name', label: 'Фамилия' },
+                    { key: 'first_name', label: 'Имя' },
+                    { key: 'middle_name', label: 'Отчество' },
+                    { key: 'date_of_birth', label: 'Дата рождения' },
+                    { key: 'region', label: 'Регион проживания' },
+                    { key: 'vk_url', label: 'VK' },
+                    { key: 'telegram_url', label: 'Telegram' },
+                    { key: 'phone', label: 'Телефон' },
+                    { key: 'steam_url', label: 'Steam' },
+                    { key: 'faceit_url', label: 'FACEIT' }
+                  ].map((f) => {
+                    const existing = (localFormConfig.fields || []).find((x) => x.key === f.key) || { key: f.key, required: false };
+                    const isChecked = !!(localFormConfig.fields || []).some((x) => x.key === f.key);
+                    return (
+                      <label key={f.key} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#111', border: '1px solid #333', borderRadius: '6px', padding: '8px' }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            let nextFields = Array.isArray(localFormConfig.fields) ? [...localFormConfig.fields] : [];
+                            if (e.target.checked) {
+                              nextFields.push({ key: f.key, required: false });
+                            } else {
+                              nextFields = nextFields.filter((x) => x.key !== f.key);
+                            }
+                            const next = { ...localFormConfig, fields: nextFields };
+                            setLocalFormConfig(next);
+                            onChange({ ...data, application_form_config: next });
+                          }}
+                        />
+                        <span style={{ flex: 1 }}>{f.label}</span>
+                        {isChecked && (
+                          <label className="checkbox-label" style={{ marginLeft: 'auto' }}>
+                            <input
+                              type="checkbox"
+                              checked={!!existing.required}
+                              onChange={(e) => {
+                                const nextFields = (localFormConfig.fields || []).map((x) => x.key === f.key ? { ...x, required: e.target.checked } : x);
+                                const next = { ...localFormConfig, fields: nextFields };
+                                setLocalFormConfig(next);
+                                onChange({ ...data, application_form_config: next });
+                              }}
+                            />
+                            <span>обязательное</span>
+                          </label>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+                <small className="form-hint">Отметьте поля и обязательность. Дата рождения может сочетаться с минимальным возрастом.</small>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Настройки лобби для CS2 */}

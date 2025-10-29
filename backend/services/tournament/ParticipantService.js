@@ -140,6 +140,34 @@ class ParticipantService {
             }
         }
 
+        // 🆕 Требование анкеты (предварительный отсев)
+        try {
+            const cfg = tournament.application_form_config || {};
+            if (cfg.enabled) {
+                const pool = require('../../db');
+                const appRes = await pool.query(
+                    `SELECT status FROM tournament_applications WHERE tournament_id = $1 AND user_id = $2 LIMIT 1`,
+                    [tournamentId, userId]
+                );
+                if (appRes.rows.length === 0) {
+                    const err = new Error('Для участия необходимо заполнить анкету');
+                    err.code = 'APPLICATION_REQUIRED';
+                    throw err;
+                }
+                const status = (appRes.rows[0].status || 'pending').toLowerCase();
+                if (status !== 'approved') {
+                    const err = new Error('Анкета на модерации. Дождитесь подтверждения организатора');
+                    err.code = 'APPLICATION_PENDING';
+                    throw err;
+                }
+            }
+        } catch (checkErr) {
+            if (checkErr.code === 'APPLICATION_REQUIRED' || checkErr.code === 'APPLICATION_PENDING') {
+                throw checkErr;
+            }
+            console.warn('⚠️ Проверка анкеты: ', checkErr.message);
+        }
+
         // Проверяем лимит участников
         if (tournament.max_participants) {
             let currentCount;

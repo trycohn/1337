@@ -33,6 +33,7 @@ import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import CustomMatchPage from './pages/CustomMatchPage';
 import GlobalLeaderboardPage from './pages/GlobalLeaderboardPage';
+import ApplyTournamentForm from './pages/ApplyTournamentForm';
 
 // Компонент для обработки аутентификации через Steam
 function AuthCallback() {
@@ -95,6 +96,7 @@ function App() {
                                 <Route path="/lobby/custom" element={<PrivateRoute component={CustomLobbyContainer} />} /> {/* 🆕 Кастомное лобби */}
                                 <Route path="/invite/:referralCode" element={<ReferralLanding />} />
                                 <Route path="/tournaments/:id/rules" element={<TournamentRulesPage />} />
+                                <Route path="/tournaments/:id/apply" element={<PrivateRoute component={ApplyTournamentForm} />} />
                                 <Route path="/my-tournaments" element={<PrivateRoute component={MyTournaments} />} />
                                 <Route path="/my-matches" element={<PrivateRoute component={MyActiveMatches} />} />
                                 <Route path="/matches/custom/:id" element={<PrivateRoute component={CustomMatchPage} />} />

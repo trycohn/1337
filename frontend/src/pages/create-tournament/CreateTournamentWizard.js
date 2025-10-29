@@ -94,6 +94,8 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
       final_match_format: 'bo3',
       // 🆕 Требование привязки FACEIT (переехало со Шага 3)
       require_faceit_linked: false,
+        // 🆕 Конфиг анкеты
+        application_form_config: { enabled: false, fields: [], min_age: '', fill_mode: 'all' },
     },
     
     // Шаг 5: Брендинг
@@ -310,6 +312,8 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
           selected_maps: wizardData.rules.lobby_enabled ? wizardData.rules.selected_maps : [],
           // 🆕 Особый формат для финалов
           final_match_format: wizardData.rules.enable_final_format ? wizardData.rules.final_match_format : null,
+          // 🆕 Анкета
+          application_form_config: wizardData.rules.application_form_config || { enabled: false },
           
           // Из branding (сохраняем как JSONB в поле branding)
           branding: {
