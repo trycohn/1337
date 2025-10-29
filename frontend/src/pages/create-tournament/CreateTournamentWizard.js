@@ -92,6 +92,8 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
       // 🆕 Особый формат для финалов
       enable_final_format: false,
       final_match_format: 'bo3',
+      // 🆕 Требование привязки FACEIT (переехало со Шага 3)
+      require_faceit_linked: false,
     },
     
     // Шаг 5: Брендинг
@@ -284,9 +286,8 @@ function CreateTournamentWizard({ onBack, initialDraft }) {
           // wins_to_win только для Swiss System (независимо от mix_type)
           wins_to_win: wizardData.format.bracket_type === 'swiss'
             ? parseInt(wizardData.format.wins_to_win || 4, 10) : null,
-          require_faceit_linked: wizardData.format.format === 'mix' && 
-                                 wizardData.format.mix_rating_type === 'faceit' 
-            ? wizardData.format.require_faceit_linked : false,
+          // Требования привязок теперь берём из Шага 4 (Правила)
+          require_faceit_linked: !!wizardData.rules.require_faceit_linked,
           require_steam_linked: wizardData.format.format === 'mix' && 
                                 wizardData.format.mix_rating_type === 'premier' 
             ? wizardData.format.require_steam_linked : false,

@@ -243,6 +243,8 @@ function TournamentDetails() {
 
     // 🆕 СОСТОЯНИЕ ДЛЯ МОДАЛЬНОГО ОКНА УДАЛЕНИЯ ТУРНИРА
     const [deleteTournamentModal, setDeleteTournamentModal] = useState(false);
+    // 🆕 Модалка привязки FACEIT
+    const [showFaceitModal, setShowFaceitModal] = useState(false);
     const [isDeletingTournament, setIsDeletingTournament] = useState(false);
 
     // 🆕 ГИБРИДНАЯ СИСТЕМА СОСТОЯНИЯ
@@ -2883,6 +2885,12 @@ function TournamentDetails() {
                                                         return;
                                                     }
                                                     
+                                                    // 🆕 Требование привязки FACEIT аккаунта
+                                                    if (tournament?.require_faceit_linked && !user?.faceit_id) {
+                                                        setShowFaceitModal(true);
+                                                        return;
+                                                    }
+
                                                     const participantType = tournament.participant_type;
                                                     
                                                     // Для командных турниров открываем модалку выбора команды
@@ -3166,6 +3174,22 @@ function TournamentDetails() {
                         tournament={tournament}
                         isLoading={isDeletingTournament}
                     />
+                )}
+
+                {/* 🆕 Модальное окно требования привязки FACEIT */}
+                {showFaceitModal && (
+                    <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center'}}>
+                        <div style={{background:'#111', color:'#fff', border:'1px solid #333', borderRadius:8, width:'min(520px, 92vw)', padding:20, boxShadow:'0 10px 30px rgba(0,0,0,0.6)'}}>
+                            <h3 style={{marginTop:0}}>Нужна привязка FACEIT</h3>
+                            <p style={{color:'#ccc', lineHeight:1.5}}>
+                                Организатор включил ограничение: участвовать могут только пользователи с привязанным FACEIT аккаунтом.
+                            </p>
+                            <div style={{display:'flex', gap:12, marginTop:16}}>
+                                <button className="btn btn-primary" onClick={() => { setShowFaceitModal(false); window.location.href = '/profile#faceit'; }}>Привязать FACEIT →</button>
+                                <button className="btn btn-secondary" onClick={() => setShowFaceitModal(false)}>Отмена</button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 {/* 👥 Модальное окно выбора команды для участия */}

@@ -315,18 +315,7 @@ function Step3_Format({ data, basicInfo, onChange }) {
             </div>
           )}
 
-          {data.mix_rating_type === 'faceit' && (
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={data.require_faceit_linked || false}
-                  onChange={(e) => handleChange('require_faceit_linked', e.target.checked)}
-                />
-                <span>Требовать привязку FACEIT аккаунта</span>
-              </label>
-            </div>
-          )}
+          {/* Требование FACEIT перенесено на Шаг 4 (Правила) для CS2 */}
 
           {data.mix_rating_type === 'premier' && (
             <div className="form-group">

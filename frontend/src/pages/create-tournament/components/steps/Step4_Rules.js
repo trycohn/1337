@@ -198,6 +198,21 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
             Это не MIX-формирование команд. Seeding определяет начальную расстановку команд в турнирной сетке.
           </small>
         </div>
+
+        {/* 🆕 Требование привязки FACEIT аккаунта (для CS2, на шаге Правила) */}
+        {isCS2 && (
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={data.require_faceit_linked || false}
+                onChange={(e) => handleChange('require_faceit_linked', e.target.checked)}
+              />
+              <span>Требовать привязку FACEIT аккаунта для участия</span>
+            </label>
+            <small className="form-hint">Если включено — принять участие смогут только пользователи с привязанным FACEIT аккаунтом.</small>
+          </div>
+        )}
       </div>
 
       {/* Настройки лобби для CS2 */}
