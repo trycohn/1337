@@ -1112,6 +1112,7 @@ class MatchLobbyService {
             skip_veto: true,
             side_type: 'standard',
             players_per_team, // динамическое значение
+            ...(players_per_team === 2 && { wingman: true }), // Режим wingman для 2v2
             team1: { 
                 name: lobby.team1_name || 'TEAM_A', 
                 players: team1PlayersObj // объект {steam_id: nickname}
