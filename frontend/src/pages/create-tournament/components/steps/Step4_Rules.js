@@ -8,8 +8,10 @@ import axios from 'axios';
  */
 function Step4_Rules({ data, format, basicInfo, onChange }) {
   const [cs2Maps, setCs2Maps] = useState([]);
+  const [defaultCs2Maps, setDefaultCs2Maps] = useState([]); // 🆕 Базовый маппул 5х5
   const [loadingMaps, setLoadingMaps] = useState(false);
   const [mapsInitialized, setMapsInitialized] = useState(false); // 🆕 Флаг инициализации
+  const [mapMode, setMapMode] = useState('default'); // 'default' | 'wingman'
 
   const handleChange = (field, value) => {
     onChange({ ...data, [field]: value });
@@ -37,6 +39,7 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
         setLoadingMaps(true);
         const response = await axios.get('/api/maps?game=Counter-Strike 2');
         setCs2Maps(response.data);
+        setDefaultCs2Maps(response.data);
         console.log('✅ Загружено карт CS2:', response.data.length);
       } catch (error) {
         console.error('❌ Ошибка загрузки карт CS2:', error);
@@ -51,6 +54,7 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
           { id: 7, name: 'de_anubis', display_name: 'Anubis' }
         ];
         setCs2Maps(fallbackMaps);
+        setDefaultCs2Maps(fallbackMaps);
       } finally {
         setLoadingMaps(false);
       }
@@ -58,6 +62,57 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
 
     fetchMaps();
   }, [isCS2, cs2Maps.length]);
+
+  // 🆕 Wingman маппул (2х2)
+  const wingmanMaps = [
+    { id: 1001, name: 'de_inferno', display_name: 'Inferno (Wingman)' },
+    { id: 1002, name: 'de_nuke', display_name: 'Nuke (Wingman)' },
+    { id: 1003, name: 'de_overpass', display_name: 'Overpass (Wingman)' },
+    { id: 1004, name: 'de_vertigo', display_name: 'Vertigo (Wingman)' },
+    { id: 1005, name: 'de_assembly', display_name: 'Assembly' },
+    { id: 1006, name: 'de_brewery', display_name: 'Brewery' },
+    { id: 1007, name: 'de_ravine', display_name: 'Ravine' },
+    { id: 1008, name: 'de_foroglio', display_name: 'Foroglio' },
+    { id: 1009, name: 'de_vandal', display_name: 'Vandal' },
+    { id: 1010, name: 'de_dorf', display_name: 'Dorf' },
+    { id: 1011, name: 'de_anubis', display_name: 'Anubis (Wingman)' }
+  ];
+
+  // 🆕 Переключение маппула для CS2 при размере состава 2 (Wingman)
+  useEffect(() => {
+    if (!isCS2) return;
+    const isWingman = parseInt(format?.team_size, 10) === 2;
+    const wingNames = wingmanMaps.map(m => m.name);
+    const currentNames = cs2Maps.map(m => m.name);
+
+    if (isWingman && mapMode !== 'wingman') {
+      setCs2Maps(wingmanMaps);
+      setMapMode('wingman');
+      // Автовыбор: оставляем пересечение, при нехватке — добираем первыми из списка до 7
+      if (data.lobby_enabled) {
+        const current = Array.isArray(data.selected_maps) ? data.selected_maps : [];
+        const intersection = current.filter(n => wingNames.includes(n));
+        const filled = [...intersection];
+        for (let i = 0; i < wingNames.length && filled.length < 7; i += 1) {
+          if (!filled.includes(wingNames[i])) filled.push(wingNames[i]);
+        }
+        handleChange('selected_maps', filled.slice(0, 7));
+      }
+    }
+
+    if (!isWingman && mapMode !== 'default') {
+      setCs2Maps(defaultCs2Maps);
+      setMapMode('default');
+      // Если выбранные карты не из базового пула — очищаем до валидного состояния, но не навязываем выбор
+      if (data.lobby_enabled && defaultCs2Maps.length) {
+        const baseNames = defaultCs2Maps.map(m => m.name);
+        const current = Array.isArray(data.selected_maps) ? data.selected_maps : [];
+        const filtered = current.filter(n => baseNames.includes(n));
+        handleChange('selected_maps', filtered);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCS2, format?.team_size, data.lobby_enabled, defaultCs2Maps.length]);
 
   // Автовыбор всех карт при включении лобби (только один раз)
   useEffect(() => {
@@ -209,6 +264,22 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
               {/* Выбор карт турнира */}
               <div className="form-group">
                 <label>Карты турнира (выберите 7 карт) *</label>
+
+                {/* 🆕 Инфоблок про Wingman */}
+                {mapMode === 'wingman' && (
+                  <div style={{
+                    marginTop: '8px',
+                    marginBottom: '8px',
+                    padding: '10px 12px',
+                    background: 'rgba(0, 128, 255, 0.1)',
+                    border: '1px solid rgba(0, 128, 255, 0.3)',
+                    borderRadius: '6px',
+                    color: '#66b3ff',
+                    fontSize: '13px'
+                  }} title="Размер состава 2 → маппул переключен на Wingman (2х2)">
+                    ℹ️ Размер состава = 2. Активирован маппул Wingman (2х2). Карты отличаются от 5х5.
+                  </div>
+                )}
                 
                 {loadingMaps ? (
                   <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>

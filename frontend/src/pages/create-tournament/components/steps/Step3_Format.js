@@ -159,6 +159,11 @@ function Step3_Format({ data, basicInfo, onChange }) {
             <small className="form-hint">
               {getCurrentCS2Mode() === '5v5' && '🏆 Классический формат: команды из 5 игроков'}
               {getCurrentCS2Mode() === '2v2' && '⚡ Wingman формат: команды из 2 игроков'}
+              {getCurrentCS2Mode() === '2v2' && (
+                <span title="Размер состава 2 активирует набор карт Wingman (2х2) на шаге 'Правила'">
+                  {' '}- маппул будет переключен на Wingman (2х2)
+                </span>
+              )}
             </small>
           </div>
         )}
@@ -188,8 +193,13 @@ function Step3_Format({ data, basicInfo, onChange }) {
             type="number"
             min="1"
             max="10"
-            value={data.team_size || 5}
-            onChange={(e) => handleChange('team_size', parseInt(e.target.value, 10))}
+            value={(data.team_size === 0 || data.team_size === null || data.team_size === undefined) ? '' : data.team_size}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '') { handleChange('team_size', ''); return; }
+              const n = parseInt(v, 10);
+              if (!Number.isNaN(n)) handleChange('team_size', n);
+            }}
             disabled={!isMixFormat && isCS2} // 🆕 Блокируем для CS2 в Single/Double режиме
             style={
               (!isMixFormat && isCS2) 
@@ -202,6 +212,11 @@ function Step3_Format({ data, basicInfo, onChange }) {
             {!isMixFormat && isCS2 && data.team_size === 5 && '🔒 Фиксировано для режима Классический 5х5'}
             {!isMixFormat && isCS2 && data.team_size === 2 && '🔒 Фиксировано для режима Wingman 2х2'}
             {(isMixFormat || !isCS2) && 'Количество игроков в одной команде'}
+            {(isMixFormat && isCS2 && parseInt(data.team_size, 10) === 2) && (
+              <span title="При размере состава 2 набор карт будет переключен на Wingman (2х2) на шаге 'Правила'">
+                {' '}— маппул автоматически переключится на Wingman (2х2)
+              </span>
+            )}
           </small>
         </div>
 
