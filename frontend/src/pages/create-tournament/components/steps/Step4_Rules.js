@@ -70,17 +70,13 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
 
   // 🆕 Wingman маппул (2х2)
   const wingmanMaps = [
-    { id: 1001, name: 'de_inferno', display_name: 'Inferno (Wingman)' },
-    { id: 1002, name: 'de_nuke', display_name: 'Nuke (Wingman)' },
-    { id: 1003, name: 'de_overpass', display_name: 'Overpass (Wingman)' },
-    { id: 1004, name: 'de_vertigo', display_name: 'Vertigo (Wingman)' },
-    { id: 1005, name: 'de_assembly', display_name: 'Assembly' },
-    { id: 1006, name: 'de_brewery', display_name: 'Brewery' },
-    { id: 1007, name: 'de_ravine', display_name: 'Ravine' },
-    { id: 1008, name: 'de_foroglio', display_name: 'Foroglio' },
-    { id: 1009, name: 'de_vandal', display_name: 'Vandal' },
-    { id: 1010, name: 'de_dorf', display_name: 'Dorf' },
-    { id: 1011, name: 'de_anubis', display_name: 'Anubis (Wingman)' }
+    { id: 1001, name: 'de_inferno', display_name: 'Inferno' },
+    { id: 1002, name: 'de_mirage', display_name: 'Mirage' },
+    { id: 1003, name: 'de_nuke', display_name: 'Nuke' },
+    { id: 1004, name: 'de_overpass', display_name: 'Overpass' },
+    { id: 1005, name: 'de_vertigo', display_name: 'Vertigo' },
+    { id: 1006, name: 'de_anubis', display_name: 'Anubis' },
+    { id: 1007, name: 'de_train', display_name: 'Train' }
   ];
 
   // 🆕 Переключение маппула для CS2 при размере состава 2 (Wingman)
