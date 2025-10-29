@@ -32,6 +32,8 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
   // Загрузка карт CS2 из БД (только один раз)
   useEffect(() => {
     if (!isCS2) return;
+    // Если это Wingman (2х2), не загружаем дефолтный маппул 5х5, чтобы не перезаписать Wingman
+    if (parseInt(format?.team_size, 10) === 2) return;
     if (cs2Maps.length > 0) return; // Уже загружены
 
     const fetchMaps = async () => {
@@ -66,7 +68,7 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
     };
 
     fetchMaps();
-  }, [isCS2, cs2Maps.length, mapMode]);
+  }, [isCS2, cs2Maps.length, mapMode, format?.team_size]);
 
   // 🆕 Wingman маппул (2х2)
   const wingmanMaps = [
