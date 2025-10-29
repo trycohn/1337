@@ -185,7 +185,7 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
         </div>
 
         <div className="form-group">
-          <label>Распределение участников</label>
+          <label>Распределение в сетке (Seeding)</label>
           <select
             value={data.seeding_type || 'random'}
             onChange={(e) => handleChange('seeding_type', e.target.value)}
@@ -194,6 +194,9 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
             <option value="rating">По рейтингу</option>
             <option value="balanced">Сбалансированное</option>
           </select>
+          <small className="form-hint">
+            Это не MIX-формирование команд. Seeding определяет начальную расстановку команд в турнирной сетке.
+          </small>
         </div>
       </div>
 
