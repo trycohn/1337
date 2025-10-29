@@ -38,8 +38,11 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
       try {
         setLoadingMaps(true);
         const response = await axios.get('/api/maps?game=Counter-Strike 2');
-        setCs2Maps(response.data);
-        setDefaultCs2Maps(response.data);
+        // Если уже активирован Wingman режим, не перезаписываем текущий пул
+        if (mapMode === 'default') {
+          setCs2Maps(response.data);
+          setDefaultCs2Maps(response.data);
+        }
         console.log('✅ Загружено карт CS2:', response.data.length);
       } catch (error) {
         console.error('❌ Ошибка загрузки карт CS2:', error);
@@ -53,15 +56,17 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
           { id: 6, name: 'de_ancient', display_name: 'Ancient' },
           { id: 7, name: 'de_anubis', display_name: 'Anubis' }
         ];
-        setCs2Maps(fallbackMaps);
-        setDefaultCs2Maps(fallbackMaps);
+        if (mapMode === 'default') {
+          setCs2Maps(fallbackMaps);
+          setDefaultCs2Maps(fallbackMaps);
+        }
       } finally {
         setLoadingMaps(false);
       }
     };
 
     fetchMaps();
-  }, [isCS2, cs2Maps.length]);
+  }, [isCS2, cs2Maps.length, mapMode]);
 
   // 🆕 Wingman маппул (2х2)
   const wingmanMaps = [
@@ -146,7 +151,9 @@ function Step4_Rules({ data, format, basicInfo, onChange }) {
   // Выбрать все карты
   const handleSelectAllMaps = () => {
     const allMapNames = cs2Maps.map(m => m.name);
-    handleChange('selected_maps', allMapNames);
+    // Для Wingman по умолчанию выбираем первые 7 карт, чтобы пройти валидацию 7/7
+    const target = mapMode === 'wingman' ? allMapNames.slice(0, 7) : allMapNames;
+    handleChange('selected_maps', target);
   };
 
   // Снять выбор со всех карт
