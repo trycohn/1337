@@ -12,7 +12,9 @@ import './JoinTournamentModal.css';
  * - Вступление в команду, уже добавленную в турнир
  */
 function JoinTournamentModal({ tournament, onClose, onSuccess }) {
-    const { token } = useAuth();
+    // Получаем токен напрямую из localStorage
+    const token = localStorage.getItem('token');
+    
     const [mode, setMode] = useState('select'); // select, create_team, join_team, solo
     const [teamName, setTeamName] = useState('');
     const [myTeams, setMyTeams] = useState([]);
