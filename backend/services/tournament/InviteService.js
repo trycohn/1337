@@ -134,15 +134,34 @@ class InviteService {
      * Использование инвайта (только валидация)
      */
     static async useInvite(inviteCode, userId, username, ipAddress = null) {
+        console.log(`🔍 [InviteService] Валидация инвайта ${inviteCode} для пользователя ${userId}`);
+        
         // Просто валидируем инвайт, НЕ записываем использование
         const result = await this.validateInvite(inviteCode, userId);
 
-        // Логируем событие валидации
-        await logTournamentEvent(result.invite.tournament_id, userId, 'invite_validated', {
-            invite_id: result.invite.id,
-            invite_code: inviteCode,
-            user_username: username
-        });
+        // Проверяем, не было ли недавно записи валидации (защита от спама)
+        const pool = require('../../db');
+        const recentValidation = await pool.query(
+            `SELECT 1 FROM tournament_events 
+             WHERE tournament_id = $1 
+             AND user_id = $2 
+             AND event_type = 'invite_validated'
+             AND created_at > NOW() - INTERVAL '10 seconds'
+             LIMIT 1`,
+            [result.invite.tournament_id, userId]
+        );
+
+        // Логируем событие валидации только если не было недавней записи
+        if (recentValidation.rows.length === 0) {
+            await logTournamentEvent(result.invite.tournament_id, userId, 'invite_validated', {
+                invite_id: result.invite.id,
+                invite_code: inviteCode,
+                user_username: username
+            });
+            console.log(`✅ [InviteService] Событие валидации записано`);
+        } else {
+            console.log(`⚠️ [InviteService] Пропускаем повторную запись валидации (была менее 10 сек назад)`);
+        }
 
         return result;
     }

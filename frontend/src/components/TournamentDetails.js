@@ -218,6 +218,7 @@ function TournamentDetails() {
 
         // 🔗 Проверяем параметр join для автоматического открытия модалки вступления (после инвайт-ссылки)
         const joinParam = urlParams.get('join');
+        const inviteParam = urlParams.get('invite');
         const shouldOpenFromSession = sessionStorage.getItem('should_open_join_modal');
         
         if ((joinParam === 'true' || shouldOpenFromSession === 'true') && tournament && user && !isParticipating) {
@@ -226,12 +227,17 @@ function TournamentDetails() {
             // Очищаем флаг
             sessionStorage.removeItem('should_open_join_modal');
             
-            setTimeout(() => {
-                openModal('joinTournament');
-                // Удаляем параметр из URL
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, '', newUrl);
-            }, 500);
+            // Сохраняем код инвайта если есть
+            if (inviteParam) {
+                sessionStorage.setItem('pending_invite_code', inviteParam);
+            }
+            
+            // Открываем модалку без задержки
+            openModal('joinTournament');
+            
+            // Удаляем параметр из URL
+            const cleanUrl = window.location.pathname + window.location.search.replace(/[?&]join=true/g, '').replace(/&invite=[^&]*/g, '').replace(/^\?&/, '?').replace(/^&/, '?');
+            window.history.replaceState({}, '', cleanUrl === window.location.pathname + '?' ? window.location.pathname : cleanUrl);
         }
         // Если вкладка не задана, и это CS2 — переключаем на участников
         const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
