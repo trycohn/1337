@@ -3259,9 +3259,12 @@ function TournamentDetails() {
                         tournament={tournament}
                         onClose={() => closeModal('joinTournament')}
                         onSuccess={async () => {
+                            console.log('✅ [TournamentDetails] Успешное вступление, обновляем данные...');
                             closeModal('joinTournament');
-                            // Перезагружаем страницу для обновления данных
-                            window.location.reload();
+                            // Принудительно обновляем данные турнира
+                            await fetchTournamentDataHybrid(true, 'participation_update');
+                            setMessage('✅ Вы успешно вступили в турнир!');
+                            setTimeout(() => setMessage(''), 3000);
                         }}
                     />
                 )}
