@@ -1,5 +1,5 @@
 const TeamJoinRequestService = require('../../services/tournament/TeamJoinRequestService');
-const asyncHandler = require('express-async-handler');
+const { asyncHandler } = require('../../utils/asyncHandler');
 
 /**
  * Контроллер для работы с запросами на вступление в команды

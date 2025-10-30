@@ -1,5 +1,5 @@
 const InviteService = require('../../services/tournament/InviteService');
-const asyncHandler = require('express-async-handler');
+const { asyncHandler } = require('../../utils/asyncHandler');
 
 /**
  * Контроллер для работы с инвайт-ссылками турниров
