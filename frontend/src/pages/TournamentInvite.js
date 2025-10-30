@@ -34,7 +34,7 @@ function TournamentInvite() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [inviteCode]);
 
-    // Сохранение инвайт-кода для возврата после авторизации
+    // Сохранение инвайт-кода для возврата после авторизации (только для НЕавторизованных)
     useEffect(() => {
         if (!user && inviteValid && inviteData) {
             sessionStorage.setItem('invite_return_url', `/tournaments/invite/${inviteCode}`);
@@ -46,7 +46,7 @@ function TournamentInvite() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, inviteValid, inviteData]);
 
-    // Автоматическое использование инвайта после авторизации
+    // Автоматическое использование инвайта для авторизованных пользователей
     useEffect(() => {
         const currentToken = localStorage.getItem('token');
         
@@ -58,8 +58,9 @@ function TournamentInvite() {
             inviteUsed
         });
         
+        // Для авторизованных сразу используем инвайт и редиректим
         if (user && currentToken && inviteValid && !processing && !inviteUsed) {
-            console.log('✅ Все условия выполнены, используем инвайт...');
+            console.log('✅ Пользователь авторизован, используем инвайт и редиректим...');
             handleUseInvite();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -184,14 +185,14 @@ function TournamentInvite() {
         );
     }
 
-    // Если пользователь авторизован и идет обработка инвайта
-    if (processing) {
+    // Если пользователь авторизован - показываем loader (используем инвайт и редиректим)
+    if (user && inviteValid) {
         return (
             <div className="tournament-invite-container">
                 <div className="invite-card">
                     <div className="invite-loading">
                         <div className="spinner"></div>
-                        <p>Подтверждение участия...</p>
+                        <p>Подтверждение приглашения...</p>
                     </div>
                 </div>
             </div>
