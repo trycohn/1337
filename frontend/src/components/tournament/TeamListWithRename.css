@@ -1,0 +1,109 @@
+/* Контейнер списка команд */
+.tournament-teams-list {
+    margin-top: 30px;
+}
+
+.tournament-teams-list h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* Сетка команд */
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+/* Карточка команды */
+.team-card {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.team-card:hover {
+    border-color: #444;
+}
+
+/* Заголовок команды */
+.team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.team-name {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+    word-break: break-word;
+}
+
+/* Кнопка переименования */
+.btn-rename {
+    background: none;
+    border: 1px solid #333;
+    color: #999;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.btn-rename:hover {
+    background: #0a0a0a;
+    border-color: #ff0000;
+    color: #fff;
+}
+
+/* Информация о команде */
+.team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-members {
+    color: #888;
+    font-size: 14px;
+}
+
+/* Пустое состояние */
+.teams-empty {
+    text-align: center;
+    padding: 40px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+}
+
+.teams-empty p {
+    color: #666;
+    font-size: 16px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .teams-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .team-card {
+        padding: 15px;
+    }
+
+    .team-name {
+        font-size: 16px;
+    }
+}
+

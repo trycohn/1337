@@ -6,6 +6,7 @@ import { faCrown } from '@fortawesome/free-solid-svg-icons';
 import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import TeamEditModal from './modals/TeamEditModal';
+import RenameTeamModal from './RenameTeamModal';
 import WaitingListPanel from './WaitingListPanel';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
@@ -42,6 +43,10 @@ const TournamentParticipants = ({
     // 🔧 СОСТОЯНИЕ ДЛЯ МОДАЛКИ РЕДАКТИРОВАНИЯ КОМАНДЫ
     const [teamEditModal, setTeamEditModal] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
+    
+    // 🏷️ СОСТОЯНИЕ ДЛЯ МОДАЛКИ ПЕРЕИМЕНОВАНИЯ КОМАНДЫ
+    const [renameTeamModal, setRenameTeamModal] = useState(false);
+    const [teamToRename, setTeamToRename] = useState(null);
 
     // Хук для управления турниром
     const tournamentManagement = useTournamentManagement(tournament?.id);
@@ -556,6 +561,18 @@ const TournamentParticipants = ({
                                                     className="btn btn-secondary"
                                                     onClick={() => {
                                                         if (!isLoadingInitial) {
+                                                            setTeamToRename(team);
+                                                            setRenameTeamModal(true);
+                                                        }
+                                                    }}
+                                                    title="Переименовать команду"
+                                                >
+                                                    🏷️
+                                                </button>
+                                                <button 
+                                                    className="btn btn-secondary"
+                                                    onClick={() => {
+                                                        if (!isLoadingInitial) {
                                                             setSelectedTeam(team);
                                                             setTeamEditModal(true);
                                                         }
@@ -943,6 +960,24 @@ const TournamentParticipants = ({
                     team={selectedTeam}
                     tournament={tournament}
                     onTeamUpdated={onTournamentUpdate}
+                />
+            )}
+
+            {/* 🏷️ Модальное окно переименования команды */}
+            {renameTeamModal && teamToRename && (
+                <RenameTeamModal
+                    tournament={tournament}
+                    team={teamToRename}
+                    onClose={() => {
+                        setRenameTeamModal(false);
+                        setTeamToRename(null);
+                    }}
+                    onSuccess={() => {
+                        console.log('✅ Команда переименована, обновляем данные...');
+                        if (onTournamentUpdate) {
+                            onTournamentUpdate();
+                        }
+                    }}
                 />
             )}
 

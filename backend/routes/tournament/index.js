@@ -41,6 +41,7 @@ const ShareController = require('../../controllers/tournament/ShareController');
 const TournamentStatsController = require('../../controllers/tournament/TournamentStatsController');
 const InviteController = require('../../controllers/tournament/InviteController');
 const TeamJoinRequestController = require('../../controllers/tournament/TeamJoinRequestController');
+const TeamManagementController = require('../../controllers/tournament/TeamManagementController');
 
 const router = express.Router();
 
@@ -479,6 +480,13 @@ router.get('/:tournamentId/my-join-requests', authenticateToken, TeamJoinRequest
 
 // Отмена запроса пользователем
 router.delete('/:tournamentId/teams/:teamId/join-requests/:requestId', authenticateToken, verifyEmailRequired, TeamJoinRequestController.cancelJoinRequest);
+
+// ===========================================
+// 🏷️ УПРАВЛЕНИЕ КОМАНДАМИ ТУРНИРА
+// ===========================================
+
+// Переименование команды в турнире (только создатель/админ)
+router.put('/:tournamentId/teams/:teamId/rename', authenticateToken, verifyEmailRequired, TeamManagementController.renameTeam);
 
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ** (БАЗОВЫЕ МЕТОДЫ)
 
