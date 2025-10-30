@@ -138,8 +138,8 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="join-tournament-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay">
+            <div className="join-tournament-modal">
                 <div className="modal-header">
                     <h2>Вступление в турнир</h2>
                     <button className="close-btn" onClick={onClose}>✕</button>
