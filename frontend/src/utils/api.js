@@ -11,6 +11,9 @@ const api = axios.create({
     timeout: 30000, // увеличиваем таймаут до 30 секунд
     headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
     },
     withCredentials: true, // Отправляем куки с запросами
 });

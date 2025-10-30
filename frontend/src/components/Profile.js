@@ -1339,16 +1339,18 @@ function Profile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
-            // Обновляем статус верификации пользователя
-            // setUser(prevUser => prevUser ? { ...prevUser, is_verified: true } : null); // Убран - используем AuthContext
+            // Обновляем статус верификации пользователя через AuthContext
+            updateUser({ is_verified: true });
             setError('');
             setVerificationError('');
-            setVerificationSuccess('Верификация прошла успешно. Обновляем профиль...');
-            // Показываем сообщение 3 секунды, затем перезагружаем профиль
+            setVerificationSuccess('Email успешно подтвержден!');
+            
+            // Закрываем модалку через 1 секунду после успешного подтверждения
             setTimeout(() => {
                 closeEmailVerificationModal();
-                if (typeof window !== 'undefined') window.location.reload();
-            }, 3000);
+                setVerificationSuccess('');
+                setVerificationCode('');
+            }, 1000);
         } catch (err) {
             // Устанавливаем ошибку в модальном окне вместо общей ошибки
             setVerificationError(err.response?.data?.message || 'Неверный код подтверждения');
