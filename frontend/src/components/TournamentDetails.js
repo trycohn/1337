@@ -216,13 +216,31 @@ function TournamentDetails() {
             }, 500);
         }
 
-        // 🔗 Проверяем параметр join для автоматического открытия модалки вступления (после инвайт-ссылки)
+        // Если вкладка не задана, и это CS2 — переключаем на участников
+        const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
+        if (cs2) setActiveTab('participants');
+    }, [tournament?.game]);
+
+    // 🔗 Отдельный useEffect для открытия модалки после инвайт-ссылки
+    useEffect(() => {
+        if (!tournament || !user) return;
+        
+        const urlParams = new URLSearchParams(window.location.search);
         const joinParam = urlParams.get('join');
-        const inviteCodeParam = urlParams.get('invite'); // Используем другое имя, чтобы не было конфликта
+        const inviteCodeParam = urlParams.get('invite');
         const shouldOpenFromSession = sessionStorage.getItem('should_open_join_modal');
         
-        if ((joinParam === 'true' || shouldOpenFromSession === 'true') && tournament && user && !isParticipating) {
-            console.log('🔗 Открываем модалку вступления после инвайт-ссылки');
+        console.log('🔍 [Join Modal Check]:', {
+            joinParam,
+            inviteCodeParam,
+            shouldOpenFromSession,
+            tournament: !!tournament,
+            user: !!user,
+            isParticipating
+        });
+        
+        if ((joinParam === 'true' || shouldOpenFromSession === 'true') && !isParticipating) {
+            console.log('✅ [Join Modal] Открываем модалку вступления');
             
             // Очищаем флаг
             sessionStorage.removeItem('should_open_join_modal');
@@ -230,19 +248,24 @@ function TournamentDetails() {
             // Сохраняем код инвайта если есть (но не 'team')
             if (inviteCodeParam && inviteCodeParam !== 'team') {
                 sessionStorage.setItem('pending_invite_code', inviteCodeParam);
+                console.log('💾 Сохранен код инвайта:', inviteCodeParam);
             }
             
-            // Открываем модалку без задержки
+            // Открываем модалку
             openModal('joinTournament');
             
             // Удаляем параметр из URL
-            const cleanUrl = window.location.pathname + window.location.search.replace(/[?&]join=true/g, '').replace(/&invite=[^&]*/g, '').replace(/^\?&/, '?').replace(/^&/, '?');
-            window.history.replaceState({}, '', cleanUrl === window.location.pathname + '?' ? window.location.pathname : cleanUrl);
+            const cleanUrl = window.location.pathname + window.location.search
+                .replace(/[?&]join=true/g, '')
+                .replace(/&invite=[^&]*/g, '')
+                .replace(/&t=\d+/g, '')
+                .replace(/^\?&/, '?')
+                .replace(/^&/, '?')
+                .replace(/\?$/, '');
+            
+            window.history.replaceState({}, '', cleanUrl || window.location.pathname);
         }
-        // Если вкладка не задана, и это CS2 — переключаем на участников
-        const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
-        if (cs2) setActiveTab('participants');
-    }, [tournament?.game]);
+    }, [tournament, user, isParticipating]);
     
     // 🆕 Состояния для модального окна матча за 3-е место
     const [showThirdPlaceModal, setShowThirdPlaceModal] = useState(false);
