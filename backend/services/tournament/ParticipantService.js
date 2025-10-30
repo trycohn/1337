@@ -69,14 +69,21 @@ class ParticipantService {
 
         // 🆕 Закрытый турнир: участие только по приглашению или через квалификацию
         if (tournament.access_type === 'closed') {
-            // Проверяем наличие приглашения
-            const InvitationRepository = require('../../repositories/tournament/InvitationRepository');
-            const hasInvitation = InvitationRepository?.hasAcceptedInvitation
-                ? await InvitationRepository.hasAcceptedInvitation(tournamentId, userId)
-                : false;
+            // Проверяем использование инвайт-ссылки
+            const InviteRepository = require('../../repositories/tournament/InviteRepository');
+            const pool = require('../../db');
+            
+            const inviteUseResult = await pool.query(
+                `SELECT 1 FROM tournament_invite_uses tiu
+                 JOIN tournament_invites ti ON tiu.invite_id = ti.id
+                 WHERE ti.tournament_id = $1 AND tiu.user_id = $2
+                 LIMIT 1`,
+                [tournamentId, userId]
+            );
+            
+            const hasUsedInvite = inviteUseResult.rows.length > 0;
 
             // Проверяем авто-квалификацию (promotions)
-            const pool = require('../../db');
             const promotedRes = await pool.query(
                 `SELECT 1 FROM tournament_promotions tp
                  JOIN tournament_teams tt ON tt.id = tp.team_id
@@ -85,7 +92,7 @@ class ParticipantService {
                 [tournamentId, userId]
             );
 
-            if (!hasInvitation && promotedRes.rows.length === 0) {
+            if (!hasUsedInvite && promotedRes.rows.length === 0) {
                 throw new Error('Участие доступно только по приглашению или через отборочный турнир');
             }
         }
