@@ -35,7 +35,8 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             baseClass += ' image-message';
         } else if (message.message_type === 'admin_invitation_interactive' || 
                    message.message_type === 'tournament_invite_interactive' ||
-                   message.message_type === 'lobby_invite') {
+                   message.message_type === 'lobby_invite' ||
+                   message.message_type === 'team_join_request') {
             baseClass = 'message interactive-wrapper';
         }
         
@@ -247,6 +248,7 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
             case 'admin_invitation_interactive':
             case 'tournament_invite_interactive':
             case 'lobby_invite':
+            case 'team_join_request':
                 // 🆕 Интерактивные сообщения с кнопками
                 return (
                     <InteractiveMessage 
@@ -258,7 +260,9 @@ function Message({ message, isOwn, onDeleteMessage, showUserInfo = false }) {
                             ) : null
                         }
                         onActionComplete={(actionType, result) => {
-                            console.log('Действие выполнено:', actionType, result);
+                            console.log('✅ Действие выполнено:', actionType, result);
+                            // Обновляем сообщение после действия
+                            setResponded(true);
                             // Можно добавить дополнительную логику после выполнения действия
                             if (actionType === 'accept' || actionType === 'decline') {
                                 // Помечаем сообщение как обработанное
