@@ -20,10 +20,12 @@
     border-radius: 8px;
     max-width: 600px;
     width: 100%;
+    min-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 /* Заголовок */
@@ -64,6 +66,7 @@
 /* Контент */
 .modal-content {
     padding: 30px;
+    min-height: 200px;
 }
 
 .hint {
@@ -73,10 +76,15 @@
 }
 
 /* Выбор режима */
+.mode-selection {
+    width: 100%;
+}
+
 .mode-options {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    width: 100%;
 }
 
 .mode-option {
@@ -90,6 +98,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    width: 100%;
 }
 
 .mode-option:hover {
@@ -331,6 +340,8 @@
 
     .join-tournament-modal {
         max-height: 95vh;
+        min-width: auto;
+        width: 100%;
     }
 
     .modal-header {
