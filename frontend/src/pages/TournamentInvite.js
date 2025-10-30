@@ -23,35 +23,45 @@ function TournamentInvite() {
     const [inviteData, setInviteData] = useState(null);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [inviteUsed, setInviteUsed] = useState(false); // Флаг, что инвайт уже использован
 
     // Проверка валидности инвайта при загрузке
     useEffect(() => {
         checkInviteValidity();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [inviteCode]);
 
     // Автоматическое использование инвайта после авторизации
     useEffect(() => {
-        if (user && token && inviteValid && !processing) {
+        if (user && token && inviteValid && !processing && !inviteUsed) {
+            console.log('🔗 Автоматическое использование инвайта...');
             handleUseInvite();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, token, inviteValid]);
 
     const checkInviteValidity = async () => {
         try {
+            console.log('🔍 Проверка валидности инвайта:', inviteCode);
             setLoading(true);
+            
             const response = await axios.get(
                 `${process.env.REACT_APP_API_URL}/api/tournaments/invites/${inviteCode}`
             );
 
+            console.log('📥 Ответ от сервера:', response.data);
+
             if (response.data.valid) {
                 setInviteValid(true);
                 setInviteData(response.data.tournament);
+                console.log('✅ Инвайт валиден, турнир:', response.data.tournament.name);
             } else {
                 setInviteValid(false);
                 setError(response.data.error || 'Приглашение недействительно');
+                console.log('❌ Инвайт невалиден:', response.data.error);
             }
         } catch (err) {
-            console.error('Ошибка проверки приглашения:', err);
+            console.error('❌ Ошибка проверки приглашения:', err);
             setInviteValid(false);
             setError(err.response?.data?.error || 'Не удалось проверить приглашение');
         } finally {
@@ -60,8 +70,18 @@ function TournamentInvite() {
     };
 
     const handleUseInvite = async () => {
+        // Предотвращаем повторный вызов
+        if (inviteUsed || processing) {
+            console.log('⚠️ Инвайт уже обрабатывается или использован');
+            return;
+        }
+
         try {
             setProcessing(true);
+            setInviteUsed(true); // Устанавливаем флаг сразу
+            
+            console.log('📤 Отправка запроса на использование инвайта...');
+            
             const response = await axios.post(
                 `${process.env.REACT_APP_API_URL}/api/tournaments/invites/${inviteCode}/use`,
                 {},
@@ -72,17 +92,21 @@ function TournamentInvite() {
                 }
             );
 
+            console.log('✅ Инвайт успешно использован:', response.data);
+
             if (response.data.success) {
-                // Сохраняем информацию о том, что пользователь использовал инвайт
-                sessionStorage.setItem('invite_used', 'true');
-                sessionStorage.setItem('tournament_id', response.data.tournament.id);
+                const tournamentId = response.data.tournament.id;
                 
-                // Редиректим на страницу турнира с информацией о том, что нужно вступить
-                navigate(`/tournaments/${response.data.tournament.id}?join=true`);
+                // Небольшая задержка перед редиректом
+                setTimeout(() => {
+                    console.log('🔀 Редирект на турнир:', tournamentId);
+                    navigate(`/tournaments/${tournamentId}?join=true`, { replace: true });
+                }, 500);
             }
         } catch (err) {
-            console.error('Ошибка использования приглашения:', err);
+            console.error('❌ Ошибка использования приглашения:', err);
             setError(err.response?.data?.error || 'Не удалось использовать приглашение');
+            setInviteUsed(false); // Сбрасываем флаг при ошибке
         } finally {
             setProcessing(false);
         }

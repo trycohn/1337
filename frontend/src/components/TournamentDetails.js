@@ -5,7 +5,7 @@
 
 // Импорты React и связанные
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import api from '../utils/api';
 import { getSocketInstance, authenticateSocket, watchTournament, unwatchTournament } from '../services/socketClient_v5_simplified';
@@ -48,6 +48,7 @@ import BracketManagementPanel from './tournament/BracketManagementPanel';
 import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
 import TournamentInvites from './tournament/TournamentInvites';
+import JoinTournamentModal from './tournament/JoinTournamentModal';
 import './tournament/BracketManagementPanel.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
 import useTournamentSocket from '../hooks/tournament/useTournamentSocket';
@@ -166,6 +167,7 @@ const validateTournamentData = (data) => {
 function TournamentDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     
     // Состояния
     const [tournament, setTournament] = useState(null);
@@ -213,6 +215,18 @@ function TournamentDetails() {
                 window.history.replaceState({}, '', newUrl);
             }, 500);
         }
+
+        // 🔗 Проверяем параметр join для автоматического открытия модалки вступления (после инвайт-ссылки)
+        const joinParam = urlParams.get('join');
+        if (joinParam === 'true' && tournament && user && !isParticipating) {
+            console.log('🔗 Открываем модалку вступления после инвайт-ссылки');
+            setTimeout(() => {
+                openModal('joinTournament');
+                // Удаляем параметр из URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }, 500);
+        }
         // Если вкладка не задана, и это CS2 — переключаем на участников
         const cs2 = tournament?.game && /counter\s*strike\s*2|cs2/i.test(tournament.game);
         if (cs2) setActiveTab('participants');
@@ -228,7 +242,8 @@ function TournamentDetails() {
         addParticipant: false,
         participantSearch: false,
         matchResult: false,
-        matchDetails: false
+        matchDetails: false,
+        joinTournament: false // 🆕 Модалка вступления после инвайта
     });
 
     // 🆕 СОСТОЯНИЯ ДЛЯ ПОИСКА АДМИНИСТРАТОРОВ
@@ -3235,6 +3250,19 @@ function TournamentDetails() {
                         }}
                         tournamentId={tournament?.id}
                         user={user}
+                    />
+                )}
+
+                {/* 🔗 Модальное окно вступления после инвайт-ссылки */}
+                {modals.joinTournament && tournament && (
+                    <JoinTournamentModal
+                        tournament={tournament}
+                        onClose={() => closeModal('joinTournament')}
+                        onSuccess={async () => {
+                            closeModal('joinTournament');
+                            // Перезагружаем страницу для обновления данных
+                            window.location.reload();
+                        }}
                     />
                 )}
 
