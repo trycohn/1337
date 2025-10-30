@@ -36,7 +36,11 @@ function TournamentInvite() {
 
     // Сохранение инвайт-кода для возврата после авторизации (только для НЕавторизованных)
     useEffect(() => {
-        if (!user && inviteValid && inviteData) {
+        const currentToken = localStorage.getItem('token');
+        
+        // Редиректим ТОЛЬКО если НЕТ токена (действительно не авторизован)
+        if (!currentToken && !user && inviteValid && inviteData) {
+            console.log('⚠️ Пользователь не авторизован, редирект на /auth');
             sessionStorage.setItem('invite_return_url', `/tournaments/invite/${inviteCode}`);
             sessionStorage.setItem('invite_tournament_name', inviteData.name || '');
             
@@ -171,8 +175,9 @@ function TournamentInvite() {
         );
     }
 
-    // Если пользователь не авторизован - показываем loader (редирект в useEffect выше)
-    if (!user && inviteValid) {
+    // Если пользователь не авторизован (и нет токена) - показываем loader
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken && !user && inviteValid) {
         return (
             <div className="tournament-invite-container">
                 <div className="invite-card">
