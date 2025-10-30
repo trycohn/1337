@@ -71,14 +71,13 @@ class ParticipantService {
         if (tournament.access_type === 'closed') {
             const pool = require('../../db');
             
-            // Проверяем валидированный инвайт (который еще не записан в uses)
-            // Логируем в специальной таблице для временного хранения
+            // Проверяем валидированный инвайт (через tournament_logs с недавним событием)
             const validatedInviteCheck = await pool.query(
-                `SELECT 1 FROM tournament_events 
+                `SELECT 1 FROM tournament_logs 
                  WHERE tournament_id = $1 
                  AND user_id = $2 
                  AND event_type IN ('invite_validated', 'invite_used', 'invite_confirmed')
-                 AND created_at > NOW() - INTERVAL '1 hour'
+                 AND created_at > NOW() - INTERVAL '2 hours'
                  LIMIT 1`,
                 [tournamentId, userId]
             );
@@ -98,6 +97,8 @@ class ParticipantService {
                 console.log(`⚠️ Пользователь ${userId} пытается вступить в закрытый турнир без валидированного инвайта`);
                 throw new Error('Участие доступно только по приглашению или через отборочный турнир');
             }
+            
+            console.log(`✅ Пользователь ${userId} имеет доступ к закрытому турниру (валидированный инвайт или квалификация)`);
         }
 
         // Проверяем, не участвует ли уже пользователь

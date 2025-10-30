@@ -218,8 +218,14 @@ function TournamentDetails() {
 
         // 🔗 Проверяем параметр join для автоматического открытия модалки вступления (после инвайт-ссылки)
         const joinParam = urlParams.get('join');
-        if (joinParam === 'true' && tournament && user && !isParticipating) {
+        const shouldOpenFromSession = sessionStorage.getItem('should_open_join_modal');
+        
+        if ((joinParam === 'true' || shouldOpenFromSession === 'true') && tournament && user && !isParticipating) {
             console.log('🔗 Открываем модалку вступления после инвайт-ссылки');
+            
+            // Очищаем флаг
+            sessionStorage.removeItem('should_open_join_modal');
+            
             setTimeout(() => {
                 openModal('joinTournament');
                 // Удаляем параметр из URL

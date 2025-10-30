@@ -133,9 +133,17 @@ function TournamentInvite() {
                 // Сохраняем код инвайта для подтверждения после вступления
                 sessionStorage.setItem('pending_invite_code', inviteCode);
                 
-                // Используем window.location для жесткого редиректа (избегаем проблем с AuthPage)
+                // Принудительная перезагрузка страницы турнира
                 console.log('🔀 Редирект на турнир:', tournamentId);
-                window.location.href = `/tournaments/${tournamentId}?join=true&t=${Date.now()}`;
+                
+                // Если уже находимся на странице турнира - делаем жесткую перезагрузку
+                if (window.location.pathname === `/tournaments/${tournamentId}`) {
+                    console.log('🔄 Уже на странице турнира, делаем перезагрузку...');
+                    sessionStorage.setItem('should_open_join_modal', 'true');
+                    window.location.reload(true);
+                } else {
+                    window.location.href = `/tournaments/${tournamentId}?join=true&t=${Date.now()}`;
+                }
             }
         } catch (err) {
             console.error('❌ Ошибка использования приглашения:', err);
