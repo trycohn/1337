@@ -23,9 +23,15 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
     const [error, setError] = useState(null);
 
     const isSolo = tournament.participant_type === 'solo';
-    const isTeamTournament = ['2x2', '3x3', '5x5'].includes(tournament.participant_type);
+    const isTeamTournament = ['2x2', '3x3', '5x5', 'team'].includes(tournament.participant_type);
 
     useEffect(() => {
+        console.log('🎯 [JoinTournamentModal] Турнир:', {
+            participant_type: tournament.participant_type,
+            isSolo,
+            isTeamTournament
+        });
+        
         if (isTeamTournament) {
             loadMyTeams();
             loadTournamentTeams();
