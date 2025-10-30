@@ -69,19 +69,21 @@ class ParticipantService {
 
         // 🆕 Закрытый турнир: участие только по приглашению или через квалификацию
         if (tournament.access_type === 'closed') {
-            // Проверяем использование инвайт-ссылки
-            const InviteRepository = require('../../repositories/tournament/InviteRepository');
             const pool = require('../../db');
             
-            const inviteUseResult = await pool.query(
-                `SELECT 1 FROM tournament_invite_uses tiu
-                 JOIN tournament_invites ti ON tiu.invite_id = ti.id
-                 WHERE ti.tournament_id = $1 AND tiu.user_id = $2
+            // Проверяем валидированный инвайт (который еще не записан в uses)
+            // Логируем в специальной таблице для временного хранения
+            const validatedInviteCheck = await pool.query(
+                `SELECT 1 FROM tournament_events 
+                 WHERE tournament_id = $1 
+                 AND user_id = $2 
+                 AND event_type IN ('invite_validated', 'invite_used', 'invite_confirmed')
+                 AND created_at > NOW() - INTERVAL '1 hour'
                  LIMIT 1`,
                 [tournamentId, userId]
             );
             
-            const hasUsedInvite = inviteUseResult.rows.length > 0;
+            const hasValidatedInvite = validatedInviteCheck.rows.length > 0;
 
             // Проверяем авто-квалификацию (promotions)
             const promotedRes = await pool.query(
@@ -92,7 +94,8 @@ class ParticipantService {
                 [tournamentId, userId]
             );
 
-            if (!hasUsedInvite && promotedRes.rows.length === 0) {
+            if (!hasValidatedInvite && promotedRes.rows.length === 0) {
+                console.log(`⚠️ Пользователь ${userId} пытается вступить в закрытый турнир без валидированного инвайта`);
                 throw new Error('Участие доступно только по приглашению или через отборочный турнир');
             }
         }

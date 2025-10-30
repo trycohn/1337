@@ -63,7 +63,7 @@ class InviteController {
     });
 
     /**
-     * Использование инвайта
+     * Использование инвайта (только валидация)
      * POST /api/tournaments/invites/:code/use
      */
     static useInvite = asyncHandler(async (req, res) => {
@@ -79,6 +79,24 @@ class InviteController {
         res.json({
             success: true,
             tournament: result.tournament
+        });
+    });
+
+    /**
+     * Подтверждение использования инвайта (после успешного вступления)
+     * POST /api/tournaments/invites/:code/confirm
+     */
+    static confirmInviteUse = asyncHandler(async (req, res) => {
+        const { code } = req.params;
+
+        const result = await InviteService.confirmInviteUse(
+            code,
+            req.user.id,
+            req.ip
+        );
+
+        res.json({
+            success: result.success
         });
     });
 
@@ -138,4 +156,3 @@ class InviteController {
 }
 
 module.exports = InviteController;
-

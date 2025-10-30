@@ -69,9 +69,9 @@ class InviteService {
     }
 
     /**
-     * Использование инвайта и присоединение к турниру
+     * Проверка и валидация инвайта (БЕЗ записи использования)
      */
-    static async useInvite(inviteCode, userId, username, ipAddress = null) {
+    static async validateInvite(inviteCode, userId) {
         // Валидация инвайта
         const validation = await InviteRepository.isValid(inviteCode);
         
@@ -89,45 +89,87 @@ class InviteService {
 
         const invite = validation.invite;
 
-        // Проверяем, не использовал ли пользователь этот инвайт ранее
-        const hasUsed = await InviteRepository.hasUserUsedInvite(invite.id, userId);
-        if (hasUsed) {
-            throw new Error('Вы уже использовали это приглашение');
-        }
-
         // Проверяем, не участвует ли пользователь уже в турнире
         const ParticipantRepository = require('../../repositories/tournament/ParticipantRepository');
-        const existingParticipation = await ParticipantRepository.getUserParticipation(
-            invite.tournament_id,
-            userId
-        );
-
-        if (existingParticipation) {
-            throw new Error('Вы уже участвуете в этом турнире');
-        }
-
-        // Записываем использование инвайта
-        const useResult = await InviteRepository.useInvite(invite.id, userId, ipAddress);
+        const pool = require('../../db');
         
-        if (!useResult.success) {
-            throw new Error('Не удалось использовать приглашение');
-        }
+        // Для командных турниров проверяем членство в командах
+        const tournament = await (require('../../repositories/tournament/TournamentRepository')).getById(invite.tournament_id);
+        
+        if (tournament.participant_type === 'team') {
+            const teamMemberCheck = await pool.query(`
+                SELECT ttm.id 
+                FROM tournament_team_members ttm
+                JOIN tournament_teams tt ON ttm.team_id = tt.id
+                WHERE tt.tournament_id = $1 AND ttm.user_id = $2
+                LIMIT 1
+            `, [invite.tournament_id, userId]);
+            
+            if (teamMemberCheck.rows.length > 0) {
+                throw new Error('Вы уже участвуете в этом турнире');
+            }
+        } else {
+            const existingParticipation = await ParticipantRepository.getUserParticipation(
+                invite.tournament_id,
+                userId
+            );
 
-        // Логируем событие
-        await logTournamentEvent(invite.tournament_id, userId, 'invite_used', {
-            invite_id: invite.id,
-            invite_code: inviteCode,
-            user_username: username
-        });
+            if (existingParticipation) {
+                throw new Error('Вы уже участвуете в этом турнире');
+            }
+        }
 
         return {
             success: true,
+            invite,
             tournament: {
                 id: invite.tournament_id,
                 name: invite.tournament_name,
                 participant_type: invite.participant_type
             }
         };
+    }
+
+    /**
+     * Использование инвайта (только валидация)
+     */
+    static async useInvite(inviteCode, userId, username, ipAddress = null) {
+        // Просто валидируем инвайт, НЕ записываем использование
+        const result = await this.validateInvite(inviteCode, userId);
+
+        // Логируем событие валидации
+        await logTournamentEvent(result.invite.tournament_id, userId, 'invite_validated', {
+            invite_id: result.invite.id,
+            invite_code: inviteCode,
+            user_username: username
+        });
+
+        return result;
+    }
+
+    /**
+     * Подтверждение использования инвайта (вызывается ПОСЛЕ успешного вступления)
+     */
+    static async confirmInviteUse(inviteCode, userId, ipAddress = null) {
+        const invite = await InviteRepository.getByCode(inviteCode);
+        
+        if (!invite) {
+            console.warn('⚠️ Инвайт не найден для подтверждения использования');
+            return { success: false };
+        }
+
+        // Записываем использование инвайта
+        const useResult = await InviteRepository.useInvite(invite.id, userId, ipAddress);
+        
+        if (useResult.success) {
+            // Логируем событие
+            await logTournamentEvent(invite.tournament_id, userId, 'invite_confirmed', {
+                invite_id: invite.id,
+                invite_code: inviteCode
+            });
+        }
+
+        return useResult;
     }
 
     /**

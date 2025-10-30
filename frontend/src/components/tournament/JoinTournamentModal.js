@@ -73,6 +73,26 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
         }
     };
 
+    // Подтверждение использования инвайта (если был)
+    const confirmInviteIfNeeded = async () => {
+        try {
+            const inviteCode = sessionStorage.getItem('pending_invite_code');
+            if (inviteCode) {
+                console.log('✅ Подтверждаем использование инвайта:', inviteCode);
+                await axios.post(
+                    `${process.env.REACT_APP_API_URL}/api/tournaments/invites/${inviteCode}/confirm`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                sessionStorage.removeItem('pending_invite_code');
+                console.log('✅ Использование инвайта подтверждено');
+            }
+        } catch (err) {
+            console.error('⚠️ Ошибка подтверждения инвайта:', err);
+            // Не критично, продолжаем
+        }
+    };
+
     // Обработка вступления в турнир
     const handleJoin = async () => {
         try {
@@ -86,6 +106,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
                     {},
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                
+                // Подтверждаем использование инвайта (если был)
+                await confirmInviteIfNeeded();
+                
                 onSuccess();
             } else if (mode === 'my_team') {
                 // Используем свою команду
@@ -99,6 +123,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
                     { teamId: selectedTeam.id },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                
+                // Подтверждаем использование инвайта (если был)
+                await confirmInviteIfNeeded();
+                
                 onSuccess();
             } else if (mode === 'create_team') {
                 // Создаем новую команду
@@ -112,6 +140,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
                     { newTeamName: teamName },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
+                
+                // Подтверждаем использование инвайта (если был)
+                await confirmInviteIfNeeded();
+                
                 onSuccess();
             } else if (mode === 'join_team') {
                 // Отправляем запрос на вступление в команду

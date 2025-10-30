@@ -459,6 +459,9 @@ router.get('/invites/:code', InviteController.getInviteByCode);
 // Использование инвайта (требует авторизации)
 router.post('/invites/:code/use', authenticateToken, verifyEmailRequired, InviteController.useInvite);
 
+// Подтверждение использования инвайта (после успешного вступления)
+router.post('/invites/:code/confirm', authenticateToken, verifyEmailRequired, InviteController.confirmInviteUse);
+
 // ===========================================
 // 👥 СИСТЕМА ЗАПРОСОВ НА ВСТУПЛЕНИЕ В КОМАНДЫ
 // ===========================================
