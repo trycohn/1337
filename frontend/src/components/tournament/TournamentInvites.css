@@ -1,0 +1,288 @@
+/* Контейнер инвайтов */
+.tournament-invites {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+/* Заголовок */
+.invites-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.invites-header h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.btn-create-invite {
+    background: #000;
+    color: #fff;
+    border: 1px solid #ff0000;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-create-invite:hover {
+    background: #111;
+    border-color: #ff3333;
+}
+
+/* Форма создания */
+.create-invite-form {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-field label {
+    color: #bbb;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-field input {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-field input:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.btn-create {
+    width: 100%;
+    background: #000;
+    color: #fff;
+    border: 1px solid #4ade80;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-create:hover:not(:disabled) {
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.btn-create:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Пустое состояние */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-state p {
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.empty-state .hint {
+    color: #555;
+    font-size: 14px;
+}
+
+/* Загрузка */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
+/* Список инвайтов */
+.invites-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Элемент инвайта */
+.invite-item {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 15px;
+    transition: border-color 0.3s ease;
+}
+
+.invite-item:hover {
+    border-color: #444;
+}
+
+.invite-item.inactive {
+    opacity: 0.6;
+    border-color: #555;
+}
+
+/* Информация об инвайте */
+.invite-info {
+    margin-bottom: 15px;
+}
+
+.invite-code {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.code-label {
+    color: #888;
+    font-size: 13px;
+}
+
+.invite-code code {
+    background: #000;
+    color: #4ade80;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    border: 1px solid #333;
+}
+
+.inactive-badge {
+    background: #555;
+    color: #bbb;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Статистика */
+.invite-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.stat {
+    color: #888;
+    font-size: 13px;
+}
+
+/* Действия */
+.invite-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.invite-actions button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid;
+    white-space: nowrap;
+}
+
+.btn-copy {
+    background: #000;
+    color: #4ade80;
+    border-color: #4ade80;
+}
+
+.btn-copy:hover:not(:disabled) {
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.btn-copy.copied {
+    background: rgba(74, 222, 128, 0.2);
+}
+
+.btn-copy:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-deactivate {
+    background: #000;
+    color: #fbbf24;
+    border-color: #fbbf24;
+}
+
+.btn-deactivate:hover {
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.btn-delete {
+    background: #000;
+    color: #ff6666;
+    border-color: #ff6666;
+}
+
+.btn-delete:hover {
+    background: rgba(255, 0, 0, 0.1);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .invites-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-create-invite {
+        width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .invite-actions {
+        flex-direction: column;
+    }
+
+    .invite-actions button {
+        width: 100%;
+    }
+}
+
