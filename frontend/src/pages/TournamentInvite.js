@@ -15,8 +15,11 @@ import './TournamentInvite.css';
  */
 function TournamentInvite() {
     const { inviteCode } = useParams();
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
+    
+    // Получаем токен напрямую из localStorage
+    const token = localStorage.getItem('token');
     
     const [loading, setLoading] = useState(true);
     const [inviteValid, setInviteValid] = useState(false);
@@ -33,15 +36,17 @@ function TournamentInvite() {
 
     // Автоматическое использование инвайта после авторизации
     useEffect(() => {
+        const currentToken = localStorage.getItem('token');
+        
         console.log('🔍 Проверка условий для использования инвайта:', {
             user: !!user,
-            token: !!token,
+            token: !!currentToken,
             inviteValid,
             processing,
             inviteUsed
         });
         
-        if (user && token && inviteValid && !processing && !inviteUsed) {
+        if (user && currentToken && inviteValid && !processing && !inviteUsed) {
             console.log('✅ Все условия выполнены, используем инвайт...');
             handleUseInvite();
         }
