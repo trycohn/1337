@@ -47,6 +47,7 @@ import TournamentResults from './tournament/TournamentResults';
 import BracketManagementPanel from './tournament/BracketManagementPanel';
 import FullMixBracketPanel from './tournament/fullmix/FullMixBracketPanel';
 import DeleteTournamentModal from './tournament/modals/DeleteTournamentModal';
+import TournamentInvites from './tournament/TournamentInvites';
 import './tournament/BracketManagementPanel.css';
 import useMixTeams from '../hooks/tournament/useMixTeams';
 import useTournamentSocket from '../hooks/tournament/useTournamentSocket';
@@ -1556,6 +1557,14 @@ function TournamentDetails() {
                             <div className="access-denied">
                                 <p>У вас нет прав для управления этим турниром</p>
                             </div>
+                        )}
+
+                        {/* 🔗 Инвайт-ссылки для закрытых турниров */}
+                        {isAdminOrCreator && tournament?.access_type === 'closed' && (
+                            <TournamentInvites 
+                                tournament={tournament} 
+                                token={localStorage.getItem('token')} 
+                            />
                         )}
             </div>
         );
