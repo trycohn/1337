@@ -218,7 +218,7 @@ function TournamentDetails() {
 
         // 🔗 Проверяем параметр join для автоматического открытия модалки вступления (после инвайт-ссылки)
         const joinParam = urlParams.get('join');
-        const inviteParam = urlParams.get('invite');
+        const inviteCodeParam = urlParams.get('invite'); // Используем другое имя, чтобы не было конфликта
         const shouldOpenFromSession = sessionStorage.getItem('should_open_join_modal');
         
         if ((joinParam === 'true' || shouldOpenFromSession === 'true') && tournament && user && !isParticipating) {
@@ -227,9 +227,9 @@ function TournamentDetails() {
             // Очищаем флаг
             sessionStorage.removeItem('should_open_join_modal');
             
-            // Сохраняем код инвайта если есть
-            if (inviteParam) {
-                sessionStorage.setItem('pending_invite_code', inviteParam);
+            // Сохраняем код инвайта если есть (но не 'team')
+            if (inviteCodeParam && inviteCodeParam !== 'team') {
+                sessionStorage.setItem('pending_invite_code', inviteCodeParam);
             }
             
             // Открываем модалку без задержки
