@@ -33,8 +33,16 @@ function TournamentInvite() {
 
     // Автоматическое использование инвайта после авторизации
     useEffect(() => {
+        console.log('🔍 Проверка условий для использования инвайта:', {
+            user: !!user,
+            token: !!token,
+            inviteValid,
+            processing,
+            inviteUsed
+        });
+        
         if (user && token && inviteValid && !processing && !inviteUsed) {
-            console.log('🔗 Автоматическое использование инвайта...');
+            console.log('✅ Все условия выполнены, используем инвайт...');
             handleUseInvite();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
