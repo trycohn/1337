@@ -39,6 +39,8 @@ const { BracketController } = require('../../controllers/tournament/BracketContr
 const MatchLobbyController = require('../../controllers/matchLobby/MatchLobbyController');
 const ShareController = require('../../controllers/tournament/ShareController');
 const TournamentStatsController = require('../../controllers/tournament/TournamentStatsController');
+const InviteController = require('../../controllers/tournament/InviteController');
+const TeamJoinRequestController = require('../../controllers/tournament/TeamJoinRequestController');
 
 const router = express.Router();
 
@@ -433,6 +435,50 @@ router.post('/:id/invite', authenticateToken, verifyEmailRequired, verifyAdminOr
 
 // 🤝 Обработка приглашения в турнир
 router.post('/:id/handle-invitation', authenticateToken, verifyEmailRequired, ParticipantController.handleInvitation);
+
+// ===========================================
+// 🔗 СИСТЕМА ИНВАЙТ-ССЫЛОК ДЛЯ ЗАКРЫТЫХ ТУРНИРОВ
+// ===========================================
+
+// Создание инвайт-ссылки (только создатель/админ)
+router.post('/:id/invites', authenticateToken, verifyEmailRequired, InviteController.createInvite);
+
+// Получение всех инвайтов турнира (только создатель/админ)
+router.get('/:id/invites', authenticateToken, InviteController.getTournamentInvites);
+
+// Деактивация инвайта (только создатель/админ)
+router.put('/:tournamentId/invites/:inviteId/deactivate', authenticateToken, verifyEmailRequired, InviteController.deactivateInvite);
+
+// Удаление инвайта (только создатель/админ)
+router.delete('/:tournamentId/invites/:inviteId', authenticateToken, verifyEmailRequired, InviteController.deleteInvite);
+
+// Получение инвайта по коду (публичный для проверки валидности)
+router.get('/invites/:code', InviteController.getInviteByCode);
+
+// Использование инвайта (требует авторизации)
+router.post('/invites/:code/use', authenticateToken, verifyEmailRequired, InviteController.useInvite);
+
+// ===========================================
+// 👥 СИСТЕМА ЗАПРОСОВ НА ВСТУПЛЕНИЕ В КОМАНДЫ
+// ===========================================
+
+// Создание запроса на вступление в команду
+router.post('/:tournamentId/teams/:teamId/join-requests', authenticateToken, verifyEmailRequired, TeamJoinRequestController.createJoinRequest);
+
+// Получение pending запросов для команды (только капитан/создатель команды или админ турнира)
+router.get('/:tournamentId/teams/:teamId/join-requests', authenticateToken, TeamJoinRequestController.getTeamPendingRequests);
+
+// Принятие запроса на вступление
+router.post('/:tournamentId/teams/:teamId/join-requests/:requestId/accept', authenticateToken, verifyEmailRequired, TeamJoinRequestController.acceptJoinRequest);
+
+// Отклонение запроса на вступление
+router.post('/:tournamentId/teams/:teamId/join-requests/:requestId/reject', authenticateToken, verifyEmailRequired, TeamJoinRequestController.rejectJoinRequest);
+
+// Получение запросов пользователя для турнира
+router.get('/:tournamentId/my-join-requests', authenticateToken, TeamJoinRequestController.getUserRequests);
+
+// Отмена запроса пользователем
+router.delete('/:tournamentId/teams/:teamId/join-requests/:requestId', authenticateToken, verifyEmailRequired, TeamJoinRequestController.cancelJoinRequest);
 
 // 🔄 **УПРАВЛЕНИЕ МИКС КОМАНДАМИ** (БАЗОВЫЕ МЕТОДЫ)
 

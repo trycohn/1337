@@ -1,0 +1,365 @@
+/* Оверлей модального окна */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+/* Модальное окно */
+.join-tournament-modal {
+    background: #111;
+    border: 1px solid #ff0000;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Заголовок */
+.modal-header {
+    padding: 20px 30px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #fff;
+}
+
+/* Контент */
+.modal-content {
+    padding: 30px;
+}
+
+.hint {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Выбор режима */
+.mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mode-option {
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mode-option:hover {
+    border-color: #ff0000;
+    background: #0a0a0a;
+}
+
+.mode-option .icon {
+    font-size: 32px;
+    display: block;
+}
+
+.mode-option .label {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    display: block;
+}
+
+.mode-option .description {
+    color: #888;
+    font-size: 14px;
+    display: block;
+}
+
+/* Кнопка назад */
+.back-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.3s ease;
+}
+
+.back-btn:hover {
+    color: #fff;
+}
+
+/* Форма создания команды */
+.create-team-form h3,
+.join-team-form h3,
+.my-team-form h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.team-name-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.team-name-input:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+/* Список команд */
+.teams-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+    border-radius: 4px;
+}
+
+.team-item {
+    padding: 15px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.team-item:last-child {
+    border-bottom: none;
+}
+
+.team-item:hover {
+    background: #0a0a0a;
+}
+
+.team-item.selected {
+    background: #111;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.team-name {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.team-members {
+    color: #888;
+    font-size: 14px;
+}
+
+.checkmark {
+    color: #ff0000;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.empty-state {
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-state p {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Поле сообщения */
+.message-field {
+    margin-bottom: 20px;
+}
+
+.message-field label {
+    color: #bbb;
+    font-size: 14px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.message-field textarea {
+    width: 100%;
+    padding: 12px 16px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.3s ease;
+}
+
+.message-field textarea:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+/* Сообщение об ошибке */
+.error-message {
+    color: #ff6666;
+    font-size: 14px;
+    padding: 10px;
+    background: rgba(255, 0, 0, 0.1);
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* Основная кнопка */
+.btn-primary {
+    width: 100%;
+    padding: 12px 24px;
+    background: #000;
+    color: #fff;
+    border: 1px solid #ff0000;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #111;
+    border-color: #ff3333;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Заголовок команды с бейджем */
+.team-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.team-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.team-badge.permanent {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+}
+
+/* Соло турниры */
+.solo-join {
+    text-align: center;
+}
+
+.solo-join .hint {
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 10px;
+    }
+
+    .join-tournament-modal {
+        max-height: 95vh;
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .modal-content {
+        padding: 20px;
+    }
+
+    .mode-option {
+        padding: 15px;
+    }
+
+    .mode-option .icon {
+        font-size: 24px;
+    }
+
+    .mode-option .label {
+        font-size: 16px;
+    }
+
+    .create-team-form h3,
+    .join-team-form h3 {
+        font-size: 18px;
+    }
+}
+
