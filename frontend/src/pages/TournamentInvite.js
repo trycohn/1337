@@ -34,6 +34,18 @@ function TournamentInvite() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [inviteCode]);
 
+    // Сохранение инвайт-кода для возврата после авторизации
+    useEffect(() => {
+        if (!user && inviteValid && inviteData) {
+            sessionStorage.setItem('invite_return_url', `/tournaments/invite/${inviteCode}`);
+            sessionStorage.setItem('invite_tournament_name', inviteData.name || '');
+            
+            // Редиректим на страницу авторизации
+            navigate(`/auth?redirect=${encodeURIComponent(`/tournaments/invite/${inviteCode}`)}`);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, inviteValid, inviteData]);
+
     // Автоматическое использование инвайта после авторизации
     useEffect(() => {
         const currentToken = localStorage.getItem('token');
@@ -158,17 +170,8 @@ function TournamentInvite() {
         );
     }
 
-    // Если пользователь не авторизован - редиректим на /auth с сохранением пути возврата
-    if (!user) {
-        useEffect(() => {
-            // Сохраняем информацию о инвайте
-            sessionStorage.setItem('invite_return_url', `/tournaments/invite/${inviteCode}`);
-            sessionStorage.setItem('invite_tournament_name', inviteData?.name || '');
-            
-            // Редиректим на страницу авторизации с параметром возврата
-            navigate(`/auth?redirect=${encodeURIComponent(`/tournaments/invite/${inviteCode}`)}`);
-        }, []);
-        
+    // Если пользователь не авторизован - показываем loader (редирект в useEffect выше)
+    if (!user && inviteValid) {
         return (
             <div className="tournament-invite-container">
                 <div className="invite-card">
