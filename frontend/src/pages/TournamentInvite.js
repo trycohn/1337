@@ -32,7 +32,7 @@ function TournamentInvite() {
     // Автоматическое использование инвайта после авторизации
     useEffect(() => {
         if (user && token && inviteValid && !processing) {
-            useInvite();
+            handleUseInvite();
         }
     }, [user, token, inviteValid]);
 
@@ -59,7 +59,7 @@ function TournamentInvite() {
         }
     };
 
-    const useInvite = async () => {
+    const handleUseInvite = async () => {
         try {
             setProcessing(true);
             const response = await axios.post(
