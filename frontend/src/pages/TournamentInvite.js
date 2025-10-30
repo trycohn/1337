@@ -110,17 +110,17 @@ function TournamentInvite() {
             if (response.data.success) {
                 const tournamentId = response.data.tournament.id;
                 
-                // Небольшая задержка перед редиректом
-                setTimeout(() => {
-                    console.log('🔀 Редирект на турнир:', tournamentId);
-                    navigate(`/tournaments/${tournamentId}?join=true`, { replace: true });
-                }, 500);
+                // Очищаем флаг pending инвайта
+                sessionStorage.removeItem('pending_invite');
+                
+                // Используем window.location для жесткого редиректа (избегаем проблем с AuthPage)
+                console.log('🔀 Редирект на турнир:', tournamentId);
+                window.location.href = `/tournaments/${tournamentId}?join=true`;
             }
         } catch (err) {
             console.error('❌ Ошибка использования приглашения:', err);
             setError(err.response?.data?.error || 'Не удалось использовать приглашение');
             setInviteUsed(false); // Сбрасываем флаг при ошибке
-        } finally {
             setProcessing(false);
         }
     };
@@ -158,18 +158,25 @@ function TournamentInvite() {
         );
     }
 
-    // Если пользователь не авторизован - показываем форму авторизации
+    // Если пользователь не авторизован - редиректим на /auth с сохранением пути возврата
     if (!user) {
+        useEffect(() => {
+            // Сохраняем информацию о инвайте
+            sessionStorage.setItem('invite_return_url', `/tournaments/invite/${inviteCode}`);
+            sessionStorage.setItem('invite_tournament_name', inviteData?.name || '');
+            
+            // Редиректим на страницу авторизации с параметром возврата
+            navigate(`/auth?redirect=${encodeURIComponent(`/tournaments/invite/${inviteCode}`)}`);
+        }, []);
+        
         return (
             <div className="tournament-invite-container">
-                <div className="invite-info-banner">
-                    <div className="banner-content">
-                        <h2>🏆 Приглашение в турнир</h2>
-                        <p>Вы приглашены в турнир <strong>{inviteData?.name}</strong></p>
-                        <p className="hint">Войдите или зарегистрируйтесь, чтобы принять приглашение</p>
+                <div className="invite-card">
+                    <div className="invite-loading">
+                        <div className="spinner"></div>
+                        <p>Перенаправление на авторизацию...</p>
                     </div>
                 </div>
-                <AuthPage redirectAfterAuth={`/tournaments/invite/${inviteCode}`} />
             </div>
         );
     }
