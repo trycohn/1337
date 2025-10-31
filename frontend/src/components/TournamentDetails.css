@@ -86,8 +86,8 @@
     background-repeat: no-repeat;
     background-color: #000; /* фон под пустыми полями по бокам */
     width: 88vw;
-    margin-left: calc(50% - 44vw);
-    margin-right: calc(50% - 44vw);
+    margin-left: 0px;
+    margin-right: 0px;
   }
   .tournament-content-tournamentdetails {
     width: 100%;
