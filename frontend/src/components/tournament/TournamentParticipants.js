@@ -7,6 +7,7 @@ import ParticipantSearchModal from './modals/ParticipantSearchModal';
 import ReferralInviteModal from './modals/ReferralInviteModal';
 import TeamEditModal from './modals/TeamEditModal';
 import RenameTeamModal from './RenameTeamModal';
+import CaptainTeamEditModal from './modals/CaptainTeamEditModal';
 import WaitingListPanel from './WaitingListPanel';
 import useTournamentManagement from '../../hooks/tournament/useTournamentManagement';
 import './TournamentParticipants.css';
@@ -47,6 +48,10 @@ const TournamentParticipants = ({
     // 🏷️ СОСТОЯНИЕ ДЛЯ МОДАЛКИ ПЕРЕИМЕНОВАНИЯ КОМАНДЫ
     const [renameTeamModal, setRenameTeamModal] = useState(false);
     const [teamToRename, setTeamToRename] = useState(null);
+
+    // 👑 СОСТОЯНИЕ ДЛЯ МОДАЛКИ РЕДАКТИРОВАНИЯ СОСТАВА КАПИТАНОМ
+    const [captainEditModal, setCaptainEditModal] = useState(false);
+    const [teamForCaptainEdit, setTeamForCaptainEdit] = useState(null);
 
     // Хук для управления турниром
     const tournamentManagement = useTournamentManagement(tournament?.id);
@@ -377,6 +382,12 @@ const TournamentParticipants = ({
         return true;
     }, [tournament]);
 
+    // 👑 Проверка, является ли пользователь капитаном конкретной команды
+    const isUserCaptainOfTeam = useCallback((team) => {
+        if (!user || !team?.members) return false;
+        return team.members.some(m => m.user_id === user.id && m.is_captain);
+    }, [user]);
+
     const statusNormalized = (tournament?.status || '').toString().trim().toLowerCase();
     const isActive = statusNormalized === 'active';
     const isFullMix = tournament?.format === 'mix' && (tournament?.mix_type || '').toLowerCase() === 'full';
@@ -570,6 +581,7 @@ const TournamentParticipants = ({
                                                 </span>
                                             )}
                                         </div>
+                                        {/* Кнопки для администраторов */}
                                         {isAdminOrCreator && (
                                             <div className="team-actions-participants">
                                                 <button 
@@ -592,7 +604,7 @@ const TournamentParticipants = ({
                                                             setTeamEditModal(true);
                                                         }
                                                     }}
-                                                    title="Редактировать состав команды"
+                                                    title="Редактировать состав команды (Админ)"
                                                 >
                                                     ✏️
                                                 </button>
@@ -602,6 +614,22 @@ const TournamentParticipants = ({
                                                     title="Удалить команду"
                                                 >
                                                     🗑️
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        {/* 👑 Кнопка редактирования для капитана (только для активных турниров) */}
+                                        {!isAdminOrCreator && isActive && isUserCaptainOfTeam(team) && !isLoadingInitial && (
+                                            <div className="team-actions-participants">
+                                                <button 
+                                                    className="btn btn-primary"
+                                                    onClick={() => {
+                                                        setTeamForCaptainEdit(team);
+                                                        setCaptainEditModal(true);
+                                                    }}
+                                                    title="Редактировать состав команды"
+                                                >
+                                                    ✏️ Состав
                                                 </button>
                                             </div>
                                         )}
@@ -989,6 +1017,28 @@ const TournamentParticipants = ({
                     }}
                     onSuccess={() => {
                         console.log('✅ Команда переименована, обновляем данные...');
+                        if (onTournamentUpdate) {
+                            onTournamentUpdate();
+                        }
+                    }}
+                />
+            )}
+
+            {/* 👑 Модальное окно редактирования состава для капитана */}
+            {captainEditModal && teamForCaptainEdit && (
+                <CaptainTeamEditModal
+                    isOpen={captainEditModal}
+                    onClose={() => {
+                        setCaptainEditModal(false);
+                        setTeamForCaptainEdit(null);
+                    }}
+                    team={teamForCaptainEdit}
+                    tournament={tournament}
+                    user={user}
+                    onSuccess={() => {
+                        console.log('✅ Состав команды обновлен капитаном');
+                        setCaptainEditModal(false);
+                        setTeamForCaptainEdit(null);
                         if (onTournamentUpdate) {
                             onTournamentUpdate();
                         }

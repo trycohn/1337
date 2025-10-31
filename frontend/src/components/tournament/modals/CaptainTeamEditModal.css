@@ -1,0 +1,301 @@
+/* Модалка редактирования состава для капитана */
+.ctem-modal {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.ctem-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #333333;
+}
+
+.ctem-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.ctem-close-btn {
+    background: none;
+    border: none;
+    color: #888888;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 4px 8px;
+    transition: color 0.3s ease;
+}
+
+.ctem-close-btn:hover {
+    color: #ffffff;
+}
+
+/* Сообщения */
+.ctem-error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px 16px;
+    margin: 16px 24px;
+    border-radius: 8px;
+}
+
+.ctem-success-message {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+    padding: 12px 16px;
+    margin: 16px 24px;
+    border-radius: 8px;
+}
+
+.ctem-info-message {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+    padding: 16px;
+    margin: 16px 24px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Тело модалки - две колонки */
+.ctem-modal-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px;
+    min-height: 400px;
+}
+
+/* Колонки */
+.ctem-roster-column,
+.ctem-available-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ctem-roster-column h4,
+.ctem-available-column h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.ctem-column-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #888888;
+}
+
+/* Слоты ростера */
+.ctem-roster-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    min-height: 300px;
+}
+
+/* Список доступных игроков */
+.ctem-available-players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Перетаскиваемый игрок */
+.ctem-draggable-player {
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: grab;
+    transition: all 0.3s ease;
+}
+
+.ctem-draggable-player:hover {
+    border-color: #555555;
+    background: #222222;
+}
+
+.ctem-draggable-player.ctem-dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.ctem-draggable-player.ctem-drop-target {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+.ctem-player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ctem-player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.ctem-player-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.ctem-player-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.ctem-captain-badge {
+    color: #ffd700;
+    font-size: 12px;
+}
+
+.ctem-player-elo {
+    font-size: 11px;
+    color: #888888;
+}
+
+/* Пустой слот */
+.ctem-empty-slot {
+    background: #0a0a0a;
+    border: 2px dashed #333333;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: #666666;
+    font-size: 12px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.ctem-empty-slot.ctem-drop-target {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.05);
+    color: #22c55e;
+}
+
+/* Пустое сообщение */
+.ctem-empty-message {
+    text-align: center;
+    color: #666666;
+    font-size: 13px;
+    padding: 32px 16px;
+    font-style: italic;
+}
+
+/* Статистика ростера */
+.ctem-roster-stats {
+    display: flex;
+    gap: 16px;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.ctem-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ctem-stat-label {
+    font-size: 11px;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ctem-stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ff6b00;
+}
+
+/* Футер */
+.ctem-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-top: 1px solid #333333;
+    gap: 16px;
+}
+
+.ctem-footer-info {
+    font-size: 12px;
+    color: #888888;
+    flex: 1;
+}
+
+.ctem-footer-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .ctem-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .ctem-modal-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .ctem-footer-info {
+        display: none;
+    }
+
+    .ctem-modal-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .ctem-footer-actions {
+        width: 100%;
+    }
+
+    .ctem-footer-actions button {
+        flex: 1;
+    }
+}
+

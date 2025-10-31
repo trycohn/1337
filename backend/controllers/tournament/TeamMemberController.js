@@ -254,6 +254,281 @@ class TeamMemberController {
             members: result.rows
         });
     });
+
+    /**
+     * 🆕 Получить доступных игроков из глобальной команды капитана
+     */
+    static getGlobalTeamRoster = asyncHandler(async (req, res) => {
+        const { id: tournamentId, teamId } = req.params;
+        const userId = req.user.id;
+
+        console.log('🔍 [TeamMemberController] Получение глобального ростера:', {
+            tournamentId,
+            teamId,
+            userId
+        });
+
+        // Проверка турнира
+        const tournament = await TournamentRepository.getById(parseInt(tournamentId));
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Проверка что турнир активен
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Редактирование доступно только для активных турниров' });
+        }
+
+        // Проверка турнирной команды
+        const tournamentTeam = await pool.query(
+            'SELECT * FROM tournament_teams WHERE id = $1 AND tournament_id = $2',
+            [teamId, tournamentId]
+        );
+
+        if (tournamentTeam.rows.length === 0) {
+            return res.status(404).json({ error: 'Команда не найдена в турнире' });
+        }
+
+        // Проверка что пользователь - капитан команды
+        const captainCheck = await pool.query(
+            'SELECT * FROM tournament_team_members WHERE team_id = $1 AND user_id = $2 AND is_captain = true',
+            [teamId, userId]
+        );
+
+        if (captainCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Только капитан может редактировать состав команды' });
+        }
+
+        // Ищем глобальную команду где пользователь - капитан
+        const globalTeam = await pool.query(
+            'SELECT * FROM user_teams WHERE captain_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [userId]
+        );
+
+        if (globalTeam.rows.length === 0) {
+            return res.json({ 
+                success: true,
+                globalTeam: null,
+                availablePlayers: [],
+                message: 'У вас нет глобальной команды'
+            });
+        }
+
+        const globalTeamId = globalTeam.rows[0].id;
+
+        // Получаем всех участников глобальной команды
+        const globalMembers = await pool.query(`
+            SELECT 
+                u.id as user_id,
+                u.username,
+                u.avatar_url,
+                u.faceit_elo,
+                u.cs2_premier_rank,
+                utm.role,
+                (utm.role = 'captain') as is_captain
+            FROM user_team_members utm
+            JOIN users u ON u.id = utm.user_id
+            WHERE utm.team_id = $1
+            ORDER BY (utm.role = 'captain') DESC, u.username ASC
+        `, [globalTeamId]);
+
+        // Получаем текущий турнирный состав
+        const tournamentRoster = await pool.query(`
+            SELECT tp.user_id
+            FROM tournament_team_members ttm
+            JOIN tournament_participants tp ON ttm.participant_id = tp.id
+            WHERE ttm.team_id = $1 AND tp.user_id IS NOT NULL
+        `, [teamId]);
+
+        const tournamentUserIds = new Set(tournamentRoster.rows.map(r => r.user_id));
+
+        // Фильтруем доступных игроков (те, кого еще нет в турнирной команде)
+        const availablePlayers = globalMembers.rows.filter(player => !tournamentUserIds.has(player.user_id));
+
+        console.log('✅ [TeamMemberController] Найдено игроков:', {
+            globalTeamId,
+            totalInGlobal: globalMembers.rows.length,
+            alreadyInTournament: tournamentUserIds.size,
+            available: availablePlayers.length
+        });
+
+        res.json({ 
+            success: true,
+            globalTeam: {
+                id: globalTeamId,
+                name: globalTeam.rows[0].name,
+                avatar_url: globalTeam.rows[0].avatar_url
+            },
+            availablePlayers,
+            currentRosterCount: tournamentUserIds.size,
+            maxTeamSize: tournament.team_size || 5
+        });
+    });
+
+    /**
+     * 🆕 Обновить турнирный состав команды (только для капитана)
+     */
+    static updateTeamRoster = asyncHandler(async (req, res) => {
+        const { id: tournamentId, teamId } = req.params;
+        const { memberUserIds } = req.body; // Массив user_id которые должны быть в команде
+        const userId = req.user.id;
+
+        console.log('🔄 [TeamMemberController] Обновление турнирного состава:', {
+            tournamentId,
+            teamId,
+            userId,
+            newRoster: memberUserIds
+        });
+
+        if (!Array.isArray(memberUserIds)) {
+            return res.status(400).json({ error: 'Некорректные данные состава' });
+        }
+
+        // Проверка турнира
+        const tournament = await TournamentRepository.getById(parseInt(tournamentId));
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+
+        // Проверка что турнир активен
+        if (tournament.status !== 'active') {
+            return res.status(400).json({ error: 'Редактирование доступно только для активных турниров' });
+        }
+
+        // Проверка лимита team_size
+        const maxTeamSize = tournament.team_size || 5;
+        if (memberUserIds.length > maxTeamSize) {
+            return res.status(400).json({ error: `Максимальный размер команды: ${maxTeamSize}` });
+        }
+
+        // Проверка что пользователь - капитан команды
+        const captainCheck = await pool.query(
+            'SELECT * FROM tournament_team_members WHERE team_id = $1 AND user_id = $2 AND is_captain = true',
+            [teamId, userId]
+        );
+
+        if (captainCheck.rows.length === 0) {
+            return res.status(403).json({ error: 'Только капитан может редактировать состав команды' });
+        }
+
+        // Начинаем транзакцию
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Получаем текущий состав (кроме капитана)
+            const currentRoster = await client.query(`
+                SELECT ttm.participant_id, tp.user_id, tp.name
+                FROM tournament_team_members ttm
+                JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                WHERE ttm.team_id = $1 AND ttm.is_captain = false
+            `, [teamId]);
+
+            const currentUserIds = currentRoster.rows.map(r => r.user_id).filter(Boolean);
+
+            // 2. Определяем кого нужно удалить (есть сейчас, но нет в новом составе)
+            const toRemove = currentRoster.rows.filter(r => r.user_id && !memberUserIds.includes(r.user_id));
+
+            // 3. Определяем кого нужно добавить (есть в новом составе, но нет сейчас)
+            const toAdd = memberUserIds.filter(uid => !currentUserIds.includes(uid));
+
+            console.log('🔄 [TeamMemberController] Операции:', {
+                toRemove: toRemove.length,
+                toAdd: toAdd.length
+            });
+
+            // 4. Удаляем участников
+            for (const member of toRemove) {
+                await client.query(
+                    'DELETE FROM tournament_team_members WHERE team_id = $1 AND participant_id = $2',
+                    [teamId, member.participant_id]
+                );
+                
+                // Обновляем флаг in_team
+                await client.query(
+                    'UPDATE tournament_participants SET in_team = false WHERE id = $1',
+                    [member.participant_id]
+                );
+
+                console.log(`➖ Удален: ${member.name}`);
+            }
+
+            // 5. Добавляем новых участников
+            for (const newUserId of toAdd) {
+                // Проверяем существует ли пользователь
+                const userCheck = await client.query('SELECT * FROM users WHERE id = $1', [newUserId]);
+                if (userCheck.rows.length === 0) {
+                    console.warn(`⚠️ Пользователь ${newUserId} не найден, пропускаем`);
+                    continue;
+                }
+
+                // Проверяем существует ли участник турнира для этого пользователя
+                let participant = await client.query(
+                    'SELECT * FROM tournament_participants WHERE tournament_id = $1 AND user_id = $2',
+                    [tournamentId, newUserId]
+                );
+
+                let participantId;
+
+                if (participant.rows.length > 0) {
+                    // Участник уже существует
+                    participantId = participant.rows[0].id;
+                    
+                    // Проверяем что он не в другой команде
+                    if (participant.rows[0].in_team) {
+                        console.warn(`⚠️ Пользователь ${userCheck.rows[0].username} уже в другой команде`);
+                        continue;
+                    }
+                } else {
+                    // Создаем нового участника турнира
+                    const newParticipant = await client.query(
+                        'INSERT INTO tournament_participants (tournament_id, user_id, name) VALUES ($1, $2, $3) RETURNING id',
+                        [tournamentId, newUserId, userCheck.rows[0].username]
+                    );
+                    participantId = newParticipant.rows[0].id;
+                }
+
+                // Добавляем в турнирную команду
+                await client.query(
+                    'INSERT INTO tournament_team_members (team_id, user_id, participant_id, is_captain) VALUES ($1, $2, $3, false)',
+                    [teamId, newUserId, participantId]
+                );
+
+                // Обновляем флаг in_team
+                await client.query(
+                    'UPDATE tournament_participants SET in_team = true WHERE id = $1',
+                    [participantId]
+                );
+
+                console.log(`➕ Добавлен: ${userCheck.rows[0].username}`);
+            }
+
+            await client.query('COMMIT');
+
+            // Логируем событие
+            await logTournamentEvent(parseInt(tournamentId), userId, 'team_roster_updated', {
+                teamId: parseInt(teamId),
+                removed: toRemove.length,
+                added: toAdd.length
+            });
+
+            res.json({ 
+                success: true,
+                message: 'Состав команды обновлен',
+                changes: {
+                    added: toAdd.length,
+                    removed: toRemove.length
+                }
+            });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error('❌ Ошибка обновления состава:', error);
+            throw error;
+        } finally {
+            client.release();
+        }
+    });
 }
 
 module.exports = TeamMemberController;

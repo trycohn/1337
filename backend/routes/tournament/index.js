@@ -415,6 +415,10 @@ router.post('/:id/teams/:teamId/members', authenticateToken, verifyEmailRequired
 router.delete('/:id/teams/:teamId/members/:participantId', authenticateToken, verifyEmailRequired, verifyAdminOrCreator, TeamMemberController.removeTeamMember);
 // Получить состав команды
 router.get('/:id/teams/:teamId/members', authenticateToken, TeamMemberController.getTeamMembers);
+// 🆕 Получить доступных игроков из глобальной команды для капитана
+router.get('/:id/teams/:teamId/global-roster', authenticateToken, TeamMemberController.getGlobalTeamRoster);
+// 🆕 Обновить турнирный состав команды (только для капитана)
+router.put('/:id/teams/:teamId/roster', authenticateToken, verifyEmailRequired, TeamMemberController.updateTeamRoster);
 
 // 📋 ЛИСТ ОЖИДАНИЯ
 const WaitingListController = require('../../controllers/tournament/WaitingListController');
