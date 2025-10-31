@@ -1926,6 +1926,9 @@ div.score-container input {
    По макету Figma: компактные отступы, скролл вкладок, full‑bleed блоки
    ========================= */
 @media (max-width: 768px) {
+  .tournament-details-tournamentdetails h2 {
+    font-size: 1em;
+  }
   .tournament-details-tournamentdetails {
     padding: 12px 12px 24px;
   }

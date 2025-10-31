@@ -1,7 +1,6 @@
 /* Единые стили для блоков статистики матчей (монохромная тема) */
 
 .tournament-header.with-cs2-hero {
-  margin-top: 90px;
   margin-bottom: 40px;
   border: none;
   align-items: flex-end;
