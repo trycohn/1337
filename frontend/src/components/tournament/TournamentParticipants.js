@@ -535,6 +535,21 @@ const TournamentParticipants = ({
                             {(isLoadingInitial ? [...Array(skeletonRows)] : tournament.teams)?.map((team, index) => (
                                 <div key={team?.id || index} className="team-card-participants">
                                     <div className="team-header-participants">
+                                        {/* 🆕 Аватар команды */}
+                                        {!isLoadingInitial && (
+                                            <div className="team-header-avatar">
+                                                <img 
+                                                    src={team.avatar_url || team.members?.find(m => m.is_captain)?.avatar_url || team.members?.[0]?.avatar_url || '/uploads/avatars/preloaded/circle-user.svg'}
+                                                    alt={team.name}
+                                                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                                />
+                                            </div>
+                                        )}
+                                        {isLoadingInitial && (
+                                            <div className="team-header-avatar">
+                                                <div className="skeleton-avatar" style={{ width: 45, height: 45, borderRadius: '8px', background: '#1a1a1a' }} />
+                                            </div>
+                                        )}
                                         <div className="team-info-participants">
                                             <h4 className="team-name-participants">
                                                 {isLoadingInitial ? (
