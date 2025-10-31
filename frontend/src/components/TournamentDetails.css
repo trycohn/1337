@@ -85,9 +85,9 @@
     background-position: center center;
     background-repeat: no-repeat;
     background-color: #000; /* фон под пустыми полями по бокам */
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
+    width: 88vw;
+    margin-left: calc(50% - 44vw);
+    margin-right: calc(50% - 44vw);
   }
   .tournament-content-tournamentdetails {
     width: 100%;
@@ -1926,6 +1926,10 @@ div.score-container input {
    По макету Figma: компактные отступы, скролл вкладок, full‑bleed блоки
    ========================= */
 @media (max-width: 768px) {
+  header.header {
+    padding: 8px 12px;
+  }
+
   .tournament-details-tournamentdetails h2 {
     font-size: 1em;
   }
