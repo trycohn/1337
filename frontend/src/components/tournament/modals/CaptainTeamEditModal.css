@@ -218,6 +218,14 @@
     font-style: italic;
 }
 
+.ctem-empty-message-small {
+    text-align: center;
+    color: #666666;
+    font-size: 11px;
+    padding: 16px 8px;
+    font-style: italic;
+}
+
 /* Статистика ростера */
 .ctem-roster-stats {
     display: flex;
@@ -227,6 +235,58 @@
     border: 1px solid #333333;
     border-radius: 8px;
     margin-top: 8px;
+}
+
+/* Зона удаления игроков */
+.ctem-remove-zone {
+    background: #0a0a0a;
+    border: 2px dashed #666666;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 80px;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.ctem-remove-zone.ctem-remove-active {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+}
+
+.ctem-remove-icon {
+    font-size: 32px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.ctem-remove-zone.ctem-remove-active .ctem-remove-icon {
+    opacity: 1;
+    animation: ctem-shake 0.5s ease-in-out;
+}
+
+.ctem-remove-text {
+    font-size: 12px;
+    color: #666666;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.ctem-remove-zone.ctem-remove-active .ctem-remove-text {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+@keyframes ctem-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 .ctem-stat-item {
@@ -246,6 +306,186 @@
     font-size: 18px;
     font-weight: 600;
     color: #ff6b00;
+}
+
+/* Разделитель */
+.ctem-divider {
+    height: 1px;
+    background: #333333;
+    margin: 16px 0;
+}
+
+/* Поиск игроков */
+.ctem-search-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ctem-search-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    transition: border-color 0.3s ease;
+}
+
+.ctem-search-input:focus {
+    outline: none;
+    border-color: #ff0000;
+}
+
+.ctem-search-input::placeholder {
+    color: #666666;
+}
+
+.ctem-searching {
+    font-size: 11px;
+    color: #888888;
+    padding: 4px 8px;
+    text-align: center;
+}
+
+/* Результаты поиска */
+.ctem-search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ctem-search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    gap: 8px;
+}
+
+.ctem-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.ctem-search-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.ctem-search-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ctem-search-name {
+    font-size: 13px;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.ctem-search-elo {
+    font-size: 10px;
+    color: #888888;
+}
+
+.ctem-invite-btn {
+    background: #ff0000;
+    border: none;
+    color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.ctem-invite-btn:hover {
+    background: #cc0000;
+}
+
+.ctem-invite-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Список отправленных приглашений */
+.ctem-invitations-list {
+    margin-top: 12px;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+
+.ctem-invitations-title {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: #888888;
+    font-weight: 500;
+}
+
+.ctem-invitation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.ctem-invitation-item:last-child {
+    margin-bottom: 0;
+}
+
+.ctem-invitation-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ctem-invitation-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.ctem-invitation-name {
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.ctem-cancel-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    transition: opacity 0.3s ease;
+}
+
+.ctem-cancel-btn:hover {
+    opacity: 0.7;
+}
+
+.ctem-cancel-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* Футер */

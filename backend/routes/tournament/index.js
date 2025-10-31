@@ -420,6 +420,21 @@ router.get('/:id/teams/:teamId/global-roster', authenticateToken, TeamMemberCont
 // 🆕 Обновить турнирный состав команды (только для капитана)
 router.put('/:id/teams/:teamId/roster', authenticateToken, verifyEmailRequired, TeamMemberController.updateTeamRoster);
 
+// 👑 ПРИГЛАШЕНИЯ В ТУРНИРНУЮ КОМАНДУ ОТ КАПИТАНА
+const TeamInvitationController = require('../../controllers/tournament/TeamInvitationController');
+// Отправить приглашение игроку (только капитан)
+router.post('/:tournamentId/teams/:teamId/invite', authenticateToken, verifyEmailRequired, TeamInvitationController.sendInvitation);
+// Получить приглашения команды (только капитан)
+router.get('/:tournamentId/teams/:teamId/invitations', authenticateToken, TeamInvitationController.getTeamInvitations);
+// Получить мои входящие приглашения
+router.get('/my-team-invitations', authenticateToken, TeamInvitationController.getMyInvitations);
+// Принять приглашение
+router.post('/team-invitations/:invitationId/accept', authenticateToken, verifyEmailRequired, TeamInvitationController.acceptInvitation);
+// Отклонить приглашение
+router.post('/team-invitations/:invitationId/reject', authenticateToken, verifyEmailRequired, TeamInvitationController.rejectInvitation);
+// Отменить приглашение (капитан)
+router.delete('/team-invitations/:invitationId', authenticateToken, TeamInvitationController.cancelInvitation);
+
 // 📋 ЛИСТ ОЖИДАНИЯ
 const WaitingListController = require('../../controllers/tournament/WaitingListController');
 // Присоединиться к листу ожидания (для игроков)

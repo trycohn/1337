@@ -85,6 +85,35 @@ const EmptySlot = ({ slotIndex, onMove }) => {
     );
 };
 
+// Зона удаления игрока
+const RemoveZone = ({ onMove }) => {
+    const [{ isOver, canDrop }, drop] = useDrop({
+        accept: ItemTypes.PLAYER,
+        drop: (item) => {
+            if (onMove && item.isFromRoster) {
+                onMove(item, { isRemoveSlot: true });
+            }
+        },
+        canDrop: (item) => item.isFromRoster, // Можно удалять только из ростера
+        collect: (monitor) => ({
+            isOver: monitor.isOver(),
+            canDrop: monitor.canDrop()
+        })
+    });
+
+    return (
+        <div
+            ref={drop}
+            className={`ctem-remove-zone ${isOver && canDrop ? 'ctem-remove-active' : ''}`}
+        >
+            <div className="ctem-remove-icon">🗑️</div>
+            <span className="ctem-remove-text">
+                {isOver && canDrop ? 'Отпустите для удаления' : 'Перетащите сюда для удаления из состава'}
+            </span>
+        </div>
+    );
+};
+
 /**
  * Модалка редактирования турнирного состава команды для капитана
  */
@@ -105,6 +134,12 @@ const CaptainTeamEditModal = ({
     const [availablePlayers, setAvailablePlayers] = useState([]);
     const [globalTeam, setGlobalTeam] = useState(null);
     const [maxTeamSize, setMaxTeamSize] = useState(5);
+    
+    // Поиск и приглашение игроков
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [sentInvitations, setSentInvitations] = useState([]);
 
     // Загрузка данных при открытии
     useEffect(() => {
@@ -145,6 +180,16 @@ const CaptainTeamEditModal = ({
                 setMaxTeamSize(globalResponse.data.maxTeamSize || 5);
             }
 
+            // Загружаем отправленные приглашения
+            const invitationsResponse = await api.get(
+                `/api/tournaments/${tournament.id}/teams/${team.id}/invitations`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (invitationsResponse.data.success) {
+                setSentInvitations(invitationsResponse.data.invitations || []);
+            }
+
         } catch (err) {
             console.error('Ошибка загрузки данных:', err);
             setError(err.response?.data?.error || 'Ошибка загрузки данных');
@@ -153,17 +198,125 @@ const CaptainTeamEditModal = ({
         }
     };
 
+    // Поиск игроков
+    const searchUsers = async (query) => {
+        if (!query || query.length < 2) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            setIsSearching(true);
+            const token = localStorage.getItem('token');
+            const response = await api.get(
+                `/api/users/search?query=${encodeURIComponent(query)}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            // Фильтруем уже добавленных и приглашенных
+            const rosterUserIds = new Set(tournamentRoster.map(p => p.user_id));
+            const invitedUserIds = new Set(sentInvitations.filter(inv => inv.status === 'pending').map(inv => inv.invited_user_id));
+            
+            const filtered = response.data.filter(user => 
+                !rosterUserIds.has(user.id) && 
+                !invitedUserIds.has(user.id) &&
+                user.id !== user?.id
+            );
+            
+            setSearchResults(filtered);
+        } catch (err) {
+            console.error('Ошибка поиска:', err);
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Отправить приглашение
+    const handleSendInvitation = async (userId, username) => {
+        try {
+            setError('');
+            const token = localStorage.getItem('token');
+            
+            const response = await api.post(
+                `/api/tournaments/${tournament.id}/teams/${team.id}/invite`,
+                { userId, message: `Приглашаем вас в команду ${team.name}` },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                setSuccess(`✅ Приглашение отправлено ${username}`);
+                setTimeout(() => setSuccess(''), 3000);
+                setSearchQuery('');
+                setSearchResults([]);
+                
+                // Обновляем список приглашений
+                const invitationsResponse = await api.get(
+                    `/api/tournaments/${tournament.id}/teams/${team.id}/invitations`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                
+                if (invitationsResponse.data.success) {
+                    setSentInvitations(invitationsResponse.data.invitations || []);
+                }
+            }
+        } catch (err) {
+            console.error('Ошибка отправки приглашения:', err);
+            setError(err.response?.data?.error || 'Ошибка при отправке приглашения');
+        }
+    };
+
+    // Отменить приглашение
+    const handleCancelInvitation = async (invitationId) => {
+        try {
+            const token = localStorage.getItem('token');
+            
+            await api.delete(
+                `/api/tournaments/team-invitations/${invitationId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setSuccess('✅ Приглашение отменено');
+            setTimeout(() => setSuccess(''), 3000);
+            
+            // Обновляем список
+            setSentInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        } catch (err) {
+            console.error('Ошибка отмены приглашения:', err);
+            setError(err.response?.data?.error || 'Ошибка при отмене приглашения');
+        }
+    };
+
+    // Поиск с задержкой
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery.length >= 2) {
+                searchUsers(searchQuery);
+            } else {
+                setSearchResults([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, tournamentRoster, sentInvitations]);
+
     // Обработка перемещения игрока
     const handleMove = useCallback((draggedItem, dropTarget) => {
         const { player: draggedPlayer, isFromRoster: dragFromRoster } = draggedItem;
-        const { player: targetPlayer, isRosterSlot: dropToRoster } = dropTarget;
+        const { player: targetPlayer, isRosterSlot: dropToRoster, isRemoveSlot } = dropTarget;
 
         console.log('🔄 Перемещение игрока:', {
             from: dragFromRoster ? 'roster' : 'available',
-            to: dropToRoster ? 'roster' : 'available',
+            to: isRemoveSlot ? 'remove' : dropToRoster ? 'roster' : 'available',
             draggedPlayer: draggedPlayer?.username,
             targetPlayer: targetPlayer?.username
         });
+
+        // Удаление из состава
+        if (isRemoveSlot && dragFromRoster) {
+            setTournamentRoster(prev => prev.filter(p => p.user_id !== draggedPlayer.user_id));
+            return;
+        }
 
         // Из ростера в доступные
         if (dragFromRoster && !dropToRoster) {
@@ -309,28 +462,111 @@ const CaptainTeamEditModal = ({
                                     </span>
                                 </div>
                             </div>
+
+                            {/* 🗑️ Зона удаления игроков */}
+                            <RemoveZone onMove={handleMove} />
                         </div>
 
-                        {/* Правая колонка - Доступные игроки */}
+                        {/* Правая колонка - Доступные игроки и приглашения */}
                         <div className="ctem-available-column">
-                            <h4>📋 Доступные игроки ({availablePlayers.length})</h4>
-                            <p className="ctem-column-hint">Из вашей глобальной команды "{globalTeam?.name}"</p>
+                            {/* Доступные из глобальной команды */}
+                            {globalTeam && (
+                                <>
+                                    <h4>📋 Доступные игроки ({availablePlayers.length})</h4>
+                                    <p className="ctem-column-hint">Из вашей глобальной команды "{globalTeam?.name}"</p>
+                                    
+                                    {availablePlayers.length === 0 ? (
+                                        <div className="ctem-empty-message-small">
+                                            Все игроки из глобальной команды уже в составе
+                                        </div>
+                                    ) : (
+                                        <div className="ctem-available-players-list">
+                                            {availablePlayers.map((player, index) => (
+                                                <DraggablePlayer
+                                                    key={player.user_id}
+                                                    player={player}
+                                                    index={index}
+                                                    onMove={handleMove}
+                                                    isRosterSlot={false}
+                                                    canDrag={!loading}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="ctem-divider"></div>
+                                </>
+                            )}
                             
-                            {availablePlayers.length === 0 ? (
-                                <div className="ctem-empty-message">
-                                    Все игроки из глобальной команды уже в турнирном составе
-                                </div>
-                            ) : (
-                                <div className="ctem-available-players-list">
-                                    {availablePlayers.map((player, index) => (
-                                        <DraggablePlayer
-                                            key={player.user_id}
-                                            player={player}
-                                            index={index}
-                                            onMove={handleMove}
-                                            isRosterSlot={false}
-                                            canDrag={!loading}
-                                        />
+                            {/* Поиск и приглашение игроков */}
+                            <h4>➕ Пригласить игрока</h4>
+                            <p className="ctem-column-hint">Поиск зарегистрированных игроков</p>
+                            
+                            <div className="ctem-search-section">
+                                <input
+                                    type="text"
+                                    className="ctem-search-input"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Введите имя игрока..."
+                                    disabled={loading}
+                                />
+                                
+                                {isSearching && <div className="ctem-searching">Поиск...</div>}
+                                
+                                {searchResults.length > 0 && (
+                                    <div className="ctem-search-results">
+                                        {searchResults.map(user => (
+                                            <div key={user.id} className="ctem-search-result-item">
+                                                <div className="ctem-user-info">
+                                                    <img 
+                                                        src={ensureHttps(user.avatar_url) || '/uploads/avatars/preloaded/circle-user.svg'}
+                                                        alt={user.username}
+                                                        className="ctem-search-avatar"
+                                                        onError={(e) => { e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                                    />
+                                                    <div className="ctem-search-details">
+                                                        <span className="ctem-search-name">{user.username}</span>
+                                                        <span className="ctem-search-elo">FACEIT: {user.faceit_elo || 1200}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    className="ctem-invite-btn"
+                                                    onClick={() => handleSendInvitation(user.id, user.username)}
+                                                    disabled={loading}
+                                                >
+                                                    📧
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Отправленные приглашения */}
+                            {sentInvitations.filter(inv => inv.status === 'pending').length > 0 && (
+                                <div className="ctem-invitations-list">
+                                    <h5 className="ctem-invitations-title">Отправленные приглашения:</h5>
+                                    {sentInvitations.filter(inv => inv.status === 'pending').map(inv => (
+                                        <div key={inv.id} className="ctem-invitation-item">
+                                            <div className="ctem-invitation-info">
+                                                <img 
+                                                    src={ensureHttps(inv.invited_avatar) || '/uploads/avatars/preloaded/circle-user.svg'}
+                                                    alt={inv.invited_username}
+                                                    className="ctem-invitation-avatar"
+                                                    onError={(e) => { e.currentTarget.src = '/uploads/avatars/preloaded/circle-user.svg'; }}
+                                                />
+                                                <span className="ctem-invitation-name">{inv.invited_username}</span>
+                                            </div>
+                                            <button 
+                                                className="ctem-cancel-btn"
+                                                onClick={() => handleCancelInvitation(inv.id)}
+                                                disabled={loading}
+                                                title="Отменить приглашение"
+                                            >
+                                                ❌
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             )}
