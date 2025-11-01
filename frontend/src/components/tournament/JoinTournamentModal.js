@@ -170,48 +170,48 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="join-tournament-modal">
-                <div className="modal-header">
+        <div className="JTModal-overlay">
+            <div className="JTModal-container">
+                <div className="JTModal-header">
                     <h2>Вступление в турнир</h2>
-                    <button className="close-btn" onClick={onClose}>✕</button>
+                    <button className="JTModal-close-btn" onClick={onClose}>✕</button>
                 </div>
 
-                <div className="modal-content">
+                <div className="JTModal-content">
                     {/* Выбор режима для командных турниров */}
                     {isTeamTournament && mode === 'select' && (
-                        <div className="mode-selection">
-                            <p className="hint">Выберите способ участия:</p>
+                        <div className="JTModal-mode-selection">
+                            <p className="JTModal-hint">Выберите способ участия:</p>
                             
-                            <div className="mode-options">
+                            <div className="JTModal-mode-options">
                                 {myTeams.length > 0 && (
                                     <button 
-                                        className="mode-option"
+                                        className="JTModal-mode-option"
                                         onClick={() => setMode('my_team')}
                                     >
-                                        <span className="icon">⭐</span>
-                                        <span className="label">Моя команда</span>
-                                        <span className="description">Использовать свою постоянную или разовую команду</span>
+                                        <span className="JTModal-icon">⭐</span>
+                                        <span className="JTModal-label">Моя команда</span>
+                                        <span className="JTModal-description">Использовать свою постоянную или разовую команду</span>
                                     </button>
                                 )}
 
                                 <button 
-                                    className="mode-option"
+                                    className="JTModal-mode-option"
                                     onClick={() => setMode('create_team')}
                                 >
-                                    <span className="icon">➕</span>
-                                    <span className="label">Создать команду</span>
-                                    <span className="description">Создать новую разовую команду для турнира</span>
+                                    <span className="JTModal-icon">➕</span>
+                                    <span className="JTModal-label">Создать команду</span>
+                                    <span className="JTModal-description">Создать новую разовую команду для турнира</span>
                                 </button>
 
                                 {tournamentTeams.length > 0 && (
                                     <button 
-                                        className="mode-option"
+                                        className="JTModal-mode-option"
                                         onClick={() => setMode('join_team')}
                                     >
-                                        <span className="icon">👥</span>
-                                        <span className="label">Вступить в команду</span>
-                                        <span className="description">Отправить запрос в существующую команду</span>
+                                        <span className="JTModal-icon">👥</span>
+                                        <span className="JTModal-label">Вступить в команду</span>
+                                        <span className="JTModal-description">Отправить запрос в существующую команду</span>
                                     </button>
                                 )}
                             </div>
@@ -220,20 +220,20 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                     {/* Создание новой команды */}
                     {mode === 'create_team' && (
-                        <div className="create-team-form">
+                        <div className="JTModal-create-team-form">
                             <button 
-                                className="back-btn"
+                                className="JTModal-back-btn"
                                 onClick={() => setMode('select')}
                             >
                                 ← Назад
                             </button>
 
                             <h3>Создание команды</h3>
-                            <p className="hint">Введите название вашей команды</p>
+                            <p className="JTModal-hint">Введите название вашей команды</p>
 
                             <input
                                 type="text"
-                                className="team-name-input"
+                                className="JTModal-team-name-input"
                                 placeholder="Название команды"
                                 value={teamName}
                                 onChange={(e) => setTeamName(e.target.value)}
@@ -241,10 +241,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
                                 autoFocus
                             />
 
-                            {error && <div className="error-message">{error}</div>}
+                            {error && <div className="JTModal-error-message">{error}</div>}
 
                             <button 
-                                className="btn-primary"
+                                className="JTModal-btn-primary"
                                 onClick={handleJoin}
                                 disabled={loading || !teamName.trim()}
                             >
@@ -255,42 +255,42 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                     {/* Выбор своей команды */}
                     {mode === 'my_team' && (
-                        <div className="my-team-form">
+                        <div className="JTModal-my-team-form">
                             <button 
-                                className="back-btn"
+                                className="JTModal-back-btn"
                                 onClick={() => setMode('select')}
                             >
                                 ← Назад
                             </button>
 
                             <h3>Выбор команды</h3>
-                            <p className="hint">Выберите команду для участия в турнире</p>
+                            <p className="JTModal-hint">Выберите команду для участия в турнире</p>
 
-                            <div className="teams-list">
+                            <div className="JTModal-teams-list">
                                 {myTeams.length === 0 ? (
-                                    <div className="empty-state">
+                                    <div className="JTModal-empty-state">
                                         <p>У вас нет команд</p>
                                     </div>
                                 ) : (
                                     myTeams.map(team => (
                                         <div 
                                             key={team.id}
-                                            className={`team-item ${selectedTeam?.id === team.id ? 'selected' : ''}`}
+                                            className={`JTModal-team-item ${selectedTeam?.id === team.id ? 'JTModal-selected' : ''}`}
                                             onClick={() => setSelectedTeam(team)}
                                         >
-                                            <div className="team-info">
-                                                <div className="team-header">
-                                                    <span className="team-name">{team.name}</span>
+                                            <div className="JTModal-team-info">
+                                                <div className="JTModal-team-header">
+                                                    <span className="JTModal-team-name">{team.name}</span>
                                                     {team.is_permanent && (
-                                                        <span className="team-badge permanent">Постоянная</span>
+                                                        <span className="JTModal-team-badge JTModal-permanent">Постоянная</span>
                                                     )}
                                                 </div>
-                                                <span className="team-members">
+                                                <span className="JTModal-team-members">
                                                     {team.member_count || 0} участников
                                                 </span>
                                             </div>
                                             {selectedTeam?.id === team.id && (
-                                                <span className="checkmark">✓</span>
+                                                <span className="JTModal-checkmark">✓</span>
                                             )}
                                         </div>
                                     ))
@@ -299,10 +299,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                             {selectedTeam && (
                                 <>
-                                    {error && <div className="error-message">{error}</div>}
+                                    {error && <div className="JTModal-error-message">{error}</div>}
 
                                     <button 
-                                        className="btn-primary"
+                                        className="JTModal-btn-primary"
                                         onClick={handleJoin}
                                         disabled={loading}
                                     >
@@ -315,37 +315,37 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                     {/* Вступление в существующую команду */}
                     {mode === 'join_team' && (
-                        <div className="join-team-form">
+                        <div className="JTModal-join-team-form">
                             <button 
-                                className="back-btn"
+                                className="JTModal-back-btn"
                                 onClick={() => setMode('select')}
                             >
                                 ← Назад
                             </button>
 
                             <h3>Вступление в команду</h3>
-                            <p className="hint">Выберите команду из списка</p>
+                            <p className="JTModal-hint">Выберите команду из списка</p>
 
-                            <div className="teams-list">
+                            <div className="JTModal-teams-list">
                                 {tournamentTeams.length === 0 ? (
-                                    <div className="empty-state">
+                                    <div className="JTModal-empty-state">
                                         <p>В турнире пока нет команд</p>
                                     </div>
                                 ) : (
                                     tournamentTeams.map(team => (
                                         <div 
                                             key={team.id}
-                                            className={`team-item ${selectedTeam?.id === team.id ? 'selected' : ''}`}
+                                            className={`JTModal-team-item ${selectedTeam?.id === team.id ? 'JTModal-selected' : ''}`}
                                             onClick={() => setSelectedTeam(team)}
                                         >
-                                            <div className="team-info">
-                                                <span className="team-name">{team.name}</span>
-                                                <span className="team-members">
+                                            <div className="JTModal-team-info">
+                                                <span className="JTModal-team-name">{team.name}</span>
+                                                <span className="JTModal-team-members">
                                                     {team.member_count || 0} / {getMaxTeamSize(tournament.participant_type)} участников
                                                 </span>
                                             </div>
                                             {selectedTeam?.id === team.id && (
-                                                <span className="checkmark">✓</span>
+                                                <span className="JTModal-checkmark">✓</span>
                                             )}
                                         </div>
                                     ))
@@ -354,7 +354,7 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                             {selectedTeam && (
                                 <>
-                                    <div className="message-field">
+                                    <div className="JTModal-message-field">
                                         <label>Сообщение капитану (опционально):</label>
                                         <textarea
                                             placeholder="Расскажите о себе..."
@@ -364,10 +364,10 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
                                         />
                                     </div>
 
-                                    {error && <div className="error-message">{error}</div>}
+                                    {error && <div className="JTModal-error-message">{error}</div>}
 
                                     <button 
-                                        className="btn-primary"
+                                        className="JTModal-btn-primary"
                                         onClick={handleJoin}
                                         disabled={loading}
                                     >
@@ -380,13 +380,13 @@ function JoinTournamentModal({ tournament, onClose, onSuccess }) {
 
                     {/* Соло турниры */}
                     {isSolo && (
-                        <div className="solo-join">
-                            <p className="hint">Вы готовы участвовать в этом турнире?</p>
+                        <div className="JTModal-solo-join">
+                            <p className="JTModal-hint">Вы готовы участвовать в этом турнире?</p>
 
-                            {error && <div className="error-message">{error}</div>}
+                            {error && <div className="JTModal-error-message">{error}</div>}
 
                             <button 
-                                className="btn-primary"
+                                className="JTModal-btn-primary"
                                 onClick={handleJoin}
                                 disabled={loading}
                             >
