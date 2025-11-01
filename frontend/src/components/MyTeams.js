@@ -115,34 +115,34 @@ const MyTeams = ({ user }) => {
     };
 
     if (loading) {
-        return <div className="teams-loading">Загрузка команд...</div>;
+        return <div className="MT-teams-loading">Загрузка команд...</div>;
     }
 
     return (
-        <div className="my-teams">
+        <div className="MT-my-teams">
             {error && (
-                <div className="error-message">
+                <div className="MT-error-message">
                     {error}
                     <button onClick={() => setError('')}>✕</button>
                 </div>
             )}
 
             {/* Sub-tabs Navigation */}
-            <div className="my-teams-tabs">
+            <div className="MT-my-teams-tabs">
                 <button 
-                    className={`my-teams-tab ${activeSubTab === 'teams' ? 'active' : ''}`}
+                    className={`MT-my-teams-tab ${activeSubTab === 'teams' ? 'MT-active' : ''}`}
                     onClick={() => setActiveSubTab('teams')}
                 >
-                    <span className="tab-icon">⚔️</span>
-                    <span className="tab-text">Мои команды</span>
-                    {teams.length > 0 && <span className="tab-count">{teams.length}</span>}
+                    <span className="MT-tab-icon">⚔️</span>
+                    <span className="MT-tab-text">Мои команды</span>
+                    {teams.length > 0 && <span className="MT-tab-count">{teams.length}</span>}
                 </button>
                 <button 
-                    className={`my-teams-tab ${activeSubTab === 'history' ? 'active' : ''}`}
+                    className={`MT-my-teams-tab ${activeSubTab === 'history' ? 'MT-active' : ''}`}
                     onClick={() => setActiveSubTab('history')}
                 >
-                    <span className="tab-icon">🏆</span>
-                    <span className="tab-text">История турниров</span>
+                    <span className="MT-tab-icon">🏆</span>
+                    <span className="MT-tab-text">История турниров</span>
                 </button>
             </div>
 
@@ -151,37 +151,37 @@ const MyTeams = ({ user }) => {
                 <>
                     {/* Приглашения в команды */}
                     {invitations.length > 0 && (
-                <div className="team-invitations">
+                <div className="MT-team-invitations">
                     <h3>Приглашения в команды</h3>
                     {invitations.map(invitation => (
-                        <div key={invitation.id} className="invitation-card">
-                            <div className="invitation-info">
-                                <div className="team-info">
+                        <div key={invitation.id} className="MT-invitation-card">
+                            <div className="MT-invitation-info">
+                                <div className="MT-team-info">
                                     {invitation.team_avatar && (
                                         <img 
                                             src={ensureHttps(invitation.team_avatar)} 
                                             alt={invitation.team_name}
-                                            className="team-avatar-small"
+                                            className="MT-team-avatar-small"
                                         />
                                     )}
                                     <div>
                                         <h4>{invitation.team_name}</h4>
                                         <p>от {invitation.inviter_username}</p>
                                         {invitation.message && (
-                                            <p className="invitation-message">"{invitation.message}"</p>
+                                            <p className="MT-invitation-message">"{invitation.message}"</p>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                            <div className="invitation-actions">
+                            <div className="MT-invitation-actions">
                                 <button 
-                                    className="accept-btn"
+                                    className="MT-accept-btn"
                                     onClick={() => respondToInvitation(invitation.id, 'accepted')}
                                 >
                                     Принять
                                 </button>
                                 <button 
-                                    className="reject-btn"
+                                    className="MT-reject-btn"
                                     onClick={() => respondToInvitation(invitation.id, 'rejected')}
                                 >
                                     Отклонить
@@ -193,7 +193,7 @@ const MyTeams = ({ user }) => {
             )}
 
             {/* Заголовок и кнопка создания */}
-            <div className="teams-header">
+            <div className="MT-teams-header">
                 <h2>Мои команды</h2>
                 <button className="btn btn-secondary" onClick={openCreateModal}>
                     + Создать команду
@@ -201,68 +201,68 @@ const MyTeams = ({ user }) => {
             </div>
 
             {/* Список команд */}
-            <div className="teams-grid">
+            <div className="MT-teams-grid">
                 {teams.length === 0 ? (
-                    <div className="no-teams">
+                    <div className="MT-no-teams">
                         <p>У вас пока нет команд</p>
                     </div>
                 ) : (
                     teams.map(team => (
                         <div 
                             key={team.id} 
-                            className="my-team-card"
+                            className="MT-my-team-card"
                             onClick={() => openTeamModal(team)}
                         >
-                            <div className="my-team-header">
-                                <div className="my-team-avatar-container">
+                            <div className="MT-my-team-header">
+                                <div className="MT-my-team-avatar-container">
                                     {team.avatar_url ? (
                                         <img 
                                             src={ensureHttps(team.avatar_url)} 
                                             alt={team.name}
-                                            className="team-avatar"
+                                            className="MT-team-avatar"
                                         />
                                     ) : (
-                                        <div className="my-team-avatar-placeholder">
+                                        <div className="MT-my-team-avatar-placeholder">
                                             {team.name.charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                 </div>
-                                <div className="team-info">
-                                    <h3 className="my-team-name">{team.name}</h3>
-                                    <div className="my-team-badges">
+                                <div className="MT-team-info">
+                                    <h3 className="MT-my-team-name">{team.name}</h3>
+                                    <div className="MT-my-team-badges">
                                         {team.is_captain && (
-                                            <span className="captain-badge">Капитан</span>
+                                            <span className="MT-captain-badge">Капитан</span>
                                         )}
                                         {!team.is_permanent && (
-                                            <span className="temporary-badge">Разовая</span>
+                                            <span className="MT-temporary-badge">Разовая</span>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                            <div className="my-team-members">
-                                <div className="my-members-list">
+                            <div className="MT-my-team-members">
+                                <div className="MT-my-members-list">
                                     {team.members.slice(0, 4).map(member => (
-                                        <div key={member.id} className="my-team-member-item">
-                                            <div className="my-team-member-avatar">
+                                        <div key={member.id} className="MT-my-team-member-item">
+                                            <div className="MT-my-team-member-avatar">
                                                 {member.avatar_url ? (
                                                     <img 
                                                         src={ensureHttps(member.avatar_url)} 
                                                         alt={member.username}
                                                     />
                                                 ) : (
-                                                    <div className="my-team-avatar-placeholder">
+                                                    <div className="MT-my-team-avatar-placeholder">
                                                         {member.username.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="my-team-member-name">
+                                            <span className="MT-my-team-member-name">
                                                 {member.username}
                                                 {member.role === 'captain' && ' 👑'}
                                             </span>
                                         </div>
                                     ))}
                                     {team.member_count > 4 && (
-                                        <div className="my-more-members">
+                                        <div className="MT-my-more-members">
                                             +{team.member_count - 4} еще
                                         </div>
                                     )}

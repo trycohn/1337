@@ -1,18 +1,18 @@
-﻿.my-teams {
+﻿.MT-my-teams {
     padding: 0;
     max-width: 1200px;
     margin: 0 auto;
 }
 
 /* Sub-tabs Navigation */
-.my-teams-tabs {
+.MT-my-teams-tabs {
     display: flex;
     gap: 0;
     border-bottom: 1px solid #333333;
     margin-bottom: 24px;
 }
 
-.my-teams-tab {
+.MT-my-teams-tab {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -29,26 +29,26 @@
     transition: all 0.2s ease;
 }
 
-.my-teams-tab:hover {
+.MT-my-teams-tab:hover {
     color: #ffffff;
     background: #111111;
 }
 
-.my-teams-tab.active {
+.MT-my-teams-tab.MT-active {
     color: #ffffff;
     border-bottom-color: #ff0000;
     background: none;
 }
 
-.my-teams-tab .tab-icon {
+.MT-my-teams-tab .MT-tab-icon {
     font-size: 16px;
 }
 
-.my-teams-tab .tab-text {
+.MT-my-teams-tab .MT-tab-text {
     font-family: Play, Arial, sans-serif;
 }
 
-.my-teams-tab .tab-count {
+.MT-my-teams-tab .MT-tab-count {
     background: #ff0000;
     color: #ffffff;
     font-size: 11px;
@@ -59,7 +59,7 @@
     text-align: center;
 }
 
-.teams-loading {
+.MT-teams-loading {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -68,7 +68,7 @@
     color: #666;
 }
 
-.error-message {
+.MT-error-message {
     background: #ffebee;
     color: #c62828;
     padding: 12px 16px;
@@ -79,7 +79,7 @@
     align-items: center;
 }
 
-.error-message button {
+.MT-error-message button {
     background: none;
     border: none;
     color: #c62828;
@@ -90,7 +90,7 @@
 }
 
 /* РџСЂРёРіР»Р°С€РµРЅРёСЏ */
-.team-invitations {
+.MT-team-invitations {
     margin-bottom: 30px;
     padding: 20px;
     background: #f8f9fa;
@@ -98,13 +98,13 @@
     border-left: 4px solid #007bff;
 }
 
-.team-invitations h3 {
+.MT-team-invitations h3 {
     margin: 0 0 15px 0;
     color: #333;
     font-size: 18px;
 }
 
-.invitation-card {
+.MT-invitation-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -115,43 +115,43 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.invitation-info .team-info {
+.MT-invitation-info .MT-team-info {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.team-avatar-small {
+.MT-team-avatar-small {
     width: 40px;
     height: 40px;
     border-radius: 8px;
     object-fit: cover;
 }
 
-.invitation-card h4 {
+.MT-invitation-card h4 {
     margin: 0 0 4px 0;
     font-size: 16px;
     color: #333;
 }
 
-.invitation-card p {
+.MT-invitation-card p {
     margin: 0;
     font-size: 14px;
     color: #666;
 }
 
-.invitation-message {
+.MT-invitation-message {
     font-style: italic;
     color: #555 !important;
     margin-top: 4px !important;
 }
 
-.invitation-actions {
+.MT-invitation-actions {
     display: flex;
     gap: 8px;
 }
 
-.accept-btn, .reject-btn {
+.MT-accept-btn, .MT-reject-btn {
     padding: 8px 16px;
     border: none;
     border-radius: 6px;
@@ -161,26 +161,26 @@
     transition: all 0.2s;
 }
 
-.accept-btn {
+.MT-accept-btn {
     background: #28a745;
     color: white;
 }
 
-.accept-btn:hover {
+.MT-accept-btn:hover {
     background: #218838;
 }
 
-.reject-btn {
+.MT-reject-btn {
     background: #dc3545;
     color: white;
 }
 
-.reject-btn:hover {
+.MT-reject-btn:hover {
     background: #c82333;
 }
 
 /* Р—Р°РіРѕР»РѕРІРѕРє */
-.teams-header {
+.MT-teams-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -188,7 +188,7 @@
     gap: 15px;
 }
 
-.teams-header h2 {
+.MT-teams-header h2 {
     margin: 0;
     color: #ffffff;
     font-size: 28px;
@@ -197,13 +197,13 @@
 /* .create-team-btn — локальные стили удалены, используем .btn */
 
 /* РЎРµС‚РєР° РєРѕРјР°РЅРґ */
-.teams-grid {
+.MT-teams-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 20px;
 }
 
-.no-teams {
+.MT-no-teams {
     grid-column: 1 / -1;
     text-align: center;
     padding: 24px 10px;
@@ -212,14 +212,14 @@
     border: none;
 }
 
-.no-teams p {
+.MT-no-teams p {
     margin: 0 0 20px 0;
     font-size: 18px;
     color: #666;
 }
 
 /* РљР°СЂС‚РѕС‡РєР° РєРѕРјР°РЅРґС‹ */
-.team-card {
+.MT-team-card {
     background: rgb(0, 0, 0);
     border-radius: 12px;
     padding: 20px;
@@ -228,21 +228,21 @@
     border: 1px solid transparent;
 }
 
-.team-card:hover {
+.MT-team-card:hover {
     transform: translateY(-4px);
     border-color: #ff0000;
 }
 
-.team-header {
+.MT-team-header {
     display: flex;
     align-items: flex-start;
 }
 
-.team-avatar-container {
+.MT-team-avatar-container {
     flex-shrink: 0;
 }
 
-.team-avatar {
+.MT-team-avatar {
     width: 60px;
     height: 60px;
     border-radius: 12px;
@@ -250,7 +250,7 @@
     border: 3px solid #f8f9fa;
 }
 
-.team-avatar-placeholder {
+.MT-team-avatar-placeholder {
     width: 60px;
     height: 60px;
     border-radius: 12px;
@@ -264,53 +264,53 @@
     border: 3px solid #f8f9fa;
 }
 
-.team-info {
+.MT-team-info {
     flex: 1;
 }
 
-.team-name {
+.MT-team-name {
     margin: 0 0 8px 0;
     font-size: 20px;
     color: #333;
     font-weight: 600;
 }
 
-.team-badges {
+.MT-team-badges {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.captain-badge, .temporary-badge {
+.MT-captain-badge, .MT-temporary-badge {
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 500;
 }
 
-.captain-badge {
+.MT-captain-badge {
     background: #fff3cd;
     color: #856404;
     border: 1px solid #ffeaa7;
 }
 
-.temporary-badge {
+.MT-temporary-badge {
     background: #000000;
     border: 1px solid #ffffff;
 }
 
 /* РЈС‡Р°СЃС‚РЅРёРєРё РєРѕРјР°РЅРґС‹ */
-.team-members {
+.MT-team-members {
     margin-top: 15px;
 }
 
-.members-list {
+.MT-members-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.member-item {
+.MT-member-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -320,11 +320,11 @@
     transition: background 0.2s;
 }
 
-.member-item:hover {
+.MT-member-item:hover {
     background: #e9ecef;
 }
 
-.member-avatar {
+.MT-member-avatar {
     width: 32px;
     height: 32px;
     border-radius: 6px;
@@ -332,13 +332,13 @@
     flex-shrink: 0;
 }
 
-.member-avatar img {
+.MT-member-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.avatar-placeholder {
+.MT-avatar-placeholder {
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -350,13 +350,13 @@
     font-weight: bold;
 }
 
-.member-name {
+.MT-member-name {
     font-size: 14px;
     color: #333;
     font-weight: 500;
 }
 
-.more-members {
+.MT-more-members {
     padding: 8px;
     text-align: center;
     color: #666;
@@ -366,7 +366,7 @@
     border-radius: 8px;
 }
 
-.my-team-card {
+.MT-my-team-card {
     margin-top: 10px;
     display: flex;
     flex-direction: column;
@@ -381,7 +381,7 @@
     overflow: hidden;
 }
 
-.my-team-card::before {
+.MT-my-team-card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -394,17 +394,17 @@
     pointer-events: none;
 }
 
-.my-team-card:hover {
+.MT-my-team-card:hover {
     transform: translateY(-4px);
     border-color: #ff0000;
     box-shadow: 0 8px 24px rgba(255, 0, 0, 0.15), 0 0 0 1px #ff0000;
 }
 
-.my-team-card:hover::before {
+.MT-my-team-card:hover::before {
     opacity: 1;
 }
 
-.my-team-header {
+.MT-my-team-header {
     display: flex;
     flex-direction: row;
     gap: 15px;
@@ -413,16 +413,16 @@
     border-bottom: solid 1px #111;
 }
 
-.my-team-avatar-container {
+.MT-my-team-avatar-container {
     flex-shrink: 0;
 }
 
-.my-team-avatar {
+.MT-my-team-avatar {
     width: 60px;
     height: 60px;
 }
 
-.my-team-badges {
+.MT-my-team-badges {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
@@ -430,7 +430,7 @@
     z-index: 1;
 }
 
-.my-team-badges .captain-badge {
+.MT-my-team-badges .MT-captain-badge {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
     color: #000000;
     border: 1px solid #ffd700;
@@ -442,12 +442,12 @@
     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
-.my-team-badges .captain-badge::before {
+.MT-my-team-badges .MT-captain-badge::before {
     content: '👑';
     font-size: 12px;
 }
 
-.my-team-members {
+.MT-my-team-members {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
@@ -455,7 +455,7 @@
 
 }
 
-.my-team-member-item {
+.MT-my-team-member-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -465,13 +465,22 @@
     height: 36px;
 }
 
-.my-team-member-item img {
+.MT-my-team-member-item img {
     display: contents;
     border-radius: 50%;
     object-fit: cover;
 }
 
-my-members-list {
+/* Avatar container for team member in MyTeams */
+.MT-my-team-member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.MT-my-members-list {
     display: flex;
     gap: 10px;
     flex-direction: column;
@@ -480,79 +489,79 @@ my-members-list {
 
 /* РђРґР°РїС‚РёРІРЅРѕСЃС‚СЊ */
 @media (max-width: 768px) {
-    .my-teams {
+    .MT-my-teams {
         padding: 15px;
     }
     
-    .teams-header {
+    .MT-teams-header {
         flex-direction: column;
         gap: 15px;
         align-items: stretch;
     }
     
-    .teams-header h2 {
+    .MT-teams-header h2 {
         text-align: center;
         font-size: 24px;
     }
     
-    .teams-grid {
+    .MT-teams-grid {
         grid-template-columns: 1fr;
     }
     
-    .team-card {
+    .MT-team-card {
         padding: 15px;
     }
     
-    .team-header {
+    .MT-team-header {
         gap: 12px;
     }
     
-    .team-avatar, .team-avatar-placeholder {
+    .MT-team-avatar, .MT-team-avatar-placeholder {
         width: 50px;
         height: 50px;
     }
     
-    .team-avatar-placeholder {
+    .MT-team-avatar-placeholder {
         font-size: 20px;
     }
     
-    .team-name {
+    .MT-team-name {
         font-size: 18px;
     }
     
-    .invitation-card {
+    .MT-invitation-card {
         flex-direction: column;
         gap: 15px;
         align-items: stretch;
     }
     
-    .invitation-actions {
+    .MT-invitation-actions {
         justify-content: space-between;
     }
     
-    .accept-btn, .reject-btn {
+    .MT-accept-btn, .MT-reject-btn {
         flex: 1;
     }
 }
 
 @media (max-width: 480px) {
-    .my-teams {
+    .MT-my-teams {
         padding: 10px;
     }
     
-    .team-invitations {
+    .MT-team-invitations {
         padding: 15px;
     }
     
-    .team-card {
+    .MT-team-card {
         padding: 12px;
     }
     
-    .teams-header h2 {
+    .MT-teams-header h2 {
         font-size: 22px;
     }
     
-    .create-team-btn {
+    .MT-create-team-btn {
         padding: 10px 20px;
         font-size: 14px;
     }
