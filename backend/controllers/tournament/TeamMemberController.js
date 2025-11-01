@@ -299,18 +299,62 @@ class TeamMemberController {
             return res.status(403).json({ error: 'Только капитан может редактировать состав команды' });
         }
 
-        // Ищем глобальную команду где пользователь - капитан
-        const globalTeam = await pool.query(
-            'SELECT * FROM user_teams WHERE captain_id = $1 ORDER BY created_at DESC LIMIT 1',
-            [userId]
+        // Ищем глобальную команду, которая была добавлена на турнир
+        // Сначала проверяем по названию турнирной команды
+        const tournamentTeamName = tournamentTeam.rows[0].name;
+        
+        let globalTeam = await pool.query(
+            'SELECT * FROM user_teams WHERE captain_id = $1 AND name = $2',
+            [userId, tournamentTeamName]
         );
 
+        // Если не нашли по названию - берем последнюю созданную команду
         if (globalTeam.rows.length === 0) {
+            globalTeam = await pool.query(
+                'SELECT * FROM user_teams WHERE captain_id = $1 ORDER BY created_at DESC LIMIT 1',
+                [userId]
+            );
+        }
+
+        // Если вообще нет команд - возвращаем всех доступных игроков из всех команд капитана
+        if (globalTeam.rows.length === 0) {
+            // Получаем всех игроков из всех команд где пользователь - капитан
+            const allMembers = await pool.query(`
+                SELECT DISTINCT
+                    u.id as user_id,
+                    u.username,
+                    u.avatar_url,
+                    u.faceit_elo,
+                    u.cs2_premier_rank,
+                    false as is_captain
+                FROM user_team_members utm
+                JOIN user_teams ut ON ut.id = utm.team_id
+                JOIN users u ON u.id = utm.user_id
+                WHERE ut.captain_id = $1 AND u.id != $1
+                ORDER BY u.username ASC
+            `, [userId]);
+
+            // Получаем текущий турнирный состав
+            const tournamentRoster = await pool.query(`
+                SELECT tp.user_id
+                FROM tournament_team_members ttm
+                JOIN tournament_participants tp ON ttm.participant_id = tp.id
+                WHERE ttm.team_id = $1 AND tp.user_id IS NOT NULL
+            `, [teamId]);
+
+            const tournamentUserIds = new Set(tournamentRoster.rows.map(r => r.user_id));
+            const availablePlayers = allMembers.rows.filter(player => !tournamentUserIds.has(player.user_id));
+
             return res.json({ 
                 success: true,
-                globalTeam: null,
-                availablePlayers: [],
-                message: 'У вас нет глобальной команды'
+                globalTeam: { 
+                    id: null, 
+                    name: 'Все ваши команды',
+                    avatar_url: null
+                },
+                availablePlayers,
+                currentRosterCount: tournamentUserIds.size,
+                maxTeamSize: tournament.team_size || 5
             });
         }
 

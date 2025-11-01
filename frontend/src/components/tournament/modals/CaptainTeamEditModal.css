@@ -523,12 +523,24 @@
     gap: 12px;
 }
 
+.ctem-footer-actions .btn {
+    margin: 0px;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .ctem-modal {
         width: 95%;
         max-height: 95vh;
     }
+    border-radius: 4px;
+    background: #000000;
+    color: #ffffff;
+    border-color: #333333;
+    color: #333333;
+    background: #000000;
+    border-color: #333333;
+    color: #333333;
 
     .ctem-modal-body {
         grid-template-columns: 1fr;
