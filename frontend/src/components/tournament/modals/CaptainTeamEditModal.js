@@ -40,7 +40,10 @@ const DraggablePlayer = ({ player, index, onMove, isRosterSlot, slotIndex, canDr
         <div
             ref={(node) => drag(drop(node))}
             className={`ctem-draggable-player ${isDragging ? 'ctem-dragging' : ''} ${isOver ? 'ctem-drop-target' : ''}`}
-            style={{ opacity: isDragging ? 0.5 : 1 }}
+            style={{ 
+                opacity: isDragging ? 0.5 : 1,
+                cursor: canDrag ? 'grab' : 'not-allowed'
+            }}
         >
             <div className="ctem-player-info">
                 <img 
@@ -169,9 +172,8 @@ const CaptainTeamEditModal = ({
             );
 
             if (rosterResponse.data.success) {
-                // Фильтруем капитана из редактируемого состава
-                const nonCaptainMembers = rosterResponse.data.members.filter(m => !m.is_captain);
-                setTournamentRoster(nonCaptainMembers);
+                // Включаем всех участников, включая капитана
+                setTournamentRoster(rosterResponse.data.members || []);
             }
 
             if (globalResponse.data.success) {
@@ -217,11 +219,20 @@ const CaptainTeamEditModal = ({
             const rosterUserIds = new Set(tournamentRoster.map(p => p.user_id));
             const invitedUserIds = new Set(sentInvitations.filter(inv => inv.status === 'pending').map(inv => inv.invited_user_id));
             
-            const filtered = response.data.filter(user => 
-                !rosterUserIds.has(user.id) && 
-                !invitedUserIds.has(user.id) &&
-                user.id !== user?.id
+            console.log('🔍 [CaptainTeamEdit] Результаты поиска:', {
+                total: response.data.length,
+                rosterUserIds: Array.from(rosterUserIds),
+                invitedUserIds: Array.from(invitedUserIds),
+                currentUser: user?.id
+            });
+            
+            const filtered = response.data.filter(searchUser => 
+                !rosterUserIds.has(searchUser.id) && 
+                !invitedUserIds.has(searchUser.id) &&
+                searchUser.id !== user?.id
             );
+            
+            console.log('✅ [CaptainTeamEdit] После фильтрации:', filtered.length, filtered.map(u => u.username));
             
             setSearchResults(filtered);
         } catch (err) {
@@ -366,7 +377,16 @@ const CaptainTeamEditModal = ({
             setError('');
             
             const token = localStorage.getItem('token');
-            const memberUserIds = tournamentRoster.map(p => p.user_id);
+            // Фильтруем капитана - он управляется на backend автоматически
+            const memberUserIds = tournamentRoster
+                .filter(p => !p.is_captain)
+                .map(p => p.user_id);
+
+            console.log('💾 [CaptainTeamEdit] Сохранение состава:', {
+                total: tournamentRoster.length,
+                withoutCaptain: memberUserIds.length,
+                userIds: memberUserIds
+            });
 
             const response = await api.put(
                 `/api/tournaments/${tournament.id}/teams/${team.id}/roster`,
@@ -433,7 +453,7 @@ const CaptainTeamEditModal = ({
                                             slotIndex={index}
                                             onMove={handleMove}
                                             isRosterSlot={true}
-                                            canDrag={!loading}
+                                            canDrag={!loading && !player.is_captain}
                                         />
                                     ) : (
                                         <EmptySlot 

@@ -132,6 +132,7 @@
     padding: 12px;
     cursor: grab;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .ctem-draggable-player:hover {
@@ -148,6 +149,19 @@
     border-color: #22c55e;
     background: rgba(34, 197, 94, 0.1);
     box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Неперетаскиваемый игрок (капитан) */
+.ctem-draggable-player[style*="cursor: not-allowed"] {
+    opacity: 0.9;
+    cursor: not-allowed !important;
+    border: 1px solid #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.ctem-draggable-player[style*="cursor: not-allowed"]:hover {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.08);
 }
 
 .ctem-player-info {
